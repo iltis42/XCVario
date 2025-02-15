@@ -61,7 +61,6 @@ CircleWind::CircleWind()
 	// Initialization
 	minVector.setSpeedKmh( 370.0 );
 	maxVector.setSpeedKmh( 0.0 );
-	result = Vector( 0.0, 0.0 );
 }
 
 int CircleWind::circleCount = 0; 		// we are counting the number of circles, the first onces are probably not very round
@@ -74,7 +73,6 @@ t_circling CircleWind::circlingMode = undefined;
 int  CircleWind::gpsStatus = false;
 Vector CircleWind::minVector;
 Vector CircleWind::maxVector;
-float CircleWind::sumSpeed = 0;
 Vector CircleWind::result;
 float CircleWind::jitter = 0;
 float CircleWind::headingDiff = 0;
@@ -269,18 +267,19 @@ void CircleWind::_calcWind()
 void CircleWind::newWind( float angle, float speed ){
 	ESP_LOGI(FNAME,"New Wind Vector angle %.1f speed %.1f", angle, speed );
 
-	Vector v = Vector( angle, speed );
-	windVectors.push_back( v );
-	result.add( v );
-	sumSpeed += speed;
+	windVectors.push_back( Vector( angle, speed ) );
 	while( windVectors.size() > (int)circle_wind_lowpass.get() ){
-		result.subtract( windVectors.front() );
-		sumSpeed -= windVectors.front().getSpeed();
 		windVectors.pop_front();
 	}
-
+	result = Vector( 0.0, 0.0 );
+	float avgSpeed = 0;
+	for( auto it=std::begin(windVectors); it != std::end(windVectors); it++ ){
+		result.add( *it );
+		// ESP_LOGI(FNAME,"angle %.1f speed %.1f", it->getAngleDeg(), it->getSpeed() );
+		avgSpeed+=it->getSpeed();
+	}
 	float direction = result.getAngleDeg();
-	float windspeed = sumSpeed / windVectors.size();
+	float windspeed = avgSpeed / windVectors.size();
 
 	ESP_LOGI(FNAME,"### NEW AVG CircleWind: %.1f°/%.1fKm/h  JI:%2.1f", direction, windspeed, jitter  );
 

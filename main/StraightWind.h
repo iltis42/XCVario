@@ -89,6 +89,7 @@ private:
 	const char *status;
 	float  jitter;
 	std::list<Vector> windVectors;
+	Vector result;
 	float newWindSpeed;
 	float newWindDir;
 	float slipAverage;

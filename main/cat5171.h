@@ -6,7 +6,7 @@
 #include "I2Cbus.hpp"
 #include "Poti.h"
 
-#define  CAT5171_I2C_ADDR  0b0101100     // AD0 = 0  0x4C
+#define  CAT5171_I2C_ADDR  0b0101100     // AD0 = 0  0x2C
 
 //Library for the CAT5171 7 bit digital potentiometer.
 

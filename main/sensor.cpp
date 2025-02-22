@@ -11,6 +11,7 @@
 #include "MP5004DP.h"
 #include "MS4525DO.h"
 #include "ABPMRR.h"
+#include "MCPH21.h"
 #include "BMPVario.h"
 #include "BTSender.h"
 #include "BLESender.h"
@@ -1075,7 +1076,7 @@ void system_startup(void *args){
 	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );
 	int offset;
 	bool found = false;
-	if( hardwareRevision.get() >= XCVARIO_21 ){ // autodetect new type of sensors
+	if( hardwareRevision.get() >= XCVARIO_20 ){ // autodetect new type of sensors in any case
 		ESP_LOGI(FNAME," HW revision 3, check configured airspeed sensor");
 		bool valid_config=true;
 		switch( airspeed_sensor_type.get() ){
@@ -1091,20 +1092,55 @@ void system_startup(void *args){
 			asSensor = new MP5004DP();
 			ESP_LOGI(FNAME,"PS_MP3V5004 configured");
 			break;
+		case PS_MCPH21:
+			asSensor = new MCPH21();
+			ESP_LOGI(FNAME,"PS_MCPH21 configured");
+			break;
 		default:
 			valid_config = false;
 			ESP_LOGI(FNAME,"No valid config found");
 			break;
 		}
 		if( valid_config ){
-			ESP_LOGI(FNAME,"There is valid config for airspeed sensor: check this one..");
+			ESP_LOGI(FNAME,"There is valid config for airspeed sensor: check this one first...");
 			asSensor->setBus( &i2c );
 			if( asSensor->selfTest( offset ) ){
 				ESP_LOGI(FNAME,"Selftest for configured sensor OKAY");
 				found = true;
 			}
-			else
+			else{
+				ESP_LOGI(FNAME,"AS sensor not found");
 				delete asSensor;
+			}
+		}
+		// Probe any kind of ever known sensors
+		if( !found ){   // behaves same as above, so we can't detect this, needs to be setup in factory
+			ESP_LOGI(FNAME,"Try MCPH21");
+			asSensor = new MCPH21();
+			asSensor->setBus( &i2c );
+			ESP_LOGI(FNAME,"Try MCPH21");
+			if( asSensor->selfTest( offset ) ){
+				airspeed_sensor_type.set( PS_MCPH21 );
+				found = true;
+			}
+			else{
+				ESP_LOGI(FNAME,"MCPH21 sensor not found");
+				delete asSensor;
+			}
+			delay( 100 );
+		}
+		if( !found ){
+			ESP_LOGI(FNAME,"Try ABPMRR");
+			asSensor = new ABPMRR();
+			asSensor->setBus( &i2c );
+			if( asSensor->selfTest( offset ) ){
+				airspeed_sensor_type.set( PS_ABPMRR );
+				found = true;
+			}
+			else{
+				ESP_LOGI(FNAME,"ABPMRR sensor not found");
+				delete asSensor;
+			}
 		}
 		if( !found ){   // behaves same as above, so we can't detect this, needs to be setup in factory
 			ESP_LOGI(FNAME,"Configured sensor not found");
@@ -1115,47 +1151,25 @@ void system_startup(void *args){
 				airspeed_sensor_type.set( PS_ABPMRR );
 				found = true;
 			}
-			else
+			else{
+				ESP_LOGI(FNAME,"MS4525DO sensor not found");
 				delete asSensor;
-		}
-		if( !found ){
-			ESP_LOGI(FNAME,"MS4525 sensor not found");
-			asSensor = new ABPMRR();
-			asSensor->setBus( &i2c );
-			ESP_LOGI(FNAME,"Try ABPMRR");
-			if( asSensor->selfTest( offset ) ){
-				airspeed_sensor_type.set( PS_ABPMRR );
-				found = true;
 			}
-			else
-				delete asSensor;
 		}
 		if( !found ){
-			ESP_LOGI(FNAME,"ABPMRR sensor not found");
 			ESP_LOGI(FNAME,"Try MP5004DP");
 			asSensor = new MP5004DP();
+			asSensor->setBus( &i2c );
 			if( asSensor->selfTest( offset ) ){
 				ESP_LOGI(FNAME,"MP5004DP selfTest OK");
 				airspeed_sensor_type.set( PS_MP3V5004 );
 				found = true;
 			}
-			else
+			else{
+				ESP_LOGI(FNAME,"MP5004DP sensor not found");
 				delete asSensor;
+			}
 		}
-	}
-	else {
-		ESP_LOGI(FNAME,"HW revision 2");
-		ESP_LOGI(FNAME,"Aispeed sensor set MP3V5004" );
-		if( airspeed_sensor_type.get() != PS_MP3V5004 )
-			airspeed_sensor_type.set( PS_MP3V5004 );
-		asSensor = new MP5004DP();
-		if( asSensor->selfTest( offset ) ){
-			ESP_LOGI(FNAME,"MP5004DP selfTest OK");
-			airspeed_sensor_type.set( PS_MP3V5004 );
-			found = true;
-		}
-		else
-			ESP_LOGI(FNAME,"MP5004DP selfTest FAILED");
 	}
 	if( found ){
 		ESP_LOGI(FNAME,"AS Speed sensors self test PASSED, offset=%d", offset);

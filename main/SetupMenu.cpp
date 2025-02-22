@@ -1921,6 +1921,7 @@ void SetupMenu::system_menu_create_hardware( MenuEntry *top ){
 	pstype->addEntry( "ABPMRR");
 	pstype->addEntry( "TE4525");
 	pstype->addEntry( "MP5004");
+	pstype->addEntry( "MCPH21");
 	pstype->addEntry( "Autodetect");
 
 	SetupMenuValFloat * met_adj = new SetupMenuValFloat( "Voltmeter Adjust", "%",	-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust,  RST_NONE, false, true);

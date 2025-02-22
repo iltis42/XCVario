@@ -45,7 +45,7 @@ class ABPMRR : public AirspeedSensor
     // public functions
         bool  doOffset( bool force=false );
         float readPascal( float minimum, bool &ok );
-        bool  offsetPlausible( uint16_t offset );
+        bool  offsetPlausible( uint32_t offset );
         bool  selfTest( int& adval );
         void  setBus( I2C_t *theBus ) {  bus = theBus; };
         void  changeConfig();

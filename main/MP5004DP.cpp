@@ -70,7 +70,7 @@ bool MP5004DP::selfTest(int& val)
  *  614   812   1024 + add +-1% for ADC
  */
 
-bool MP5004DP::offsetPlausible(uint16_t aoffset )
+bool MP5004DP::offsetPlausible(uint32_t aoffset )
 {
 	ESP_LOGI(FNAME,"MP5004DP offsetPlausible( %d )", aoffset );
 	int lower_val = 608;

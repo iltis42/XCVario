@@ -4,7 +4,6 @@
 #include "Arduino.h"
 #include <inttypes.h>
 #include <stdio.h>
-#include "I2C.h"
 #include <string.h>
 #include "I2Cbus.hpp"
 #include "PressureSensor.h"

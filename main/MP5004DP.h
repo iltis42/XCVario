@@ -25,7 +25,7 @@ public:
 	bool    doOffset( bool force=false );
 	float   readPascal( float minimum, bool &ok );
 	bool    selfTest( int& adval );
-	bool    offsetPlausible( uint16_t offset );
+	bool    offsetPlausible( uint32_t offset );
 	void    setBus( I2C_t *_theBus );
 	void    changeConfig();
 

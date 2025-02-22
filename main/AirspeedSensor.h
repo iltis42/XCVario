@@ -9,7 +9,7 @@ public:
 	virtual bool  doOffset( bool force=false ) = 0;
 	virtual float readPascal( float minimum, bool &ok ) = 0;
 	virtual bool  selfTest( int& adval ) = 0;
-	virtual bool  offsetPlausible( uint16_t offset ) = 0;
+	virtual bool  offsetPlausible( uint32_t offset ) = 0;
     virtual void  setBus( I2C_t *theBus ) = 0;
     virtual void  changeConfig() = 0;
 };

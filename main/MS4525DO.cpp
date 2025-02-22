@@ -143,9 +143,9 @@ float MS4525DO::getAirSpeed(void){        // calculates and returns the airspeed
 }
 
 
-bool MS4525DO::offsetPlausible(uint16_t aoffset )
+bool MS4525DO::offsetPlausible(uint32_t aoffset )
 {
-	ESP_LOGI(FNAME,"MS4525DO offsetPlausible( %d )", aoffset );
+	ESP_LOGI(FNAME,"MS4525DO offsetPlausible( %ld )", aoffset );
 	int lower_val = 7700;
 	int upper_val = 8300;
 	if( (aoffset > lower_val ) && (aoffset < upper_val )  )

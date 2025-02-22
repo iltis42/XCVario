@@ -137,9 +137,9 @@ float ABPMRR::getAirSpeed(void){        // calculates and returns the airspeed i
 }
 
 
-bool ABPMRR::offsetPlausible(uint16_t aoffset )
+bool ABPMRR::offsetPlausible(uint32_t aoffset )
 {
-	ESP_LOGI(FNAME,"ABPMRR offsetPlausible( %d )", aoffset );
+	ESP_LOGI(FNAME,"ABPMRR offsetPlausible( %ld )", aoffset );
 	const int lower_val = 8192-200;
 	const int upper_val = 8192+200;
 	if( (aoffset > lower_val ) && (aoffset < upper_val )  )

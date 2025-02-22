@@ -257,6 +257,7 @@ esp_err_t I2C::testConnection(uint8_t devAddr, int32_t timeout) {
     return err;
 }
 
+
 void I2C::scanner() {
     constexpr int32_t scanTimeout = 20;
     printf(LOG_COLOR_W "\n>> I2C scanning ..." LOG_RESET_COLOR "\n");

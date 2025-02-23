@@ -1657,7 +1657,7 @@ extern "C" void  app_main(void)
 	// probe on MPU
 	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
 	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
-	if( MPU.reset() && hardwareRevision.get() < XCVARIO_21 ){
+	if( (MPU.reset() == ESP_OK) && hardwareRevision.get() < XCVARIO_21 ){
 		ESP_LOGI( FNAME,"MPU avail, increase hardware revision to 3 (XCV-21)");
 		hardwareRevision.set(XCVARIO_21);  // there is MPU6050 gyro and acceleration sensor, at least we got an XCV-21
 	}

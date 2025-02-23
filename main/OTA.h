@@ -15,12 +15,12 @@ public:
 	OTA();
 	~OTA() {};
 	void begin();
-	void press();
-	void release();
-	void up( int count ) {};
-	void down( int count ) {};
-	void longPress();
-	void escape() {};
+	void press() override;
+	void release() override;
+	void up( int count ) override {};
+	void down( int count ) override {};
+	void longPress() override;
+	void escape() override {};
 	void doSoftwareUpdate( IpsDisplay *p );
 private:
     bool pressed;

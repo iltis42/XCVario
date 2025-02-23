@@ -125,6 +125,11 @@ int vario_setup(SetupMenuValFloat *p) {
 	return 0;
 }
 
+static int set_rotary_direction(SetupMenuSelect *p) {
+	Rotary->updateRotDir();
+	return 0;
+}
+
 int audio_setup_s(SetupMenuSelect *p) {
 	Audio::setup();
 	return 0;
@@ -257,13 +262,13 @@ int do_display_test(SetupMenuSelect *p) {
 	if (display_test.get()) {
 		p->ucg->setColor(0, 0, 0);
 		p->ucg->drawBox(0, 0, 240, 320);
-		while (!p->readSwitch()) {
+		while (!Rotary->readSwitch()) {
 			delay(100);
 			ESP_LOGI(FNAME,"Wait for key press");
 		}
 		p->ucg->setColor(255, 255, 255);
 		p->ucg->drawBox(0, 0, 240, 320);
-		while (!p->readSwitch()) {
+		while (!Rotary->readSwitch()) {
 			delay(100);
 			ESP_LOGI(FNAME,"Wait for key press");
 		}
@@ -2065,15 +2070,10 @@ void SetupMenu::system_menu_create_hardware_rotary(MenuEntry *top) {
 	screens->addCreator(system_menu_create_hardware_rotary_screens);
 
 	SetupMenuSelect *rotype;
-	if (hardwareRevision.get() < XCVARIO_21)
-		rotype = new SetupMenuSelect("Direction", RST_NONE, 0, false,
-				&rotary_dir);
-	else
-		rotype = new SetupMenuSelect("Direction", RST_NONE, 0, false,
-				&rotary_dir_21);
+	rotype = new SetupMenuSelect("Direction", RST_NONE, set_rotary_direction, false, &rotary_dir);
 	top->addEntry(rotype);
 	rotype->setHelp(
-			"Select type of rotary switch, different brands may need adjustment");
+			"Choose the direction of the rotary knob");
 	rotype->addEntry("Clockwise");
 	rotype->addEntry("Counterclockwise");
 

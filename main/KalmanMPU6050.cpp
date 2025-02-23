@@ -530,7 +530,7 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 	p->ucg->printf( "with zero inclination." );
 	p->ucg->setPrintPos( 1, 120 );
 	p->ucg->printf( "Press button to start" );
-	while( !p->readSwitch() ){ delay( 100 ); }
+	while( !Rotary->readSwitch() ){ delay( 100 ); }
 	p->clear();
 	p->ucg->setPrintPos( 1, 30 );
 	p->ucg->printf( "Now put down RIGHT wing" );
@@ -538,7 +538,7 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 	p->ucg->printf( "on the ground," );
 	p->ucg->setPrintPos( 1, 90 );
 	p->ucg->printf( "then press button.." );
-	while( !p->readSwitch() ){ delay( 100 ); }
+	while( !Rotary->readSwitch() ){ delay( 100 ); }
 	float angle = 0.0;
 	int ret = IMU::getAccelSamplesAndCalib(IMU_RIGHT, angle);
 	if( ret<1 ){
@@ -557,7 +557,7 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 	p->ucg->printf( "on the ground," );
 	p->ucg->setPrintPos( 1, 90 );
 	p->ucg->printf( "then press button.." );
-	while( !p->readSwitch() ){ delay( 100 ); }
+	while( !Rotary->readSwitch() ){ delay( 100 ); }
 	ret=IMU::getAccelSamplesAndCalib(IMU_LEFT, angle);
 	if( ret<2 ){
 			p->clear();
@@ -575,7 +575,7 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 		delay(1000);
 		p->ucg->setPrintPos( 1, 220 );
 		p->ucg->printf( "press button to return" );
-		while( !p->readSwitch() ){ delay( 100 ); }
+		while( !Rotary->readSwitch() ){ delay( 100 ); }
 	}
 
 }

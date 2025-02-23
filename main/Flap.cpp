@@ -38,7 +38,7 @@ int select_flap_sens_pin(SetupMenuSelect *p){
 			p->ucg->printf("Check Sensor Reading,");
 			p->ucg->setPrintPos(5,80);
 			p->ucg->printf("Press Button to exit");
-			while( !p->readSwitch() ){
+			while( !Rotary->readSwitch() ){
 				// ESP_LOGI(FNAME,"SW wait loop");
 				p->ucg->setPrintPos(5,120);
 				p->ucg->printf("Sensor: %d       ", FLAP->getSensorRaw(256) );
@@ -63,7 +63,7 @@ int wk_cal_show( SetupMenuSelect *p, int wk, Average<50> &filter){
 	delay(500);
 	int flap = 0;
 	int i=0;
-	while( !p->readSwitch() && FLAP ){
+	while( !Rotary->readSwitch() && FLAP ){
 		i++;
 		flap = filter( (int)(FLAP->getSensorRaw(64)) );
 		if( !(i%10) ){

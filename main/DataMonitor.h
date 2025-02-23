@@ -22,12 +22,12 @@ public:
 	void monitorString( ItfTarget ch, e_dir_t dir, const char *s, int len );
 	void start(SetupMenuSelect * p, ItfTarget ch);
 	void stop();
-	void press();
-	void release() {};
-	void up( int count ) {};
-	void down( int count ) {};
-	void longPress();
-	void escape() {};
+	void press() override;
+	void release() override {};
+	void up( int count ) override {};
+	void down( int count ) override {};
+	void longPress() override;
+	void escape() override {};
 	int maxChar( const char *s, int pos, int len, bool binary=false );
 	void begin(AdaptUGC *theUcg) { ucg = theUcg; };
 	bool active() { return mon_started; };

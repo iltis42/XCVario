@@ -37,7 +37,7 @@ MagnetSensor *Compass::instance = nullptr;
   Creates instance for I2C connection with passing the desired parameters.
   No action is done at the bus. The default address of the chip is 0x0D.
  */
-Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, const uint16_t osr , I2C_t *i2cBus  )
+Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, const uint16_t osr , I2C_t *i2cBus )
 {
 	ESP_LOGI(FNAME,"Compass() I2C addr=%02x", addr );
 	if( addr == 0 ){
@@ -307,7 +307,7 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 		{
 			// Send a calibration report to the subscriber
 			reporter( avg_calib_sample, scale, bias, bits, false );
-			if( ESPRotary::readSwitch() == true  )  // more responsive to query every loop
+			if( Rotary->readSwitch() == true  )  // more responsive to query every loop
 				break;
 			delay(10);
 		}
@@ -320,7 +320,7 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 		ESP_LOGI( FNAME, "Show Calibration");
 		t_bitfield_compass b = calibration_bits.get();
 		reporter( magRaw, scale, bias, b, true );
-		while( ESPRotary::readSwitch() == true  )
+		while( Rotary->readSwitch() == true  )
 			delay(100);
 	}
 	if( !only_show ){

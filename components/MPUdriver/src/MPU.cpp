@@ -106,13 +106,13 @@ esp_err_t MPU::initialize()
 esp_err_t MPU::reset()
 {
 	int i;
-	for( i=0; i<10; i++ ){
+	for( i=0; i<3; i++ ){
 		esp_err_t err = writeBit(regs::PWR_MGMT1, regs::PWR1_DEVICE_RESET_BIT, 1);
 		if ( err == ESP_OK )
 			break;
 		else
 			MPU_LOGI("MPU reset ERROR %d retry: %d", err, i );
-		vTaskDelay(100 / portTICK_PERIOD_MS);
+		vTaskDelay(20 / portTICK_PERIOD_MS);
 	}
 	if( i == 10 ){
 		MPU_LOGI("MPU reset FAILED");

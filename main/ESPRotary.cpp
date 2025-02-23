@@ -153,7 +153,7 @@ void ESPRotary::begin()
 	ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_chan, PCNT_CHANNEL_LEVEL_ACTION_INVERSE, PCNT_CHANNEL_LEVEL_ACTION_KEEP));
 
 	pcnt_glitch_filter_config_t filter_config = {
-		.max_glitch_ns = 250 // Ignore pulses shorter than 250 ns
+		.max_glitch_ns = 2000 // Ignore pulses shorter than 2000 ns
 	};
 	ESP_ERROR_CHECK(pcnt_unit_set_glitch_filter(pcnt_unit, &filter_config));
 

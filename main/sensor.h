@@ -6,7 +6,6 @@
 #include "MP5004DP.h"
 #include "MS4525DO.h"
 #include "IpsDisplay.h"
-#include "ESPRotary.h"
 #include "Compass.h" // 3-Axis Magnetic Sensor
 #include <hal/gpio_types.h>
 #include "SetupMenu.h"
@@ -49,6 +48,7 @@ typedef struct global_flags{
 class CANbus;
 class SerialLine;
 class Clock;
+class ESPRotary;
 
 
 extern t_global_flags gflags;
@@ -97,7 +97,7 @@ extern long unsigned int _gps_millis;
 
 extern IpsDisplay *display;
 
-extern ESPRotary Rotary;
+extern ESPRotary *Rotary;
 
 extern DataMonitor DM;
 

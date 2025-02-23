@@ -73,7 +73,6 @@
 #include <esp_flash.h>
 #include <esp_chip_info.h>
 #include <nvs_flash.h>
-// #include <driver/adc.h>
 #include <driver/gpio.h>
 
 #include <string>
@@ -133,7 +132,6 @@ CenterAid  *centeraid = 0;
 bool netif_initialized = false;
 OTA *ota = 0;
 
-ESPRotary Rotary;
 SetupMenu  *Menu = 0;
 DataMonitor DM;
 
@@ -275,7 +273,7 @@ void drawDisplay(void *pvParameters){
 						}
 					}
 					if( gw ){
-						if( ESPRotary::readSwitch() ){   // Acknowledge Warning -> Warning OFF
+						if( Rotary->readSwitch() ){   // Acknowledge Warning -> Warning OFF
 							gear_warning_holdoff = 25000;  // ~500 sec
 							Audio::alarm( false );
 							display->clear();
@@ -799,7 +797,7 @@ void readTemp(void *pvParameters)
 		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
 			if( !t_devices ){
 				t_devices = ds18b20.search(t_addr, 1);
-				ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
+				// ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
 			}
 			if( t_devices ){
 				// ESP_LOGI(FNAME,"Temp devices %d", t_devices);
@@ -892,8 +890,6 @@ void system_startup(void *args){
 
 	bool selftestPassed=true;
 	int line = 1;
-	ESP_LOGI( FNAME, "Now setup I2C bus IO 21/22");
-	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
 	theWind.begin();
 
 	MCP = new MCP3221();
@@ -903,7 +899,6 @@ void system_startup(void *args){
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
 	Menu = new SetupMenu();
-	esp_log_level_set("*", ESP_LOG_INFO);
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d; Max Prio: %d Wifi: %d",  ESP_LOG_INFO, configMAX_PRIORITIES, ESP_TASKD_EVENT_PRIO-5 );
 	esp_chip_info_t chip_info;
 	esp_chip_info(&chip_info);
@@ -921,10 +916,6 @@ void system_startup(void *args){
 	Polars::begin();
 
 	the_can_mode = can_mode.get(); // initialize variable for CAN mode
-	if( hardwareRevision.get() == HW_UNKNOWN ){  // per default we assume there is XCV-20
-		ESP_LOGI( FNAME, "Hardware Revision unknown, set revision 2 (XCV-20)");
-		hardwareRevision.set(XCVARIO_20);
-	}
 
 	// menu_screens.set(0);
 	// wireless_type.set(WL_DISABLE);
@@ -978,22 +969,11 @@ void system_startup(void *args){
 	std::string hwrev( hw );
 	ver += hwrev;
 	display->writeText(line++, ver.c_str() );
+	Rotary->begin();
 	sleep(1);
-	bool doUpdate = software_update.get();
-	if( Rotary.readSwitch() ){
-		doUpdate = true;
-		ESP_LOGI(FNAME,"Rotary pressed: Do Software Update");
-	}
-	if( doUpdate ) {
-		if( hardwareRevision.get() == XCVARIO_20) { // only XCV-20 uses this GPIO for Rotary
-			ESP_LOGI( FNAME,"Hardware Revision detected 2");
-			Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);
-		}
-		else  {
-			ESP_LOGI( FNAME,"Hardware Revision detected 3");
-			Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
+	if( software_update.get() || Rotary->readSwitch() ) {
+		software_update.set( 0 ); // only one shot, then boot normal
 
-		}
 		if( true ) { // have CAN?
 			// Give CAN MagSens a chance for an update
 			CAN = new CANbus();
@@ -1005,16 +985,7 @@ void system_startup(void *args){
 		ota->begin();
 		ota->doSoftwareUpdate( display );
 	}
-	esp_err_t err=ESP_ERR_NOT_FOUND;
-	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
-	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
-	err = MPU.reset();
-	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
-	if( err == ESP_OK ){
-		if( hardwareRevision.get() < XCVARIO_21 ){
-			ESP_LOGI( FNAME,"MPU avail, increase hardware revision to 3 (XCV-21)");
-			hardwareRevision.set(XCVARIO_21);  // there is MPU6050 gyro and acceleration sensor, at least we got an XCV-21
-		}
+	if( attitude_indicator.get() ){
 		gflags.haveMPU = true;
 		mpu_target_temp = mpu_temperature.get();
 		ESP_LOGI( FNAME,"MPU initialize");
@@ -1230,7 +1201,7 @@ void system_startup(void *args){
 		if( ds18b20.reset() )
 		{
 			t_devices = ds18b20.search(t_addr, 1);
-			ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
+			// ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
 		}
 		if( t_devices ){
 			ESP_LOGI(FNAME,"Temp devices %d", t_devices);
@@ -1479,7 +1450,7 @@ void system_startup(void *args){
 	if( compass ) {
 		compass->begin();
 		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
-		err = compass->selfTest();
+		esp_err_t err = compass->selfTest();
 		if( err == ESP_OK )		{
 			// Activate working of magnetic sensor
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
@@ -1503,16 +1474,16 @@ void system_startup(void *args){
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
 		display->writeText( line++, "Selftest FAILED");
-		if( !Rotary.readSwitch() )
+		if( !Rotary->readSwitch() )
 			sleep(4);
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
 		display->writeText( line++, "Selftest PASSED");
-		if( !Rotary.readSwitch() )
+		if( !Rotary->readSwitch() )
 			sleep(2);
 	}
-	if( Rotary.readSwitch() )
+	if( Rotary->readSwitch() )
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
@@ -1574,13 +1545,11 @@ void system_startup(void *args){
 		Flap::init(MYUCG);
 	}
 
-	if( hardwareRevision.get() == XCVARIO_20 ){
-		Rotary.begin( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0);  // XCV-20 uses GPIO_2 for Rotary
-	}
-	else {
-		Rotary.begin( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
+	if( hardwareRevision.get() != XCVARIO_20 ){
 		gpio_pullup_en( GPIO_NUM_34 );
-		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL && !gflags.mpu_pwm_initalized  ){ // series 2023 does not have slope support on CAN bus but MPU temperature control
+		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL && !gflags.mpu_pwm_initalized  )
+		{
+			// series 2023 does not have slope support on CAN bus but MPU temperature control
 			MPU.pwm_init();
 			gflags.mpu_pwm_initalized = true;
 		}
@@ -1627,7 +1596,7 @@ void system_startup(void *args){
 					break;
 				}
 				delay( 100 );
-				if( Rotary.readSwitch() ){
+				if( Rotary->readSwitch() ){
 					display->writeText( 3, "Abort CAN bus wait" );
 					break;
 				}
@@ -1652,11 +1621,13 @@ void system_startup(void *args){
 
 extern "C" void  app_main(void)
 {
+	// global log level
 	esp_log_level_set("*", ESP_LOG_INFO);
-	// Init timer infrastructure
+
+	// Mute audio
 	Audio::shutdown();
-	MPU.clearpwm();
-	Router::begin();
+
+	// Access to the non volatile setup
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	bool setupPresent;
@@ -1669,7 +1640,37 @@ extern "C" void  app_main(void)
 	else {
 		ESP_LOGI(FNAME,"Setup already present");
 	}
+
+	// Instance to a simple esp timer based clock
 	MY_CLOCK = new Clock();
+
+	// Figure HW revision first
+	if( hardwareRevision.get() == HW_UNKNOWN ){  // per default we assume there is XCV-20
+		ESP_LOGI( FNAME, "Hardware Revision unknown, set revision 2 (XCV-20)");
+		hardwareRevision.set(XCVARIO_20);
+	}
+
+	// start i2c bus
+	ESP_LOGI( FNAME, "Now setup I2C bus IO 21/22");
+	i2c.begin(GPIO_NUM_21, GPIO_NUM_22, 100000 );
+
+	// probe on MPU
+	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
+	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
+	if( MPU.reset() && hardwareRevision.get() < XCVARIO_21 ){
+		ESP_LOGI( FNAME,"MPU avail, increase hardware revision to 3 (XCV-21)");
+		hardwareRevision.set(XCVARIO_21);  // there is MPU6050 gyro and acceleration sensor, at least we got an XCV-21
+	}
+	ESP_LOGI( FNAME,"Hardware revision %d", hardwareRevision.get());
+	MPU.clearpwm(); // Stop MPU heating
+	Router::begin(); // obsolete
+	// Init of rotary
+	if( hardwareRevision.get() == XCVARIO_20 ){
+		Rotary = new ESPRotary( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0); // XCV-20 uses GPIO_2 for Rotary
+	}
+	else {
+		Rotary = new ESPRotary( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
+	}
 
 #ifdef Quaternionen_Test
 		Quaternion::quaternionen_test();

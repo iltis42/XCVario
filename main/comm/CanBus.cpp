@@ -345,7 +345,6 @@ bool CANbus::begin()
     if (can_speed.get() == CAN_SPEED_OFF)
     {
         ESP_LOGI(FNAME, "CAN bus OFF");
-        return false;
     }
     ESP_LOGI(FNAME, "CAN begin");
 
@@ -380,15 +379,14 @@ bool CANbus::selfTest()
     _slope_support = true;
     gpio_set_direction(_slope_ctrl, GPIO_MODE_OUTPUT);
     // in case of GPIO 2 wired to CAN this would inhibit sending and cause a failing test
-    gpio_set_level(_slope_ctrl, 1);
 
     driverInstall(TWAI_MODE_NO_ACK);
     bool res = false;
     int id = CANTEST_ID;
-    for (int slope = 0; slope < 2; slope++)
+    for (int slope = 1; slope >=0; slope--)
     {
         ESP_LOGI(FNAME,"CAN slope support %s.", (slope==0) ? "on" : "off");
-        gpio_set_level(GPIO_NUM_2, slope);
+        gpio_set_level(_slope_ctrl, slope);
         for (int i = 0; i < 3; i++)
         {
             // repeat test 3x
@@ -422,9 +420,6 @@ bool CANbus::selfTest()
         if (res) {
             break;
         }
-
-        _slope_support = true;
-        gpio_set_level(_slope_ctrl, 0);
     }
 
     driverUninstall();

@@ -167,7 +167,7 @@ void ESPRotary::begin()
 esp_err_t ESPRotary::updateRotDir()
 {
 	pcnt_channel_edge_action_t rot_action = PCNT_CHANNEL_EDGE_ACTION_INCREASE;
-	if( hardwareRevision.get() == XCVARIO_21 ) {
+	if( hardwareRevision.get() <= XCVARIO_21 ) {
 		rot_action = PCNT_CHANNEL_EDGE_ACTION_DECREASE;
 	}
 	if ( rotary_dir.get() == 1 ) {

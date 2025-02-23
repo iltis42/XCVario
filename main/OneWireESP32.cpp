@@ -34,12 +34,14 @@ static rmt_symbol_word_t ow_bit1 = {
 const rmt_transmit_config_t owtxconf = {
 	.loop_count = 0,
 	.flags = {
-		.eot_level = 1
+		.eot_level = 1,
+		.queue_nonblocking = 1
 	}
 };
 const rmt_receive_config_t owrxconf = {
 	.signal_range_min_ns = 1000,
 	.signal_range_max_ns = (OW_RESET_PULSE + OW_RESET_WAIT) * 1000,
+	.flags = {0}
 };
 
 
@@ -68,7 +70,14 @@ OneWire32::OneWire32(uint8_t pin){
 		.gpio_num = owpin,
 		.clk_src = RMT_CLK_SRC_DEFAULT,
 		.resolution_hz = 1000000,
-		.mem_block_symbols = MAX_BLOCKS
+		.mem_block_symbols = MAX_BLOCKS,
+		.intr_priority = 0,
+		.flags {
+			.invert_in = 0,
+			.with_dma = 0,
+			.io_loop_back = 0,
+			.allow_pd = 0
+		}
 	};
 
 	if(rmt_new_rx_channel(&rxconf, &(owrx)) != ESP_OK) {

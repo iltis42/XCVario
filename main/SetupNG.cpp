@@ -271,7 +271,6 @@ SetupNG<float>		    te_comp_adjust ( "TECOMP_ADJ", 0);
 SetupNG<int>		    te_comp_enable( "TECOMP_ENA", TE_TEK_PROBE );
 SetupNG<int>		    rotary_dir( "ROTARY_DIR", 0 );
 SetupNG<int>		    rotary_inc( "ROTARY_INC", 1 );
-SetupNG<int>		    rotary_dir_21( "ROTARY_DIR_21", 1 );
 SetupNG<int>		    student_mode( "STUD_MOD", 0 );
 SetupNG<float>		    password( "PASSWORD", 0 );
 SetupNG<int>		    autozero( "AUTOZERO", 0 );

@@ -106,13 +106,13 @@ esp_err_t MPU::initialize()
 esp_err_t MPU::reset()
 {
 	int i;
-	for( i=0; i<10; i++ ){
+	for( i=0; i<3; i++ ){
 		esp_err_t err = writeBit(regs::PWR_MGMT1, regs::PWR1_DEVICE_RESET_BIT, 1);
 		if ( err == ESP_OK )
 			break;
 		else
 			MPU_LOGI("MPU reset ERROR %d retry: %d", err, i );
-		vTaskDelay(100 / portTICK_PERIOD_MS);
+		vTaskDelay(20 / portTICK_PERIOD_MS);
 	}
 	if( i == 10 ){
 		MPU_LOGI("MPU reset FAILED");
@@ -172,7 +172,8 @@ void MPU::pwm_init(){
 			.duty_resolution = LEDC_TIMER_8_BIT,
 			.timer_num  = LEDC_TIMER_1,
 			.freq_hz = 500,
-			.clk_cfg = LEDC_AUTO_CLK };
+			.clk_cfg = LEDC_AUTO_CLK,
+			.deconfigure = false };
 	ledc_channel_config_t pwm_ch = {
 			.gpio_num = GPIO_NUM_2,
 			.speed_mode = LEDC_HIGH_SPEED_MODE,
@@ -180,8 +181,9 @@ void MPU::pwm_init(){
 			.intr_type = LEDC_INTR_DISABLE,
 			.timer_sel = LEDC_TIMER_1,
 			.duty = 0,
-			.hpoint = 0 }; 
-//			.flags = {0}};
+			.hpoint = 0,
+			.sleep_mode = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
+			.flags = {0}};
 	ledc_channel_config(&pwm_ch);
 	ledc_timer_config(&pwm_timer);
 	temp_control( 0, 45.0 );

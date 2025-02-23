@@ -104,9 +104,9 @@ float Vector::polar(float y, float x)
 	float angle = 0.0;
 	if(x >= -0.001 && x <= 0.001) {
 		if(y < 0.0)
-			return ( M_PI );
+			return -M_PI / 2;   // Corrected to -PI/2 for y < 0
 		else
-			return ( 0 );
+			return M_PI / 2;    // Corrected to PI/2 for y >= 0
 	}
 	// Punkt liegt auf der neg. X-Achse
 	if(x < 0.0)

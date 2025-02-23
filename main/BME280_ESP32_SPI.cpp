@@ -87,6 +87,7 @@ bool BME280_ESP32_SPI::begin(){
 		.address_bits = 8,
 		.dummy_bits = 0,
 		.mode = 3,
+		.clock_source = SPI_CLK_SRC_DEFAULT,
 		.duty_cycle_pos = 0,
 		.cs_ena_pretrans = 0,
 		.cs_ena_posttrans = 0,

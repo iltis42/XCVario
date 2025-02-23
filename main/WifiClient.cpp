@@ -136,7 +136,7 @@ std::string WifiClient::scan(int master_xcv_num){
 		ESP_ERROR_CHECK(esp_wifi_scan_start(NULL, true));
 		ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&ap_count));
 		ESP_LOGI(FNAME, "Total APs scanned = %u", ap_count);
-		if( Rotary.readSwitch() )
+		if( Rotary->readSwitch() )
 			break;
 		ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&number, ap_info));
 		for (int i = 0; (i < DEFAULT_SCAN_LIST_SIZE) && (i < ap_count); i++) {

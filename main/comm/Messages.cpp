@@ -44,7 +44,7 @@ Message* MessagePool::getOne()
     while ( _freeList.empty() )
     {
         xSemaphoreGive(_mutex);
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        vTaskDelay(pdMS_TO_TICKS(10));
         _nr_acqfails++;
         xSemaphoreTake(_mutex, portMAX_DELAY);
     }

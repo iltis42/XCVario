@@ -82,7 +82,7 @@ void LeakTest::start( PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSens
 		display->writeText( 9, "Test PASSED" );
 		ESP_LOGI(FNAME,"PASSED");
 	}
-	while( !Rotary.readSwitch() ) {
+	while( !Rotary->readSwitch() ) {
 		delay(100);
 	}
 	display->clear();

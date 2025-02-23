@@ -36,11 +36,15 @@ typedef struct bitfield_compass{
 	bool ymin_green :1;
 	bool zmax_green :1;
 	bool zmin_green :1;
-	struct bitfield_compass operator = ( const struct bitfield_compass &other ) {
+	bitfield_compass() = default;
+	constexpr bitfield_compass(bool a, bool b, bool c, bool d, bool e, bool f)
+        : xmax_green(a), xmin_green(b), ymax_green(c), ymin_green(d), zmax_green(e), zmin_green(f) {}
+	constexpr bitfield_compass(const bitfield_compass& other) = default;
+	bitfield_compass& operator = ( const bitfield_compass &other ) {
 		xmax_green = other.xmax_green; xmin_green = other.xmin_green;
 		ymax_green = other.ymax_green; ymin_green = other.ymin_green;
 		zmax_green = other.zmax_green; zmin_green = other.zmin_green;
-	    return *this;
+		return *this;
 	};
 	bool operator == ( const struct bitfield_compass &other ) const {
 		return( xmax_green == other.xmax_green && xmin_green == other.xmin_green &&

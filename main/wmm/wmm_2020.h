@@ -3,7 +3,7 @@
 // The model coefficients
 static constexpr int MAXORD = 12;
 static constexpr float EPOCH = 2020.0;
-static float WMMCOF[][4] = {
+static const float WMMCOF[][4] = {
   { -29404.5,      0.0,       6.7,       0.0 },
   {  -1450.7,   4652.9,       7.7,     -25.1 },
   {  -2500.0,      0.0,     -11.5,       0.0 },

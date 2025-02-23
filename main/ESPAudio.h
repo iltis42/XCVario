@@ -24,7 +24,7 @@ public:
 	Audio();
 	virtual ~Audio(){};
 
-	static void begin( dac_channel_t ch=DAC_CHANNEL_1 );
+	static void begin( dac_channel_t ch=DAC_CHAN_0 );
 	static void restart();
 	static void startAudio();
 

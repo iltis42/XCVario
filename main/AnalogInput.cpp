@@ -52,8 +52,9 @@ void AnalogInput::begin()
 	}
 	else if( _unit == ADC_UNIT_2 ) {
 		adc2_config_channel_atten((adc2_channel_t)_adc_ch,_attenuation);
-	}else
+	}else {
 		 ESP_LOGE(FNAME,"ADC unit %d illegal", _unit );
+	}
 
 	if ( _cal ) {
 		ESP_LOGI(FNAME,"ADC chars: unit:%d atten:%d", _unit, _attenuation );

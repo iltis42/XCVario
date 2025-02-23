@@ -55,6 +55,7 @@ class Vector
 public:
 
     Vector();
+    Vector(const Vector&) = default;
     Vector(const float angle, const float speed);
 
     ~Vector();

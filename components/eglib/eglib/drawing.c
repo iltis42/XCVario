@@ -6,7 +6,7 @@
 #include <string.h>
 
 
-static const char* FNAME = "drawing.c";
+// static const char* FNAME = "drawing.c";
 #define degrees_to_radians(degrees) ((degrees) * M_PI / 180.0)
 /**
  * Clipping

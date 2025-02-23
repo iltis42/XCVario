@@ -161,7 +161,7 @@ void DataMonitor::scroll(int scroll){
 void DataMonitor::press(){
 	ESP_LOGI(FNAME,"press paused: %d", paused );
 	delay( 100 );
-	// if( !Rotary.readSwitch() ){ // only process press here
+	// if( !Rotary->readSwitch() ){ // only process press here
 	if( paused )
 		paused = false;
 	else

@@ -82,7 +82,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	float deviation = 0;
 	static float last_heading = 0.0;
 
-	while( !p->readSwitch() )
+	while( !Rotary->readSwitch() )
 	{
 		bool ok = true;
 		heading += Vector::angleDiffDeg( compass->rawHeading( &ok ), last_heading )*0.05;
@@ -100,7 +100,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		p->ucg->printf( "Deviation: %.1f°  ", deviation );
 		delay( 50 );
 	}
-	while( p->readSwitch() )
+	while( Rotary->readSwitch() )
 	{
 		// wait so long while rotary is pressed to avoid unwanted actions
 		delay( 50 );
@@ -224,7 +224,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	p->ucg->setFont( ucg_font_ncenR14_hr, true );
 	if( show_raw_data ){
 		p->clear();
-		while( !p->readSwitch() ){
+		while( !Rotary->readSwitch() ){
 				delay( 100 );
 				showSensorRawData(p);
 		}
@@ -253,7 +253,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	p->clear();
 	if( only_show ){
 		compass->calibrate( calibrationReport, true );
-		while( !p->readSwitch() )
+		while( !Rotary->readSwitch() )
 			delay( 100 );
 	}else{
 		p->ucg->setFont( ucg_font_ncenR14_hr, true );
@@ -285,7 +285,7 @@ bool CompassMenu::calibrationReport( t_magn_axes raw, t_float_axes scale, t_floa
 	static t_float_axes bias_back = {0., 0., 0.};
 	static t_magn_axes mins = { 20000, 20000, 20000 };
 	static t_magn_axes maxs = { 0,0,0 };
-	static bitfield_compass bits_old = { false, false, false, false, false, false };
+	static bitfield_compass bits_old;// = { 0, 0, 0, 0, 0, 0 };
 
 	if( menuPtr == nullptr )
 		return false;

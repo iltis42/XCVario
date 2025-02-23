@@ -377,7 +377,7 @@ bool CANbus::selfTest()
     ESP_LOGI(FNAME, "CAN bus selftest");
 
     // Pretend slope control off and probe the reaction on GPIO 2 here
-    _slope_support = false;
+    _slope_support = true;
     gpio_set_direction(_slope_ctrl, GPIO_MODE_OUTPUT);
     // in case of GPIO 2 wired to CAN this would inhibit sending and cause a failing test
     gpio_set_level(_slope_ctrl, 1);
@@ -387,9 +387,11 @@ bool CANbus::selfTest()
     int id = CANTEST_ID;
     for (int slope = 0; slope < 2; slope++)
     {
-        ESP_LOGI(FNAME, "CAN slope support %s.", _slope_support ? "on" : "off");
+        ESP_LOGI(FNAME,"CAN slope support %s.", (slope==0) ? "on" : "off");
+        gpio_set_level(GPIO_NUM_2, slope);
         for (int i = 0; i < 3; i++)
-        { // repeat test 3x
+        {
+            // repeat test 3x
             char tx[10] = {"1827364"};
             int len = strlen(tx);
             ESP_LOGI(FNAME, "strlen %d", len);
@@ -407,6 +409,7 @@ bool CANbus::selfTest()
             {
                 ESP_LOGI(FNAME, "RX CAN bus OKAY");
                 res = true;
+                _slope_support = (slope==0);
                 break;
             }
             else

@@ -99,7 +99,7 @@ SerialLine::SerialLine(uart_port_t uart, gpio_num_t rx, gpio_num_t tx ) :
 	uart_nr(uart),
 	tx_gpio(tx),
 	rx_gpio(rx),
-	_intfid(InterfaceId(S0_RS232+uart)),
+	_intfid(InterfaceId((int)S0_RS232+(int)uart)),
 	_id_memo(MEMOS[uart]),
 	_setup(uart_setup[uart])
 {
@@ -164,7 +164,10 @@ void SerialLine::applyBaud()
 		.stop_bits = UART_STOP_BITS_1,
 		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
 		.rx_flow_ctrl_thresh = 0,
-		.source_clk = UART_SCLK_APB
+		.source_clk = UART_SCLK_DEFAULT,
+		.flags = {
+			.allow_pd = 0,
+			.backup_before_sleep = 0 },
 		};
 
 	uart_param_config(uart_nr, &uart_config);

@@ -294,24 +294,24 @@ static uint8_t get_bits_per_pixel(eglib_t *eglib) {
 	}
 }
 
-static void clear_memory(eglib_t *eglib) {
-	return; // +++++++++++++++++++++++++++++++++++++++++ return to help debugging
-	ili9341_config_t *display_config;
-	uint32_t memory_size;
-	display_config = eglib_GetDisplayConfig(eglib);
+// debugging only
+// static void clear_memory(eglib_t *eglib) {
+// 	ili9341_config_t *display_config;
+// 	uint32_t memory_size;
+// 	display_config = eglib_GetDisplayConfig(eglib);
 
-	memory_size = (display_config->width * display_config->height * get_bits_per_pixel(eglib)) / 8;
-	ESP_LOGI("ili9341", "memory size: %d %d %d %u", (int)memory_size, display_config->width, display_config->height, get_bits_per_pixel(eglib) );
+// 	memory_size = (display_config->width * display_config->height * get_bits_per_pixel(eglib)) / 8;
+// 	ESP_LOGI("ili9341", "memory size: %d %d %d %u", (int)memory_size, display_config->width, display_config->height, get_bits_per_pixel(eglib) );
 
-	set_column_address(eglib, 0, display_config->width - 1);
-	set_row_address(eglib, 0, display_config->height - 1);
-	eglib_SendCommandByte(eglib, ILI9341_MEMORY_WRITE);
-	uint8_t buf[256] = { 255 };
-	for(uint32_t addr=0 ; addr < memory_size ; addr+= 256 ){
-		ESP_LOGI("ili9341", "addr: %d", (int)addr );
-		eglib_SendData(eglib, buf, 256 );
-	}
-}
+// 	set_column_address(eglib, 0, display_config->width - 1);
+// 	set_row_address(eglib, 0, display_config->height - 1);
+// 	eglib_SendCommandByte(eglib, ILI9341_MEMORY_WRITE);
+// 	uint8_t buf[256] = { 255 };
+// 	for(uint32_t addr=0 ; addr < memory_size ; addr+= 256 ){
+// 		ESP_LOGI("ili9341", "addr: %d", (int)addr );
+// 		eglib_SendData(eglib, buf, 256 );
+// 	}
+// }
 
 static void send_pixel(eglib_t *eglib, color_t color) {
 	ili9341_config_t *display_config;
@@ -572,9 +572,9 @@ static void send_buffer(
 	coordinate_t x, coordinate_t y,
 	coordinate_t width, coordinate_t height
 ) {
-	ili9341_config_t *display_config;
+	// ili9341_config_t *display_config;
 	uint8_t *buffer = (uint8_t *)buffer_ptr;
-	display_config = eglib_GetDisplayConfig(eglib);
+	// display_config = eglib_GetDisplayConfig(eglib);
 	// if((uint32_t)x * get_bits_per_pixel(eglib) % 8)
 	//	x -= 1;
 	eglib_CommBegin(eglib);

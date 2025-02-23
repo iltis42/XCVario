@@ -913,7 +913,7 @@ void system_startup(void *args){
 					(chip_info.features & CHIP_FEATURE_BLE) ? "/BLE" : "");
 	ESP_LOGI( FNAME,"Silicon revision %d, ", chip_info.revision);
 	uint32_t flash_size = 0;
-    esp_err_t ret = esp_flash_get_size(NULL, &flash_size);
+	ESP_ERROR_CHECK(esp_flash_get_size(NULL, &flash_size));
 	ESP_LOGI( FNAME,"%dMB %s flash\n", (int)flash_size / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %.1f hPa", QNH.get() );
@@ -941,9 +941,16 @@ void system_startup(void *args){
 		.sclk_io_num = SPI_SCLK,
 		.quadwp_io_num = -1,
 		.quadhd_io_num = -1,
+		.data4_io_num = -1,
+		.data5_io_num = -1,
+		.data6_io_num = -1,
+		.data7_io_num = -1,
+		.data_io_default_level = false,
 		.max_transfer_sz = 0,
 		.flags = 0,
-		.intr_flags = 0};//ESP_INTR_FLAG_IRAM};
+		.isr_cpu_id = ESP_INTR_CPU_AFFINITY_AUTO,
+		.intr_flags = ESP_INTR_FLAG_IRAM
+	};
 	ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
 	egl = new AdaptUGC();
@@ -1340,7 +1347,7 @@ void system_startup(void *args){
 	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
 	bmpVario.setup();
 	ESP_LOGI(FNAME,"Audio begin");
-	Audio::begin( DAC_CHANNEL_1 );
+	Audio::begin( DAC_CHAN_0 );
 	ESP_LOGI(FNAME,"Poti and Audio test");
 	if( !Audio::selfTest() ) {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");

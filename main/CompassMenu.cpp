@@ -285,7 +285,7 @@ bool CompassMenu::calibrationReport( t_magn_axes raw, t_float_axes scale, t_floa
 	static t_float_axes bias_back = {0., 0., 0.};
 	static t_magn_axes mins = { 20000, 20000, 20000 };
 	static t_magn_axes maxs = { 0,0,0 };
-	static bitfield_compass bits_old = { false, false, false, false, false, false };
+	static bitfield_compass bits_old;// = { 0, 0, 0, 0, 0, 0 };
 
 	if( menuPtr == nullptr )
 		return false;

@@ -78,9 +78,9 @@ std::vector<D> Simplex(OP f,                   //target function
 	{ 
 		std::vector<D> del(init);
 		std::transform(del.begin(), 
-					   del.end(),
-					   del.begin(),
-                       std::bind2nd( std::divides<D>() , 20) );//'20' is picked
+					del.end(),
+					del.begin(),
+                    [](D value) { return value / 20; }); //'20' is picked
 		
 		//assuming initial trail close to true
       
@@ -94,9 +94,9 @@ std::vector<D> Simplex(OP f,                   //target function
       
 		//xcentriod
 		std::transform(init.begin(),
-					   init.end(), 
-					   xcentroid_old.begin(),
-                       std::bind2nd(std::multiplies<D>(), N+1));
+					init.end(), 
+					xcentroid_old.begin(),
+                    [N](D value) { return value * (N + 1); });
 	}//constructing the simplex finished
     
 	//optimization begins
@@ -143,7 +143,7 @@ std::vector<D> Simplex(OP f,                   //target function
 		}
 		
 		std::transform(xg.begin(), xg.end(), x[xnp1].begin(), xcentroid_new.begin(), std::plus<D>());
-        std::transform(xg.begin(), xg.end(), xg.begin(), std::bind2nd(std::divides<D>(), N));
+        std::transform(xg.begin(), xg.end(), xg.begin(), [N](D value) { return value / N; });
 		//xg found, xcentroid_new updated
 
 		//termination condition

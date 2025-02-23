@@ -14,7 +14,7 @@ extern "C" {
 }
 #include <esp_flash.h>
 #include <esp_log.h>
-#include <esp_spi_flash.h>
+#include <spi_flash_mmap.h>
 #include <mbedtls/base64.h>
 
 #include "coredump_to_server.h"

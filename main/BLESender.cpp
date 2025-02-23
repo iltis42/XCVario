@@ -35,7 +35,7 @@ bool deviceConnected = false;
 
 static TaskHandle_t pid = nullptr;
 static DataLinkOld *dlb;
-static int tick=0;
+// static int tick=0;
 static uint16_t peer_mtu;
 static int congestion=0;
 

@@ -22,10 +22,6 @@ const int16_t MCPH21FullScaleRange = 0.725;  //  psi
 
 const int16_t MCPH21MinScaleCounts = 0;
 
-
-// Long term stability of Sensor as from datasheet FS* 0.15 + 0.3 (dT) % per year -> 16777216 * 0.00015 = 2516
-#define MAX_AUTO_CORRECTED_OFFSET 2516
-
 // const float MCPH21multiplier =  2 * 6894.76 / MCPH21Span;
 
 class MCPH21 : public AirspeedSensor

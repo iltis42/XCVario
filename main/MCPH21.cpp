@@ -4,7 +4,7 @@
 #include <logdef.h>
 
 // Long term stability of Sensor as from datasheet FS* 0.15 + 0.3 (dT) % per year -> 16777216 * 0.00015 = 2516
-#define MAX_AUTO_CORRECTED_OFFSET 2516
+#define MAX_AUTO_CORRECTED_OFFSET 73000    // pressure for minimum of 60 Pa: 911868 Offset according to datasheet: 838861, difference: ~73000 and ~1% FS of 7549746
 
 MCPH21::MCPH21()
 {
@@ -130,10 +130,11 @@ bool MCPH21::selfTest( int& adval ){
 	}else{
 		ESP_LOGI(FNAME,"MCPH21 selftest read Chip ID reg 0xA8: %x", byte[0] );
 	}
+
 	float p = readPascal( 0, okay );
 	float t = getTemperature();
 	if( okay ){
-		ESP_LOGI(FNAME,"MCPH21 selftest OKAY, T: %.2f °C, P: %.2f Pa", t,p );
+		ESP_LOGI(FNAME,"MCPH21 selftest OKAY, T: %.2f °C, P(off=%d): %.2f Pa", t,(int)_offset,p );
 	}else{
 		ESP_LOGI(FNAME,"MCPH21 selftest, scan for I2C address %02x FAILED",address );
 		return false;
@@ -172,8 +173,8 @@ float MCPH21::getAirSpeed(void){        // calculates and returns the airspeed i
 bool MCPH21::offsetPlausible(uint32_t aoffset )
 {
 	ESP_LOGI(FNAME,"MCPH21 offsetPlausible( %ld )", aoffset );
-	const int lower_val = 837219-8000;
-	const int upper_val = 837219+8000;
+	const int lower_val = 838861-MAX_AUTO_CORRECTED_OFFSET;
+	const int upper_val = 838861+MAX_AUTO_CORRECTED_OFFSET;
 	if( (aoffset > lower_val ) && (aoffset < upper_val )  )
 		return true;
 	else
@@ -181,11 +182,11 @@ bool MCPH21::offsetPlausible(uint32_t aoffset )
 }
 
 bool MCPH21::doOffset( bool force ){
-	ESP_LOGI(FNAME,"MCPH21 doOffset()");
+	ESP_LOGI(FNAME,"MCPH21 () force:%d", force );
 
 	_offset = as_offset.get();
 	if( _offset < 0 )
-		ESP_LOGI(FNAME,"offset not yet done: need to recalibrate" );
+		ESP_LOGI(FNAME,"offset not yet done: need to recalibrate. Current offset NVR: %f, autozero: %d", _offset, autozero.get() );
 	else
 		ESP_LOGI(FNAME,"offset from NVS: %0.1f", _offset );
 
@@ -209,7 +210,7 @@ bool MCPH21::doOffset( bool force ){
 
 	if( (_offset < 0 ) || ( plausible && (deviation < MAX_AUTO_CORRECTED_OFFSET ) ) || autozero.get() )
 	{
-		ESP_LOGI(FNAME,"Airspeed OFFSET correction ongoing, calculate new _offset...");
+		ESP_LOGI(FNAME,"Airspeed OFFSET correction ongoing, calculate new _offset, autozero: %d", autozero.get() );
 		if( autozero.get() )
 			autozero.set(0);
 		double rawOffset=0;

@@ -2,6 +2,8 @@
 #include <math.h>
 #include <logdef.h>
 
+#define MAX_AUTO_CORRECTED_OFFSET 50
+
 MS4525DO::MS4525DO()
 {
 	address = I2C_ADDRESS_MS4525DO;

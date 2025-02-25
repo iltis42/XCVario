@@ -10,9 +10,13 @@
 
 #include "comm/Messages.h"
 #include "comm/DataLink.h"
+#include "comm/DeviceMgr.h"
+#include "comm/SerialLine.h"
 #include "nmea_util.h"
 
 #include <logdefnone.h>
+
+static uint16_t xmodem_crc(const uint8_t *data, int length, uint16_t crc0 = 0);
 
 // The FLARM binary protocol synchronizer.
 //
@@ -41,7 +45,7 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
     // The state machine variable useage here:
     // _esc is used as ESCAPE flag
     // _opt is used to cope with telegrams larger than the serial line buffers.
-    // _crc holds the last received frame type
+    // _crc holds the last received frame type (!)
 
     for (int i = 0; i < count; i++)
     {
@@ -91,24 +95,53 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
             }
             break;
         case PAYLOAD:
-            if ( (_sm._opt + _sm._frame.size()) == 6 ) {
+        {
+            int allfs = _sm._opt + _sm._frame.size();
+            if ( allfs == 4 ) { // SeqNo ls byte
+                _frame_counter = c;
+            }
+            else if ( allfs == 5 ) { // SeqNo ms byte
+                _frame_counter += ((unsigned)(c) << 8);
+                ESP_LOGD(FNAME, "frame counter %d: 0x%x", _did, _frame_counter);
+            }
+            else if ( allfs == 6 ) { // msg type byte
                 _sm._crc = c;
                 ESP_LOGD(FNAME, "frame type 0x%x len %d", c, _sm._frame_len);
             }
-            if ( (_sm._opt + _sm._frame.size()) >= _sm._frame_len )
+            else if ( allfs >= _sm._frame_len )
             {
-                send_chunk();
+                // msg is read in completely
                 _sm._state = START_TOKEN;
-                if ( _sm._crc == 0x12 ) { // terminate BP
+                if ( _brswitch == 1 &&  _sm._frame_len == 8 && _sm._crc == 0x01 ) { // Ping msg
+                    ESP_LOGI(FNAME, "intercept ping %d", _frame_counter);
+                    // dont forward it, send set baud instead
+                    _binpeer->setBaudrate(_frame_counter, 5);
+                    break;
+                }
+                if ( _brswitch == 1 && /*_sm._frame_len == 8 &&*/ _sm._crc == 0xA0 ) { // short ACK msg
+                    ESP_LOGI(FNAME, "got ACK %d", _brswitch);
+                    _brswitch = 0; // done
+                    _binpeer->ackInterceptDone();
+                    InterfaceCtrl *itf = DEVMAN->getIntf(FLARM_DEV);
+                    itf->ConfigureIntf(SM_XCFLARMVIEW);
+                    break;
+                }
+                send_chunk(); // forward msg (remaining data)
+                if ( _sm._crc == 0x12 ) { // exit BP msg
                     ESP_LOGI(FNAME, "0x12 BP end <---------------- switch to nmea");
                     _binpeer->getDL()->goNMEA();
+                    InterfaceCtrl *itf = DEVMAN->getIntf(FLARM_DEV);
+                    vTaskDelay(pdMS_TO_TICKS(10));
+                    itf->ConfigureIntf(SM_FLARM);
                     last_action = GO_NMEA;
                 }
+                _brswitch = 0;
             }
             else if (_sm._frame.size() >= SEND_THRESH) {
-                send_chunk();
+                send_chunk(); // forward partial msg
             }
             break;
+        }
         default:
             break;
         }
@@ -117,8 +150,62 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
     return last_action;
 }
 
-void FlarmBinary::setPeer(ProtocolItf *p)
+bool FlarmBinary::setBaudrate(int fnr, int br)
+{
+    Message* msg = newMessage();
+    _brswitch = 1;
+    // magic, frame size lsb+msb, version, seq counter lsb+msb, msg type, crc lsb+msb, payload
+    msg->buffer = { 0x73, 9, 0, 1};
+    ESP_LOGI(FNAME, "Set baudrate %d (frm=%d)", br, fnr);
+    msg->buffer.push_back((uint8_t)(fnr));
+    msg->buffer.push_back((uint8_t)(fnr>>8));
+    msg->buffer.push_back(0x02); // set baudrate msg type
+    uint16_t crc = xmodem_crc((uint8_t*)(msg->buffer.data()+1), 6);
+    crc = xmodem_crc((uint8_t*)&br, 1, crc);
+    msg->buffer.push_back((uint8_t)(crc));
+    msg->buffer.push_back((uint8_t)(crc>>8));
+    msg->buffer.push_back((uint8_t)br);
+    ESP_LOGI(FNAME, "0x: %s", msg->hexDump().c_str());
+    ESP_LOGI(FNAME, "To t:%d p:%d", msg->target_id, msg->port);
+    return DEV::Send(msg);
+}
+
+bool FlarmBinary::ping()
+{
+    Message* msg = newMessage();
+    msg->buffer = { 0x73, 8, 0, 0 };
+    int frc = _binpeer->getFrameCnt() + _brswitch;
+    ESP_LOGI(FNAME, "Send ping (frm=%d)", frc);
+    msg->buffer.push_back((uint8_t)(frc));
+    msg->buffer.push_back((uint8_t)(frc>>8));
+    msg->buffer.push_back(0x01); // ping msg type
+    uint16_t crc = xmodem_crc((uint8_t*)(msg->buffer.data()+1), 6);
+    msg->buffer.push_back((uint8_t)(crc));
+    msg->buffer.push_back((uint8_t)(crc>>8));
+    return DEV::Send(msg);
+}
+
+void FlarmBinary::setPeer(FlarmBinary *p)
 {
     _binpeer = p;
     ESP_LOGD(FNAME, "BP%d peer is dl%d/g%d", _dl.getItf(), _binpeer->getDL()->getItf(), _binpeer->getDeviceId());
 }
+
+uint16_t xmodem_crc(const uint8_t *data, int length, uint16_t crc0)
+{
+    uint16_t crc = crc0;
+
+    while (length--) {
+        crc ^= (*data++) << 8;  // XOR byte into high byte of CRC
+        
+        for (int i = 0; i < 8; i++) {  // Process each bit
+            if (crc & 0x8000) {
+                crc = (crc << 1) ^ 0x1021;  // XOR with polynomial if MSB is 1
+            } else {
+                crc <<= 1;
+            }
+        }
+    }
+    return crc;
+}
+

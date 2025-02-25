@@ -136,7 +136,6 @@ datalink_action_t FlarmGPS::nextByte(const char c)
     return action;
 }
 
-
 // $GPRMC,081836,A,3751.65,S,14507.36,E,000.0,360.0,130998,011.3,E*62
 // $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
 // $GPRMC,201914.00,A,4857.58740,N,00856.94735,E,0.172,122.95,310321,,,A*6D
@@ -408,11 +407,14 @@ bool FlarmGPS::parsePFLAX()
         DataLink *host = DEVMAN->getFlarmHost();
         if ( host && host->getProtocol(FLARMBIN_P) && _dl.getProtocol(FLARMBIN_P)) {
             // Host side
-            FlarmBinary *bin = static_cast<FlarmBinary*>(host->goBIN());
-            bin->setPeer(_dl.getProtocol(FLARMBIN_P));
+            FlarmBinary *hostfb = static_cast<FlarmBinary*>(host->goBIN());
             // Device side
-            bin = static_cast<FlarmBinary*>(_dl.goBIN());
-            bin->setPeer(host->getProtocol(FLARMBIN_P));
+            FlarmBinary *devfb = static_cast<FlarmBinary*>(_dl.goBIN());
+            // Cross link them
+            devfb->setPeer(hostfb);
+            hostfb->setPeer(devfb);
+            // Additionally maximize the Flarm baudrate
+            hostfb->reqAckIntercept();
         }
         Flarm::timeout = 10;
         return true;

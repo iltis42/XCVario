@@ -23,8 +23,6 @@ public:
 public:
     datalink_action_t nextByte(const char c) override;
 
-    // Transmitted mesages
-
 private:
     // Received messages
     void parseGPRMC();

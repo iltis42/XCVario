@@ -22,8 +22,4 @@ public:
 
 public:
     datalink_action_t nextByte(const char c) override;
-
-private:
-    // binary mode peer
-    ProtocolItf *_binpeer;
 };

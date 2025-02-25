@@ -9,7 +9,7 @@
 #include "CANMasterReg.h"
 
 #include "nmea_util.h"
-
+#include "Clock.h"
 #include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
 
@@ -42,16 +42,23 @@ extern InterfaceCtrl* CAN;
 //      A power-cycled client will restart the registration from scratch.
 //   $PJMACC, <token>, <drive id>, <master id>*<CRC>\r\n
 //
-//  - Not accepting the registration: Not knowing what the purpose of this would be, despite to stop the client from continue to
+// - Not accepting the registration: Not knowing what the purpose of this would be, despite to stop the client from continue to
 //      trying. A typical expected communication pattern would be that the master is not connected or not there and the client 
 //      would just never get a response and continue trying, not doing anything harmfull or wrong with it.
 //   $PJMNAC, <token>\r\n
 //
+// - Re-registration broadcast: Trigger a new registration cycle from devices. This comes handy when a master reboots unintendedly.
+//   $PJMLOR\r\n
 
+CANMasterReg::CANMasterReg(int sendport, ProtocolState &sm, DataLink &dl) :
+    ProtocolItf(MASTER_DEV, sendport, sm, dl),
+    Clock_I(200)
+{
+    Clock::start(this);
+}
 
-
- datalink_action_t CANMasterReg::nextByte(const char c)
- {
+datalink_action_t CANMasterReg::nextByte(const char c)
+{
     int pos = _sm._frame.size() - 1;
     ESP_LOGI(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
      switch (_sm._state)
@@ -122,6 +129,20 @@ extern InterfaceCtrl* CAN;
     }
 
     return NOACTION;
+}
+
+bool CANMasterReg::tick()
+{
+    sendLossOfResgitrations();
+    return true;
+}
+
+void CANMasterReg::sendLossOfResgitrations()
+{
+    Message* msg = newMessage();
+    ESP_LOGI(FNAME, "Pls re-register");
+    msg->buffer = "$PJMLOR\r\n";
+    DEV::Send(msg);
 }
 
 void CANMasterReg::registration_query()

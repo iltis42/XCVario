@@ -25,46 +25,46 @@
 //   $PJMPC\r\n
 //
 // - Get config query: Request to tell about config items that are configurable through the web interface.
-//   $PJMGC <config token>\r\n
+//   $PJMGC, <config token>\r\n
 //
 // - Get info query: Request to tell about all the items that are visible in the webservers "info" box.
 //   $PJMIQ\r\n
 //
 // - Select wing configuration: The selected wing span configuration will be saved permanently (stored in nvs).
-//   $PJMCW <choice>*<CRC>\r\n
+//   $PJMCW, <choice>*<CRC>\r\n
 //
 // - Start wipe command: Starts or Restarts a wiper cycle. Commanding a start while busy wiping will be ignored. The
 //                      controlling peer needs to implement a tiny state machine to keep track. (different to button control)
-//   $PJMWP <R/L>\r\n
+//   $PJMWP, <R/L>\r\n
 //
 // - Abort command: Stops the wiper immediately. Commanding stop while "ready", or "aborted" will be ignored.
-//   $PJMAB <R/L>\r\n
+//   $PJMAB, <R/L>\r\n
 //
 // - Button short press: Alternatively this API would act as a soft button and create same reaction as the physical buttons 
 //                  at the given moment.
-//   $PJMBS <R/L>\r\n
+//   $PJMBS, <R/L>\r\n
 //
 // - Button hold down: ditto.
-//   $PJMBH <R/L>\r\n
+//   $PJMBH, <R/L>\r\n
 //
 // - Button release (after hold down): ditto.
-//   $PJMBR <R/L>\r\n
+//   $PJMBR, <R/L>\r\n
 //
 // The jmubo responses
 // - Connected:
-//   $PJPRP <protocol version>, <status>\r\n
+//   $PJPRP, <protocol version>, <status>\r\n
 //
 // - Configuration:
-//   $PJPRC <config token>, <value>*<CRC>\r\n
+//   $PJPRC, <config token>, <value>*<CRC>\r\n
 //
 // - Info:
-//   $PJPRI <fw version>, <SN>, <build date>, <...>*<CRC>\r\n
+//   $PJPRI, <fw version>, <SN>, <build date>, <...>*<CRC>\r\n
 //
 // - Alive:
-//   $PJPJA <R/L><percentage>\r\n
+//   $PJPJA, <R/L><percentage>\r\n
 //
 // - Event: Something happend like: Abort (overcurrent), transition to pull, transition to park position (finished), go nap, ...
-//   $PJPJE <R/L><event>*<CRC>\r\n
+//   $PJPJE, <R/L><event>*<CRC>\r\n
 //
 //
 
@@ -247,7 +247,7 @@ bool JumboCmdHost::sendGetConfig(const int item_nr)
     Message* msg = newMessage();
     if ( ! msg ) return false;
 
-    msg->buffer = "$PJMGC ";
+    msg->buffer = "$PJMGC, ";
     msg->buffer += CONF_ITEM[item_nr];
     msg->buffer += "\r\n";
     return DEV::Send(msg);
@@ -267,7 +267,7 @@ bool JumboCmdHost::sendSelectConfig(const int wingconfig)
     Message* msg = newMessage();
     if ( ! msg ) return false;
 
-    msg->buffer = "$PJMCW " + std::to_string(wingconfig);
+    msg->buffer = "$PJMCW, " + std::to_string(wingconfig);
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
     return DEV::Send(msg);
 }
@@ -281,7 +281,7 @@ bool JumboCmdHost::sendStartWipe(const int side)
     if ( side == 1 ) {
         side_chr = 'L';
     }
-    msg->buffer = "$PJMWP ";
+    msg->buffer = "$PJMWP, ";
     msg->buffer.push_back(side_chr);
     msg->buffer += "\r\n";
     return DEV::Send(msg);
@@ -296,7 +296,7 @@ bool JumboCmdHost::sendAbortWipe(const int side)
     if ( side == 1 ) {
         side_chr = 'L';
     }
-    msg->buffer = "$PJMAB ";
+    msg->buffer = "$PJMAB, ";
     msg->buffer.push_back(side_chr);
     msg->buffer += "\r\n";
     return DEV::Send(msg);
@@ -311,7 +311,7 @@ bool JumboCmdHost::sendShortPress(const int side)
     if ( side == 1 ) {
         side_chr = 'L';
     }
-    msg->buffer = "$PJMBS ";
+    msg->buffer = "$PJMBS, ";
     msg->buffer.push_back(side_chr);
     msg->buffer += "\r\n";
     return DEV::Send(msg);
@@ -326,7 +326,7 @@ bool JumboCmdHost::sendHoldPressed(const int side)
     if ( side == 1 ) {
         side_chr = 'L';
     }
-    msg->buffer = "$PJMBH ";
+    msg->buffer = "$PJMBH, ";
     msg->buffer.push_back(side_chr);
     msg->buffer += "\r\n";
     return DEV::Send(msg);
@@ -341,7 +341,7 @@ bool JumboCmdHost::sendReleasePressed(const int side)
     if ( side == 1 ) {
         side_chr = 'L';
     }
-    msg->buffer = "$PJMBR ";
+    msg->buffer = "$PJMBR, ";
     msg->buffer.push_back(side_chr);
     msg->buffer += "\r\n";
     return DEV::Send(msg);

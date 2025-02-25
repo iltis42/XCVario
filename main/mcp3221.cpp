@@ -105,14 +105,15 @@ int  MCP3221::readVal(){
 esp_err_t MCP3221::readRaw(uint16_t &val)
 {
 	// esp_err_t ret=read16bit( MCP3221_CONVERSE, &val );
-	// uint8_t data[2];
+	uint8_t data[2];
 	uint16_t v;
-	esp_err_t err = bus->readBytes(MCP3221_CONVERSE, 0, 2, (uint8_t*)&v );
+	esp_err_t err = bus->readBytes(MCP3221_CONVERSE, 0, 2, data );
 	// bus->read16bit(MCP3221_CONVERSE, &v );
 	if( err != ESP_OK ){
 		val = 0;
 	}
 	else{
+		val = (data[0] << 8) + data[1];
 		val = v;
 	}
 

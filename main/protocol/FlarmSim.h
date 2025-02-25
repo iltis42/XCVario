@@ -19,7 +19,7 @@ public:
     static void StartSim();
 
     // Clock tick callback
-    void tick() override;
+    bool tick() override;
 
 private:
     FlarmSim() = delete;

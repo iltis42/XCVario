@@ -16,7 +16,7 @@ public:
     virtual ~Clock_I() {}
 public:
     inline bool myTurn() { return (++_counter % MULTIPLIER) == 0; }
-    virtual void tick() = 0;
+    virtual bool tick() = 0;
     unsigned int MULTIPLIER;
 private:
     unsigned int _counter = 0;

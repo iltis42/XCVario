@@ -39,7 +39,7 @@ const char *pflau_msg[] = {
 FlarmSim *FlarmSim::_sim = nullptr;
 
 // iterate and inject through messages every other second
-void FlarmSim::tick()
+bool FlarmSim::tick()
 {
     ESP_LOGI(FNAME,"flarmSim tick");
 
@@ -55,7 +55,9 @@ void FlarmSim::tick()
     }
     else {
         delete this;
+        return true;
     }
+    return false;
 }
 
 FlarmSim::FlarmSim(Device *d) :
@@ -68,7 +70,6 @@ FlarmSim::FlarmSim(Device *d) :
 
 FlarmSim::~FlarmSim()
 {
-    Clock::stop(this);
     InterfaceCtrl *ic = _d->_itf;
     // Reconnect datalink
     ic->addDataLink(*(_d->_dlink.begin()));

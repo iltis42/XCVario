@@ -82,7 +82,7 @@ unsigned int AnalogInput::getRaw( int loops ) {
 	ESP_LOGI(FNAME,"ADC raw :%d ch :%d", adc/RAWBUF, _adc_ch );
 	return adc/RAWBUF;
 }
-void AnalogInput::tick()
+bool AnalogInput::tick()
 {
 	constexpr int BATCH = 5;
 	int adc = 0;
@@ -96,6 +96,7 @@ void AnalogInput::tick()
 	}
 	raw[rawidx++] = adc/BATCH;
 	rawidx = rawidx % RAWBUF;
+	return false;
 }
 
 float AnalogInput::get( bool nofilter, int loops ){

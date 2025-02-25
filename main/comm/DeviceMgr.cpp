@@ -215,13 +215,13 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     }
     else if ( iid == S1_RS232) {
         if ( S1 ) {
-            S1->ConfigureIntf(0); // load nvs setup
+            S1->ConfigureIntf(-1); // load nvs setup
             itf = S1;
         }
     }
     else if ( iid == S2_RS232) {
         if ( S2 ) {
-            S2->ConfigureIntf(0);
+            S2->ConfigureIntf(-1);
             itf = S2;
         }
     }

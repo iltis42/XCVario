@@ -19,10 +19,12 @@ const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
 
 
 t_serial_cfg sm_serial_config[] = {
+		// enumerator,    baud,    polarity, pin swp, tx enable
 		{ SM_FLARM,       BAUD_19200, true, false, true },
 		{ SM_RADIO,       BAUD_9600,  true, false, true },
 		{ SM_XCTNAV_S3,   BAUD_19200, true, false, true },
 		{ SM_OPENVARIO,   BAUD_19200, true, false, true },
+		{ SM_XCFLARMBIN,  BAUD_38400, true, false, true },
 		{ SM_XCFLARMVIEW, BAUD_57600, true, false, true }
 };
 
@@ -109,32 +111,43 @@ SerialLine::SerialLine(uart_port_t uart, gpio_num_t rx, gpio_num_t tx ) :
 
 SerialLine::~SerialLine()
 {
-	if ( uart_is_driver_installed(uart_nr) ) {
-		stop();
-	}
 	if ( _iotask ) {
+		// Last chance to use the queue to terminate the receiver task
 		xQueueSend((QueueHandle_t)_event_queue, (void *)&stop_trigger, (TickType_t)0);
+	}
+	if ( uart_is_driver_installed(uart_nr) ) {
+		ESP_LOGI(FNAME,"UART %d end(), pins %d %d", uart_nr, tx_gpio, rx_gpio);
+		uart_driver_delete(uart_nr);
 	}
 }
 
-// -1: OFF; 0: as is; 1,2,3..: load profile
-void SerialLine::ConfigureIntf(int cfg)
+// 0,1,2,3..: load profile
+void SerialLine::ConfigureIntf(int profile)
 {
-	if ( cfg == -1 ) {
-		stop();
-		return;
+	if ( ! uart_is_driver_installed(uart_nr) ) {
+		ESP_LOGI(FNAME,"configure UART S%d: %d", uart_nr, profile );
+		if ( profile >= 0 ) {
+			loadProfile( e_profile(profile) );
+		}
+		start();
 	}
-	if ( cfg > 0 ) {
-		loadProfile( e_profile(cfg-1) );
+	else {
+		t_serial_cfg *newcfg = &sm_serial_config[profile];
+		if ( cfg.baud != newcfg->baud ) {
+			cfg.baud = newcfg->baud;
+			applyBaud();
+		}
+		if ( cfg.polarity != newcfg->polarity ) {
+			cfg.polarity = newcfg->polarity;
+			applyLineInverse();
+		}
+		if ( cfg.tx_ena != newcfg->tx_ena 
+			|| cfg.pin_swp != newcfg->pin_swp ) {
+			cfg.tx_ena = newcfg->tx_ena;
+			cfg.pin_swp = newcfg->pin_swp;
+			applyPins();
+		}
 	}
-	
-	ESP_LOGI(FNAME,"configure UART:%d", uart_nr );
-	if ( uart_is_driver_installed(uart_nr) ) { stop(); }
-	applyBaud();
-	applyPins();
-	applyLineInverse();
-	start();
-
 }
 
 // returns 0: sucess; or retry wait time in msec 
@@ -156,21 +169,7 @@ int SerialLine::Send(const char *msg, int &len, int port)
 void SerialLine::applyBaud()
 {
 	ESP_LOGI(FNAME,"setBaud UART%d baud:%d", uart_nr, baud[cfg.baud]);
-	// uart_set_baudrate(uart_nr, baud[cfg.baud]);
-	uart_config_t uart_config = {
-		.baud_rate = baud[cfg.baud],
-		.data_bits = UART_DATA_8_BITS,
-		.parity = UART_PARITY_DISABLE,
-		.stop_bits = UART_STOP_BITS_1,
-		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-		.rx_flow_ctrl_thresh = 0,
-		.source_clk = UART_SCLK_DEFAULT,
-		.flags = {
-			.allow_pd = 0,
-			.backup_before_sleep = 0 },
-		};
-
-	uart_param_config(uart_nr, &uart_config);
+	uart_set_baudrate(uart_nr, baud[cfg.baud]);
 }
 
 // configures ESP32 matrix, here also the line polartity (inverting) is handled
@@ -189,7 +188,8 @@ void SerialLine::applyPins()
 	}
 }
 
-void SerialLine::applyLineInverse(){
+void SerialLine::applyLineInverse()
+{
 	ESP_LOGI(FNAME, "setLineInverse UART%d: %d (0: Norm, 1:Invers)", uart_nr, cfg.polarity);
 	if( cfg.polarity ) {
 		uart_set_line_inverse(uart_nr, UART_SIGNAL_RXD_INV | UART_SIGNAL_TXD_INV);
@@ -206,7 +206,7 @@ void SerialLine::flush(){
 // set defaults according to given profile
 void SerialLine::loadProfile(e_profile profile)
 {
-	ESP_LOGI(FNAME,"loadProfile: %d (1: Flarm, 2:Radio)", profile );
+	ESP_LOGI(FNAME,"loadProfile: %d (0: Flarm, 1:Radio)", profile );
 	cfg = sm_serial_config[profile];
 	_setup.baud->set( cfg.baud );
 	_setup.polarity->set( cfg.polarity );
@@ -220,6 +220,7 @@ void SerialLine::loadSetupDefaults()
 	cfg.polarity = _setup.polarity->get();
 	cfg.tx_ena   = _setup.tx_ena->get();
 	cfg.pin_swp  = _setup.pin_swp->get();
+	ESP_LOGI(FNAME,"load default: %d/%d/%d/%d", cfg.baud, cfg.polarity, cfg.tx_ena, cfg.pin_swp);
 }
 
 void SerialLine::start()
@@ -230,7 +231,26 @@ void SerialLine::start()
 
 		// Setup UART buffered IO with event queue
 		// Install UART driver creating an event queue here
-		uart_driver_install(uart_nr, UARTRXFIFO_LEN, UARTTXFIFO_LEN, UARTEVENTQ_LEN, (QueueHandle_t*)&_event_queue, 0);
+		uart_driver_install(uart_nr, UARTRXFIFO_LEN, UARTTXFIFO_LEN, UARTEVENTQ_LEN, (QueueHandle_t*)&_event_queue, ESP_INTR_FLAG_IRAM);
+
+		// all the details and baudrate
+		uart_config_t uart_config = {
+			.baud_rate = baud[cfg.baud],
+			.data_bits = UART_DATA_8_BITS,
+			.parity = UART_PARITY_DISABLE,
+			.stop_bits = UART_STOP_BITS_1,
+			.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+			.rx_flow_ctrl_thresh = 0,
+			.source_clk = UART_SCLK_DEFAULT,
+			.flags = {
+				.allow_pd = 0,
+				.backup_before_sleep = 0 },
+			};
+		uart_param_config(uart_nr, &uart_config);
+
+		// line logic levels and pins
+		applyLineInverse();
+		applyPins();
 
 		// Set UART pattern detect function
 		uart_enable_pattern_det_baud_intr(uart_nr, '\n', 1, 5, 0, 0);
@@ -252,10 +272,5 @@ void SerialLine::start()
 	}
 }
 
-void SerialLine::stop()
-{
-	ESP_LOGI(FNAME,"UART %d end(), pins %d %d", uart_nr, tx_gpio, rx_gpio);
-	uart_driver_delete(uart_nr);
-}
 
 

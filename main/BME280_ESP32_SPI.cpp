@@ -142,7 +142,7 @@ bool BME280_ESP32_SPI::begin(){
 //***************BME280 ****************************
 void BME280_ESP32_SPI::WriteRegister(uint8_t reg_address, uint8_t data) {
 	xSemaphoreTake(spiMutex,portMAX_DELAY );
-	ta.addr =  reg_address; // Combine register and value into a single buffer
+	ta.addr =  reg_address & 0x7F;   // Bit 7 != 0 for Write operation!
 	ta.tx_data[0] = data;
 	ta.length = 8; // Total length in bits
 	// Perform the SPI transaction

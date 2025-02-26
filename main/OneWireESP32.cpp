@@ -1,4 +1,6 @@
 #include "OneWireESP32.h"
+#include "driver/gpio.h"
+#include <logdef.h>
 
 #define OWR_OK	0
 #define OWR_CRC	1
@@ -6,28 +8,29 @@
 #define OWR_TIMEOUT	3
 #define OWR_DRIVER	4
 
-#define OW_RESET_PULSE	500
+#define OW_RESET_PULSE  500            // 500
 #define OW_RESET_WAIT	200
-#define OW_RESET_PRESENCE_WAIT_MIN	15
-#define OW_RESET_PRESENCE_MIN	60
-#define OW_SLOT_BIT_SAMPLE_TIME	15
-#define OW_SLOT_START	2
-#define OW_SLOT_BIT	60
-#define OW_SLOT_RECOVERY	5
+#define OW_RESET_PRESENCE_WAIT_MIN	15  // 15
+#define OW_RESET_PRESENCE_MIN	60      // 60
+
+#define OW_SLOT_BIT_SAMPLE_TIME	15      // 15
+#define OW_SLOT_START	2               // 2
+#define OW_SLOT_BIT	63                  // 60 +3   due to slow slope XCV20,21
+#define OW_SLOT_RECOVERY 10             // 5  +5
+
 #define OW_TIMEOUT	50
 
-
 static rmt_symbol_word_t ow_bit0 = {
-	.duration0 = OW_SLOT_START + OW_SLOT_BIT,
+	.duration0 =  OW_SLOT_START + OW_SLOT_BIT,  // 65, master: 65
 	.level0 = 0,
-	.duration1 = OW_SLOT_RECOVERY,
+	.duration1 =  OW_SLOT_RECOVERY, // 10, master: 10 =>  total 75
 	.level1 = 1
 };
 
 static rmt_symbol_word_t ow_bit1 = {
-	.duration0 = OW_SLOT_START,
+	.duration0 = OW_SLOT_START,   //  2, master: 2
 	.level0 = 0,
-	.duration1 = OW_SLOT_BIT + OW_SLOT_RECOVERY,
+	.duration1 = OW_SLOT_BIT + OW_SLOT_RECOVERY, // 73 , master: 65  => total 75
 	.level1 = 1
 };
 
@@ -43,7 +46,6 @@ const rmt_receive_config_t owrxconf = {
 	.signal_range_max_ns = (OW_RESET_PULSE + OW_RESET_WAIT) * 1000,
 	.flags = {0}
 };
-
 
 OneWire32::OneWire32(uint8_t pin){
 	owpin = static_cast<gpio_num_t>(pin);
@@ -133,7 +135,6 @@ OneWire32::OneWire32(uint8_t pin){
 	
 }
 
-
 OneWire32::~OneWire32(){
 	if(owbenc) {
 		rmt_del_encoder(owbenc);
@@ -155,16 +156,14 @@ OneWire32::~OneWire32(){
 	drv = 0;
 }
 
-
 bool owrxdone(rmt_channel_handle_t ch, const rmt_rx_done_event_data_t *edata, void *udata) {
 	BaseType_t h = pdFALSE;
 	xQueueSendFromISR((QueueHandle_t)udata, edata, &h);
 	return (h == pdTRUE);
 }
 
-
 bool OneWire32::reset(){
-	
+	// gpio_set_pull_mode( owpin, GPIO_PULLUP_ONLY );
 	rmt_symbol_word_t symbol_reset = {
 		.duration0 = OW_RESET_PULSE,
 		.level0 = 0,
@@ -196,10 +195,9 @@ bool OneWire32::reset(){
 		}
 		
 	}
+	// ESP_LOGI(FNAME,"OneWire32::reset() found: %d", found );
 	return found;	
-
 }
-
 
 bool OneWire32::read(uint8_t &data, uint8_t len){
 
@@ -207,6 +205,7 @@ bool OneWire32::read(uint8_t &data, uint8_t len){
 	rmt_receive(owrx, owbuf, sizeof(owbuf), &owrxconf);
 
 	if(!write((len > 1)? 0xff : 1, len) || xQueueReceive(owqueue, &evt, pdMS_TO_TICKS(OW_TIMEOUT)) != pdTRUE) {
+		ESP_LOGI(FNAME,"OneWire32::read() write err ret false");
 		return false;
 	}
 
@@ -214,15 +213,18 @@ bool OneWire32::read(uint8_t &data, uint8_t len){
 	rmt_symbol_word_t *symbol = evt.received_symbols;
 	data = 0;
 	for (uint8_t i = 0; i < symbol_num && i < 8; i++) {
+		// ESP_LOGI(FNAME,"OneWire32::read() symbol %d bit sample time 0:%d  1:%d", i, symbol[i].duration0, symbol[i].duration1 );
 		if(!(symbol[i].duration0 > OW_SLOT_BIT_SAMPLE_TIME)){
 			data |= 1 << i;
 		}
 	}
 
-	if(len != 8){ data = data & 0x01; }
+	if(len != 8){ data = data & 0x01;
+	    // ESP_LOGI(FNAME,"OneWire32::read() len!=8: %d", len );
+	}
+	// ESP_LOGI(FNAME,"OneWire32::read() %02X", data );
 	return true;
 }
-
 
 bool OneWire32::write(const uint8_t data, uint8_t len){
 	
@@ -245,7 +247,6 @@ bool OneWire32::write(const uint8_t data, uint8_t len){
 
 	return (rmt_tx_wait_all_done(owtx, OW_TIMEOUT) == ESP_OK);
 }
-
 
 void OneWire32::request(){
 	if(drv && reset()){
@@ -288,19 +289,22 @@ uint8_t OneWire32::getTemp(uint64_t &addr, float &temp){
 	return error;
 }
 
-
 uint8_t OneWire32::search(uint64_t *addresses, uint8_t total) {
 	int8_t last_src;
 	int8_t last_dev = -1;
 	uint8_t found = 0;
 	uint8_t loop = 1;
-	if(!drv){return found;}
+	if(!drv){
+	   ESP_LOGI(FNAME,"OneWire32::search() no drv: ret found 0");
+	   return found;
+	}
 	uint64_t addr = 0;
 	while(loop && found < total){
 		loop = 0;
 		last_src = last_dev;
 		if(!reset()){
 			found = 0;
+			ESP_LOGI(FNAME,"OneWire32::search() finds nothing: break");
 			break;
 		}
 		write(0xF0,8);
@@ -308,6 +312,7 @@ uint8_t OneWire32::search(uint64_t *addresses, uint8_t total) {
 			uint8_t bitA, bitB; uint64_t m = 1ULL << i;
 			if(!read(bitA, 1) || !read(bitB, 1) || (bitA && bitB)){
 				addr = found = loop = 0;
+				ESP_LOGI(FNAME,"OneWire32::search() no addr found: break");
 				break;
 			}else if(!bitA && !bitB){
 				if(i == last_src){
@@ -333,5 +338,6 @@ uint8_t OneWire32::search(uint64_t *addresses, uint8_t total) {
 			found++;
 		}
 	}
+	ESP_LOGI(FNAME,"OneWire32::search() returns: %d", found );
 	return found;
 }

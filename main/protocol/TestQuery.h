@@ -28,7 +28,7 @@ public:
     bool sendTestQuery();
 
     // Clock tick callback
-    void tick() override;
+    bool tick() override;
 
 private:
     // Actions on commands

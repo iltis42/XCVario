@@ -221,7 +221,7 @@ int update_s2_txena(SetupMenuSelect *p) {
 int update_s2_protocol(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"Select profile: %d", p->getSelect()-1 );
 	if ( p->getSelect() > 0 ) {
-		S2->ConfigureIntf(p->getSelect()); // SM_FLARM = 1, SM_RADIO = 2, ... 
+		S2->ConfigureIntf(p->getSelect()-1); // SM_FLARM = 0, SM_RADIO = 1, ... 
 	}
 	return 0;
 }
@@ -253,7 +253,7 @@ int update_s1_txena(SetupMenuSelect *p) {
 int update_s1_protocol(SetupMenuSelect *p) {
 	if ( p->getSelect() > 0 ) {
 		ESP_LOGI(FNAME,"Select profile: %d", p->getSelect()-1 );
-		S1->ConfigureIntf(p->getSelect()); // SM_FLARM = 1, SM_RADIO = 2, ... 
+		S1->ConfigureIntf(p->getSelect()-1); // SM_FLARM = 1, SM_RADIO = 2, ... 
 	}
 	return 0;
 }
@@ -1782,7 +1782,7 @@ void SetupMenu::options_menu_create_wireless(MenuEntry *top) {
 	top->addEntry(datamon);
 
 	SetupMenuSelect *datamonmod = new SetupMenuSelect("Monitor Mode", RST_NONE,
-			data_mon, true, &data_monitor_mode);
+			0, true, &data_monitor_mode);
 	datamonmod->setHelp(
 			"Select data display as ASCII text or as binary hexdump");
 	datamonmod->addEntry("ASCII");

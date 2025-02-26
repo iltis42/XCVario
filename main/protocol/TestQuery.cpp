@@ -123,8 +123,9 @@ bool TestQuery::sendTestQuery()
     return DEV::Send(msg);
 }
 
-void TestQuery::tick()
+bool TestQuery::tick()
 {
     sendTestQuery();
+    return false;
 }
 

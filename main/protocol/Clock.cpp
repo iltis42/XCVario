@@ -25,9 +25,14 @@ static void clock_timer_sr(std::set<Clock_I*> *registry)
 {
     // be in sync with millis, but sparse
     msec_counter = esp_timer_get_time() / 1000;
-    // tick callbacks
-    for ( auto it : *registry ) {
-        if ( it->myTurn() ) { it->tick(); }
+    for (auto it = registry->begin(); it != registry->end(); ) {
+        if ((*it)->myTurn()) {
+            if ((*it)->tick()) {
+                it = registry->erase(it);
+                continue;
+            }
+        }
+        it++;
     }
 }
 

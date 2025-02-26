@@ -82,7 +82,6 @@ datalink_action_t FlarmHost::nextByte(const char c)
         NMEA::ensureTermination(_sm._frame);
         if ( _sm._frame.substr(4,2) == "AX" && _sm._frame.at(6) != ',' ) {
             ESP_LOGI(FNAME, "Start binary request");
-            _binpeer = DEVMAN->getProtocol(FLARM_DEV, FLARM_P);
             return NXT_PROTO;
         }
         return DO_ROUTING;

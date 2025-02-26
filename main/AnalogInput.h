@@ -24,7 +24,7 @@ public:
 	unsigned int getRaw( int loops=32 );
 
     // Clock tick callback
-    void tick() override;
+    bool tick() override;
 
 private:
 	static constexpr int RAWBUF = 5;

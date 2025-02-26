@@ -10,6 +10,8 @@
 
 #include "ProtocolItf.h"
 
+// The Flarm "BP" binary protocol
+
 class FlarmBinary final : public ProtocolItf
 {
 public:
@@ -18,10 +20,21 @@ public:
     ProtocolType getProtocolId() override { return FLARMBIN_P; }
     bool isBinary() const override { return true; }
     datalink_action_t nextStreamChunk(const char *cptr, int count) override;
-    void setPeer(ProtocolItf *p);
+    void setPeer(FlarmBinary *p);
+    int getFrameCnt() const { return _frame_counter; }
+    void reqAckIntercept() { _brswitch = 1; }
+    void ackInterceptDone() { _brswitch = 0; }
     
+    // Transmitted mesages
+    bool setBaudrate(int, int);
+    bool ping();
+
 private:
     void send_chunk();
     // binary mode peer
-    ProtocolItf *_binpeer;
+    FlarmBinary *_binpeer;
+    // baudrate switch state machine
+    int _brswitch = 0;
+    // frame counter monitor
+    int _frame_counter = 0;
 };

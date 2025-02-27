@@ -467,7 +467,7 @@ void relMessage(Message *msg)
 
 bool Send(Message* msg)
 {
-    if ( pdTRUE != xQueueSend( ItfSendQueue, (void * ) &msg, portMAX_DELAY ) ) { // pdMS_TO_TICKS(50) ) ) {
+    if ( pdTRUE != xQueueSend( ItfSendQueue, (void * ) &msg, portMAX_DELAY ) ) {
         // drop it
         ESP_LOGW(FNAME, "Dropped message to %d", msg->target_id);
         MP.recycleMsg(msg);
@@ -477,3 +477,4 @@ bool Send(Message* msg)
 }
 
 } // namespace
+

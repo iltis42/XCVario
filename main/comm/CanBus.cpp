@@ -352,7 +352,7 @@ bool CANbus::begin()
     {
         driverInstall(TWAI_MODE_NORMAL);
         terminate_receiver = false;
-        xTaskCreate(&canRxTask, "canRxTask", 4096, this, 80, &rxTask);
+        xTaskCreate(&canRxTask, "canRxTask", 4096, this, 22, &rxTask);
     }
     else {
         driverUninstall();

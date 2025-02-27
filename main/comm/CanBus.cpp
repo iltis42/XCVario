@@ -352,7 +352,7 @@ bool CANbus::begin()
     {
         driverInstall(TWAI_MODE_NORMAL);
         terminate_receiver = false;
-        xTaskCreate(&canRxTask, "canRxTask", 4096, this, 80, &rxTask);
+        xTaskCreate(&canRxTask, "canRxTask", 4096, this, 22, &rxTask);
     }
     else {
         driverUninstall();
@@ -394,7 +394,6 @@ bool CANbus::selfTest()
             int len = strlen(tx);
             ESP_LOGI(FNAME, "strlen %d", len);
             twai_clear_receive_queue(); // there might be data from a remote device
-            vTaskDelay(pdMS_TO_TICKS(2));
             
             if ( ! sendData(id, tx, len, 1) ) {
                 ESP_LOGW(FNAME, "CAN bus selftest TX FAILED");

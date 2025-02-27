@@ -1,8 +1,6 @@
-#ifndef LOGDEF_H
-#define LOGDEF_H
+#pragma once
 
 #include <esp_log.h>
-#include <string>
 #include <cstring>
 
 
@@ -21,4 +19,3 @@ inline constexpr size_t get_file_name_offset(T (& str)[1])
 
 #define FNAME &__FILE__[get_file_name_offset(__FILE__)]
 
-#endif

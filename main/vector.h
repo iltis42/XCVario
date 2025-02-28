@@ -36,12 +36,14 @@
  * \date 2002-2015
  */
 
-#define PI2 2*M_PI
+
+#define M_PIf 3.1415927f
+#define PI2 2*M_PIf
 
 #ifndef D2R
 // degree to rad conversion
-#define D2R(x) ((x)*(M_PI/180.0))
-#define R2D(x) ((x)*(180.0/M_PI))
+#define D2R(x) ((x)*(M_PIf/180.0f))
+#define R2D(x) ((x)*(180.0f/M_PIf))
 #endif
 
 typedef struct bitfield_vector {

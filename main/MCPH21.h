@@ -11,7 +11,6 @@
 #include "I2Cbus.hpp"
 #include "AirspeedSensor.h"
 
-
 #define I2C_ADDRESS_MCPH21    0x7F  //  Datasheet testcode: IC_Send(0xFE,..) what is 7F shifted right 1 bit
 
 // MCPH21D sensor full scale range and units
@@ -21,10 +20,6 @@ const int16_t MCPH21FullScaleRange = 0.725;  //  psi
 // Output (% of 2^14 counts) = P max. 80% x (Pressure applied – P min. ) + 10%
 
 const int16_t MCPH21MinScaleCounts = 0;
-
-
-// Long term stability of Sensor as from datasheet FS* 0.15 + 0.3 (dT) % per year -> 16777216 * 0.00015 = 2516
-#define MAX_AUTO_CORRECTED_OFFSET 2516
 
 // const float MCPH21multiplier =  2 * 6894.76 / MCPH21Span;
 

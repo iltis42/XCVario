@@ -147,7 +147,7 @@ bool BTSender::start()
 
 		// Set the Bluetooth device name
 		// ret = esp_bt_gap_set_device_name("XCVario");
-		ret = esp_bt_dev_set_device_name("XCVario");
+		ret = esp_bt_dev_set_device_name( SetupCommon::getID() );
 		if (ret != ESP_OK)
 		{
 			ESP_LOGE(FNAME, "Failed to set device name: %s", esp_err_to_name(ret));

@@ -1,9 +1,11 @@
 .project
+/releases
 .settings
 .cproject
 build
 /Debug/
 sdkconfig
+sdkconfig.old
 
 .DS_Store
 .cache/

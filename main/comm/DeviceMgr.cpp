@@ -204,7 +204,7 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
 {
     // On first device a send task needs to be created
     if ( ! SendTask ) {
-        xTaskCreate(TransmitTask, "genTx", 3000, ItfSendQueue, 70, &SendTask);
+        xTaskCreate(TransmitTask, "genTx", 3000, ItfSendQueue, 21, &SendTask);
     }
     InterfaceCtrl *itf = &dummy_itf;
     if ( iid == CAN_BUS ) {
@@ -467,7 +467,7 @@ void relMessage(Message *msg)
 
 bool Send(Message* msg)
 {
-    if ( pdTRUE != xQueueSend( ItfSendQueue, (void * ) &msg, portMAX_DELAY ) ) { // pdMS_TO_TICKS(50) ) ) {
+    if ( pdTRUE != xQueueSend( ItfSendQueue, (void * ) &msg, portMAX_DELAY ) ) {
         // drop it
         ESP_LOGW(FNAME, "Dropped message to %d", msg->target_id);
         MP.recycleMsg(msg);
@@ -477,3 +477,4 @@ bool Send(Message* msg)
 }
 
 } // namespace
+

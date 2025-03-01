@@ -99,6 +99,7 @@ datalink_action_t CANMasterReg::nextByte(const char c)
         _sm._state = COMPLETE;
         break;
     case CHECK_CRC1:
+        // this is the first crc character
         _crc_buf[0] = c;
         _sm._state = CHECK_CRC2;
         break;
@@ -156,8 +157,8 @@ void CANMasterReg::registration_query()
     int pos = 8;
     std::string token = NMEA::extractWord(_sm._frame, pos);
     if ( token.size() != 3 ) {
-            return;
-        }
+        return;
+    }
     ESP_LOGI(FNAME, "JP reg token %s", token.c_str());
 
     // read the protocol type

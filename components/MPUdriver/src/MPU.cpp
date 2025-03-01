@@ -158,6 +158,7 @@ int MPU::pi_control(int tick_count, float XCVTemp){
 }
 
 void MPU::temp_control(int count, float xcvTemp ) {   // MPU temperature PI control
+	// MPU_LOGI("temp_control: %.2f °C, count: %d", xcvTemp, count );
 	if( mpu_target_temp >= 0.0 ){     // MPU T = -1.0 switches off feature
 		int pwm=pi_control(count, xcvTemp);
 		ledc_set_duty(LEDC_HIGH_SPEED_MODE, LEDC_CHANNEL_1, pwm );

@@ -987,7 +987,7 @@ void system_startup(void *args){
 		ota->begin();
 		ota->doSoftwareUpdate( display );
 	}
-	if( attitude_indicator.get() ){
+	if( hardwareRevision.get() >= XCVARIO_21 ){
 		gflags.haveMPU = true;
 		mpu_target_temp = mpu_temperature.get();
 		ESP_LOGI( FNAME,"MPU initialize");

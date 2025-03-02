@@ -385,21 +385,22 @@ bool CANbus::selfTest()
     bool res = false;
     int id = CANTEST_ID;
     delay(100);
-    for (int slope = 1; slope >=0; slope--)
+    _slope_support = false;
+    for (int slope = 0; slope <=1; slope++)
     {
-        ESP_LOGI(FNAME,"CAN slope support %s.", (slope==0) ? "on" : "off");
+        ESP_LOGI(FNAME,"slope support %s.", (slope==0) ? "on" : "off");
         gpio_set_level(_slope_ctrl, slope);
         for (int i = 0; i < 3; i++)
         {
             // repeat test 3x
-        	ESP_LOGI(FNAME,"CAN test #%d", i);
+        	ESP_LOGI(FNAME,"test #%d", i);
             char tx[10] = {"1827364"};
             int len = strlen(tx);
             ESP_LOGI(FNAME, "strlen %d", len);
             twai_clear_receive_queue(); // there might be data from a remote device
             
             if ( ! sendData(id, tx, len, 1) ) {
-                ESP_LOGW(FNAME, "CAN bus selftest TX FAILED");
+                ESP_LOGW(FNAME, "TX Errors");
             }
             twai_message_t rx;
             if ( (ESP_OK == twai_receive(&rx, pdMS_TO_TICKS(20))) 
@@ -407,25 +408,23 @@ bool CANbus::selfTest()
                 && (rx.data_length_code == len) 
                 && (memcmp(rx.data, tx, len) == 0) )
             {
-                ESP_LOGI(FNAME, "RX CAN bus OKAY");
+                ESP_LOGI(FNAME, "RX OKAY");
                 res = true;
-                _slope_support = (slope==0);
-                break;
             }
             else
-            {
+            {	// we can only detect this if it fails
+            	if( slope == 1 ){
+            		_slope_support = true;
+            		ESP_LOGI(FNAME, "CAN HW supports slope !");
+            	}
                 std::string msg((char*)rx.data, rx.data_length_code);
-                ESP_LOGW(FNAME, "CAN bus selftest RX call FAILED bytes:%d rxid:%x rxmsg:%s", rx.data_length_code, (unsigned int)rx.identifier, msg.c_str());
+                ESP_LOGW(FNAME, "RX FAILED:  bytes:%d rxid:%x rxmsg:%s", rx.data_length_code, (unsigned int)rx.identifier, msg.c_str());
                 twai_clear_receive_queue();
             }
         }
-        if (res) {
-            break;
-        }
     }
-
     driverUninstall();
-    ESP_LOGW(FNAME, "CAN bus selftest TX/RX %s", res ? "Ok" : "failed");
+    ESP_LOGW(FNAME, "Final Result: CAN bus selftest %s, slope support: %d", res ? "OKAY" : "FAILED", _slope_support );
     return res;
 }
 

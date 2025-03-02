@@ -25,41 +25,37 @@ ESPRotary *Rotary = nullptr;
 #define LONG_PRESS  2
 #define BUTTON_RELEASED 3
 #define LONG_PRESS_THRESHOLD 400  // 400ms threshold
-#define DEBOUNCE_TIME 50  // 50ms debounce threshold
+#define DEBOUNCE_TIME 25          // 25 ms debounce threshold
 
 
 static QueueHandle_t buttonQueue;
 static uint32_t lastPressTime = 0;
-static bool buttonPressed = false;
 static TaskHandle_t pid = NULL;
 static std::list<RotaryObserver *> observers;
 
-
 static void IRAM_ATTR button_isr_handler(void* arg) {
-	static uint32_t lastInterruptTime = 0;
 	uint32_t currentTime = esp_log_timestamp();
-
 	// Ignore interrupts occurring within debounce time
-	if ((currentTime - lastInterruptTime) < DEBOUNCE_TIME) {
+	if (lastPressTime && ((currentTime - lastPressTime) < DEBOUNCE_TIME)) {
 		return;
 	}
-	lastInterruptTime = currentTime;
 
 	int buttonState = gpio_get_level(Rotary->getSw());
 
-	if (buttonState == 0 && !buttonPressed) { // Button pressed (active LOW)
+	if (buttonState == 0 ) { // Button pressed (active LOW)
 		lastPressTime = currentTime;
-		buttonPressed = true;
 	}
-	else if (buttonState == 1 && buttonPressed) { // Button released
-		uint32_t pressDuration = currentTime - lastPressTime;
-		uint8_t pressType = (pressDuration > LONG_PRESS_THRESHOLD) ? LONG_PRESS : SHORT_PRESS;
-		xQueueSendFromISR(buttonQueue, &pressType, NULL);
+	else{ // Button released
+		if( lastPressTime ){
+			uint32_t pressDuration = currentTime - lastPressTime;
+			uint8_t pressType = (pressDuration > LONG_PRESS_THRESHOLD) ? LONG_PRESS : SHORT_PRESS;
+			xQueueSendFromISR(buttonQueue, &pressType, NULL);
 
-		uint8_t releaseEvent = BUTTON_RELEASED;
-		xQueueSendFromISR(buttonQueue, &releaseEvent, NULL);
+			uint8_t releaseEvent = BUTTON_RELEASED;
+			xQueueSendFromISR(buttonQueue, &releaseEvent, NULL);
 
-		buttonPressed = false;
+			lastPressTime = 0;
+		}
 	}
 }
 

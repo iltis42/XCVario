@@ -1351,27 +1351,30 @@ void system_startup(void *args){
 	std::string resultCAN;
 	if( Audio::haveCAT5171() ) // todo && CAN configured
 	{
+		ESP_LOGI(FNAME,"NOW add/test CAN");
 		CAN = new CANbus();
 		logged_tests += "CAN Interface: ";
 		DeviceManager* dm = DeviceManager::Instance();
-		if( dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS) ) {
-			// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
-			resultCAN = "OK";
-			ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
-			// Add the legacs MagSens CAN receiver, would be deleted if a MagSens V2 is found
-			dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
-			// dm->removeDevice(DeviceId::MASTER_DEV);
-			// ESP_LOGI(FNAME,"Removetest");
-			// delay(1000);
-			// dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-			logged_tests += "OK\n";
-			if ( CAN->hasSlopeSupport() ) {
-				if( hardwareRevision.get() < XCVARIO_22)
-					hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
-			} else {
-				ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision (XCV-23)");
-				if( hardwareRevision.get() < XCVARIO_23)
-					hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
+		if( CAN->selfTest() ){
+			if( dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS) ) {
+				// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
+				resultCAN = "OK";
+				ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
+				// Add the legacs MagSens CAN receiver, would be deleted if a MagSens V2 is found
+				dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
+				// dm->removeDevice(DeviceId::MASTER_DEV);
+				// ESP_LOGI(FNAME,"Removetest");
+				// delay(1000);
+				// dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+				logged_tests += "OK\n";
+				if ( CAN->hasSlopeSupport() ) {
+					if( hardwareRevision.get() < XCVARIO_22)
+						hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
+				} else {
+					ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision (XCV-23)");
+					if( hardwareRevision.get() < XCVARIO_23)
+						hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
+				}
 			}
 		}
 		else {

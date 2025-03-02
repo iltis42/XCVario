@@ -238,6 +238,7 @@ void CANbus::driverInstall(twai_mode_t mode)
     g_config.alerts_enabled = TWAI_ALERT_ALL;
     if (_slope_support)
     {
+    	ESP_LOGI(FNAME, "_slope_support is TRUE");
         g_config.bus_off_io = _slope_ctrl;
     }
     g_config.rx_queue_len = 15; // 1.5x the need of one NMEA sentence
@@ -348,7 +349,7 @@ bool CANbus::begin()
     }
     ESP_LOGI(FNAME, "CAN begin");
 
-    if ( ! _initialized && selfTest() )
+    if ( ! _initialized )
     {
         driverInstall(TWAI_MODE_NORMAL);
         terminate_receiver = false;
@@ -383,6 +384,7 @@ bool CANbus::selfTest()
     driverInstall(TWAI_MODE_NO_ACK);
     bool res = false;
     int id = CANTEST_ID;
+    delay(100);
     for (int slope = 1; slope >=0; slope--)
     {
         ESP_LOGI(FNAME,"CAN slope support %s.", (slope==0) ? "on" : "off");
@@ -390,6 +392,7 @@ bool CANbus::selfTest()
         for (int i = 0; i < 3; i++)
         {
             // repeat test 3x
+        	ESP_LOGI(FNAME,"CAN test #%d", i);
             char tx[10] = {"1827364"};
             int len = strlen(tx);
             ESP_LOGI(FNAME, "strlen %d", len);

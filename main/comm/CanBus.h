@@ -49,6 +49,7 @@ public:
     const char* getStringId() const override { return "CAN"; }
     void ConfigureIntf(int cfg) override;
     int Send(const char*, int&, int) override;
+    bool selfTest();
 
 private:
 	friend void TransmitTask(void *arg);
@@ -56,7 +57,6 @@ private:
 
 private:
     void recover();
-    bool selfTest();
 	bool sendData(int id, const char *msg, int length, int self = 0);
 	void driverInstall(twai_mode_t mode);
 	void driverUninstall();

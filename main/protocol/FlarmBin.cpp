@@ -112,20 +112,6 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
             {
                 // msg is read in completely
                 _sm._state = START_TOKEN;
-                if ( _brswitch == 1 &&  _sm._frame_len == 8 && _sm._crc == 0x01 ) { // Ping msg
-                    ESP_LOGI(FNAME, "intercept ping %d", _frame_counter);
-                    // dont forward it, send set baud instead
-                    _binpeer->setBaudrate(_frame_counter, 5);
-                    break;
-                }
-                if ( _brswitch == 1 && /*_sm._frame_len == 8 &&*/ _sm._crc == 0xA0 ) { // short ACK msg
-                    ESP_LOGI(FNAME, "got ACK %d", _brswitch);
-                    _brswitch = 0; // done
-                    _binpeer->ackInterceptDone();
-                    InterfaceCtrl *itf = DEVMAN->getIntf(FLARM_DEV);
-                    itf->ConfigureIntf(SM_XCFLARMVIEW);
-                    break;
-                }
                 send_chunk(); // forward msg (remaining data)
                 if ( _sm._crc == 0x12 ) { // exit BP msg
                     ESP_LOGI(FNAME, "0x12 BP end <---------------- switch to nmea");
@@ -135,7 +121,6 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
                     itf->ConfigureIntf(SM_FLARM);
                     last_action = GO_NMEA;
                 }
-                _brswitch = 0;
             }
             else if (_sm._frame.size() >= SEND_THRESH) {
                 send_chunk(); // forward partial msg
@@ -153,7 +138,6 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
 bool FlarmBinary::setBaudrate(int fnr, int br)
 {
     Message* msg = newMessage();
-    _brswitch = 1;
     // magic, frame size lsb+msb, version, seq counter lsb+msb, msg type, crc lsb+msb, payload
     msg->buffer = { 0x73, 9, 0, 1};
     ESP_LOGI(FNAME, "Set baudrate %d (frm=%d)", br, fnr);
@@ -174,7 +158,7 @@ bool FlarmBinary::ping()
 {
     Message* msg = newMessage();
     msg->buffer = { 0x73, 8, 0, 0 };
-    int frc = _binpeer->getFrameCnt() + _brswitch;
+    int frc = getFrameCnt();
     ESP_LOGI(FNAME, "Send ping (frm=%d)", frc);
     msg->buffer.push_back((uint8_t)(frc));
     msg->buffer.push_back((uint8_t)(frc>>8));

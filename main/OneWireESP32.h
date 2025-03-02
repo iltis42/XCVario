@@ -19,13 +19,13 @@ IRAM_ATTR bool owrxdone(rmt_channel_handle_t ch, const rmt_rx_done_event_data_t 
 
 class OneWire32 {
 	private:
-		gpio_num_t owpin;
-		rmt_channel_handle_t owtx;
-		rmt_channel_handle_t owrx;
-		rmt_encoder_handle_t owcenc;
-		rmt_encoder_handle_t owbenc;
+		gpio_num_t owpin = GPIO_NUM_NC;
+		rmt_channel_handle_t owtx = 0;
+		rmt_channel_handle_t owrx = 0;
+		rmt_encoder_handle_t owcenc = 0;
+		rmt_encoder_handle_t owbenc = 0;
 		rmt_symbol_word_t owbuf[MAX_BLOCKS];
-		QueueHandle_t owqueue;
+		QueueHandle_t owqueue = 0;
 		uint8_t drv = 0;
 	public:
 		OneWire32(uint8_t pin);

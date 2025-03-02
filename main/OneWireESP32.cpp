@@ -47,7 +47,8 @@ const rmt_receive_config_t owrxconf = {
 	.flags = {0}
 };
 
-OneWire32::OneWire32(uint8_t pin){
+OneWire32::OneWire32(uint8_t pin)
+{
 	owpin = static_cast<gpio_num_t>(pin);
 	
 	rmt_bytes_encoder_config_t bnc = {
@@ -92,9 +93,13 @@ OneWire32::OneWire32(uint8_t pin){
 		.resolution_hz = 1000000,
 		.mem_block_symbols = MAX_BLOCKS,
 		.trans_queue_depth = 4,
+		.intr_priority = 0,
 		.flags = {
+			.invert_out = 0,
+			.with_dma = 0,
 			.io_loop_back = 0,
-			.io_od_mode = 1
+			.io_od_mode = 1,
+			.allow_pd = 0,
 		}
 	};
 

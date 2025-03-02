@@ -413,8 +413,6 @@ bool FlarmGPS::parsePFLAX()
             // Cross link them
             devfb->setPeer(hostfb);
             hostfb->setPeer(devfb);
-            // Additionally maximize the Flarm baudrate
-            hostfb->reqAckIntercept();
         }
         Flarm::timeout = 10;
         return true;

@@ -13,7 +13,6 @@
 #include <list>
 #include <algorithm>
 #include "sensor.h"
-#include <stdio.h>
 #include "driver/gpio.h"
 
 #define ROTARY_SINGLE_INC 0

@@ -93,7 +93,7 @@ OneWire32::OneWire32(uint8_t pin){
 		.mem_block_symbols = MAX_BLOCKS,
 		.trans_queue_depth = 4,
 		.flags = {
-			.io_loop_back = 1,
+			.io_loop_back = 0,
 			.io_od_mode = 1
 		}
 	};

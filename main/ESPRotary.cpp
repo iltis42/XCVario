@@ -12,15 +12,57 @@
 #include <cstring>
 #include <list>
 #include <algorithm>
+#include "sensor.h"
+#include <stdio.h>
+#include "driver/gpio.h"
 
 #define ROTARY_SINGLE_INC 0
 #define ROTARY_DOUBLE_INC 1
 
 // the global access to the rotary knob
 ESPRotary *Rotary = nullptr;
+#define BUTTON_PIN GPIO_NUM_0  // Change to your actual button pin
+#define SHORT_PRESS 1
+#define LONG_PRESS  2
+#define BUTTON_RELEASED 3
+#define LONG_PRESS_THRESHOLD 400  // 400ms threshold
+#define DEBOUNCE_TIME 50  // 50ms debounce threshold
 
+
+static QueueHandle_t buttonQueue;
+static uint32_t lastPressTime = 0;
+static bool buttonPressed = false;
 static TaskHandle_t pid = NULL;
 static std::list<RotaryObserver *> observers;
+
+
+static void IRAM_ATTR button_isr_handler(void* arg) {
+	static uint32_t lastInterruptTime = 0;
+	uint32_t currentTime = esp_log_timestamp();
+
+	// Ignore interrupts occurring within debounce time
+	if ((currentTime - lastInterruptTime) < DEBOUNCE_TIME) {
+		return;
+	}
+	lastInterruptTime = currentTime;
+
+	int buttonState = gpio_get_level(Rotary->getSw());
+
+	if (buttonState == 0 && !buttonPressed) { // Button pressed (active LOW)
+		lastPressTime = currentTime;
+		buttonPressed = true;
+	}
+	else if (buttonState == 1 && buttonPressed) { // Button released
+		uint32_t pressDuration = currentTime - lastPressTime;
+		uint8_t pressType = (pressDuration > LONG_PRESS_THRESHOLD) ? LONG_PRESS : SHORT_PRESS;
+		xQueueSendFromISR(buttonQueue, &pressType, NULL);
+
+		uint8_t releaseEvent = BUTTON_RELEASED;
+		xQueueSendFromISR(buttonQueue, &releaseEvent, NULL);
+
+		buttonPressed = false;
+	}
+}
 
 // Observer task
 void ObserverTask( void *args )
@@ -28,48 +70,25 @@ void ObserverTask( void *args )
 	ESPRotary &knob = *static_cast<ESPRotary*>(args);
 	static int old_cnt = 0;
 	int enc_count;
-	static int timer = 0;
-	static bool released;
-	static bool longPressed;
-	static bool pressed;
-
-	while( 1 ) {
-		int button = gpio_get_level(knob.sw);
-		if( button == 0 ) {
-			// Push button is being pressed
-			timer++;
-			released = false;
-			pressed = false;
-			if( timer > 20/5 ) {  // > 400 mS
-				if( !longPressed ){
-					longPressed = true;
-					knob.longPress();
-					knob.release();
-
-				}
+	while( true ) {
+		// handle button events
+		uint8_t event;
+		if (xQueueReceive(buttonQueue, &event, 0) == pdTRUE) {
+			if (event == SHORT_PRESS) {
+				ESP_LOGI(FNAME,"Button short press detected");
+				knob.press();
+			} else if (event == LONG_PRESS) {
+				ESP_LOGI(FNAME,"Button long press detected");
+				knob.longPress();
+			}else if (event == BUTTON_RELEASED) {
+				ESP_LOGI(FNAME, "Button released");
+				knob.release();
 			}
 		}
-		else {
-			// Push button is being released
-			if( !released ){
-				// ESP_LOGI(FNAME,"timer=%d", timer );
-				longPressed = false;
-				if( timer < 20/5 ){  // > 400 mS
-					if( !pressed ){
-						pressed = true;
-						knob.press();
-						knob.release();
-					}
-				}
-				timer = 0;
-				released = true;
-				vTaskDelay(pdMS_TO_TICKS(20));
-			}
-		}
+		// handle increment/decrement
 		if( pcnt_unit_get_count(knob.pcnt_unit, &enc_count) != ESP_OK ) {
 			ESP_LOGE(FNAME,"Error get counter");
 		}
-		
 		if( abs( enc_count - old_cnt) > rotary_inc.get() )
 		{
 			// pcnt_counter_clear(PCNT_UNIT_0);
@@ -119,10 +138,8 @@ ESPRotary::ESPRotary(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw) :
 
 void ESPRotary::begin()
 {
-	gpio_set_direction(sw, GPIO_MODE_INPUT);
 	gpio_set_direction(dt, GPIO_MODE_INPUT);
 	gpio_set_direction(clk, GPIO_MODE_INPUT);
-	gpio_pullup_en(sw); // Rotary Encoder Button
 	gpio_pullup_en(dt);
 	gpio_pullup_en(clk);
 
@@ -161,7 +178,19 @@ void ESPRotary::begin()
 	pcnt_unit_clear_count(pcnt_unit);
 	pcnt_unit_start(pcnt_unit);
 
+	buttonQueue = xQueueCreate(10, sizeof(uint8_t));
 	xTaskCreate(&ObserverTask, "knob", 5096, this, 14, &pid);
+
+	gpio_config_t io_conf = {
+			.pin_bit_mask = (1ULL << sw),
+			.mode = GPIO_MODE_INPUT,
+			.pull_up_en = GPIO_PULLUP_ENABLE,
+			.pull_down_en = GPIO_PULLDOWN_DISABLE,
+			.intr_type = GPIO_INTR_ANYEDGE
+	};
+	gpio_config(&io_conf);
+	gpio_install_isr_service(0);
+	gpio_isr_handler_add(sw, button_isr_handler, NULL);
 }
 
 esp_err_t ESPRotary::updateRotDir()

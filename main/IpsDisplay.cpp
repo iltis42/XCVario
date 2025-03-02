@@ -1859,7 +1859,7 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 	// ESP_LOGI(FNAME,"P1:%d/%d P2:%d/%d P3:%d/%d P4:%d/%d roll:%f d:%d ", P1r.x, P1r.y+p, P2r.x, P2r.y+p, P3r.x, P3r.y+p, P4r.x , P4r.y+p, R2D(roll), p  );
 	if( P1r.y != P1o.y || P1r.x != P1o.x ){
 		// ESP_LOGI(FNAME,"drawHorizon P: %1.1f R: %1.1f Y: %1.1f", R2D(pitch), R2D(roll), R2D(yaw) );
-		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		xSemaphoreTake(display_mutex,portMAX_DELAY );
 		ucg->setClipRange( 20, 60, 200, 200 );
 		ucg->setColor( COLOR_LBLUE );
 		ucg->drawTetragon( P1r.x, P1r.y, P2r.x, P2r.y, P3r.x, P3r.y, P4r.x , P4r.y );
@@ -1874,7 +1874,7 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 		P6o = P6r;
 		oroll = roll;
 		ucg->undoClipRange();
-		xSemaphoreGive(spiMutex);
+		xSemaphoreGive(display_mutex);
 	}
 	if( compass_enable.get() != CS_DISABLE ){
 		heading = static_cast<int>(rintf(mag_hdt.get()));

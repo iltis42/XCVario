@@ -58,6 +58,7 @@ public:
 	void longPress() override;
 	void escape() override;
 	bool readSwitch(); // returns true if pressed
+	gpio_num_t getSw() { return sw; };
 
 private:
 	gpio_num_t clk, dt, sw;

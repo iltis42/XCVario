@@ -1346,6 +1346,7 @@ void system_startup(void *args){
 			ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
 			logged_tests += "OK\n";
 			if ( CAN->hasSlopeSupport() ) {
+				gpio_set_level(GPIO_NUM_2, 0);  // correct slope bit for working state in XCV22
 				if( hardwareRevision.get() < XCVARIO_22)
 					hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
 			} else {

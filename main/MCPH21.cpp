@@ -172,10 +172,11 @@ float MCPH21::getAirSpeed(void){        // calculates and returns the airspeed i
 
 bool MCPH21::offsetPlausible(uint32_t aoffset )
 {
-	ESP_LOGI(FNAME,"MCPH21 offsetPlausible( %ld )", aoffset );
 	const int lower_val = 838861-MAX_AUTO_CORRECTED_OFFSET;
 	const int upper_val = 838861+MAX_AUTO_CORRECTED_OFFSET;
-	if( (aoffset > lower_val ) && (aoffset < upper_val )  )
+	bool plausible = (aoffset > lower_val ) && (aoffset < upper_val );
+	ESP_LOGI(FNAME,"offsetPlausible( %ld ) Deviation: %.1f%% RET:%d", aoffset, (((float)aoffset - 838861.0f)/MAX_AUTO_CORRECTED_OFFSET)*100.0f, plausible );
+	if( plausible )
 		return true;
 	else
 		return false;

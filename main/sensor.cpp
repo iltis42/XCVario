@@ -1002,12 +1002,10 @@ void system_startup(void *args){
 			MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
 			accl_bias.set( ab );
 			gyro_bias.set( gb );
-			MPU.setGyroOffset(gb);
 			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-		}else{
-			MPU.setAccelOffset(ab);
-			MPU.setGyroOffset(gb);
 		}
+		MPU.setAccelOffset(ab);
+		MPU.setGyroOffset(gb);
 		mpud::raw_axes_t accelRaw;
 		mpud::float_axes_t accelG;
 		float samples = 0;

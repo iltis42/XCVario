@@ -21,9 +21,7 @@ public:
     bool isBinary() const override { return true; }
     datalink_action_t nextStreamChunk(const char *cptr, int count) override;
     void setPeer(FlarmBinary *p);
-    int getFrameCnt() const { return _frame_counter; }
-    void reqAckIntercept() { _brswitch = 1; }
-    void ackInterceptDone() { _brswitch = 0; }
+    int getFrameCnt() { return _frame_counter++; }
     
     // Transmitted mesages
     bool setBaudrate(int, int);
@@ -33,8 +31,6 @@ private:
     void send_chunk();
     // binary mode peer
     FlarmBinary *_binpeer;
-    // baudrate switch state machine
-    int _brswitch = 0;
     // frame counter monitor
     int _frame_counter = 0;
 };

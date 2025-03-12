@@ -312,9 +312,16 @@ static int imu_calib( SetupMenuSelect *p )
 			IMU::doImuCalibration(p);
 			break;
 		case 2:
-			// reset to default
+		{
+			// Reset nvs stored bias (the extra on top of the factory values)
+			mpud::raw_axes_t zero;
+			accl_bias.set(zero);
+			gyro_bias.set(zero);
+
+			// reset to default reference
 			IMU::defaultImuReference();
 			break;
+		}
 		default:
 			break;
 	}

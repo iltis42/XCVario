@@ -503,6 +503,25 @@ void IMU::defaultImuReference()
 {
 	// Revert from calibrated IMU to default mapping, which fits 
 	// roughly to an upright or top down installation.
+	AdaptUGC *ucg = display->getDisplay();
+	ucg->setColor( COLOR_BLACK );
+	ucg->setFont( ucg_font_ncenR14_hr, true );
+	ucg->clearScreen();
+	ucg->setColor( COLOR_WHITE );
+	ucg->setPrintPos( 1, 30 );
+	ucg->printf( "AHRS Calibration Reset" );
+	ucg->setPrintPos( 1, 60 );
+	ucg->printf( "Ensure wings horizontal," );
+	ucg->setPrintPos( 1, 90 );
+	ucg->printf( "inclination as setup" );
+	ucg->setPrintPos( 1, 120 );
+	ucg->printf( "Press button to start" );
+	while( !Rotary.readSwitch() ){ delay( 100 ); }
+	ucg->setColor( COLOR_BLACK );
+	ucg->clearScreen();
+	ucg->setPrintPos( 1, 30 );
+	ucg->setColor( COLOR_WHITE );
+	ucg->printf( "rebooting..." );
 	Quaternion accelDefaultRef = Quaternion(deg2rad(90.0f), vector_ijk(0,1,0)).get_conjugate();
 
 	if ( display_orientation.get() == DISPLAY_TOPDOWN ) {
@@ -511,6 +530,8 @@ void IMU::defaultImuReference()
 	ref_rot = accelDefaultRef;
 	imu_reference.set(ref_rot, false); // nvs
 	progress = 0; // reset the calibration procedure
+	delay( 1000);
+	esp_restart();
 }
 // Concatenation of ground angle of attack and the basic reference calibration rotation
 void IMU::applyImuReference(const float gAA, const Quaternion& basic)

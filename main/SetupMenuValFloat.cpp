@@ -99,8 +99,12 @@ void SetupMenuValFloat::display( int mode ){
 	else if (mode == 1){   // save mode, do show only "Saved"true
 		y+=24;
 		xSemaphoreTake(spiMutex,portMAX_DELAY );
+		ucg->setPrintPos( 1, 260 );
+		ucg->print("                                ");
+		ucg->setPrintPos( 1, 280 );
+		ucg->print("    Saved                       ");
 		ucg->setPrintPos( 1, 300 );
-		ucg->print("Saved");
+		ucg->print("                                ");
 		xSemaphoreGive(spiMutex );
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}

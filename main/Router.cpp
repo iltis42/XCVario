@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-// #include "esp_task_wdt.h"
 #include <freertos/semphr.h>
 #include "Protocols.h"
 #include <logdef.h>
@@ -182,35 +181,6 @@ void Router::routeWLAN(){
 	}
 }
 
-
-// route messages from Bluetooth
-void Router::routeBT(){
-	// if( (wireless != WL_BLUETOOTH) && (wireless != WL_BLUETOOTH_LE) )
-	// 	return;
-	// SString bt;
-	// while( pullMsg( bt_rx_q, bt ) ){
-	// 	// ESP_LOGI(FNAME,"BT RX %s, len: %d bytes", bt.c_str(), bt.length() );
-	// 	// ESP_LOG_BUFFER_HEXDUMP(FNAME,bt.c_str(),bt.length(), ESP_LOG_INFO);
-	// 	// if( rt_s1_wl.get() && serial1_speed.get() ){  // Serial data TX from bluetooth enabled ?
-	// 	// 	if( forwardMsg( bt, s1_tx_q ) ){
-	// 	// 		Serial::setRxTxNotifier( TX1_REQ );
-	// 	// 		// ESP_LOGI(FNAME,"Send to S1 device, BT received %d bytes", bt.length() );
-	// 	// 	}
-	// 	// }
-	// 	// if( rt_s2_wl.get() && serial2_speed.get() ){  // Serial data TX from bluetooth enabled ?
-	// 	// 	if( forwardMsg( bt, s2_tx_q ) ){
-	// 	// 		Serial::setRxTxNotifier( TX2_REQ );
-	// 	// 		// ESP_LOGI(FNAME,"Send to S2 device, BT received %d bytes", bt.length() );
-	// 	// 	}
-	// 	// }
-	// 	if( rt_wl_can.get() && can_speed.get() ){
-	// 		// ESP_LOGI(FNAME,"Send to CAN bus, BT received %d bytes", bt.length() );
-	// 		// CAN->sendNMEA( bt );
-	// 	}
-	// 	Protocols::parseNMEA( bt.c_str() );
-	// 	bt.clear();
-	// }
-}
 
 // route messages from master or can via CAN or Wifi
 void Router::routeCAN(){

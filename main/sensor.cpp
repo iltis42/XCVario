@@ -798,7 +798,6 @@ void readTemp(void *pvParameters)
 		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
 			if( !t_devices ){
 				t_devices = ds18b20.search(t_addr, 1);
-				ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
 				// ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
 			}
 			if( t_devices ){
@@ -1216,7 +1215,7 @@ void system_startup(void *args){
 		if( ds18b20.reset() )
 		{
 			t_devices = ds18b20.search(t_addr, 1);
-			ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
+			// ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
 		}
 		if( t_devices ){
 			ESP_LOGI(FNAME,"Temp devices %d", t_devices);

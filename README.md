@@ -25,7 +25,7 @@ The fourth generation XCVario or XCVario series 21,22,23 has an enhanced feature
 
 [Ongoing Development](https://github.com/iltis42/XCVario/tree/master/images) ,latest beta software is the one with the highest revision number or newest date
 
-[Images from Moshe's Fork](https://github.com/moshe-braner/XCVario/tree/dev/images), e.g. a very interresting approach from Moshe Braner to calculate straight wind without a magnetic sensor for testing, for support pls refer directly to Moshe
+[Moshe's Fork](https://github.com/moshe-braner/XCVario), Moshe implemented e.g. a very interresting approach to calculate straight wind without a magnetic sensor for testing. Regarding support please refer directly to Moshe
 
 At the begin i want to show a short Demo of the variometer, including sensitivity and full sunlight test, followed by an explanation of various setup options and how to use. Its now year four of this project, demo videos with prototypes based on the hardware from LV-R2 branch see here below:
 

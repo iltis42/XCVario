@@ -67,7 +67,9 @@ public:
 	 */
 	inline void clear()
 	{
-		this->clear();
+		while (this->size()) {
+			this->pop();
+		}
 	}
 
 	/**

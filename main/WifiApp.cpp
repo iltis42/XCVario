@@ -8,21 +8,13 @@
  */
 
 #include "WifiApp.h"
-
-
-
 #include "Setup.h"
-#include "RingBufCPP.h"
 #include "Router.h"
-#include "WifiClient.h"
 #include "sensor.h"
 #include "Flarm.h"
 #include "Switch.h"
 #include "DataMonitor.h"
-#include "DataLink.h"
-#include "comm/InterfaceCtrl.h"
 #include "logdef.h"
-
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <lwip/sockets.h>
@@ -33,40 +25,90 @@
 #include <nvs_flash.h>
 #include <lwip/err.h>
 #include <lwip/sys.h>
-
+#include "WifiClient.h"
 #include <cerrno>
-#include <list>
-
-typedef struct client_record {
-	int client;
-	int retries;
-}client_record_t;
-
-typedef struct xcv_sock_server {
-	RingBufCPP<SString>* txbuf;
-	int port;
-	int idle;
-	TaskHandle_t pid;
-	std::list<client_record_t>  clients;
-	DataLinkOld *dlw;
-}sock_server_t;
-
-static sock_server_t XCVario   = { .txbuf = &wl_vario_tx_q, .port=8880, .idle = 0, .pid = 0, .clients={}, .dlw=nullptr };
-static sock_server_t FLARM     = { .txbuf = &wl_flarm_tx_q, .port=8881, .idle = 0, .pid = 0, .clients={}, .dlw=nullptr };
-static sock_server_t AUX       = { .txbuf = &wl_aux_tx_q,   .port=8882, .idle = 0, .pid = 0, .clients={}, .dlw=nullptr };
-static sock_server_t XCVarioMS = { .txbuf = &can_tx_q,      .port=8884, .idle = 0, .pid = 0, .clients={}, .dlw=nullptr };
+#include "comm/DataLink.h"
+#include "esp_assert.h"
 
 extern bool netif_initialized;
 
 #define WIFI_BUFFER_SIZE 513
-// char WifiApp::buffer[WIFI_BUFFER_SIZE];
+
+bool WifiApp::full[4];
+
+WifiApp::WifiApp():  InterfaceCtrl(false),
+		_intfid(InterfaceId((int)WIFI))
+{
+	_id_memo = "WiFi";
+	_socks.idle = 0;
+	_socks.pid = 0;
+	_socks.clients={};
+	_socks.dl=&_dlink;
+	for(int i=0; i<4; i++)
+		full[i] = false;
+}
+
+WifiApp::~WifiApp(){
+	vTaskDelete(_socks.pid);
+	_socks.txq->clear();
+}
 
 int  WifiApp::queueFull(){
-	// ESP_LOGI(FNAME, "WQF: %d", wl_vario_tx_q.isFull() );
-	if( wl_vario_tx_q.isFull() )
+	// ESP_LOGI(FNAME, "WQF: 0:%d 1:%d 2:%d 3:%d", full[0], full[0],full[0],full[0] );
+	if( full[0] || full[1] || full[2] || full[3] )
 		return 1;
 	else
 		return 0;
+}
+
+// it's mostly static IP a cfg dependig of port so give here port minus 8880
+void WifiApp::ConfigureIntf(int cfg){
+	if (cfg < 0 || cfg > 3) {
+		ESP_LOGE(FNAME, "Invalid cfg: %d, should be between 0 and 3", cfg);
+		return;
+	}
+	wifi_init_softap();
+	_socks.port=8880+cfg;
+	sprintf( taskname, "wifitsk-%d", _socks.port );
+	int prio=0;
+	switch( cfg ){
+	case 0:
+		_socks.txq = &wl_vario_tx_q;
+		prio=7;
+		break;
+	case 1:
+		_socks.txq = &wl_flarm_tx_q;
+		prio=8;
+		break;
+	case 2:
+		_socks.txq = &wl_aux_tx_q;
+		prio=9;
+		break;
+	case 3:
+		_socks.txq = &can_tx_q;
+		prio=6;
+		break;
+	default:
+		break;
+	}
+	xTaskCreatePinnedToCore(&socket_server, taskname, 4096, &_socks, prio, &_socks.pid, 0);
+}
+
+int WifiApp::Send(const char *msg, int &len, int port){
+	if (port < 8880 || port > 8884) {
+	    ESP_LOGE(FNAME, "Invalid port: %d, should be between 8880 and 8884", port);
+	    return 100;
+	}
+	SString s( msg, len );
+	if( _socks.txq->isFull() ){
+		full[port-8880]=true;
+		return 10;
+	}
+	else{
+		full[port-8880]=false;
+		_socks.txq->add(s);
+	}
+	return 0;
 }
 
 int WifiApp::create_socket( int port ){
@@ -86,9 +128,6 @@ int WifiApp::create_socket( int port ){
 		ESP_LOGE(FNAME, "bind: %d %s", rc, strerror(errno));
 		return -1;
 	}
-	// int flag = 1;
-	// this is really realtime data, so sent TCP_NODELAY for XCVario data exchange
-	// setsockopt(mysock, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int));
 	ESP_LOGV(FNAME, "bind port: %d", port  );
 	// Flag the socket as listening for new connections.
 	rc = listen(mysock, 5);
@@ -100,15 +139,12 @@ int WifiApp::create_socket( int port ){
 }
 
 // Multi client TCP server with dynamic updated list of clients connected
-
 void WifiApp::on_client_connect( int port, int msg ){
 	if( port == 8884 ){ // have a client to XCVario protocol connected
 		// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
 		SetupCommon::syncEntry(msg);
 	}
 }
-
-int tick=0;
 
 void WifiApp::socket_server(void *setup) {
 	sock_server_t *config = (sock_server_t *)setup;
@@ -121,8 +157,6 @@ void WifiApp::socket_server(void *setup) {
 		ESP_LOGE(FNAME, "Socket creation for %d port FAILED: Abort task", config->port );
 		vTaskDelete(NULL);
 	}
-	config->dlw = new DataLinkOld();
-	// we have a socket
 	fcntl(sock, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
 	while (1)
 	{
@@ -139,7 +173,7 @@ void WifiApp::socket_server(void *setup) {
 		if( clients.size() ) {
 			int size=400;
 			char buffer[WIFI_BUFFER_SIZE+1];
-			int	len = Router::pullBlock( *(config->txbuf), buffer, size );
+			int	len = Router::pullBlock( *(config->txq), buffer, size );
 			if( len ){
 				// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, buffer );
 				config->idle = 0;
@@ -163,7 +197,9 @@ void WifiApp::socket_server(void *setup) {
 				// ESP_LOGI(FNAME, "read from wifi client %d", client_rec.client );
 				ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN-1, MSG_DONTWAIT);
 				if (sizeRead > 0) {
-					config->dlw->process( r, sizeRead, config->port );
+					for( auto dlit = config->dl->begin(); dlit != config->dl->end(); dlit++ ) {
+						dlit->second->process(r, sizeRead);
+					}
 					DM.monitorString( ItfTarget(WIFI,config->port), DIR_RX, r, sizeRead );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,tcprx.c_str(),sizeRead, ESP_LOG_INFO);
 				}
@@ -198,8 +234,8 @@ void WifiApp::socket_server(void *setup) {
 				}
 			}
 		}
-		Router::routeWLAN();
-		Router::routeCAN();
+		Router::routeWLAN();   // to be removed at times
+		Router::routeCAN();    // dito
 
 		if( uxTaskGetStackHighWaterMark( config->pid ) < 128 )
 			ESP_LOGW(FNAME,"Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
@@ -207,10 +243,6 @@ void WifiApp::socket_server(void *setup) {
 	}
 	vTaskDelete(NULL);
 }
-
-/* WiFi configuration and startup
-
- */
 
 void WifiApp::wifi_event_handler(void* arg, esp_event_base_t event_base,	int32_t event_id, void* event_data)
 {
@@ -223,58 +255,45 @@ void WifiApp::wifi_event_handler(void* arg, esp_event_base_t event_base,	int32_t
 	}
 }
 
-
 void WifiApp::wifi_init_softap()
 {
 	if ( ! netif_initialized ) {
+		netif_initialized = true;
 		ESP_ERROR_CHECK(esp_netif_init()); // can only be called once
+		ESP_ERROR_CHECK(esp_event_loop_create_default());
+		ESP_LOGV(FNAME,"now esp_netif_create_default_wifi_ap");
+		esp_netif_create_default_wifi_ap();
+		ESP_LOGV(FNAME,"now esp_wifi_init");
+		wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+		ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+		ESP_LOGV(FNAME,"now esp_event_handler_instance_register");
+		ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
+
+		ESP_LOGV(FNAME,"now esp_wifi_set_config ssid:%s", SetupCommon::getID() );
+		wifi_config_t wc;
+		strcpy( (char *)wc.ap.ssid, SetupCommon::getID() );
+		wc.ap.ssid_len = strlen( (char *)wc.ap.ssid );
+		strcpy( (char *)wc.ap.password, PASSPHARSE );
+		wc.ap.channel = 1;
+		wc.ap.max_connection = 4;
+		wc.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
+		wc.ap.ssid_hidden = 0;
+		wc.ap.beacon_interval = 50;
+
+		ESP_LOGV(FNAME,"now esp_wifi_set_mode");
+		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wc));
+
+		ESP_LOGV(FNAME,"now esp_wifi_set_storage");
+		ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+		// For further testing, may improve wifi range
+		// ESP_ERROR_CHECK(esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCOL_LR ));
+
+		sleep(1);
+		ESP_LOGI(FNAME,"now start WSP wifi access point");
+		ESP_ERROR_CHECK(esp_wifi_start());
+		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power( int(wifi_max_power.get()*80.0/100.0) ));
+		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
 	}
-	netif_initialized = true;
-	ESP_ERROR_CHECK(esp_event_loop_create_default());
-	ESP_LOGV(FNAME,"now esp_netif_create_default_wifi_ap");
-	esp_netif_create_default_wifi_ap();
-	ESP_LOGV(FNAME,"now esp_wifi_init");
-	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-
-	ESP_LOGV(FNAME,"now esp_event_handler_instance_register");
-	ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-			ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
-
-	ESP_LOGV(FNAME,"now esp_wifi_set_config ssid:%s", SetupCommon::getID() );
-	wifi_config_t wc;
-	strcpy( (char *)wc.ap.ssid, SetupCommon::getID() );
-	wc.ap.ssid_len = strlen( (char *)wc.ap.ssid );
-	strcpy( (char *)wc.ap.password, PASSPHARSE );
-	wc.ap.channel = 1;
-	wc.ap.max_connection = 4;
-	wc.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
-	wc.ap.ssid_hidden = 0;
-	wc.ap.beacon_interval = 50;
-
-	ESP_LOGV(FNAME,"now esp_wifi_set_mode");
-	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wc));
-
-	ESP_LOGV(FNAME,"now esp_wifi_set_storage");
-	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-	// For further testing, may improve wifi range
-	// ESP_ERROR_CHECK(esp_wifi_set_protocol(ESP_IF_WIFI_STA, WIFI_PROTOCOL_LR ));
-
-	sleep(1);
-	ESP_LOGI(FNAME,"now start WSP wifi access point");
-	ESP_ERROR_CHECK(esp_wifi_start());
-	ESP_ERROR_CHECK(esp_wifi_set_max_tx_power( int(wifi_max_power.get()*80.0/100.0) ));
-
-	if( serial2_speed.get() != 0 &&  serial2_tx.get() != 0 )  // makes only sense if there is data from AUX = serial interface S2
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_2", 4096, &AUX, 7, &AUX.pid, 0);  // 10
-	if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ) // 8880 Wifi server makes only sense if mode is WLAN, not Bluetooth
-		xTaskCreatePinnedToCore(&socket_server, "socket_srv_0", 4096, &XCVario, 8, &XCVario.pid, 0);  // 10
-	if( serial1_speed.get() != 0 &&  serial1_tx.get() != 0 ) // makes only sense if there is a FLARM connected on S1
-		xTaskCreatePinnedToCore(&socket_server, "socket_ser_1", 4096, &FLARM, 9, &FLARM.pid, 0);  // 10
-	if( wireless == WL_WLAN_MASTER ) // New port 8884 makes sense if we are WLAN_MASTER (this is backward compatible)
-		xTaskCreatePinnedToCore(&socket_server, "socket_srv_3", 4096, &XCVarioMS, 6, &XCVarioMS.pid, 0);  // 10
-
-	ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
 }

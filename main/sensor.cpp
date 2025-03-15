@@ -1453,7 +1453,7 @@ void system_startup(void *args){
 			logged_tests += "Bluetooth test: FAILED\n";
 		}
 	}else if ( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ){
-		WifiApp::wifi_init_softap();
+		// WifiApp::wifi_init_softap();
 	}
 
 	if( compass_enable.get() == CS_CAN ){

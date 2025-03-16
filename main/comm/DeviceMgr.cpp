@@ -56,13 +56,15 @@ static int tt_snd(Message *msg)
     int plsrety = 0;
     if (itf)
     {
-        // ESP_LOGI(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getStringId(), port, len, msg->buffer.c_str());
+        ESP_LOGD(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getStringId(), port, len, msg->buffer.c_str());
         plsrety = itf->Send(msg->buffer.c_str(), len, port);
         if ( plsrety > 0 ) {
             ESP_LOGI(FNAME, "reshedule message %d/%d", len, msg->buffer.length());
             msg->buffer.erase(0, len); // chop sent bytes off
         }
-        DM.monitorString(ItfTarget(itf->getId(),port), DIR_TX, msg->buffer.c_str(), len);
+        else if ( plsrety == 0 ) {
+            DM.monitorString(ItfTarget(itf->getId(),port), DIR_TX, msg->buffer.c_str(), len);
+        }
     }
     return plsrety;
 }
@@ -106,7 +108,7 @@ void TransmitTask(void *arg)
                 // Regular case
                 // ESP_LOGI(FNAME, "regular send");
                 pls_retry = tt_snd(msg);
-                if ( pls_retry == 0 ) {
+                if ( pls_retry < 1 ) {
                     // ESP_LOGI(FNAME, "regular done");
                     DEV::relMessage(msg);
                 } else {

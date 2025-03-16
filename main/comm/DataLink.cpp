@@ -77,6 +77,10 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             ESP_LOGI(FNAME, "New MAGCANBinary");
             tmp = new MagSensBinary(sendport, _sm, *this);
             break;
+        case XCVARIO_P:
+            ESP_LOGI(FNAME, "New XCVARIO soon");
+            // tmp = new XcVario(sendport, _sm, *this);
+            break;
         case TEST_P:
             ESP_LOGI(FNAME, "New Test Proto");
             tmp = new TestQuery(did, sendport, _sm, *this);
@@ -154,6 +158,9 @@ void DataLink::deleteProtocol(ProtocolItf *proto)
 
 void DataLink::process(const char *packet, int len)
 {
+    // Feed the data monitor
+    DM.monitorString(_itf_id, DIR_RX, packet, len);
+
     if ( _all_p.empty() ) {
         return;
     }
@@ -169,9 +176,6 @@ void DataLink::process(const char *packet, int len)
         return;
     }
     
-    // Feed the data monitor
-    DM.monitorString(_itf_id, DIR_RX, packet, len);
-
     if ( _binary ) {
         ESP_LOGD(FNAME, "%d procB %dchar: %c", _itf_id.iid, len, *packet);
         if ( _binary->nextStreamChunk(packet, len) == GO_NMEA ) {

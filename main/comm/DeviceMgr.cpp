@@ -339,13 +339,21 @@ RoutingList DeviceManager::getRouting(RoutingTarget target)
         RoutingList res = route_it->second;
         for (RoutingList::iterator tit=res.begin(); tit != res.end(); ) 
         {
-            // is dev configured
-            if ( _device_map.find(tit->did) == _device_map.end() ) {
+            // is dev configured, is the port identical
+            DevMap::iterator devit = _device_map.find(tit->did);
+            if ( devit == _device_map.end() ) {
                 ESP_LOGD(FNAME, "remove %d from routing list.", tit->did);
                 tit = res.erase(tit);
             }
             else {
-                tit++;
+                // check the port
+                Device *dev = devit->second;
+                PortList pl = dev->getPortList();
+                if ( pl.find(tit->port) == pl.end() ) {
+                    tit = res.erase(tit);
+                } else {
+                    tit++;
+                }
             }
         }
         return res;
@@ -442,6 +450,17 @@ DataLink *Device::getDLforProtocol(ProtocolType p) const
         }
     }
     return nullptr;
+}
+
+PortList Device::getPortList() const
+{
+    PortList pl;
+    for (DataLink* dl : _dlink) {
+        for ( int p : dl->getAllSendPorts()) {
+            pl.insert(p);
+        }
+    }
+    return pl;
 }
 
 int Device::getSendPort(ProtocolType p) const

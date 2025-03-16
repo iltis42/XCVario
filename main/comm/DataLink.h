@@ -30,8 +30,9 @@ public:
     int getNumNMEA() const;
     ProtocolItf *getBinary() const;
     void updateRoutes();
-    int getPort() const { return _itf_id.port; }
+    int getPort() const { return _itf_id.port; } // the listen port
     int getItf() const { return _itf_id.iid; }
+    PortList getAllSendPorts() const;
     // dbg
     void dumpProto();
 

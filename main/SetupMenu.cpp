@@ -311,9 +311,9 @@ int data_mon(SetupMenuSelect *p) {
 	ItfTarget ch;
 	switch (p->getSelect()) {
 		case 1: ch = ItfTarget(BT_SPP); break;
-		case 2: ch = ItfTarget(WIFI,8080); break;
-		case 3: ch = ItfTarget(WIFI,8081); break;
-		case 4: ch = ItfTarget(WIFI,8082); break;
+		case 2: ch = ItfTarget(WIFI,8880); break;
+		case 3: ch = ItfTarget(WIFI,8881); break;
+		case 4: ch = ItfTarget(WIFI,8882); break;
 		case 5: ch = ItfTarget(S1_RS232); break;
 		case 6: ch = ItfTarget(S2_RS232); break;
 		case 7: ch = ItfTarget(CAN_BUS); break;

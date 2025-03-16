@@ -2394,13 +2394,12 @@ void SetupMenu::system_menu_create_interfaceS1(MenuEntry *top) {
 	stxi2->addEntry("RS232 Standard");
 	stxi2->addEntry("RS232 TTL");
 
-	SetupMenuSelect *srxtw2 = new SetupMenuSelect("Twist RX/TX Pins", RST_NONE,
+	SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX Pins", RST_NONE,
 			update_s1_pin, true, &serial1_pins_twisted);
 	top->addEntry(srxtw2);
-	srxtw2->setHelp(
-			"Option to swap RX and TX line for S1, e.g. for OpenVario. After change also a true power-cycle is needed");
+	srxtw2->setHelp("Option to swap RX and TX line for S1, a Flarm needs Normal, a Navi usually swapped. After change also a true power-cycle is needed");
 	srxtw2->addEntry("Normal");
-	srxtw2->addEntry("Twisted");
+	srxtw2->addEntry("Swapped");
 
 	SetupMenuSelect *stxdis1 = new SetupMenuSelect("Role", RST_NONE,
 			update_s1_txena, true, &serial1_tx_enable);
@@ -2483,13 +2482,12 @@ void SetupMenu::system_menu_create_interfaceS2(MenuEntry *top) {
 	stxi2->addEntry("RS232 Standard");
 	stxi2->addEntry("RS232 TTL");
 
-	SetupMenuSelect *srxtw2 = new SetupMenuSelect("Twist RX/TX Pins", RST_NONE,
+	SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX Pins", RST_NONE,
 			update_s2_pin, true, &serial2_pins_twisted);
 	top->addEntry(srxtw2);
-	srxtw2->setHelp(
-			"Option to swap RX and TX line for S2, e.g. for OpenVario. After change also a true power-cycle is needed");
+	srxtw2->setHelp("Option to swap RX and TX line for S1, a Flarm needs Normal, a Navi usually swapped. After change also a true power-cycle is needed");
 	srxtw2->addEntry("Normal");
-	srxtw2->addEntry("Twisted");
+	srxtw2->addEntry("Swapped");
 
 	SetupMenuSelect *stxdis2 = new SetupMenuSelect("Role", RST_NONE,
 			update_s2_txena, true, &serial2_tx_enable);

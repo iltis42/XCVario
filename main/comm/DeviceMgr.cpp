@@ -34,8 +34,9 @@ static TaskHandle_t SendTask = nullptr;
 
 // static routing table on device level
 static RoutingMap Routes = {
-    { {FLARM_DEV, 0}, {{NAVI_DEV, 0}, {XCVARIOCLIENT_DEV, 20}} },
-    { {NAVI_DEV, 0}, {{FLARM_DEV, 0}} }
+    { {FLARM_DEV, 0}, {{NAVI_DEV, 0}, {NAVI_DEV, 8881}, {XCVARIOCLIENT_DEV, 20}} },
+    { {NAVI_DEV, 0}, {{FLARM_DEV, 0}} },
+    { {XCVARIO_DEV, 0}, {{NAVI_DEV, 0}, {NAVI_DEV, 8880}} }
 };
 
 // a dummy interface
@@ -56,13 +57,15 @@ static int tt_snd(Message *msg)
     int plsrety = 0;
     if (itf)
     {
-        // ESP_LOGI(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getStringId(), port, len, msg->buffer.c_str());
+        ESP_LOGD(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getStringId(), port, len, msg->buffer.c_str());
         plsrety = itf->Send(msg->buffer.c_str(), len, port);
         if ( plsrety > 0 ) {
             ESP_LOGI(FNAME, "reshedule message %d/%d", len, msg->buffer.length());
             msg->buffer.erase(0, len); // chop sent bytes off
         }
-        DM.monitorString(ItfTarget(itf->getId(),port), DIR_TX, msg->buffer.c_str(), len);
+        else if ( plsrety == 0 ) {
+            DM.monitorString(ItfTarget(itf->getId(),port), DIR_TX, msg->buffer.c_str(), len);
+        }
     }
     return plsrety;
 }
@@ -106,7 +109,7 @@ void TransmitTask(void *arg)
                 // Regular case
                 // ESP_LOGI(FNAME, "regular send");
                 pls_retry = tt_snd(msg);
-                if ( pls_retry == 0 ) {
+                if ( pls_retry < 1 ) {
                     // ESP_LOGI(FNAME, "regular done");
                     DEV::relMessage(msg);
                 } else {
@@ -337,13 +340,21 @@ RoutingList DeviceManager::getRouting(RoutingTarget target)
         RoutingList res = route_it->second;
         for (RoutingList::iterator tit=res.begin(); tit != res.end(); ) 
         {
-            // is dev configured
-            if ( _device_map.find(tit->did) == _device_map.end() ) {
+            // is dev configured, is the port identical
+            DevMap::iterator devit = _device_map.find(tit->did);
+            if ( devit == _device_map.end() ) {
                 ESP_LOGD(FNAME, "remove %d from routing list.", tit->did);
                 tit = res.erase(tit);
             }
             else {
-                tit++;
+                // check the port
+                Device *dev = devit->second;
+                PortList pl = dev->getPortList();
+                if ( pl.find(tit->port) == pl.end() ) {
+                    tit = res.erase(tit);
+                } else {
+                    tit++;
+                }
             }
         }
         return res;
@@ -440,6 +451,17 @@ DataLink *Device::getDLforProtocol(ProtocolType p) const
         }
     }
     return nullptr;
+}
+
+PortList Device::getPortList() const
+{
+    PortList pl;
+    for (DataLink* dl : _dlink) {
+        for ( int p : dl->getAllSendPorts()) {
+            pl.insert(p);
+        }
+    }
+    return pl;
 }
 
 int Device::getSendPort(ProtocolType p) const

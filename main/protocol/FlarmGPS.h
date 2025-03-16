@@ -35,6 +35,4 @@ private:
     // parse helpers
     int _header_len;
     std::vector<int> _word_start;
-    // binary mode peer
-    ProtocolItf *_binpeer;
 };

@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 
 #include <cinttypes>
 
@@ -19,7 +20,7 @@ typedef enum
     NO_DEVICE,
     JUMBO_DEV,
     ANEMOI_DEV,
-    // XCVARIO_DEV,
+    XCVARIO_DEV,
     XCVARIOCLIENT_DEV,
     MASTER_DEV,  // CAN id registry
     FLARM_DEV,
@@ -74,6 +75,8 @@ struct RoutingTarget {
 // Routing table on device level, details on protocol requirements are not defined here
 typedef std::vector<RoutingTarget> RoutingList;
 typedef std::map<RoutingTarget, RoutingList> RoutingMap;
+//typedef std::set<ProtocolType> ProtocolList;
+typedef std::set<int> PortList;
 
 
 constexpr int CAN_REG_PORT = 0x7f0;

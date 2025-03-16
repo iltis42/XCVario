@@ -98,13 +98,13 @@ static void socket_server(void *setup)
 			num_send = 0;
 			ESP_LOGI(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
 		}
-		ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
+		// ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
 		if( clients.size() ) {
 			int size=400;
 			char buffer[WIFI_BUFFER_SIZE+1];
 			int	len = Router::pullBlock( *(config->txq), buffer, size );
 			if( len ){
-				ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", config->port, len, buffer );
+				ESP_LOGD(FNAME, "port %d to sent %d: bytes, %s", config->port, len, buffer );
 				config->idle = 0;
 				DM.monitorString( ItfTarget(WIFI,config->port), DIR_TX, buffer, len );
 			}
@@ -123,7 +123,7 @@ static void socket_server(void *setup)
 			{
 				client_record_t &client_rec = *it;
 				char r[SSTRLEN+1];
-				ESP_LOGI(FNAME, "read from wifi client %d", client_rec.client );
+				// ESP_LOGI(FNAME, "read from wifi client %d", client_rec.client );
 				ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN-1, MSG_DONTWAIT);
 				if (sizeRead > 0) {
 					auto dl = wifi->_dlink.find(config->port);
@@ -138,14 +138,14 @@ static void socket_server(void *setup)
 						num_send ++;
 					}
 				}
-				ESP_LOGI(FNAME, "loop tcp client %d, port %d", client_rec.client, config->port );
+				// ESP_LOGI(FNAME, "loop tcp client %d, port %d", client_rec.client, config->port );
 				if ( len ){
 					// ESP_LOGI(FNAME, "TX wifi client %d, bytes %d, port %d, trials:%d", client_rec.client, len, config->port, client_rec.retries );
 					// ESP_LOG_BUFFER_HEXDUMP(FNAME,buffer,len, ESP_LOG_INFO);
 					client_rec.retries++;
 					if( client_rec.client >= 0 ){
 						int num = send(client_rec.client, buffer, len, MSG_DONTWAIT);
-						ESP_LOGI(FNAME, "client %d, num send %d", client_rec.client, num );
+						// ESP_LOGI(FNAME, "client %d, num send %d", client_rec.client, num );
 						if( num >= 0 ){
 							client_rec.retries = 0;
 							// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client_rec.client, config->port, num );
@@ -262,8 +262,10 @@ int WifiApp::Send(const char *msg, int &len, int port)
 
 	if (port < 8880 || port > 8884) {
 	    ESP_LOGE(FNAME, "Invalid port: %d, should be between 8880 and 8884", port);
-	    return 100;
+	    return -1;
 	}
+	// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", port, len, msg );
+
 	SString s( msg, len );
 	int pidx = port-8880;
 	sock_server_t *sock = _socks[pidx];

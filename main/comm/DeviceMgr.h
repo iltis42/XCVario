@@ -41,6 +41,7 @@ struct Device
     int getSendPort(ProtocolType p) const;
     ProtocolItf* getProtocol(ProtocolType p) const;
     DataLink *getDLforProtocol(ProtocolType p) const;
+    PortList getPortList() const;
     // Attributes
     const DeviceId      _id;
     std::set<DataLink*> _dlink;

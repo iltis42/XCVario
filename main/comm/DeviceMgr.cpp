@@ -214,6 +214,12 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     		}
     	}
     }
+    else if ( iid == WIFI) {
+        if ( Wifi ) {
+            Wifi->ConfigureIntf(listen_port);
+            itf = Wifi;
+        }
+    }
     else if ( iid == S1_RS232) {
         if ( S1 ) {
             S1->ConfigureIntf(-1); // load nvs setup

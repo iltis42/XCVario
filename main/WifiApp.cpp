@@ -269,11 +269,12 @@ int WifiApp::Send(const char *msg, int &len, int port)
 	SString s( msg, len );
 	int pidx = port-8880;
 	sock_server_t *sock = _socks[pidx];
-	if( sock->txq->isFull() ){
+	if( sock->txq->isFull() ) {
 		full[pidx]=true;
+		len = 0; // nothing already sent
 		return 10;
 	}
-	else{
+	else {
 		full[pidx]=false;
 		sock->txq->add(s);
 	}

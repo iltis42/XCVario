@@ -319,7 +319,7 @@ void DataLink::forwardMsg(DeviceId src_dev)
     // consider forwarding
     for ( auto &target : _routes ) {
         Message* msg = DEV::acqMessage(target.did, target.port);
-        ESP_LOGI(FNAME, "route %d/%d to %d/%d", src_dev, _itf_id.port, msg->target_id, target.port);
+        ESP_LOGD(FNAME, "route %d/%d to %d/%d", src_dev, _itf_id.port, msg->target_id, target.port);
         msg->buffer = _sm._frame;
         DEV::Send(msg);
     }

@@ -15,7 +15,7 @@
 #include "comm/DeviceMgr.h"
 #include "sensor.h"
 
-#include <logdef.h>
+#include <logdefnone.h>
 
 #include <cstring>
 #include <time.h>

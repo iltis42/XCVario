@@ -1,6 +1,6 @@
 #include "OneWireESP32.h"
 #include "driver/gpio.h"
-#include <logdef.h>
+#include "logdefnone.h"
 
 #define OWR_OK	0
 #define OWR_CRC	1

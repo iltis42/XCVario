@@ -798,7 +798,6 @@ void readTemp(void *pvParameters)
 		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
 			if( !t_devices ){
 				t_devices = ds18b20.search(t_addr, 1);
-				ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
 				// ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
 			}
 			if( t_devices ){
@@ -920,7 +919,7 @@ void system_startup(void *args){
 	the_can_mode = can_mode.get(); // initialize variable for CAN mode
 
 	// menu_screens.set(0);
-	// wireless_type.set(WL_DISABLE);
+	wireless_type.set(WL_WLAN_STANDALONE);
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
 	stall_alarm_off_kmh = stall_speed.get()/3;
@@ -1058,11 +1057,12 @@ void system_startup(void *args){
 		BTspp = new BTSender();
 		BTspp->start();
 	}
-	else if( wireless == WL_BLUETOOTH_LE ){
+	else if( wireless == WL_BLUETOOTH_LE ) {
 		blesender.begin();
 	}
-	else {
+	else  if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) {
 		wireless_id.assign("WLAN SID: ");
+		Wifi = new WifiApp();
 	}
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );
@@ -1216,7 +1216,7 @@ void system_startup(void *args){
 		if( ds18b20.reset() )
 		{
 			t_devices = ds18b20.search(t_addr, 1);
-			ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
+			// ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
 		}
 		if( t_devices ){
 			ESP_LOGI(FNAME,"Temp devices %d", t_devices);
@@ -1452,8 +1452,12 @@ void system_startup(void *args){
 			display->writeText( line++, "Bluetooth: FAILED");
 			logged_tests += "Bluetooth test: FAILED\n";
 		}
-	}else if ( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE ){
-		// WifiApp::wifi_init_softap();
+	}else if ( (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE)
+		&& Wifi ) {
+		DeviceManager* dm = DeviceManager::Instance();
+		dm->addDevice(NAVI_DEV, XCVARIO_P, 8880, 8880, WIFI);
+		dm->addDevice(NAVI_DEV, FLARMHOST_P, 8881, 8881, WIFI);
+		dm->addDevice(NAVI_DEV, FLARMBIN_P, 8881, 8881, NO_PHY);
 	}
 
 	if( compass_enable.get() == CS_CAN ){

@@ -42,6 +42,7 @@ typedef enum
     FLARMBIN_P,
     MAGSENS_P,
     MAGSENSBIN_P,
+    XCVARIO_P,
     NMEA_P,
     TEST_P
 } ProtocolType;

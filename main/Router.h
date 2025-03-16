@@ -48,8 +48,6 @@ public:
   static void routeXCV();
   // route messages coming in from WLAN
   static void routeWLAN();
-  // route messages coming in from Bluetooth
-  static void routeBT();
   // route messages coming in from CAN interface
   static void routeCAN();
   // add messages from XCVario to Router

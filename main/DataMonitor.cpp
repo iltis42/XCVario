@@ -54,9 +54,9 @@ void DataMonitor::header( ItfTarget ch, bool binary, int len, e_dir_t dir ){
 	const char * what;
 	switch( ch.raw ) {
 		case ItfTarget(BT_SPP).raw: what = "BT"; break;
-		case ItfTarget(WIFI,8080).raw: what = "W 8080"; break;
-		case ItfTarget(WIFI,8081).raw: what = "W 8881"; break;
-		case ItfTarget(WIFI,8082).raw: what = "W 8882"; break;
+		case ItfTarget(WIFI,8880).raw: what = "W8880"; break;
+		case ItfTarget(WIFI,8881).raw: what = "W8881"; break;
+		case ItfTarget(WIFI,8882).raw: what = "W8882"; break;
 		case ItfTarget(S1_RS232).raw:  what = "S1"; break;
 		case ItfTarget(S2_RS232).raw:  what = "S2"; break;
 		case ItfTarget(CAN_BUS).raw: what = "CAN"; break;
@@ -69,7 +69,7 @@ void DataMonitor::header( ItfTarget ch, bool binary, int len, e_dir_t dir ){
 		b = "";
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_tr, true );
-	ucg->setPrintPos( 20, SCROLL_TOP );
+	ucg->setPrintPos( 0, SCROLL_TOP );
 
 	if( paused )
 		ucg->printf( "%s%s: RX:%d TX:%d hold  ", b, what, rx_total, tx_total );
@@ -79,6 +79,7 @@ void DataMonitor::header( ItfTarget ch, bool binary, int len, e_dir_t dir ){
 
 void DataMonitor::monitorString( ItfTarget ch, e_dir_t dir, const char *str, int len ){
 	if( xSemaphoreTake(mutex,portMAX_DELAY ) ){
+		// ESP_LOGI(FNAME,"ch %x, channel %x", (unsigned)ch.raw, (unsigned)channel.raw );
 		bool binary = data_monitor_mode.get() == MON_MOD_BINARY;
 		if( !mon_started || paused || (ch != channel) ){
 			// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );
@@ -94,7 +95,7 @@ void DataMonitor::monitorString( ItfTarget ch, e_dir_t dir, const char *str, int
 
 void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool binary, int len ){
 	// if (! binary)
-	// 	ESP_LOGI(FNAME,"DM ch:%d dir:%d len:%d data:%s", ch, dir, len, str );
+	// ESP_LOGI(FNAME,"DM ch:%x dir:%d len:%d data:%s", (unsigned)ch.raw, dir, len, str );
 	const int scroll_lines = 20;
 	char dirsym = 0;
 	if( dir == DIR_RX ){

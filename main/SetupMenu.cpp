@@ -2387,13 +2387,12 @@ void SetupMenu::system_menu_create_interfaceS1(MenuEntry *top) {
 	top->addEntry(s1out);
 	s1out->addCreator(system_menu_create_interfaceS1_routing);
 
-	SetupMenuSelect *stxi2 = new SetupMenuSelect("RX/TX Invert", RST_NONE,
+	SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE,
 			update_s1_pol, true, &serial1_tx_inverted);
 	top->addEntry(stxi2);
-	stxi2->setHelp(
-			"Serial RS232 (TTL) logic, a '1' will be sent as zero voltage level (RS232 standard and default) or vice versa");
-	stxi2->addEntry("Normal RS232");
-	stxi2->addEntry("Inverted TTL");
+	stxi2->setHelp( "A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL uses a positive voltage");
+	stxi2->addEntry("RS232 Standard");
+	stxi2->addEntry("RS232 TTL");
 
 	SetupMenuSelect *srxtw2 = new SetupMenuSelect("Twist RX/TX Pins", RST_NONE,
 			update_s1_pin, true, &serial1_pins_twisted);
@@ -2477,13 +2476,12 @@ void SetupMenu::system_menu_create_interfaceS2(MenuEntry *top) {
 	top->addEntry(s2out);
 	s2out->addCreator(system_menu_create_interfaceS2_routing);
 
-	SetupMenuSelect *stxi2 = new SetupMenuSelect("RX/TX Invert", RST_NONE,
+	SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE,
 			update_s2_pol, true, &serial2_tx_inverted);
 	top->addEntry(stxi2);
-	stxi2->setHelp(
-			"Serial RS232 (TTL) logic, a '1' will be sent as zero voltage level (RS232 standard and default) or vice versa");
-	stxi2->addEntry("Normal RS232");
-	stxi2->addEntry("Inverted TTL");
+	stxi2->setHelp("A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL uses a positive voltage");
+	stxi2->addEntry("RS232 Standard");
+	stxi2->addEntry("RS232 TTL");
 
 	SetupMenuSelect *srxtw2 = new SetupMenuSelect("Twist RX/TX Pins", RST_NONE,
 			update_s2_pin, true, &serial2_pins_twisted);

@@ -100,24 +100,6 @@ static void socket_server(void *setup)
 		}
 		// ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
 		if( clients.size() ) {
-			int size=400;
-			char buffer[WIFI_BUFFER_SIZE+1];
-			int	len = Router::pullBlock( *(config->txq), buffer, size );
-			if( len ){
-				ESP_LOGD(FNAME, "port %d to sent %d: bytes, %s", config->port, len, buffer );
-				config->idle = 0;
-				DM.monitorString( ItfTarget(WIFI,config->port), DIR_TX, buffer, len );
-			}
-			else
-			{
-				config->idle++;
-				if( config->idle > 10 ){  // if there is no data, send a \n all 2 seconds as keep alive
-					buffer[0] = '\n';
-					len=1;
-					config->idle = 0;
-					// ESP_LOGI(FNAME, "KEEP-ALIVE port %d", config->port );
-				}
-			}
 			std::list<client_record_t>::iterator it;
 			for(it = clients.begin(); it != clients.end(); ++it)
 			{
@@ -139,21 +121,6 @@ static void socket_server(void *setup)
 					}
 				}
 				// ESP_LOGI(FNAME, "loop tcp client %d, port %d", client_rec.client, config->port );
-				if ( len ){
-					// ESP_LOGI(FNAME, "TX wifi client %d, bytes %d, port %d, trials:%d", client_rec.client, len, config->port, client_rec.retries );
-					// ESP_LOG_BUFFER_HEXDUMP(FNAME,buffer,len, ESP_LOG_INFO);
-					client_rec.retries++;
-					if( client_rec.client >= 0 ){
-						int num = send(client_rec.client, buffer, len, MSG_DONTWAIT);
-						// ESP_LOGI(FNAME, "client %d, num send %d", client_rec.client, num );
-						if( num >= 0 ){
-							client_rec.retries = 0;
-							// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", client_rec.client, config->port, num );
-						}
-					}
-				}
-				// if( client_rec.retries != 0 )
-				//	ESP_LOGI(FNAME, "tcp retry %d (port: %d), %d", client_rec.client, config->port, client_rec.retries );
 				if( client_rec.retries > 100 ){
 					ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send err: %s, remove!", client_rec.client,  config->port, strerror(errno) );
 					close(client_rec.client );
@@ -255,30 +222,37 @@ void WifiApp::ConfigureIntf(int port){
 
 int WifiApp::Send(const char *msg, int &len, int port)
 {
-	//Should look like this:
 	// xy = _socks[vport]->xy
 	// int num = send(xy, msg, len, MSG_DONTWAIT);
-	// if ( num ... ) return something;
-
+	// if ( num ... ) return something
 	if (port < 8880 || port > 8884) {
-	    ESP_LOGE(FNAME, "Invalid port: %d, should be between 8880 and 8884", port);
-	    return -1;
+		ESP_LOGE(FNAME, "Invalid port: %d, should be between 8880 and 8884", port);
+		return -1;
 	}
 	// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", port, len, msg );
-
-	SString s( msg, len );
-	int pidx = port-8880;
-	sock_server_t *sock = _socks[pidx];
-	if( sock->txq->isFull() ) {
-		full[pidx]=true;
-		len = 0; // nothing already sent
-		return 10;
+	int socket_num=port-8880;
+	sock_server_t *socks = _socks[socket_num];
+	if( socks == nullptr )
+		return 50;   // erratic port, socket unavail -> return, try again later
+	// here we go
+	full[socket_num]=true;  // init state means busy
+	for(auto it = socks->clients.begin(); it != socks->clients.end(); ++it)  // iterate through all clients
+	{
+		client_record_t &rec = *it;
+		if( rec.client >= 0 ){
+			len = send(rec.client, msg, len, MSG_DONTWAIT);
+			// ESP_LOGI(FNAME, "client %d, num send %d", rec.client, num );
+			if( len >= 0 ){
+				rec.retries = 0;
+				full[socket_num]=false; // if at leat one client works, we say wifi is okay -> blue symbol
+				// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", rec.client, config->port, num );
+			}
+		}
 	}
-	else {
-		full[pidx]=false;
-		sock->txq->add(s);
-	}
-	return 0;
+	if( full[socket_num] )
+		return 50;  // this port -> socket number is currently unavailable please try again 50 ms later
+	else
+		return 0;
 }
 
 void WifiApp::wifi_init_softap()

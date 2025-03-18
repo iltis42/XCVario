@@ -32,6 +32,7 @@ typedef struct str_wireless_id {
 typedef struct client_record {
 	int client;
 	int retries;
+	int port;
 }client_record_t;
 
 typedef struct xcv_sock_server {

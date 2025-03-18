@@ -232,29 +232,31 @@ int WifiApp::Send(const char *msg, int &len, int port)
 	// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", port, len, msg );
 	int socket_num=port-8880;
 	sock_server_t *socks = _socks[socket_num];
-	len = 0;
-	if( socks == nullptr )
+	if( socks == nullptr ){
+		len = 0;
 		return 50;   // erratic port, socket unavail -> return, try again later
+	}
 	// here we go
 	full[socket_num]=true;  // init state means busy
+	bool sendOK=false;
 	for(auto it = socks->clients.begin(); it != socks->clients.end(); ++it)  // iterate through all clients
 	{
 		client_record_t &rec = *it;
 		if( rec.client >= 0 ){
 			int num = send(rec.client, msg, len, MSG_DONTWAIT);
 			// ESP_LOGI(FNAME, "client %d, num send %d", rec.client, num );
-			if( len >= 0 ){
-				len = num;
+			if( num == len ){  // at least once we needed to sent the rest in one step for okay status
+				sendOK = true;
 				rec.retries = 0;
 				full[socket_num]=false; // if at leat one client works, we say wifi is okay -> blue symbol
 				// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", rec.client, config->port, num );
 			}
 		}
 	}
-	if( full[socket_num] )
-		return 50;  // this port -> socket number is currently unavailable please try again 50 ms later
-	else
+	if( sendOK )
 		return 0;
+	else
+		return 50;  // this port -> socket number is currently unavailable please try again 50 ms later
 }
 
 void WifiApp::wifi_init_softap()

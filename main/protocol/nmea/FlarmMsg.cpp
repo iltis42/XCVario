@@ -6,276 +6,31 @@
  ***       Copyright (C) Rohs Engineering Design         ***
  ***********************************************************/
 
-#include "FlarmGPS.h"
-#include "FlarmBin.h"
+#include "FlarmMsg.h"
+#include "protocol/FlarmBin.h"
 #include "Flarm.h"
 
-#include "nmea_util.h"
-#include "comm/Messages.h"
 #include "comm/DeviceMgr.h"
-#include "sensor.h"
 
-#include <logdefnone.h>
-
-#include <cstring>
-#include <time.h>
-#include <sys/time.h>
+#include "logdef.h"
 
 
 // The FLARM protocol parser.
 //
 // Supported messages:
-// GPRMC,081836,A,3751.65,S,14507.36,E,000.0,360.0,130998,011.3,E*62
-// GPGGA,hhmmss.ss,llll.ll,a,yyyyy.yy,a,x,xx,x.x,x.x,M,x.x,M,x.x,xxxx*hh
-// PGRMZ,<Value>,F,2
 // PFLAA,<AlarmLevel>,<RelativeNorth>,<RelativeEast>,<RelativeVertical>,<IDType>,<ID>,<Track>,<TurnRate>,<GroundSpeed>,<ClimbRate>,<AcftType>[,<NoTrack>[,<Source>,<RSSI>]]
 // PFLAE,<QueryType>,<Severity>,<ErrorCode>[,<Message>]
 // PFLAU,<RX>,<TX>,<GPS>,<Power>,<AlarmLevel>,<RelativeBearing>,<AlarmType>,<RelativeVertical>,<RelativeDistance>[,<ID>]
 // PFLAX,A*2E
 
-datalink_action_t FlarmGPS::nextByte(const char c)
-{
-    int pos = _sm._frame.size() - 1; // c already in the buffer
-    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
-    switch(_sm._state) {
-    case START_TOKEN:
-        if ( c == '$' ) {
-            _sm._state = HEADER;
-            _word_start.clear();
-            ESP_LOGD(FNAME, "Msg START_TOKEN");
-        }
-        break;
-    case HEADER:
-        NMEA::incrCRC(_sm._crc,c);
-        if ( pos < 4 ) { break; }
-        _header_len = 3;
-        if ( _sm._frame.substr(1,2) != "GP" ) { // GPS NMEA sender id
-            _header_len = 4;
-            if ( _sm._frame.substr(1,3) != "PFL" // Flarm sender id
-                && _sm._frame.substr(1,3) != "PGR" ) { // Garmin sender id
-                break;
-            }
-        }
-        _sm._state = PAYLOAD;
-        ESP_LOGD(FNAME, "Msg HEADER");
-        break;
-    case PAYLOAD:
-        if ( c == ',' ) {
-            _word_start.push_back(pos+1); // another word start
-        }
-        if ( c == '*' ) {
-            _word_start.push_back(pos+1);
-            _sm._state = CHECK_CRC1; // Expecting a CRC to check
-            break;
-        }
-        if ( c != '\r' && c != '\n' ) {
-            ESP_LOGD(FNAME, "Msg PAYLOAD");
-            NMEA::incrCRC(_sm._crc,c);
-            break;
-        }
-        _sm._state = COMPLETE;
-        break;
-    case CHECK_CRC1:
-        _crc_buf[0] = c;
-        _sm._state = CHECK_CRC2;
-        break;
-    case CHECK_CRC2:
-    {
-        _crc_buf[1] = c;
-        _crc_buf[2] = '\0';
-        char read_crc = (char)strtol(_crc_buf, NULL, 16);
-        ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
-        if ( read_crc != _sm._crc ) {
-            _sm._state = START_TOKEN;
-            break;
-        }
-        _sm._state = COMPLETE;
-        break;
-    }
-    default:
-        break;
-    }
-
-    datalink_action_t action = NOACTION;
-    if ( _sm._state == COMPLETE )
-    {
-        NMEA::ensureTermination(_sm._frame);
-        _sm._state = START_TOKEN; // restart parsing
-        action = DO_ROUTING;
-        ESP_LOGD(FNAME, "Msg complete %c%c%c", _sm._frame.at(_header_len), _sm._frame.at(_header_len+1), _sm._frame.at(_header_len+2));
-        int32_t mid = (_sm._frame.at(_header_len)<<8) + _sm._frame.at(_header_len+1);
-        if ( _sm._frame.at(_header_len+2) != ',' ) {
-            mid <<= 8;
-            mid |= _sm._frame.at(_header_len+2);
-        }
-        switch (mid) {
-            case (('R' << 16) | ('M' << 8) | 'C'):
-                parseGPRMC();
-                break;
-            case (('G' << 16) | ('G' << 8) | 'A'):
-                parseGPGGA();
-                break;
-            case (('M' << 8) | 'Z'):
-                parsePGRMZ();
-                break;
-            case (('A' << 8) | 'E'):
-                parsePFLAE();
-                break;
-            case (('A' << 8) | 'U'):
-                parsePFLAU();
-                break;
-            case (('A' << 8) | 'X'):
-                if ( parsePFLAX() ) {
-                    action = NXT_PROTO;
-                }
-                break;
-            default:
-                break;
-        }
-    }
-    return action;
-}
-
-// $GPRMC,081836,A,3751.65,S,14507.36,E,000.0,360.0,130998,011.3,E*62
-// $GPRMC,225446,A,4916.45,N,12311.12,W,000.5,054.7,191194,020.3,E*68
-// $GPRMC,201914.00,A,4857.58740,N,00856.94735,E,0.172,122.95,310321,,,A*6D
-//
-//            225446.00    Time of fix 22:54:46 UTC
-//            A            Navigation receiver warning A = OK, V = warning
-//            4916.45,N    Latitude 49 deg. 16.45 min North
-//            12311.12,W   Longitude 123 deg. 11.12 min West
-//            000.5        Speed over ground, Knots
-//            054.7        Course Made Good, True
-//            191194       Date of fix  19 November 1994
-//            020.3,E      Magnetic variation 20.3 deg East
-//  *68          mandatory checksum
-void FlarmGPS::parseGPRMC()
-{
-    if ( _word_start.size() < 9 ) {
-        return;
-    }
-    ESP_LOGD(FNAME, "parseGPRMC");
-    struct tm t;
-    const char *s = _sm._frame.c_str();
-    int valid_time_scan = sscanf( s + _word_start[0], "%02d%02d%02d", &t.tm_hour, &t.tm_min, &t.tm_sec );
-    char warn = *(s + _word_start[1]);
-    sscanf( s + _word_start[6], "%f", &Flarm::gndSpeedKnots );
-    sscanf( s + _word_start[7], "%f", &Flarm::gndCourse );
-    int valid_date_scan = sscanf( s + _word_start[8],"%02d%02d%02d", &t.tm_mday, &t.tm_mon, &t.tm_year );
-    t.tm_year +=100;
-    ESP_LOGI(FNAME,"SC: %d/%d/%d %02d:%02d:%02d ", t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec );
-
-    // ESP_LOGI(FNAME,"G: %s",_gprmc );
-    // ESP_LOGI(FNAME,"DT: %d/%02d/%02d %02d:%02d:%02d ", now.tm_year-100, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec );
-    // ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° warn:%c date:%s ", myGPS_OK, gndSpeedKnots, gndCourse, warn, date  );
-    // ESP_LOGI(FNAME,"GP%s, GPS_OK:%d warn:%c T:%s D:%s", gprmc+3, myGPS_OK, warn, time, date  );
-
-    if (warn == 'A')
-    {
-        if (Flarm::myGPS_OK == false)
-        {
-            Flarm::myGPS_OK = true;
-            if (wind_enable.get() & WA_STRAIGHT || wind_enable.get() & WA_CIRCLING)
-            {
-                CircleWind::gpsStatusChange(true);
-            }
-            ESP_LOGI(FNAME, "GPRMC, GPS status changed to good, gps:%d", Flarm::myGPS_OK);
-        }
-        theWind.calculateWind();
-        // ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
-        CircleWind::newSample(Vector(Flarm::gndCourse, Units::knots2kmh(Flarm::gndSpeedKnots)));
-        if (!Flarm::time_sync && (valid_time_scan && valid_date_scan))
-        {
-            ESP_LOGD(FNAME, "Start TimeSync");
-            long int epoch_time = mktime(&t);
-            timeval epoch = {epoch_time, 0};
-            const timeval *tv = &epoch;
-            timezone utc = {0, 0};
-            const timezone *tz = &utc;
-            settimeofday(tv, tz);
-            Flarm::time_sync = true;
-            ESP_LOGD(FNAME, "Finish Time Sync");
-        }
-    }
-    else
-    {
-        if (Flarm::myGPS_OK == true)
-        {
-            Flarm::myGPS_OK = false;
-            ESP_LOGI(FNAME, "GPRMC, GPS status changed to bad, gps:%d", Flarm::myGPS_OK);
-            if (wind_enable.get() & WA_STRAIGHT || wind_enable.get() & WA_CIRCLING)
-            {
-                CircleWind::gpsStatusChange(false);
-                ESP_LOGW(FNAME, "GPRMC, GPS not OK.");
-            }
-        }
-    }
-    Flarm::timeout = 10;
-    // ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", myGPS_OK, gndSpeedKnots, gndCourse );
-}
-
-
-// eg. $GPGGA,121318.00,4857.58750,N,00856.95715,E,1,05,3.87,247.7,M,48.0,M,,*52
-//
-// hhmmss.ss = UTC of position
-// llll.ll = latitude of position
-// a = N or S
-// yyyyy.yy = Longitude of position
-// a = E or W
-// x = GPS Quality indicator (0=no fix, 1=GPS fix, 2=Dif. GPS fix)
-// xx = number of satellites in use
-// x.x = horizontal dilution of precision
-// x.x = Antenna altitude above mean-sea-level
-// M = units of antenna altitude, meters
-// x.x = Geoidal separation
-// M = units of geoidal separation, meters
-// x.x = Age of Differential GPS data (seconds)
-// xxxx = Differential reference station ID
-//
-extern unsigned long _gps_millis;
-
-void FlarmGPS::parseGPGGA()
-{
-    ESP_LOGD(FNAME, "parseGPGGA");
-    _gps_millis = millis();
-
-    if (_word_start.size() > 13)
-    {
-        int numSat = atoi(_sm._frame.c_str() + _word_start[6]);
-        ESP_LOGI(FNAME, "numSat=%d", numSat);
-        if ((numSat != Flarm::_numSat) && (wind_enable.get() != WA_OFF))
-        {
-            Flarm::_numSat = numSat;
-            CircleWind::newConstellation(numSat);
-        }
-        Flarm::timeout = 10;
-    }
-}
-
-// $PGRMZ,880,F,2*3A
-//
-void FlarmGPS::parsePGRMZ()
-{
-    ESP_LOGD(FNAME, "parsePGRMZ");
-    if (alt_select.get() != AS_EXTERNAL) {
-        return;
-    }
-    if ( _word_start.size() == 4 && _sm._frame.at(_word_start[1]) == 'F' ) {
-        int alt1013_ft = atoi(_sm._frame.c_str()+_word_start[0]);
-        alt_external = Units::feet2meters((float)(alt1013_ft + 0.5));
-        ESP_LOGI(FNAME, "PGRMZ %d: ALT(1013):%5.0f m", alt1013_ft, alt_external);
-        Flarm::timeout = 10;
-        Flarm::ext_alt_timer = 10; // Fall back to internal Barometer after 10 seconds
-    }
-}
-
 
 // PFLAA,<AlarmLevel>,<RelativeNorth>,<RelativeEast>,<RelativeVertical>,<IDType>,<ID>,<Track>,<TurnRate>,<GroundSpeed>,<ClimbRate>,<AcftType>
 // e.g.
 // $PFLAA,0,-1234,1234,220,2,DD8F12,180,,30,-1.4,1*
-void FlarmGPS::parsePFLAA()
+datalink_action_t FlarmMsg::parsePFLAA(NmeaPrtcl *nmea)
 {
     ESP_LOGD(FNAME, "parsePFLAA");
+    return NOACTION;
 }
 
 
@@ -334,18 +89,21 @@ void FlarmGPS::parsePFLAA()
 // <Message> Field is omitted if data port version <7 or if DEVTYPE = Flarm04.
 //         String. Maximum 40 ASCII characters. Textual description of the error in English. The field may be empty.
 
-void FlarmGPS::parsePFLAE()
+datalink_action_t FlarmMsg::parsePFLAE(NmeaPrtcl *nmea)
 {
     ESP_LOGD(FNAME, "parsePFLAE");
+    ProtocolState *sm = nmea->getSM();
+    const std::vector<int> *word = &sm->_word_start;
     Flarm::timeout = 10;
 
-    if ( _word_start.size() == 3
-        && _sm._frame.at(_word_start[0]) == 'A' 
-        && _sm._frame.at(_word_start[1]) == '0' 
-        && _sm._frame.at(_word_start[2]) == '0' )
+    if ( word->size() == 3
+        && sm->_frame.at(word->at(0)) == 'A' 
+        && sm->_frame.at(word->at(1)) == '0' 
+        && sm->_frame.at(word->at(2)) == '0' )
     {
         ESP_LOGI(FNAME, "got PFLAE");
     }
+    return DO_ROUTING;
 }
 
 
@@ -371,52 +129,67 @@ void FlarmGPS::parsePFLAE()
 // E = unknown
 // F = static object
 //
-void FlarmGPS::parsePFLAU()
+datalink_action_t FlarmMsg::parsePFLAU(NmeaPrtcl *nmea)
 {
     ESP_LOGD(FNAME,"parsePFLAU");
-    if ( _word_start.size() < 9 ) {
-        return;
+    ProtocolState *sm = nmea->getSM();
+    const std::vector<int> *word = &sm->_word_start;
+    if ( word->size() < 9 ) {
+        return NOACTION;
     }
 
-    const char *s = _sm._frame.c_str();
-    Flarm::RX          = atoi(s + _word_start[0]);
-    Flarm::TX          = atoi(s + _word_start[1]);
-    Flarm::GPS         = atoi(s + _word_start[2]);
-    Flarm::Power       = atoi(s + _word_start[3]);
-    Flarm::AlarmLevel  = atoi(s + _word_start[4]);
-    Flarm::RelativeBearing  = atoi(s + _word_start[5]);
-    Flarm::RelativeVertical = atoi(s + _word_start[6]);
-    Flarm::RelativeDistance = atoi(s + _word_start[7]);
-    sprintf( Flarm::ID, "%06x", atoi(s + _word_start[8]));
+    const char *s = sm->_frame.c_str();
+    Flarm::RX          = atoi(s + word->at(0));
+    Flarm::TX          = atoi(s + word->at(1));
+    Flarm::GPS         = atoi(s + word->at(2));
+    Flarm::Power       = atoi(s + word->at(3));
+    Flarm::AlarmLevel  = atoi(s + word->at(4));
+    Flarm::RelativeBearing  = atoi(s + word->at(5));
+    Flarm::RelativeVertical = atoi(s + word->at(6));
+    Flarm::RelativeDistance = atoi(s + word->at(7));
+    sprintf( Flarm::ID, "%06x", atoi(s + word->at(8)));
     ESP_LOGI(FNAME,"RB: %d ALT:%d  DIST %d", Flarm::RelativeBearing, Flarm::RelativeVertical, Flarm::RelativeDistance);
     Flarm::_tick=0;
     Flarm::timeout = 10;
+    return DO_ROUTING;
 }
+
 
 // $PFLAX,A*2E
 //
 // Note, if the Flarm switch to binary mode was accepted, Flarm will answer
 // with $PFLAX,A*2E. In error case you will get as answer $PFLAX,A,<error>*
 // and the Flarm stays in text mode.
-bool FlarmGPS::parsePFLAX()
+datalink_action_t FlarmMsg::parsePFLAX(NmeaPrtcl *nmea)
 {
     ESP_LOGI(FNAME,"parsePFLAX A ----------------> switch to binary");
+    ProtocolState *sm = nmea->getSM();
+    const std::vector<int> *word = &sm->_word_start;
 
-    if ( _word_start.size() == 2 && *(_sm._frame.c_str()+_word_start[0]) == 'A' ) {
+    if ( word->size() == 2 && *(sm->_frame.c_str() + word->at(0)) == 'A' ) {
         // this is the confirmation from flarm to go binary
         DataLink *host = DEVMAN->getFlarmHost();
-        if ( host && host->getProtocol(FLARMBIN_P) && _dl.getProtocol(FLARMBIN_P)) {
+        if ( host && host->getProtocol(FLARMBIN_P) && nmea->getDL()->getProtocol(FLARMBIN_P)) {
             // Host side
             FlarmBinary *hostfb = static_cast<FlarmBinary*>(host->goBIN());
             // Device side
-            FlarmBinary *devfb = static_cast<FlarmBinary*>(_dl.goBIN());
+            FlarmBinary *devfb = static_cast<FlarmBinary*>(nmea->getDL()->goBIN());
             // Cross link them
             devfb->setPeer(hostfb);
             hostfb->setPeer(devfb);
         }
         Flarm::timeout = 10;
-        return true;
+        return DO_ROUTING;
     }
-    return false;
+    return NOACTION;
 }
+
+
+ParserMap FlarmMsg::_pm = {
+    { Key("AA"), FlarmMsg::parsePFLAA },
+    { Key("AE"), FlarmMsg::parsePFLAE },
+    { Key("AU"), FlarmMsg::parsePFLAU },
+    { Key("AX"), FlarmMsg::parsePFLAX }
+};
+
 

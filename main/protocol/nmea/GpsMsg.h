@@ -10,19 +10,17 @@
 
 #include "protocol/NMEA.h"
 
-class FlarmMsg final : public NmeaPlugin
+class GpsMsg final : public NmeaPlugin
 {
 public:
-    FlarmMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
-    virtual ~FlarmMsg() = default;
+    GpsMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    virtual ~GpsMsg() = default;
     ParserMap* getPM() const { return &_pm; }
-    const char* getSenderId() const { return "PFL"; };
+    const char* getSenderId() const { return "GP"; };
 
 private:
     // Received messages
-    static datalink_action_t parsePFLAA(NmeaPrtcl *nmea);
-    static datalink_action_t parsePFLAE(NmeaPrtcl *nmea);
-    static datalink_action_t parsePFLAU(NmeaPrtcl *nmea);
-    static datalink_action_t parsePFLAX(NmeaPrtcl *nmea);
+    static datalink_action_t parseGPRMC(NmeaPrtcl *nmea);
+    static datalink_action_t parseGPGGA(NmeaPrtcl *nmea);
     static ParserMap _pm;
 };

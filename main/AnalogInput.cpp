@@ -24,11 +24,17 @@
 
 #define DEFAULT_VREF    1100
 
+
+void AnalogInput::redoAdjust(){
+	_correct = _multiplier * ((100.0 + factory_volt_adjust.get()) / 100.0);
+}
+
 // multiplier - Uin(Umeasured) := ? ; including 1/1000, because adc measures in mV
 AnalogInput::AnalogInput( float multiplier, adc_atten_t attenuation, adc_channel_t ch, adc_unit_t unit, bool calibration ) :
 	Clock_I(10),
 	_unit(unit),
 	_adc_ch(ch),
+	_multiplier(multiplier),
 	_attenuation(attenuation),
 	_correct(multiplier * ((100.0 + factory_volt_adjust.get()) / 100.0)),
 	_cal(calibration)

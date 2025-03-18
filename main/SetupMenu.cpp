@@ -424,6 +424,7 @@ int qnh_adj(SetupMenuValFloat *p) {
 // Battery Voltage Meter Calibration
 int factv_adj(SetupMenuValFloat *p) {
 	ESP_LOGI(FNAME,"factv_adj");
+	p->_adc->redoAdjust();
 	float bat = p->_adc->get(true);
 	p->ucg->setPrintPos(1, 100);
 	p->ucg->printf("%0.2f Volt", bat);

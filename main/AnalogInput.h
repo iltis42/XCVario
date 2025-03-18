@@ -22,6 +22,7 @@ public:
 	void begin();
 	float get( bool nofilter=false, int loops=64 );
 	unsigned int getRaw( int loops=32 );
+	void redoAdjust();
 
     // Clock tick callback
     bool tick() override;
@@ -30,6 +31,7 @@ private:
 	static constexpr int RAWBUF = 5;
 	const adc_unit_t _unit;
 	const adc_channel_t _adc_ch;
+	float _multiplier;
 	const adc_atten_t _attenuation;
 	uint16_t raw[RAWBUF];
 	int rawidx = 0;

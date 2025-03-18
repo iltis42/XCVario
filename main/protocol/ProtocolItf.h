@@ -10,6 +10,7 @@
 
 #include "comm/Devices.h"
 #include <string>
+#include <vector>
 
 // Generic protocol state machine with special bit mask
 typedef enum
@@ -54,15 +55,18 @@ public:
     virtual datalink_action_t nextByte(const char c) { return NOACTION; } // return action for data link
     virtual datalink_action_t nextStreamChunk(const char *cptr, int count) { return NOACTION; } // for binary protocols
     inline Message* newMessage() { return DEV::acqMessage(_did, _send_port); }
+    void setDefaultAction(datalink_action_t da) { _default_action = da; }
     // gen_state_t getState() const { return _state; }
     virtual bool isBinary() const { return false; }
     int getSendPort() const { return _send_port; }
     DataLink* getDL() const { return &_dl; }
+    ProtocolState* getSM() const  { return &_sm; }
 
 protected:
     // routing
     const DeviceId _did;
     const int _send_port;
+    datalink_action_t _default_action = NOACTION; // no forwarding by default
 
     // state machine
     ProtocolState &_sm;
@@ -111,4 +115,6 @@ public:
     int         _crc = 0; // checksum (binary)
     int         _opt = 0; // some space to carry an optional datum
     int         _esc = 0; // another optional container
+    int         _header_len; // for NMEA e.g. $PFL... this will be 4, pointing to the message id start
+    std::vector<int> _word_start; // Indices of all the found "," chars
 };

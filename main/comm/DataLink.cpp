@@ -10,7 +10,9 @@
 
 #include "protocol/CANMasterReg.h"
 #include "protocol/JumboCmdHost.h"
-#include "protocol/FlarmGPS.h"
+#include "protocol/nmea/FlarmMsg.h"
+#include "protocol/nmea/GarminMsg.h"
+#include "protocol/nmea/GpsMsg.h"
 #include "protocol/FlarmHost.h"
 #include "protocol/FlarmBin.h"
 #include "protocol/MagSensHost.h"
@@ -58,9 +60,15 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             tmp = new JumboCmdHost(sendport, _sm, *this);
             break;
         case FLARM_P:
+        {
             ESP_LOGI(FNAME, "New Flarm");
-            tmp = new FlarmGPS(sendport, _sm, *this);
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, _sm, *this);
+            nmea->addPlugin(new GpsMsg(*nmea));
+            nmea->addPlugin(new GarminMsg(*nmea));
+            nmea->addPlugin(new FlarmMsg(*nmea));
+            tmp = nmea;
             break;
+        }
         case FLARMHOST_P:
             ESP_LOGI(FNAME, "New FlarmProxy");
             tmp = new FlarmHost(sendport, _sm, *this);
@@ -319,7 +327,7 @@ void DataLink::forwardMsg(DeviceId src_dev)
     // consider forwarding
     for ( auto &target : _routes ) {
         Message* msg = DEV::acqMessage(target.did, target.port);
-        ESP_LOGI(FNAME, "route %d/%d to %d/%d", src_dev, _itf_id.port, msg->target_id, target.port);
+        ESP_LOGD(FNAME, "route %d/%d to %d/%d", src_dev, _itf_id.port, msg->target_id, target.port);
         msg->buffer = _sm._frame;
         DEV::Send(msg);
     }

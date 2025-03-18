@@ -7,10 +7,14 @@
 #include "RingBufCPP.h"  // SString, tbd: extra header
 #include "Units.h"
 
-class FlarmGPS;
+class FlarmMsg;
+class GarminMsg;
+class GpsMsg;
 
 class Flarm {
-	friend class FlarmGPS;
+	friend class FlarmMsg;
+	friend class GarminMsg;
+	friend class GpsMsg;
 public:
 	static void setDisplay( AdaptUGC *theUcg ) { ucg = theUcg; };
 	static void drawAirplane( int x, int y, bool fromBehind=false, bool smallSize=false );

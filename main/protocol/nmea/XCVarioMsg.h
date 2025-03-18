@@ -18,8 +18,8 @@ XCVarioMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
     ParserMap* getPM() const { return &_pm; }
     const char* getSenderId() const { return "PXC"; };
 
-    // Put send routines into NmeaPrtcl !
-    
+    // Declare send routines in NmeaPrtcl class !
+
 private:
     // Received messages
     static datalink_action_t parsePXCV(NmeaPrtcl *nmea);

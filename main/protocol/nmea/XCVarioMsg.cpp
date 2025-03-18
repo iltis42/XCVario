@@ -23,11 +23,11 @@
 // Supported messages:
 
 
-datalink_action_t XCVarioMsg::parsePXCV(NmeaPrtcl *nmea)
-{
+// datalink_action_t XCVarioMsg::parsePXCV(NmeaPrtcl *nmea)
+// {
 
-    return DO_ROUTING;
-}
+//     return DO_ROUTING;
+// }
 
 
 
@@ -115,7 +115,7 @@ void NmeaPrtcl::sendStdXCVario(float baro, float dp, float te, float temp, float
         msg->buffer += ",,,,,";
     }
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
-    ESP_LOGI(FNAME, "xcv %s", msg->buffer.c_str());
+    // ESP_LOGI(FNAME, "xcv %s", msg->buffer.c_str());
     DEV::Send(msg);
 }
 

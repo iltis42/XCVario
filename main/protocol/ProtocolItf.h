@@ -54,7 +54,7 @@ public:
     virtual ProtocolType getProtocolId() { return NO_ONE; }
     virtual datalink_action_t nextByte(const char c) { return NOACTION; } // return action for data link
     virtual datalink_action_t nextStreamChunk(const char *cptr, int count) { return NOACTION; } // for binary protocols
-    inline Message* newMessage() { return DEV::acqMessage(_did, _send_port); }
+    inline Message* newMessage() const { return DEV::acqMessage(_did, _send_port); }
     void setDefaultAction(datalink_action_t da) { _default_action = da; }
     // gen_state_t getState() const { return _state; }
     virtual bool isBinary() const { return false; }

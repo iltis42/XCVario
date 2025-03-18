@@ -225,14 +225,13 @@ int WifiApp::Send(const char *msg, int &len, int port)
 	int socket_num=port-8880;
 	sock_server_t *socks = _socks[socket_num];
 	if( socks == nullptr ) {
-		return 0;   // erratic port, socket unavail -> return, do not try ever again
+		return -1;   // erratic port, socket unavail -> return, do not try ever again
 	}
 	// here we go
 	full[socket_num]=true;  // init state means busy
 	bool sendOK=false;
-	for(auto it = socks->clients.begin(); it != socks->clients.end(); ++it)  // iterate through all clients
+	for(auto &rec : socks->clients)  // iterate through all clients
 	{
-		client_record_t &rec = *it;
 		if( rec.client >= 0 ){
 			int num = send(rec.client, msg, len, MSG_DONTWAIT);
 			// ESP_LOGI(FNAME, "client %d, num send %d", rec.client, num );
@@ -241,6 +240,9 @@ int WifiApp::Send(const char *msg, int &len, int port)
 				rec.retries = 0;
 				full[socket_num]=false; // if at leat one client works, we say wifi is okay -> blue symbol
 				// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", rec.client, config->port, num );
+			}
+			else {
+				ESP_LOGI(FNAME, "tcp send to  %d (port: %d), bytes %d fail", rec.client, config->port, num );
 			}
 		}
 	}

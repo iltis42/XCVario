@@ -13,7 +13,7 @@
 #include "DataMonitor.h"
 #include "comm/DataLink.h"
 #include "WifiClient.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -224,9 +224,8 @@ int WifiApp::Send(const char *msg, int &len, int port)
 	// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", port, len, msg );
 	int socket_num=port-8880;
 	sock_server_t *socks = _socks[socket_num];
-	if( socks == nullptr ){
-		len = 0;
-		return 50;   // erratic port, socket unavail -> return, try again later
+	if( socks == nullptr ) {
+		return 0;   // erratic port, socket unavail -> return, do not try ever again
 	}
 	// here we go
 	full[socket_num]=true;  // init state means busy
@@ -245,10 +244,11 @@ int WifiApp::Send(const char *msg, int &len, int port)
 			}
 		}
 	}
-	if( sendOK )
+	if( sendOK ) {
 		return 0;
-	else
-		return 50;  // this port -> socket number is currently unavailable please try again 50 ms later
+	}
+	len = 0;
+	return 50;  // this port -> socket number is currently unavailable please try again 50 ms later
 }
 
 void WifiApp::wifi_init_softap()

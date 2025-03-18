@@ -172,7 +172,7 @@ bool FlarmBinary::ping()
 void FlarmBinary::setPeer(FlarmBinary *p)
 {
     _binpeer = p;
-    ESP_LOGD(FNAME, "BP%d peer is dl%d/g%d", _dl.getItf(), _binpeer->getDL()->getItf(), _binpeer->getDeviceId());
+    ESP_LOGD(FNAME, "BP%d peer is dl%d/g%d", _dl.getItfId(), _binpeer->getDL()->getItfId(), _binpeer->getDeviceId());
 }
 
 uint16_t xmodem_crc(const uint8_t *data, int length, uint16_t crc0)

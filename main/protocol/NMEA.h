@@ -62,11 +62,18 @@ public:
     void addPlugin(NmeaPlugin *pm);
     datalink_action_t nextByte(const char c) override;
 
+    // some transmitter routines
+    void sendStdXCVario(float baro, float dp, float te, float temp, float ias, float tas,
+        float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, 
+        float acc_x, float acc_y, float acc_z, float gx, float gy, float gz);
+    
 private:
     SenderMap _sender;
     std::vector<NmeaPlugin*> _plugs;
     ParserMap* _parser;
     inline void nmeaIncrCRC(int &crc, const char c) {crc ^= c;}
+    // Todo, there are now many plugins, but only one protocol version
+    uint8_t _protocol_version = 1;
 };
 
 // nmea message extension

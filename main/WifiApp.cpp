@@ -232,6 +232,7 @@ int WifiApp::Send(const char *msg, int &len, int port)
 	// ESP_LOGI(FNAME, "port %d to sent %d: bytes, %s", port, len, msg );
 	int socket_num=port-8880;
 	sock_server_t *socks = _socks[socket_num];
+	len = 0;
 	if( socks == nullptr )
 		return 50;   // erratic port, socket unavail -> return, try again later
 	// here we go
@@ -240,9 +241,10 @@ int WifiApp::Send(const char *msg, int &len, int port)
 	{
 		client_record_t &rec = *it;
 		if( rec.client >= 0 ){
-			len = send(rec.client, msg, len, MSG_DONTWAIT);
+			int num = send(rec.client, msg, len, MSG_DONTWAIT);
 			// ESP_LOGI(FNAME, "client %d, num send %d", rec.client, num );
 			if( len >= 0 ){
+				len = num;
 				rec.retries = 0;
 				full[socket_num]=false; // if at leat one client works, we say wifi is okay -> blue symbol
 				// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", rec.client, config->port, num );

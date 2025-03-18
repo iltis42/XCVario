@@ -55,10 +55,11 @@ typedef std::map<Key, ParserMap*> SenderMap;
 class NmeaPrtcl final : public ProtocolItf
 {
 public:
-    explicit NmeaPrtcl(DeviceId did, int mp, ProtocolState &sm, DataLink &dl) : ProtocolItf(did, mp, sm, dl) {};
+    explicit NmeaPrtcl(DeviceId did, int mp, ProtocolType pt, ProtocolState &sm, DataLink &dl) : ProtocolItf(did, mp, sm, dl), _ptyp(pt) {};
     virtual ~NmeaPrtcl();
 
 public:
+    ProtocolType getProtocolId() override { return _ptyp; }
     void addPlugin(NmeaPlugin *pm);
     datalink_action_t nextByte(const char c) override;
 
@@ -68,6 +69,7 @@ public:
         float acc_x, float acc_y, float acc_z, float gx, float gy, float gz);
     
 private:
+    const ProtocolType _ptyp; // a protocol id different per instance
     SenderMap _sender;
     std::vector<NmeaPlugin*> _plugs;
     ParserMap* _parser;

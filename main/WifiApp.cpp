@@ -29,146 +29,133 @@ WifiApp *Wifi = nullptr;
 
 #define WIFI_BUFFER_SIZE 513
 
-bool WifiApp::full[4] = { false, false, false, false };
-
+bool WifiApp::full[NUM_TCP_PORTS] = { false, false, false, false };
+bool WifiApp::task_created=false;
+sock_server_t *WifiApp::_socks[NUM_TCP_PORTS] = { nullptr, nullptr, nullptr, nullptr };
+TaskHandle_t WifiApp::pid = nullptr;
 
 class WIFI_EVENT_HANDLER
 {
 public:
 
-static int create_socket( int port ){
-	struct sockaddr_in serverAddress;
-	// Create a socket that we will listen upon.
-	int mysock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (mysock < 0) {
-		ESP_LOGE(FNAME, "socket: %d %s", mysock, strerror(errno));
-		return -1;
-	}
-	// Bind our server socket to a port.
-	serverAddress.sin_family = AF_INET;
-	serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-	serverAddress.sin_port = htons(port);
-	int rc  = bind(mysock, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
-	if (rc < 0) {
-		ESP_LOGE(FNAME, "bind: %d %s", rc, strerror(errno));
-		return -1;
-	}
-	ESP_LOGV(FNAME, "bind port: %d", port  );
-	// Flag the socket as listening for new connections.
-	rc = listen(mysock, 5);
-	if (rc < 0) {
-		ESP_LOGE(FNAME, "listen: %d %s", rc, strerror(errno));
-		return -1;
-	}
-	return mysock;
-}
-
-// Multi client TCP server with dynamic updated list of clients connected
-static void on_client_connect( int port, int msg ){
-	if( port == 8884 ){ // have a client to XCVario protocol connected
-		// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
-		SetupCommon::syncEntry(msg);
-	}
-}
-
-// WiFi Task
-static void socket_server(void *setup)
-{
-	sock_server_t *config = (sock_server_t *)setup;
-	WifiApp *wifi = static_cast<WifiApp*>(config->mywifi);
-
-	struct sockaddr_in clientAddress[10];  // we support max 10 clients try to connect same time
-	socklen_t clientAddressLength = sizeof(struct sockaddr_in);
-	std::list<client_record_t>  &clients = config->clients;
-	int num_send = 0;
-	int sock = create_socket( config->port );
-	if( sock < 0 ) {
-		ESP_LOGE(FNAME, "Socket creation for %d port FAILED: Abort task", config->port );
-		vTaskDelete(NULL);
-	}
-	fcntl(sock, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
-	while (1)
-	{
-		int new_client = accept(sock, (struct sockaddr *)&clientAddress[clients.size()], &clientAddressLength);
-		if( new_client >= 0 && clients.size() < 10 ){
-			client_record_t new_client_rec;
-			new_client_rec.client = new_client;
-			new_client_rec.retries = 0;
-			clients.push_back( new_client_rec );
-			num_send = 0;
-			ESP_LOGI(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
+	static int create_socket( int port ){
+		struct sockaddr_in serverAddress;
+		// Create a socket that we will listen upon.
+		int mysock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (mysock < 0) {
+			ESP_LOGE(FNAME, "socket: %d %s", mysock, strerror(errno));
+			return -1;
 		}
-		// ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
-		if( clients.size() ) {
-			std::list<client_record_t>::iterator it;
-			for(it = clients.begin(); it != clients.end(); ++it)
-			{
-				client_record_t &client_rec = *it;
-				char r[SSTRLEN+1];
-				// ESP_LOGI(FNAME, "read from wifi client %d", client_rec.client );
-				ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN-1, MSG_DONTWAIT);
-				if (sizeRead > 0) {
-					auto dl = wifi->_dlink.find(config->port);
-					if ( dl != wifi->_dlink.end() ) {
-						dl->second->process(r, sizeRead);
+		// Bind our server socket to a port.
+		serverAddress.sin_family = AF_INET;
+		serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+		serverAddress.sin_port = htons(port);
+		int rc  = bind(mysock, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+		if (rc < 0) {
+			ESP_LOGE(FNAME, "bind: %d %s", rc, strerror(errno));
+			return -1;
+		}
+		ESP_LOGV(FNAME, "bind port: %d", port  );
+		// Flag the socket as listening for new connections.
+		rc = listen(mysock, 5);
+		if (rc < 0) {
+			ESP_LOGE(FNAME, "listen: %d %s", rc, strerror(errno));
+			return -1;
+		}
+		return mysock;
+	}
+
+	// Multi client TCP server with dynamic updated list of clients connected
+	static void on_client_connect( int port, int msg ){
+		if( port == 8884 ){ // have a client to XCVario protocol connected
+			// ESP_LOGV(FNAME, "on_client_connect: Send MC, Ballast, Bugs, etc");
+			SetupCommon::syncEntry(msg);
+		}
+	}
+
+	// WiFi Task
+	static void socket_server(void *setup)
+	{
+		while (1)
+		{
+			for( int n = 0; n<NUM_TCP_PORTS; n++ ){
+				if( WifiApp::_socks[n] == nullptr )
+					continue;
+				// ESP_LOGI(FNAME, "sock server, port: %d", 8880+n );
+				sock_server_t *config = (sock_server_t *)WifiApp::_socks[n];     // socks server for one port
+				std::list<client_record_t>  &clients = config->clients; // concrete list of clients for this port
+				struct sockaddr_in clientAddress;  // temporary variable to store client IP
+				socklen_t clientAddressLength = sizeof(clientAddress);
+				int new_client = accept(config->socket, (struct sockaddr *)&clientAddress, &clientAddressLength);
+				if( new_client >= 0 && clients.size() < 10 ){
+					client_record_t new_rec;
+					new_rec.client = new_client;
+					new_rec.retries = 0;
+					new_rec.clientAddress = clientAddress;  // we store this just for debugging purposes now
+					clients.push_back( new_rec );
+					ESP_LOGI(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
+				}
+				// ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
+				if( clients.size() ) {
+					std::list<client_record_t>::iterator it;
+					for(it = clients.begin(); it != clients.end(); ++it)
+					{
+						client_record_t &client_rec = *it;
+						char r[SSTRLEN+1];
+						ESP_LOGI(FNAME, "read from wifi client %d", client_rec.client );
+						ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN-1, MSG_DONTWAIT);
+						if (sizeRead > 0) {
+							WifiApp *wifi = static_cast<WifiApp*>(config->mywifi);
+							auto dl = wifi->_dlink.find(config->port);
+							if ( dl != wifi->_dlink.end() ) {
+								dl->second->process(r, sizeRead);
+							}
+							// ESP_LOG_BUFFER_HEXDUMP(FNAME, r,sizeRead, ESP_LOG_INFO);
+						}
+
+						// ESP_LOGI(FNAME, "loop tcp client %d, port %d", client_rec.client, config->port );
+						if( client_rec.retries > 100 ){
+							ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send err: %s, remove!", client_rec.client,  config->port, strerror(errno) );
+							close(client_rec.client );
+							it = clients.erase( it );
+						}
 					}
-					// ESP_LOG_BUFFER_HEXDUMP(FNAME, r,sizeRead, ESP_LOG_INFO);
 				}
-				if( config->port == 8884 ){
-					if( num_send < SetupCommon::numEntries() ){
-						on_client_connect( config->port, num_send );
-						num_send ++;
-					}
-				}
-				// ESP_LOGI(FNAME, "loop tcp client %d, port %d", client_rec.client, config->port );
-				if( client_rec.retries > 100 ){
-					ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send err: %s, remove!", client_rec.client,  config->port, strerror(errno) );
-					close(client_rec.client );
-					it = clients.erase( it );
-					if( config->port == 8884 )
-						num_send = 0;
-				}
+				Router::routeWLAN();   // to be removed at times
+				Router::routeCAN();    // dito
+
+				if( uxTaskGetStackHighWaterMark( WifiApp::pid ) < 128 )
+					ESP_LOGW(FNAME,"Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( WifiApp::pid ), config->port );
+				vTaskDelay(200/portTICK_PERIOD_MS);
 			}
 		}
-		Router::routeWLAN();   // to be removed at times
-		Router::routeCAN();    // dito
-
-		if( uxTaskGetStackHighWaterMark( config->pid ) < 128 )
-			ESP_LOGW(FNAME,"Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( config->pid ), config->port );
-		vTaskDelay(200/portTICK_PERIOD_MS);
+		vTaskDelete(NULL);
 	}
-	vTaskDelete(NULL);
-}
 
-static void wifi_event_handler(void* arg, esp_event_base_t event_base,	int32_t event_id, void* event_data)
-{
-	if (event_id == WIFI_EVENT_AP_STACONNECTED) {
-		wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
-		ESP_LOGI(FNAME,"station %x:%x:%x:%x:%x:%x joined, AID=%d", MAC2STR(event->mac), event->aid);
-	} else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
-		wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
-		ESP_LOGI(FNAME,"station %x:%x:%x:%x:%x:%x left, AID=%d", MAC2STR(event->mac), event->aid);
+	static void wifi_event_handler(void* arg, esp_event_base_t event_base,	int32_t event_id, void* event_data)
+	{
+		if (event_id == WIFI_EVENT_AP_STACONNECTED) {
+			wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+			ESP_LOGI(FNAME,"station %x:%x:%x:%x:%x:%x joined, AID=%d", MAC2STR(event->mac), event->aid);
+		} else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
+			wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
+			ESP_LOGI(FNAME,"station %x:%x:%x:%x:%x:%x left, AID=%d", MAC2STR(event->mac), event->aid);
+		}
 	}
-}
 
 }; // WIFI_EVENT_HANDLER
 
 
 WifiApp::WifiApp(): InterfaceCtrl()
 {
-	for(int i=0; i<4; i++) {
+	for(int i=0; i<NUM_TCP_PORTS; i++) {
 		_socks[i] = nullptr;
 	}
 }
 
 WifiApp::~WifiApp()
 {
-	for(int i=0; i<4; i++) {
-		if ( _socks[i] ) {
-			vTaskDelete(_socks[i]->pid);
-			_socks[i]->txq->clear();
-		}
-	}
+	vTaskDelete(pid);
 }
 
 int  WifiApp::queueFull(){
@@ -186,45 +173,28 @@ void WifiApp::ConfigureIntf(int port){
 		return;
 	}
 	wifi_init_softap();
-
-	// Create the socket structure as interface to the server task
 	int pidx = port-8880;
-	sock_server_t *sock = _socks[pidx];
-	if ( sock == nullptr ) {
-		_socks[pidx] = sock = new sock_server_t(port, this);
-	
-		char taskname[20];
-		sprintf( taskname, "wifitask-%d", sock->port );
-		int prio=0;
-		switch( pidx ){
-		case 0:
-			sock->txq = &wl_vario_tx_q;
-			prio=7;
-			break;
-		case 1:
-			sock->txq = &wl_flarm_tx_q;
-			prio=8;
-			break;
-		case 2:
-			sock->txq = &wl_aux_tx_q;
-			prio=9;
-			break;
-		case 3:
-			sock->txq = &can_tx_q;
-			prio=6;
-			break;
-		default:
-			break;
+	sock_server_t *sock = _socks[pidx];  // particular pointer to socket server record for this port
+	if ( sock == nullptr ) {  // its a one-way train, we can only create those ATM
+		_socks[pidx] = sock = new sock_server_t(port, this);  // WiFiApp only once, all point to here
+		int socket = WIFI_EVENT_HANDLER::create_socket( port );  // Create already the socket for this port structure as interface to the server task
+		if( socket < 0 ) {
+			ESP_LOGE(FNAME, "Socket creation for %d port FAILED: Abort ConfigureIntf", port );
+			return;
 		}
-		xTaskCreatePinnedToCore(&WIFI_EVENT_HANDLER::socket_server, taskname, 4096, sock, prio, &sock->pid, 0);
+		fcntl(socket, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients
+		sock->socket = socket;   // store socket number in socket list
+		ESP_LOGI(FNAME, "Socket creation successful socket: %d", socket );
+		if( !task_created ){  // create the one an only task if not yet done
+			ESP_LOGI(FNAME, "Task creation successful");
+			xTaskCreatePinnedToCore(&WIFI_EVENT_HANDLER::socket_server, "wifitask", 4096, _socks, 8, &pid, 0);
+			task_created = true;
+		}
 	}
 }
 
 int WifiApp::Send(const char *msg, int &len, int port)
 {
-	// xy = _socks[vport]->xy
-	// int num = send(xy, msg, len, MSG_DONTWAIT);
-	// if ( num ... ) return something
 	if (port < 8880 || port > 8884) {
 		ESP_LOGE(FNAME, "Invalid port: %d, should be between 8880 and 8884", port);
 		return -1;

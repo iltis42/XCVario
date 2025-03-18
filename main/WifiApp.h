@@ -8,8 +8,11 @@
 #include "RingBufCPP.h"
 #include "SString.h"
 #include <list>
+#include <lwip/sockets.h>
 
 class WifiApp;
+
+#define NUM_TCP_PORTS 4
 
 typedef struct str_wireless_id {
 	char id[10];
@@ -32,17 +35,15 @@ typedef struct str_wireless_id {
 typedef struct client_record {
 	int client;
 	int retries;
-	int port;
+	struct sockaddr_in clientAddress;
 }client_record_t;
 
 typedef struct xcv_sock_server {
 	xcv_sock_server(int p, WifiApp* mw) : port(p), mywifi(mw) {};
-
-	RingBufCPP<SString>* txq;
 	// This should store the handle to send data to the port
 	const int port;
+	int socket;
 	int idle = 0;
-	TaskHandle_t pid = nullptr;
 	std::list<client_record_t>  clients;
 	WifiApp *mywifi;
 }sock_server_t;
@@ -50,6 +51,7 @@ typedef struct xcv_sock_server {
 class WifiApp final : public InterfaceCtrl
 {
 	friend class WIFI_EVENT_HANDLER;
+	friend void socket_server(void *setup);
 
 public:
 	WifiApp();
@@ -65,9 +67,12 @@ public:
 	// returns 1 if queue is full, changes color of WiFi symbol, connection is stuck
 	static int queueFull();
 
+	static sock_server_t *_socks[NUM_TCP_PORTS];
+	static TaskHandle_t pid;
+
 private:
-	static bool full[4];
-	sock_server_t *_socks[4];
+	static bool full[NUM_TCP_PORTS];
+	static bool task_created;
 
 	// internal functionality
 	void wifi_init_softap();

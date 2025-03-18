@@ -141,46 +141,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
 	if( !validTemp )
 		temp=0;
-	if( proto == P_XCVARIO ){
-		/*
-					Sentence has following format:
-					$PXCV,
-					BBB.B = Vario, -30 to +30 m/s, negative sign for sink,
-					C.C = MacCready 0 to 10 m/s
-					EE = bugs degradation, 0 = clean to 30 %,
-					F.FF = Ballast 1.00 to 1.60,
-					G = 0 in climb, 1 in cruise,
-					HH.H = Outside airtemp in degrees celcius ( may have leading negative sign ),
-					QQQQ.Q = QNH e.g. 1013.2,
-					PPPP.P: static pressure in hPa,
-					QQQQ.Q: dynamic pressure in Pa,
-					RRR.R: roll angle,
-					III.I: pitch angle,
-					X.XX:   acceleration in X-Axis,
-					Y.YY:   acceleration in Y-Axis,
-					Z.ZZ:   acceleration in Z-Axis,
-		 *CHK = standard NMEA checksum
-		 */
-		float bal = (aballast+100)/100.0;
-		// ESP_LOGW(FNAME,"Ballast: %f %1.2f", bal, bal );
-		if( Protocols::getXcvProtocolVersion() > 1 ){
-			// omit ballast overload field
-			sprintf(str,"$PXCV,%3.1f,%1.2f,%d,,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
-
-		}else{
-			// legacy send ballast overload
-			sprintf(str,"$PXCV,%3.1f,%1.2f,%d,%1.3f,%d,%2.1f,%4.1f,%4.1f,%.1f", te, mc, bugs, bal, !cruise, std::roundf(temp*10.f)/10.f, QNH.get() , baro, dp );
-		}
-		int append_idx = strlen(str);
-		if( gflags.haveMPU && attitude_indicator.get() ){
-			float roll = IMU::getRoll();
-			float pitch = IMU::getXCSPitch();
-			sprintf(str+append_idx,",%3.1f,%3.1f,%1.2f,%1.2f,%1.2f", roll, pitch, acc_x, acc_y, acc_z );
-		}else{
-			sprintf(str+append_idx,",,,,,");
-		}
-	}
-	else if( proto == P_OPENVARIO ) {
+	if( proto == P_OPENVARIO ) {
 		if( validTemp )
 			sprintf(str,"$POV,P,%0.1f,Q,%0.1f,E,%0.1f,T,%0.1f",baro,dp,te,temp);
 		else

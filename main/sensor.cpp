@@ -29,6 +29,7 @@
 #include "SetupMenuValFloat.h"
 #include "protocol/Clock.h"
 #include "protocol/MagSensBin.h"
+#include "protocol/NMEA.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
@@ -494,8 +495,11 @@ static void toyFeed()
 		OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature  );
 	}
 	else if( nmea_protocol.get() == XCVARIO ) {
-		OV.sendNMEA( P_XCVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
+		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P); // Todo preliminary solution ..
+		if ( prtcl ) {
+			static_cast<NmeaPrtcl*>(prtcl)->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
+			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
+		}
 	}
 	else if( nmea_protocol.get() == NMEA_OFF ) {
 		;

@@ -51,6 +51,22 @@ using NmeaMessageParser = std::function<datalink_action_t(NmeaPrtcl*)>;
 typedef const std::map<Key, NmeaMessageParser> ParserMap; // intrinsicly const to reside in flash memory
 typedef std::map<Key, ParserMap*> SenderMap;
 
+// nmea message extension
+class NmeaPlugin
+{
+public:
+    explicit NmeaPlugin(NmeaPrtcl &nr) : _nmeaRef(nr) {}
+    virtual ~NmeaPlugin() = default;
+
+    // API
+    virtual const ParserMap* getPM() const = 0;
+    virtual const char* getSenderId() const = 0;
+
+protected:
+    // access to state machine and buffers for the parse routines
+    const NmeaPrtcl &_nmeaRef;
+};
+
 // generic mnea message parser
 class NmeaPrtcl final : public ProtocolItf
 {
@@ -78,19 +94,3 @@ private:
     uint8_t _protocol_version = 1;
 };
 
-// nmea message extension
-class NmeaPlugin
-{
-public:
-    explicit NmeaPlugin(NmeaPrtcl &nr) : _nmeaRef(nr), _sm(*nr.getSM()) {}
-    virtual ~NmeaPlugin() = default;
-
-    // API
-    virtual const ParserMap* getPM() const = 0;
-    virtual const char* getSenderId() const = 0;
-
-protected:
-    // helping the parse and send routines
-    const NmeaPrtcl &_nmeaRef;
-    ProtocolState &_sm;
-};

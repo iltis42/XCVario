@@ -100,12 +100,13 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
         break;
     }
 
-    datalink_action_t action = _default_action;
+    datalink_action_t action = NOACTION;
     if ( _sm._state == COMPLETE )
     {
         NMEA::ensureTermination(_sm._frame);
         _sm._state = START_TOKEN; // restart parsing
         ESP_LOGI(FNAME, "Msg complete %s", _mkey.toString().c_str());
+        action = _default_action;
         if ( _parser ) {
             action = (_parser)(this);
         }

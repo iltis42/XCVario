@@ -148,9 +148,9 @@ datalink_action_t GpsMsg::parseGPGGA(NmeaPrtcl *nmea)
     return DO_ROUTING;
 }
 
-ParserMap GpsMsg::_pm = {
-    { Key("RMC"), GpsMsg::parseGPRMC },
-    { Key("GGA"), GpsMsg::parseGPGGA }
+ConstParserMap GpsMsg::_pm = {
+    { Key("PRMC"), GpsMsg::parseGPRMC },
+    { Key("PGGA"), GpsMsg::parseGPGGA }
 };
 
 

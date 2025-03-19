@@ -15,7 +15,7 @@ class XCVarioMsg final : public NmeaPlugin
 public:
 XCVarioMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
     virtual ~XCVarioMsg() = default;
-    ParserMap* getPM() const { return &_pm; }
+    ConstParserMap* getPM() const { return &_pm; }
     const char* getSenderId() const { return "PXC"; };
 
     // Declare send routines in NmeaPrtcl class !
@@ -23,5 +23,5 @@ XCVarioMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
 private:
     // Received messages
     static datalink_action_t parsePXCV(NmeaPrtcl *nmea);
-    static ParserMap _pm;
+    static ConstParserMap _pm;
 };

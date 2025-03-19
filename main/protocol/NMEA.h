@@ -17,22 +17,31 @@
 #include <map>
 
 
-// A max. 4 char long key to map different NMEA message id's
+// Assuming that all seen NMEA message id's last 4 chars are different,
+// this key builds up a hash table to retrieve the proper message parser.
 union Key {
     char str[4];
     uint32_t value;
 
-    inline bool notAsciiUpper(char c) {
-        return (c < 'A' || c > 'Z');
+    static inline bool isNotAsciiLetter(char c) {
+        return (unsigned)(c - 'A') > ('Z' - 'A') && (unsigned)(c - 'a') > ('z' - 'a');
     }
-    
+
+    Key() = default;
+    constexpr Key(const uint32_t v) : value(v) {}
+    // Initialize and truncate to the right most four chars
     constexpr Key(const char* s) : value(0) {
         for (int i=0; i<4; i++) {
-            if ( notAsciiUpper(*s) ) break;
-            str[i] = *s++;
+            if ( isNotAsciiLetter(s[i]) ) break;
+            value = (value<<8) | s[i];
         }
     }
-    constexpr Key(const uint32_t v) : value(v) {}
+
+    inline bool shiftIn(char c) {
+        if ( isNotAsciiLetter(c) ) { return true; } // finished the header
+        value = (value<<8) | c;
+        return false;
+    }
 
     std::string toString() const {
         return std::string(str, 4).c_str();  // Null termination
@@ -48,8 +57,8 @@ union Key {
 class NmeaPrtcl;
 class NmeaPlugin;
 using NmeaMessageParser = std::function<datalink_action_t(NmeaPrtcl*)>;
-typedef const std::map<Key, NmeaMessageParser> ParserMap; // intrinsicly const to reside in flash memory
-typedef std::map<Key, ParserMap*> SenderMap;
+typedef const std::map<Key, NmeaMessageParser> ConstParserMap; // intrinsicly const to reside in flash memory
+typedef std::map<Key, NmeaMessageParser> ParserMap;
 
 // nmea message extension
 class NmeaPlugin
@@ -59,12 +68,12 @@ public:
     virtual ~NmeaPlugin() = default;
 
     // API
-    virtual const ParserMap* getPM() const = 0;
-    virtual const char* getSenderId() const = 0;
+    virtual ConstParserMap* getPM() const = 0;
+    virtual const char* getSenderId() const = 0;  // might be not needed
 
 protected:
     // access to state machine and buffers for the parse routines
-    const NmeaPrtcl &_nmeaRef;
+    NmeaPrtcl &_nmeaRef;
 };
 
 // generic mnea message parser
@@ -76,19 +85,21 @@ public:
 
 public:
     ProtocolType getProtocolId() override { return _ptyp; }
-    void addPlugin(NmeaPlugin *pm);
+    void addPlugin(NmeaPlugin *pm); // one way addition
     datalink_action_t nextByte(const char c) override;
 
     // some transmitter routines
     void sendStdXCVario(float baro, float dp, float te, float temp, float ias, float tas,
         float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, 
         float acc_x, float acc_y, float acc_z, float gx, float gy, float gz);
+    void sendOpenVario(float baro, float dp, float te, float temp, bool validTemp);
     
 private:
     const ProtocolType _ptyp; // a protocol id different per instance
-    SenderMap _sender;
+    ParserMap _parsmap;
     std::vector<NmeaPlugin*> _plugs;
-    ParserMap* _parser;
+    Key _mkey;
+    NmeaMessageParser _parser;
     inline void nmeaIncrCRC(int &crc, const char c) {crc ^= c;}
     // Todo, there are now many plugins, but only one protocol version
     uint8_t _protocol_version = 1;

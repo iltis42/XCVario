@@ -21,12 +21,16 @@ NmeaPrtcl::~NmeaPrtcl()
         delete parser;
     }
     _plugs.clear();
+    _parsmap.clear();
 }
 
 void NmeaPrtcl::addPlugin(NmeaPlugin *pm)
 {
     _plugs.push_back(pm);
-    _sender[pm->getSenderId()] = pm->getPM();
+    // copy the parser table
+    for (const auto& [key, value] : *pm->getPM()) {
+        _parsmap[key] = value;
+    }
 }
 
 datalink_action_t NmeaPrtcl::nextByte(const char c)
@@ -35,31 +39,30 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
     ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
     switch(_sm._state) {
     case START_TOKEN:
-        if ( c == '$' ) {
+        if (c == '$' || c == '!') {
             _sm._state = HEADER;
             _sm._word_start.clear();
+            _mkey.value = 0;
             _parser = nullptr;
             ESP_LOGD(FNAME, "Msg START_TOKEN");
         }
         break;
     case HEADER:
-    {
         nmeaIncrCRC(_sm._crc,c);
-        if ( pos < 2 ) { break; } // Known sender Id's are at least 2 chars
-        else if ( pos > 5) {
-            _sm._state = START_TOKEN;
-            break;
+        if ( _mkey.shiftIn(c) ) {
+            auto it = _parsmap.find(_mkey);
+            if ( it != _parsmap.end() ) {
+                _parser = it->second;
+                _sm._header_len = pos+1;
+                _sm._state = PAYLOAD;
+                ESP_LOGI(FNAME, "Msg HEADER, %s", k.toString().c_str());
+                break;
+            }
         }
-        Key k(_sm._frame.c_str()+1);
-        auto it = _sender.find(k);
-        if ( it != _sender.end() ) {
-            _parser = it->second;
-            _sm._header_len = pos+1;
-            _sm._state = PAYLOAD;
-            ESP_LOGI(FNAME, "Msg HEADER, %s", k.toString().c_str());
+        if (pos > 6) {
+            _sm._state = START_TOKEN;
         }
         break;
-    }
     case PAYLOAD:
         if ( c == ',' ) {
             _sm._word_start.push_back(pos+1); // another word start
@@ -102,12 +105,10 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
     {
         NMEA::ensureTermination(_sm._frame);
         _sm._state = START_TOKEN; // restart parsing
-        Key k(_sm._frame.c_str()+_sm._header_len);
-        ESP_LOGI(FNAME, "Msg complete %s", k.toString().c_str());
-        auto it = _parser->find(k);
-        if ( it != _parser->end() ) {
-            action = (it->second)(this);
-        }
+        ESP_LOGI(FNAME, "Msg complete %s", _mkey.toString().c_str());
+        action = (_parser)(this);
     }
     return action;
 }
+
+

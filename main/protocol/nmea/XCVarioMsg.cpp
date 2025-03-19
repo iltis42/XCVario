@@ -31,7 +31,7 @@
 
 
 
-ParserMap XCVarioMsg::_pm = {
+ConstParserMap XCVarioMsg::_pm = {
     // { Key("V"), XCVarioMsg::parsePXCV }
 };
 

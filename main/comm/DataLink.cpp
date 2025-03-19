@@ -11,9 +11,11 @@
 #include "protocol/CANMasterReg.h"
 #include "protocol/JumboCmdHost.h"
 #include "protocol/nmea/FlarmMsg.h"
+#include "protocol/nmea/FlarmHostMsg.h"
 #include "protocol/nmea/GarminMsg.h"
 #include "protocol/nmea/GpsMsg.h"
-#include "protocol/FlarmHost.h"
+#include "protocol/nmea/XCVarioMsg.h"
+#include "protocol/nmea/OpenVarioMsg.h"
 #include "protocol/FlarmBin.h"
 #include "protocol/MagSensHost.h"
 #include "protocol/MagSensBin.h"
@@ -62,7 +64,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         case FLARM_P:
         {
             ESP_LOGI(FNAME, "New Flarm");
-            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, _sm, *this);
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
             nmea->addPlugin(new GpsMsg(*nmea));
             nmea->addPlugin(new GarminMsg(*nmea));
             nmea->addPlugin(new FlarmMsg(*nmea));
@@ -70,9 +72,13 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             break;
         }
         case FLARMHOST_P:
-            ESP_LOGI(FNAME, "New FlarmProxy");
-            tmp = new FlarmHost(sendport, _sm, *this);
+        {
+            ESP_LOGI(FNAME, "New FlarmHost proxy");
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new FlarmHostMsg(*nmea));
+            tmp = nmea;
             break;
+        }
         case FLARMBIN_P:
             ESP_LOGI(FNAME, "New FlarmBinary");
             tmp = new FlarmBinary(did, sendport, _sm, *this);
@@ -86,9 +92,21 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             tmp = new MagSensBinary(sendport, _sm, *this);
             break;
         case XCVARIO_P:
-            ESP_LOGI(FNAME, "New XCVARIO soon");
-            // tmp = new XcVario(sendport, _sm, *this);
+        {
+            ESP_LOGI(FNAME, "New XCVario");
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new XCVarioMsg(*nmea));
+            tmp = nmea;
             break;
+        }
+        case OPENVARIO_P:
+        {
+            ESP_LOGI(FNAME, "New OpenVario");
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new OpenVarioMsg(*nmea));
+            tmp = nmea;
+            break;
+        }
         case TEST_P:
             ESP_LOGI(FNAME, "New Test Proto");
             tmp = new TestQuery(did, sendport, _sm, *this);
@@ -101,7 +119,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         if ( tmp ) {
             // Check device id is equal to all others
             if ( _did == NO_DEVICE ) {
-                _did = tmp->getDeviceId();
+                _did = tmp->getDeviceId(); // why not = did?
             } else {
                 for ( auto it : _all_p ) {
                     if ( (*it).getDeviceId() != _did ) {
@@ -128,6 +146,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
 
 ProtocolItf* DataLink::getProtocol(ProtocolType ptyp) const
 {
+    // ESP_LOGI(FNAME, "DL itf%d port%d did%d looking for proto%d", _itf_id.iid, _itf_id.port, _did, ptyp);
     if ( ptyp == NO_ONE ) {
         if ( ! _all_p.empty() ) {
             return _all_p.front();
@@ -135,6 +154,7 @@ ProtocolItf* DataLink::getProtocol(ProtocolType ptyp) const
     }
     else {
         for (ProtocolItf *it : _all_p) {
+            // ESP_LOGI(FNAME, "pc %d", (*it).getProtocolId());
             if ( (*it).getProtocolId() == ptyp ) {
                 return it;
             }

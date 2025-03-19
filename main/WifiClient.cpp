@@ -31,8 +31,8 @@ typedef struct xcv_sock_client {
 	int sock;
 }sock_client_t;
 
-static sock_client_t XCVarioCL = { .txbuf = &can_tx_q, .rxbuf = &can_rx_q, .port=8884, .connected=false, .sock=-1 };
-static sock_client_t FLARM   =   { .txbuf = &wl_flarm_tx_q, .rxbuf = &wl_flarm_rx_q, .port=8881, .connected=false, .sock=-1 };
+static sock_client_t XCVarioCL = { .txbuf = nullptr/*&can_tx_q*/, .rxbuf = nullptr/*&can_rx_q*/, .port=8884, .connected=false, .sock=-1 };
+static sock_client_t FLARM   =   { .txbuf = nullptr/*&wl_flarm_tx_q*/, .rxbuf = nullptr/*&wl_flarm_rx_q*/, .port=8881, .connected=false, .sock=-1 };
 
 EventGroupHandle_t WifiClient::wifi_event_group;
 esp_netif_t *WifiClient::sta_netif = 0;
@@ -243,8 +243,8 @@ void WifiClient::tcp_client(void *setup){
         		vTaskDelay(5 / portTICK_PERIOD_MS);
         	}
         }
-        Router::routeWLAN();
-        Router::routeCAN();
+        // Router::routeWLAN();
+        // Router::routeCAN();
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
     ESP_LOGI(FNAME, "tcp_client task closed\n");
@@ -254,6 +254,6 @@ void WifiClient::start()
 {
 	ESP_LOGI(FNAME, "start wifi_client"  );
     initialise_wifi();
-    xTaskCreate(&tcp_client,"tcp_client_xcv",4096,&XCVarioCL,12,NULL);
-    xTaskCreate(&tcp_client,"tcp_client_flarm",4096,&FLARM,12,NULL);
+    // xTaskCreate(&tcp_client,"tcp_client_xcv",4096,&XCVarioCL,12,NULL);
+    // xTaskCreate(&tcp_client,"tcp_client_flarm",4096,&FLARM,12,NULL);
 }

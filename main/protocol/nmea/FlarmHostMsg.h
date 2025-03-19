@@ -8,18 +8,18 @@
 
 #pragma once
 
-#include "ProtocolItf.h"
+#include "protocol/NMEA.h"
 
-#include <string>
-#include <vector>
-
-class FlarmHost final : public ProtocolItf
+class FlarmHostMsg final : public NmeaPlugin
 {
 public:
-    FlarmHost(int mp, ProtocolState &sm, DataLink &dl) : ProtocolItf(NAVI_DEV, mp, sm, dl) {}
-    virtual ~FlarmHost() = default;
-    ProtocolType getProtocolId() override { return FLARMHOST_P; }
+    FlarmHostMsg(NmeaPrtcl &nr);
+    virtual ~FlarmHostMsg() = default;
+    ConstParserMap* getPM() const { return &_pm; }
+    const char* getSenderId() const { return "PFL"; }; // might be not needed
 
 public:
-    datalink_action_t nextByte(const char c) override;
+    // Received messages
+    static datalink_action_t parsePFLAX(NmeaPrtcl *nmea);
+    static ConstParserMap _pm;
 };

@@ -185,11 +185,11 @@ datalink_action_t FlarmMsg::parsePFLAX(NmeaPrtcl *nmea)
 }
 
 
-ParserMap FlarmMsg::_pm = {
-    { Key("AA"), FlarmMsg::parsePFLAA },
-    { Key("AE"), FlarmMsg::parsePFLAE },
-    { Key("AU"), FlarmMsg::parsePFLAU },
-    { Key("AX"), FlarmMsg::parsePFLAX }
+ConstParserMap FlarmMsg::_pm = {
+    { Key("FLAA"), FlarmMsg::parsePFLAA },
+    { Key("FLAE"), FlarmMsg::parsePFLAE },
+    { Key("FLAU"), FlarmMsg::parsePFLAU },
+    { Key("FLAX"), FlarmMsg::parsePFLAX }
 };
 
 

@@ -11,14 +11,13 @@
 #include "Flarm.h"
 #include "sensor.h"
 
-#include <logdef.h>
+#include <logdefnone.h>
 
 
 // The Garmin protocol parser.
 //
 // Supported messages:
 // PGRMZ,<Value>,F,2
-
 
 // $PGRMZ,880,F,2*3A
 //
@@ -43,8 +42,8 @@ datalink_action_t GarminMsg::parsePGRMZ(NmeaPrtcl *nmea)
 
 
 
-ParserMap GarminMsg::_pm = {
-    { Key("MZ"), GarminMsg::parsePGRMZ }
+ConstParserMap GarminMsg::_pm = {
+    { Key("GRMZ"), GarminMsg::parsePGRMZ }
 };
 
 

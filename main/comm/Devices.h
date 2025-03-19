@@ -44,6 +44,8 @@ typedef enum
     MAGSENS_P,
     MAGSENSBIN_P,
     XCVARIO_P,
+    OPENVARIO_P,
+    CAMBRIDGE_P,
     NMEA_P,
     TEST_P
 } ProtocolType;

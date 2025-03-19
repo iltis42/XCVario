@@ -15,12 +15,12 @@ class GpsMsg final : public NmeaPlugin
 public:
     GpsMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
     virtual ~GpsMsg() = default;
-    ParserMap* getPM() const { return &_pm; }
+    ConstParserMap* getPM() const { return &_pm; }
     const char* getSenderId() const { return "GP"; };
 
 private:
     // Received messages
     static datalink_action_t parseGPRMC(NmeaPrtcl *nmea);
     static datalink_action_t parseGPGGA(NmeaPrtcl *nmea);
-    static ParserMap _pm;
+    static ConstParserMap _pm;
 };

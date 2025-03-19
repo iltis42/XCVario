@@ -124,10 +124,15 @@ void TransmitTask(void *arg)
         // to know the proper tim-out to wait again
         while ( !later.empty() ) {
             msg = later.front();
-            ESP_LOGI(FNAME, "postponed send %d", msg->buffer.size());
+            int cmplen = msg->buffer.size();
+            ESP_LOGI(FNAME, "postponed send %d", cmplen);
             pls_retry = tt_snd(msg);
             if ( pls_retry > 0 ) {
-                break;
+                if ( (cmplen - msg->buffer.size()) > 0 ) {
+                    break; // some bytes got sent
+                }
+                // Inaceptable for a retry, discard
+                pls_retry = 0;
             }
             DEV::relMessage(msg);
             later.pop_front();
@@ -211,11 +216,11 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     }
     InterfaceCtrl *itf = &dummy_itf;
     if ( iid == CAN_BUS ) {
-    	if ( CAN && ! CAN->isInitialized() ) {
-    		if( CAN->begin() ){
-    			itf = CAN;
-    		}
-    	}
+        if (CAN && !CAN->isInitialized()) {
+            if (CAN->begin()) {
+                itf = CAN;
+            }
+        }
     }
     else if ( iid == WIFI) {
         if ( Wifi ) {

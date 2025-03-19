@@ -1,0 +1,36 @@
+/***********************************************************
+ ***   THIS DOCUMENT CONTAINS PROPRIETARY INFORMATION.   ***
+ ***    IT IS THE EXCLUSIVE CONFIDENTIAL PROPERTY OF     ***
+ ***     Rohs Engineering Design AND ITS AFFILIATES.     ***
+ ***                                                     ***
+ ***       Copyright (C) Rohs Engineering Design         ***
+ ***********************************************************/
+
+#include "FlarmHostMsg.h"
+
+#include <logdef.h>
+
+// The FLARM host protocol checker/forwarder.
+//
+// Supported messages:
+// PFL*
+
+FlarmHostMsg::FlarmHostMsg(NmeaPrtcl &nr) :
+    NmeaPlugin(nr)
+{
+    _nmeaRef.setDefaultAction(DO_ROUTING);
+}
+
+datalink_action_t FlarmHostMsg::parsePFLAX(NmeaPrtcl *nmea)
+{
+    ProtocolState *sm = nmea->getSM();
+    if ( sm->_frame.at(6) != ',' ) {
+        ESP_LOGI(FNAME, "Start binary request");
+        return NXT_PROTO;
+    }
+    return DO_ROUTING;
+}
+
+ConstParserMap FlarmHostMsg::_pm = {
+    { Key("FLAX"), FlarmHostMsg::parsePFLAX }
+};

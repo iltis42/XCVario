@@ -91,10 +91,10 @@ void Sound::playSound( e_sound a_sound, bool end ){
 	_poti->writeVolume( 50.0 );
 	dac_output_enable(DAC_CHAN_0);
 	dac_output_voltage(DAC_CHAN_0,127);
-	sleep(0.05);
+	vTaskDelay(pdMS_TO_TICKS(50));
 	timerInitialise(15);
 	while( !ready ) {
-		sleep(0.5);
+		vTaskDelay(pdMS_TO_TICKS(500));
 		// ESP_LOGI(FNAME,"playing %d", pos);
 	}
 	timer_disable_intr(TIMER_GROUP_0, TIMER_0);

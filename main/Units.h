@@ -1,9 +1,7 @@
-#ifndef UNITS_H
-#define UNITS_H
-
-#include "logdef.h"
-#include "Setup.h"
 #pragma once
+
+#include "SetupNG.h"
+#include "logdefnone.h"
 
 class Units {
 public:
@@ -365,4 +363,3 @@ public:
 
 };
 
-#endif

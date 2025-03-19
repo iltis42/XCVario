@@ -5,18 +5,14 @@
  *      Author: iltis
  */
 
-#ifndef MAIN_ESPAUDIO_H_
-#define MAIN_ESPAUDIO_H_
+#pragma once
 
-#include "driver/gpio.h"
 #include "driver/dac.h"
-#include "Setup.h"
-#include "soc/rtc.h"
 #include "spline.h"
-#include "Poti.h"
 
 typedef enum e_audio_alarm_type { AUDIO_ALARM_OFF, AUDIO_ALARM_STALL, AUDIO_ALARM_FLARM_1, AUDIO_ALARM_FLARM_2, AUDIO_ALARM_FLARM_3, AUDIO_ALARM_GEAR } e_audio_alarm_type_t;
 
+class Poti;
 extern Poti *DigitalPoti;
 
 class Audio {
@@ -51,7 +47,6 @@ private:
 	static void dac_offset_set(dac_channel_t channel, int offset);
 	static void dac_invert_set(dac_channel_t channel, int invert);
 	static void dactask(void* arg);
-	static void modtask(void* arg );
     static void calcS2Fmode( bool recalc=false );
     static bool inDeadBand( float te );
 	static bool lookup( float f, int& div, int &step );
@@ -102,5 +97,3 @@ private:
     static tk::spline *equalizerSpline;
 };
 
-
-#endif /* MAIN_ESPAUDIO_H_ */

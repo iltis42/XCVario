@@ -4,33 +4,35 @@
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
  */
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "sdkconfig.h"
-#include "esp_system.h"
-#include "esp_task_wdt.h"
-
-#include "soc/rtc_io_reg.h"
-#include "soc/rtc_cntl_reg.h"
-#include "soc/sens_reg.h"
-#include "soc/rtc.h"
-#include <string>
 
 #include "ESPAudio.h"
-#include "driver/dac.h"
-#include "sensor.h"
+
 #include "mcp4018.h"
 #include "cat5171.h"
-#include <map>
-#include <logdef.h>
 #include "Switch.h"
 #include "I2Cbus.hpp"
 #include "sensor.h"
 #include "SetupNG.h"
+#include "logdef.h"
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
+#include <sdkconfig.h>
+#include <esp_system.h>
+#include <esp_task_wdt.h>
+#include <driver/dac.h>
+#include <soc/rtc_io_reg.h>
+#include <soc/rtc_cntl_reg.h>
+#include <soc/sens_reg.h>
+#include <soc/rtc.h>
+
+#include <array>
+#include <algorithm>
+#include <string>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 
 
 static TaskHandle_t dactid = NULL;
@@ -177,7 +179,7 @@ void Audio::begin( dac_channel_t ch  )
 		equalizerSpline  = new tk::spline(F2,VOL2, tk::spline::cspline_hermite );
 	else if( audio_equalizer.get() == AUDIO_EQ_LSEXT )
 		equalizerSpline  = new tk::spline(F3,VOL3, tk::spline::cspline_hermite );
-	delay(10);
+	vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 float Audio::equal_volume( float volume ){
@@ -196,14 +198,14 @@ float Audio::equal_volume( float volume ){
 bool Audio::selfTest(){
 	ESP_LOGI(FNAME,"Audio::selfTest");
 	DigitalPoti = new MCP4018();
-	DigitalPoti->setBus( &i2c );
+	DigitalPoti->setBus( &i2c1 );
 	DigitalPoti->begin();
 	if( !DigitalPoti->haveDevice() )
 	{
 		ESP_LOGI(FNAME,"Try CAT5171 digital Poti");
 		delete DigitalPoti;
 		DigitalPoti = new CAT5171();
-		DigitalPoti->setBus( &i2c );
+		DigitalPoti->setBus( &i2c1 );
 		DigitalPoti->begin();
 		if( DigitalPoti->haveDevice() ){
 			ESP_LOGI(FNAME,"CAT5171 digital Poti found");
@@ -247,15 +249,15 @@ bool Audio::selfTest(){
 			for( int i=0; i<FADING_STEPS && volume <= setvolume; i++ ) {
 				writeVolume( volume );
 				volume = volume*1.75;
-				delay(1);
+				vTaskDelay(pdMS_TO_TICKS(1));
 				fadein = true;
 			}
 		}
 		writeVolume( setvolume );
-		delay(20);
+		vTaskDelay(pdMS_TO_TICKS(20));
 	}
 	//	}
-	delay(200);
+	vTaskDelay(pdMS_TO_TICKS(200));
 	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
 	writeVolume( 0 );
 	dacDisable();
@@ -651,7 +653,7 @@ void Audio::dactask(void* arg )
 						if (f > max_volume.get())  f = max_volume.get();
 						writeVolume( f );
 						// ESP_LOGI(FNAME, "new volume: %f", f );
-						delay(1);
+						vTaskDelay(pdMS_TO_TICKS(1));
 					}
 					writeVolume( speaker_volume );
 					if( speaker_volume == 0 )
@@ -671,7 +673,7 @@ void Audio::dactask(void* arg )
 							// ESP_LOGI(FNAME, "fade in sound, volume: %3.1f", volume );
 							writeVolume( volume );
 							volume = volume*1.75;
-							delay(1);
+							vTaskDelay(pdMS_TO_TICKS(1));
 						}
 						if(  current_volume != speaker_volume ){
 							// ESP_LOGI(FNAME, "fade in sound, volume: %d", speaker_volume );
@@ -697,7 +699,7 @@ void Audio::dactask(void* arg )
 							writeVolume( volume );
 							if (volume < 3.0)
 								volume = 0;
-							delay(1);
+							vTaskDelay(pdMS_TO_TICKS(1));
 						}
 						ESP_LOGI(FNAME, "fade out sound end");
 						writeVolume( 0 );
@@ -822,7 +824,7 @@ void Audio::enableAmplifier( bool enable )
 			gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
 			gpio_set_level(GPIO_NUM_19, 1 );
 			amplifier_enable = true;
-			delay(180);  // amplifier startup time ~175mS according to datasheet Fig. 21
+			vTaskDelay(pdMS_TO_TICKS(180));  // amplifier startup time ~175mS according to datasheet Fig. 21
 		}
 	}
 	else {

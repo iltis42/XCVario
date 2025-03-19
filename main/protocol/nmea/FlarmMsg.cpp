@@ -173,12 +173,15 @@ datalink_action_t FlarmMsg::parsePFLAX(NmeaPrtcl *nmea)
 
     if ( word->size() == 2 && *(sm->_frame.c_str() + word->at(0)) == 'A' ) {
         // this is the confirmation from flarm to go binary
+        ESP_LOGI(FNAME,"confirmed");
         DataLink *host = DEVMAN->getFlarmHost();
         if ( host && host->getProtocol(FLARMBIN_P) && nmea->getDL()->getProtocol(FLARMBIN_P)) {
             // Host side
             FlarmBinary *hostfb = static_cast<FlarmBinary*>(host->goBIN());
+            ESP_LOGI(FNAME, "Host side %d", hostfb->getDeviceId);
             // Device side
             FlarmBinary *devfb = static_cast<FlarmBinary*>(nmea->getDL()->goBIN());
+            ESP_LOGI(FNAME, "Device side %d", devfb->getDeviceId);
             // Cross link them
             devfb->setPeer(hostfb);
             hostfb->setPeer(devfb);

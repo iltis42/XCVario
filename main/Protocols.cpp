@@ -131,10 +131,10 @@ void Protocols::sendNmeaXCVCmd( const char *item, float value ){
 	int i = strlen(str);
 	sprintf( &str[i], "*%02X\r\n", cs );
 	ESP_LOGI(FNAME,"sendNMEACmd: %s", str );
-	SString nmea( str );
-	if( !Router::forwardMsg( nmea, xcv_tx_q ) ){
-		ESP_LOGW(FNAME,"Warning: Overrun in send to XCV tx queue %d bytes", nmea.length() );
-	}
+	// SString nmea( str );
+	// if( !Router::forwardMsg( nmea, xcv_tx_q ) ){
+	// 	ESP_LOGW(FNAME,"Warning: Overrun in send to XCV tx queue %d bytes", nmea.length() );
+	// }
 }
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,

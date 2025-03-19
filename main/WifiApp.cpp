@@ -143,8 +143,8 @@ public:
 						++it;
 					}
 				}
-				Router::routeWLAN();  // to be removed later
-				Router::routeCAN();   // dito
+				// Router::routeWLAN();  // to be removed later
+				// Router::routeCAN();   // dito
 				if (uxTaskGetStackHighWaterMark(WifiApp::pid) < 128)
 					ESP_LOGW(FNAME, "Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark(WifiApp::pid), config->port);
 

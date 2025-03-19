@@ -403,7 +403,7 @@ void audioTask(void *pvParameters){
 	{
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		doAudio();
-		Router::routeXCV();
+		// Router::routeXCV();
 		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
 			ESP_LOGW(FNAME,"Warning audio task stack low: %d", uxTaskGetStackHighWaterMark( apid ) );
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
@@ -547,7 +547,7 @@ void clientLoop(void *pvParameters)
 				gload_neg_max.set( IMU::getGliderAccelZ() );
 			}
 			toyFeed();
-			Router::routeXCV();
+			// Router::routeXCV();
 			if( true && !(ccount%5) ) { // todo need a mag_hdm.valid() flag
 				if( compass_nmea_hdm.get() ) {
 					xSemaphoreTake( xMutex, portMAX_DELAY );
@@ -719,7 +719,7 @@ void readSensors(void *pvParameters){
 			toyFeed();
 			vTaskDelay(2/portTICK_PERIOD_MS);
 		}
-		Router::routeXCV();
+		// Router::routeXCV();
 		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass->haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
 		if( compass ){
 			if( ! compass->calibrationIsRunning() ) {

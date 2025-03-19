@@ -5,7 +5,7 @@
 #include "coredump_to_server.h"
 #include "SetupNG.h"
 #include "comm/DeviceMgr.h"
-#include "protocol/MagSensHost.h"
+#include "protocol/NMEA.h"
 
 #include <esp_ota_ops.h>
 
@@ -220,7 +220,7 @@ static esp_err_t POST_update_handler(httpd_req_t *req)
 {
 	constexpr size_t OTA_BUFF_SIZE = 2 * 1024;
 	static int updateTarget = 0; // 1  - sensor; 2 - CanMag
-	static MagSensHost *maghostp = nullptr;
+	static NmeaPrtcl *magsensp = nullptr;
 	static int otaSent = 0;
 	static int otaChunkNr = 0;
 
@@ -298,11 +298,11 @@ static esp_err_t POST_update_handler(httpd_req_t *req)
 				Device *mag = DEVMAN->getDevice(MAGSENS_DEV);
 				if ( mag ) {
 					ESP_LOGI(FNAME, "CANMAG is there.");
-					maghostp = static_cast<MagSensHost*>(mag->getProtocol(MAGSENS_P));
-					ESP_LOGI(FNAME, "CANMAG_P is %p", maghostp);
-					if ( maghostp && maghostp->killStream() ) {
+					magsensp = static_cast<NmeaPrtcl*>(mag->getProtocol(MAGSENS_P));
+					ESP_LOGI(FNAME, "CANMAG_P is %p", magsensp);
+					if ( magsensp && magsensp->killStream() ) {
 						ESP_LOGI(FNAME, "Mag stream killed.");
-						maghostp->prepareUpdate(otaSize, OTA_BUFF_SIZE);
+						magsensp->prepareUpdate(otaSize, OTA_BUFF_SIZE);
 						updateTarget = 2;
 						otaSent = 0;
 						otaChunkNr = 1;
@@ -321,7 +321,7 @@ static esp_err_t POST_update_handler(httpd_req_t *req)
 		{
 			// Check on confirmations to slow down the wifi stream
 			if ( otaSent > (otaChunkNr*OTA_BUFF_SIZE) ) {
-				int tmp = maghostp->waitConfirmation();
+				int tmp = magsensp->waitConfirmation();
 				if ( tmp != otaChunkNr ) {
 					updateTarget = 0; // abort
 					ESP_LOGI(FNAME, "no confirmation %d", tmp);
@@ -330,7 +330,7 @@ static esp_err_t POST_update_handler(httpd_req_t *req)
 			}
 			// Send OTA data to MagSens
 			ESP_LOGI(FNAME, "Send %db", recv_len);
-			maghostp->firmwarePacket(otaBuffer, recv_len);
+			magsensp->firmwarePacket(otaBuffer, recv_len);
 			otaSent += recv_len;
 		}
 		content_received += recv_len;

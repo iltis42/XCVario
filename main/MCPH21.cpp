@@ -131,8 +131,8 @@ bool MCPH21::selfTest( int& adval ){
 		ESP_LOGI(FNAME,"MCPH21 selftest read Chip ID reg 0xA8: %x", byte[0] );
 	}
 
-	float p = readPascal( 0, okay );
-	float t = getTemperature();
+	[[maybe_unused]] float p = readPascal( 0, okay );
+	[[maybe_unused]] float t = getTemperature();
 	if( okay ){
 		ESP_LOGI(FNAME,"MCPH21 selftest OKAY, T: %.2f °C, P(off=%d): %.2f Pa", t,(int)_offset,p );
 	}else{
@@ -186,11 +186,11 @@ bool MCPH21::doOffset( bool force ){
 	ESP_LOGI(FNAME,"MCPH21 () force:%d", force );
 
 	_offset = as_offset.get();
-	if( _offset < 0 )
+	if( _offset < 0 ) {
 		ESP_LOGI(FNAME,"offset not yet done: need to recalibrate. Current offset NVR: %f, autozero: %d", _offset, autozero.get() );
-	else
+	} else {
 		ESP_LOGI(FNAME,"offset from NVS: %0.1f", _offset );
-
+	}
 	uint32_t adcval;
 	uint16_t T;
 	fetch_pressure( adcval, T );
@@ -198,17 +198,17 @@ bool MCPH21::doOffset( bool force ){
 	ESP_LOGI(FNAME,"offset from ADC %ld", adcval );
 
 	bool plausible = offsetPlausible( adcval );
-	if( plausible )
+	if( plausible ) {
 		ESP_LOGI(FNAME,"offset from ADC is plausible");
-	else
+	} else {
 		ESP_LOGI(FNAME,"offset from ADC is NOT plausible");
-
+	}
 	int deviation = abs( _offset - adcval );
-	if( deviation < MAX_AUTO_CORRECTED_OFFSET )
+	if( deviation < MAX_AUTO_CORRECTED_OFFSET ) {
 		ESP_LOGI(FNAME,"Deviation in bounds");
-	else
+	} else {
 		ESP_LOGI(FNAME,"Deviation out of bounds");
-
+	}
 	if( (_offset < 0 ) || ( plausible && (deviation < MAX_AUTO_CORRECTED_OFFSET ) ) || autozero.get() )
 	{
 		ESP_LOGI(FNAME,"Airspeed OFFSET correction ongoing, calculate new _offset, autozero: %d", autozero.get() );
@@ -228,8 +228,9 @@ bool MCPH21::doOffset( bool force ){
 				as_offset.set( _offset );
 				ESP_LOGI(FNAME,"Stored new offset in NVS");
 			}
-			else
+			else {
 				ESP_LOGI(FNAME,"New offset equal to value from NVS");
+			}
 		}
 		else{
 			ESP_LOGW(FNAME,"Offset out of tolerance, ignore odd offset value");

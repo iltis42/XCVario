@@ -44,21 +44,23 @@ void MP5004DP::changeConfig(){
 
 void MP5004DP::setBus( I2C_t *_theBus ){
 	bool ret = MCP->begin();
-	if ( ret == false )
+	if ( ret == false ) {
 		ESP_LOGE(FNAME,"MP5004DP: Error MCP init");
+	}
 }
 
 bool MP5004DP::selfTest(int& val)
 {
-	if( MCP->selfTest() != ESP_OK ){
+	if( MCP->selfTest() != ESP_OK ) {
 		return false;
 	}
 	val = MCP->readVal();
 	if( MCP->readVal() >= 0 ) {
 		return( true);
 	}
-	else
+	else {
 		return(false);
+	}
 }
 
 /*
@@ -91,26 +93,26 @@ bool MP5004DP::doOffset( bool force ){
 	_haveDevice=true;
 	ESP_LOGI(FNAME,"looks like have device");
 	_offset = as_offset.get();
-	if( _offset < 0 )
+	if( _offset < 0 ) {
 		ESP_LOGI(FNAME,"offset not yet done: need to recalibrate" );
-	else
+	} else {
 		ESP_LOGI(FNAME,"offset from NVS: %0.1f", _offset );
-
+	}
 	int adcval = MCP->readVal();
 	ESP_LOGI(FNAME,"offset from ADC %d", adcval );
 
 	bool plausible = offsetPlausible( adcval );
-	if( plausible )
+	if( plausible ) {
 		ESP_LOGI(FNAME,"offset from ADC is plausible");
-	else
+	} else {
 		ESP_LOGI(FNAME,"offset from ADC is NOT plausible");
-
+	}
 	int deviation = abs( _offset - adcval );
-	if( deviation < 20 )
+	if( deviation < 20 ) {
 		ESP_LOGI(FNAME,"Deviation in bounds");
-	else
+	} else {
 		ESP_LOGI(FNAME,"Deviation out of bounds");
-
+	}
 	// Long term stability of Sensor as from datasheet 0.5% per year -> 4000 * 0.005 = 20
 	if( (_offset < 0 ) || ( plausible && (deviation < 20 ) ) || autozero.get() )
 	{
@@ -132,8 +134,9 @@ bool MP5004DP::doOffset( bool force ){
 	          as_offset.set( _offset );
   		      ESP_LOGI(FNAME,"Stored new offset in NVS");
 	   	   }
-	   	   else
+	   	   else {
 	   		   ESP_LOGI(FNAME,"New offset equal to value from NVS");
+		   }
 	    }
 	   	else{
 	   		ESP_LOGW(FNAME,"Offset out of tolerance, ignore odd offset value");

@@ -7,32 +7,31 @@
 
 #pragma once
 
+#include "logdef.h"
 #include "comm/BTspp.h"
 #include "Polars.h"
 #include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
 #include "comm/CanBus.h"
-#include "logdef.h"
+#include "Compass.h"
+#include "SetupCommon.h"
+#include "WifiApp.h"
+#include "ESP32NVS.h"
 
-#include <esp_partition.h>
-#include <esp_err.h>
-#include <nvs_flash.h>
-#include <nvs.h>
 
 #include <freertos/FreeRTOS.h>
 #include <esp_timer.h>
 #include <freertos/queue.h>
 #include <esp_system.h>
 
+#include <esp_partition.h>
+#include <esp_err.h>
+#include <nvs_flash.h>
+#include <nvs.h>
 #include <string>
-#include <stdio.h>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <vector>
-#include "Compass.h"
-#include "SetupCommon.h"
-#include "WifiApp.h"
-#include "ESP32NVS.h"
 
 // forwards
 class Quaternion;

@@ -486,5 +486,5 @@ void BLESender::begin()
 	// // Start advertising
 	// pServer->getAdvertising()->start();
 
-	xTaskCreatePinnedToCore(&btTask, "bleTask", 4096, NULL, 12, &pid, 0);  // stay below compass task
+	xTaskCreate(&btTask, "bleTask", 4096, NULL, 12, &pid);  // stay below compass task
 }

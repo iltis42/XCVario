@@ -157,8 +157,9 @@ public:
 				}
 				// Router::routeWLAN();  // to be removed later
 				// Router::routeCAN();   // dito
-				if (uxTaskGetStackHighWaterMark(WifiApp::pid) < 128)
+				if (uxTaskGetStackHighWaterMark(WifiApp::pid) < 128) {
 					ESP_LOGW(FNAME, "Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark(WifiApp::pid), config->port);
+				}
 
 				// vTaskDelay(200 / portTICK_PERIOD_MS);
 			}
@@ -169,10 +170,10 @@ public:
 	static void wifi_event_handler(void* arg, esp_event_base_t event_base,	int32_t event_id, void* event_data)
 	{
 		if (event_id == WIFI_EVENT_AP_STACONNECTED) {
-			wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
+			[[maybe_unused]] wifi_event_ap_staconnected_t* event = (wifi_event_ap_staconnected_t*) event_data;
 			ESP_LOGI(FNAME,"station %x:%x:%x:%x:%x:%x joined, AID=%d", MAC2STR(event->mac), event->aid);
 		} else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
-			wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
+			[[maybe_unused]] wifi_event_ap_stadisconnected_t* event = (wifi_event_ap_stadisconnected_t*) event_data;
 			ESP_LOGI(FNAME,"station %x:%x:%x:%x:%x:%x left, AID=%d", MAC2STR(event->mac), event->aid);
 		}
 	}
@@ -221,7 +222,7 @@ void WifiApp::ConfigureIntf(int port){
 		ESP_LOGI(FNAME, "Socket creation successful socket: %d", socket );
 		if( !task_created ){  // create the one an only task if not yet done
 			ESP_LOGI(FNAME, "Task creation successful");
-			xTaskCreatePinnedToCore(&WIFI_EVENT_HANDLER::socket_server, "wifitask", 4096, _socks, 8, &pid, 0);
+			xTaskCreate(&WIFI_EVENT_HANDLER::socket_server, "wifitask", 4096, _socks, 8, &pid);
 			task_created = true;
 		}
 	}
@@ -251,10 +252,10 @@ int WifiApp::Send(const char *msg, int &len, int port)
 				sendOK = true;
 				rec.retries = 0;
 				full[socket_num]=false; // if at leat one client works, we say wifi is okay -> blue symbol
-				// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", rec.client, config->port, num );
+				// ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", rec.client, port, num );
 			}
 			else {
-				ESP_LOGI(FNAME, "tcp send to  %d (port: %d), bytes %d fail", rec.client, config->port, num );
+				ESP_LOGI(FNAME, "tcp send to  %d (port: %d), bytes %d fail", rec.client, port, num );
 			}
 		}
 	}

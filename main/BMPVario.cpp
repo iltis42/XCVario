@@ -72,9 +72,9 @@ double BMPVario::readTE( float tas, float tep ) {
 		time_delta = (float)(rts - lastrts)/1000000.0;
 	}
 	lastrts = rts;
-	if( time_delta < 0.090 || time_delta > 0.2 )
+	if( time_delta < 0.090 || time_delta > 0.2 ) {
 		ESP_LOGW(FNAME,"Vario time_delta=%2.3f sec", time_delta );
-
+	}
 	bmpTemp = _sensorTE->readTemperature( success );
 	// ESP_LOGI(FNAME,"BMP temp=%0.1f", bmpTemp );
 	if( te_comp_enable.get() == TE_TEK_EPOT ) {

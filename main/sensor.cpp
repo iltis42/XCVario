@@ -375,8 +375,9 @@ void drawDisplay(void *pvParameters){
 			}
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);
-		if( uxTaskGetStackHighWaterMark( dpid ) < 512  )
+		if( uxTaskGetStackHighWaterMark( dpid ) < 512  ) {
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
+		}
 	}
 }
 
@@ -404,8 +405,9 @@ void audioTask(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		doAudio();
 		// Router::routeXCV();
-		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
+		if( uxTaskGetStackHighWaterMark( apid )  < 512 ) {
 			ESP_LOGW(FNAME,"Warning audio task stack low: %d", uxTaskGetStackHighWaterMark( apid ) );
+		}
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
@@ -510,8 +512,9 @@ static void toyFeed()
 	else if( nmea_protocol.get() == NMEA_OFF ) {
 		;
 	}
-	else
+	else {
 		ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
+	}
 	xSemaphoreGive(xMutex);
 }
 
@@ -568,8 +571,9 @@ void clientLoop(void *pvParameters)
 				}
 			}
 			esp_task_wdt_reset();
-			if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
+			if( uxTaskGetStackHighWaterMark( bpid ) < 512 ) {
 				ESP_LOGW(FNAME,"Warning client task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
+			}
 		}
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
 	}
@@ -788,8 +792,9 @@ void readSensors(void *pvParameters){
 			MPU.temp_control( count, xcvTemp );
 		}
 		esp_task_wdt_reset();
-		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
+		if( uxTaskGetStackHighWaterMark( bpid ) < 512 ) {
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
+		}
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
@@ -851,10 +856,12 @@ void readTemp(void *pvParameters)
 
 		if( (ttick++ % 50) == 0) {
 			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
-			if( uxTaskGetStackHighWaterMark( tpid ) < 256 )
+			if( uxTaskGetStackHighWaterMark( tpid ) < 256 ) {
 				ESP_LOGW(FNAME,"Warning temperature task stack low: %d bytes", uxTaskGetStackHighWaterMark( tpid ) );
-			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 20000 )
+			}
+			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 20000 ) {
 				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+			}
 		}
 		if( (ttick%5) == 0 ){
 			SetupCommon::commitDirty();
@@ -1331,14 +1338,16 @@ void system_startup(void *args){
 			display->writeText( line++, "TE/Baro P: Unequal");
 			logged_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
 		}
-		else
+		else {
 			ESP_LOGI(FNAME,"Abs p sensor deta test PASSED, delta: %f hPa", abs(ba_p - te_p) );
+		}
 		// display->writeText( line++, "TE/Baro P: OK");
 		logged_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 
 	}
-	else
+	else {
 		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
+	}
 
 	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
 	bmpVario.setup();
@@ -1465,7 +1474,7 @@ void system_startup(void *args){
 	}else if ( (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE)
 		&& Wifi ) {
 		DeviceManager* dm = DeviceManager::Instance();
-		dm->addDevice(NAVI_DEV, XCVARIO_P, 8880, 8880, WIFI);
+		dm->addDevice(NAVI_DEV, OPENVARIO_P, 8880, 8880, WIFI);
 		dm->addDevice(NAVI_DEV, FLARMHOST_P, 8881, 8881, WIFI);
 		dm->addDevice(NAVI_DEV, FLARMBIN_P, 8881, 8881, NO_PHY);
 	}
@@ -1639,14 +1648,14 @@ void system_startup(void *args){
 		centeraid = new CenterAid( MYUCG );
 	}
 	if( SetupCommon::isClient() ){
-		xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid, 0);
-		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 11, &apid, 0);
+		xTaskCreate(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid);
+		xTaskCreate(&audioTask, "audioTask", 4096, NULL, 11, &apid);
 	}
 	else {
-		xTaskCreatePinnedToCore(&readSensors, "readSensors", 5120, NULL, 12, &bpid, 0);
+		xTaskCreate(&readSensors, "readSensors", 5120, NULL, 12, &bpid);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 3000, NULL, 5, &tpid, 0);       // increase stack by 500 byte
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 6144, NULL, 4, &dpid, 0); // increase stack by 1K
+	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid);       // increase stack by 500 byte
+	xTaskCreate(&drawDisplay, "drawDisplay", 6144, NULL, 4, &dpid); // increase stack by 1K
 
 	Audio::startAudio();
 }

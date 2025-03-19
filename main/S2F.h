@@ -8,7 +8,6 @@
 #ifndef MAIN_S2F_H_
 #define MAIN_S2F_H_
 
-#include "Setup.h"
 #include "Units.h"
 
 class S2F {

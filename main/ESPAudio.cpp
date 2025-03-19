@@ -4,33 +4,35 @@
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
  */
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "sdkconfig.h"
-#include "esp_system.h"
-#include "esp_task_wdt.h"
-
-#include "soc/rtc_io_reg.h"
-#include "soc/rtc_cntl_reg.h"
-#include "soc/sens_reg.h"
-#include "soc/rtc.h"
-#include <string>
 
 #include "ESPAudio.h"
-#include "driver/dac.h"
-#include "sensor.h"
+
 #include "mcp4018.h"
 #include "cat5171.h"
-#include <map>
-#include <logdef.h>
 #include "Switch.h"
 #include "I2Cbus.hpp"
 #include "sensor.h"
 #include "SetupNG.h"
+#include "logdef.h"
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/queue.h>
+#include <sdkconfig.h>
+#include <esp_system.h>
+#include <esp_task_wdt.h>
+#include <driver/dac.h>
+#include <soc/rtc_io_reg.h>
+#include <soc/rtc_cntl_reg.h>
+#include <soc/sens_reg.h>
+#include <soc/rtc.h>
+
+#include <array>
+#include <algorithm>
+#include <string>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 
 
 static TaskHandle_t dactid = NULL;
@@ -78,7 +80,7 @@ bool  Audio::_haveCAT5171=false;
 
 const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
 const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
-typedef struct lookup {  uint8_t div; uint8_t step; } t_lookup_entry;
+typedef struct {  uint8_t div; uint8_t step; } t_lookup_entry;
 //typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
 
 #define FADING_STEPS 6  // steps used for fade in/out at chopping
@@ -98,7 +100,8 @@ Audio::Audio( ) {
 	speaker_volume = 63;
 }
 
-std::map<uint16_t, t_lookup_entry> lftab{
+// Keep the table in flash memory
+constexpr std::array lftab = std::to_array<std::pair<uint16_t, t_lookup_entry>>({
 	{ 18,{ 6,1}},   { 21,{5,1} },	{ 25,{4,1} },	{ 32,{3,1} },	{ 37,{6,2} },	{ 43,{5,2} },	{ 51,{4,2} },	{ 55,{6,3} },
 	{ 64,{5,3}},    { 74,{6,4} },	{ 77,{4,3} },	{ 86,{5,4} },	{ 92,{6,5} },	{ 97,{3,3} },	{ 103,{4,4} },	{ 108,{5,5} },
 	{ 111,{6,6}},	{ 129,{6,7} },	{ 148,{6,8} },	{ 151,{5,7} },	{ 155,{4,6} },	{ 162,{3,5} },	{ 166,{6,9} },	{ 172,{5,8} },
@@ -117,7 +120,7 @@ std::map<uint16_t, t_lookup_entry> lftab{
 	{ 870,{6,47}},	{ 875,{3,27} },	{ 881,{4,34} },	{ 886,{5,41} },	{ 889,{6,48} },	{ 907,{6,49} },	{ 926,{6,50} },	{ 929,{5,43} },
 	{ 933,{4,36}},	{ 940,{3,29} },	{ 944,{6,51} },	{ 951,{5,44} },	{ 959,{4,37} },	{ 963,{6,52} },	{ 972,{5,45} },	{ 982,{6,53} },
 	{ 985,{4,38}},	{ 994,{5,46} },	{ 1000,{6,54} }
-};
+});
 
 /*
  * Enable cosine waveform generator on a DAC channel
@@ -171,24 +174,28 @@ void Audio::begin( dac_channel_t ch  )
 	_ch = ch;
 	restart();
 	_testmode = true;
-	if( audio_equalizer.get() == AUDIO_EQ_LS4 )
+	if( audio_equalizer.get() == AUDIO_EQ_LS4 ) {
 		equalizerSpline  = new tk::spline(F1,VOL1, tk::spline::cspline_hermite );
-	else if( audio_equalizer.get() == AUDIO_EQ_LS8 )
+	} else if( audio_equalizer.get() == AUDIO_EQ_LS8 ) {
 		equalizerSpline  = new tk::spline(F2,VOL2, tk::spline::cspline_hermite );
-	else if( audio_equalizer.get() == AUDIO_EQ_LSEXT )
+	} else if( audio_equalizer.get() == AUDIO_EQ_LSEXT ) {
 		equalizerSpline  = new tk::spline(F3,VOL3, tk::spline::cspline_hermite );
-	delay(10);
+	}
+	vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 float Audio::equal_volume( float volume ){
 	float freq_resp = ( 1 - (((current_frequency-minf) / (maxf-minf)) * (frequency_response.get()/100.0) ) );
 	float new_vol = volume * freq_resp;
-	if( equalizerSpline )
+	if( equalizerSpline ) {
 		new_vol = new_vol * (float)(*equalizerSpline)( (double)current_frequency );
-	if( new_vol >= max_volume.get() )
+	}
+	if( new_vol >= max_volume.get() ) {
 		new_vol = max_volume.get();
-	if( new_vol <= 0 )
+	}
+	if( new_vol <= 0 ) {
 		new_vol = 0;
+	}
 	// ESP_LOGI(FNAME,"Vol: %d Scaled: %f  F: %.0f spline: %.3f", volume, new_vol, current_frequency, (float)(*equalizerSpline)( (double)current_frequency ));
 	return new_vol;
 }
@@ -196,14 +203,14 @@ float Audio::equal_volume( float volume ){
 bool Audio::selfTest(){
 	ESP_LOGI(FNAME,"Audio::selfTest");
 	DigitalPoti = new MCP4018();
-	DigitalPoti->setBus( &i2c );
+	DigitalPoti->setBus( &i2c1 );
 	DigitalPoti->begin();
 	if( !DigitalPoti->haveDevice() )
 	{
 		ESP_LOGI(FNAME,"Try CAT5171 digital Poti");
 		delete DigitalPoti;
 		DigitalPoti = new CAT5171();
-		DigitalPoti->setBus( &i2c );
+		DigitalPoti->setBus( &i2c1 );
 		DigitalPoti->begin();
 		if( DigitalPoti->haveDevice() ){
 			ESP_LOGI(FNAME,"CAT5171 digital Poti found");
@@ -247,15 +254,15 @@ bool Audio::selfTest(){
 			for( int i=0; i<FADING_STEPS && volume <= setvolume; i++ ) {
 				writeVolume( volume );
 				volume = volume*1.75;
-				delay(1);
+				vTaskDelay(pdMS_TO_TICKS(1));
 				fadein = true;
 			}
 		}
 		writeVolume( setvolume );
-		delay(20);
+		vTaskDelay(pdMS_TO_TICKS(20));
 	}
 	//	}
-	delay(200);
+	vTaskDelay(pdMS_TO_TICKS(200));
 	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
 	writeVolume( 0 );
 	dacDisable();
@@ -375,8 +382,9 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 		else if( style == AUDIO_ALARM_OFF ){
 			volume = 0;
 		}
-		else
+		else {
 			ESP_LOGE(FNAME,"Error, wrong alarm style %d", style );
+		}
 		calculateFrequency();
 		speaker_volume = volume;
 	}
@@ -453,7 +461,7 @@ void Audio::startAudio(){
 	_testmode = false;
 	evaluateChopping();
 	speaker_volume = vario_mode_volume;
-	xTaskCreatePinnedToCore(&dactask, "dactask", 2400, NULL, 24, &dactid, 0);
+	xTaskCreate(&dactask, "dactask", 2400, NULL, 24, &dactid);
 }
 
 void Audio::calcS2Fmode( bool recalc ){
@@ -651,7 +659,7 @@ void Audio::dactask(void* arg )
 						if (f > max_volume.get())  f = max_volume.get();
 						writeVolume( f );
 						// ESP_LOGI(FNAME, "new volume: %f", f );
-						delay(1);
+						vTaskDelay(pdMS_TO_TICKS(1));
 					}
 					writeVolume( speaker_volume );
 					if( speaker_volume == 0 )
@@ -671,7 +679,7 @@ void Audio::dactask(void* arg )
 							// ESP_LOGI(FNAME, "fade in sound, volume: %3.1f", volume );
 							writeVolume( volume );
 							volume = volume*1.75;
-							delay(1);
+							vTaskDelay(pdMS_TO_TICKS(1));
 						}
 						if(  current_volume != speaker_volume ){
 							// ESP_LOGI(FNAME, "fade in sound, volume: %d", speaker_volume );
@@ -695,9 +703,10 @@ void Audio::dactask(void* arg )
 							//ESP_LOGI(FNAME, "fade out sound, volume: %3.1f", volume );
 							volume = volume*0.75;
 							writeVolume( volume );
-							if (volume < 3.0)
+							if (volume < 3.0) {
 								volume = 0;
-							delay(1);
+							}
+							vTaskDelay(pdMS_TO_TICKS(1));
 						}
 						ESP_LOGI(FNAME, "fade out sound end");
 						writeVolume( 0 );
@@ -705,13 +714,15 @@ void Audio::dactask(void* arg )
 					}
 					dacDisable();
 				}
-				if( disable_amp )
+				if( disable_amp ) {
 					enableAmplifier( false );
+				}
 			}
 		}
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
-		if( uxTaskGetStackHighWaterMark( dactid ) < 256 )
+		if( uxTaskGetStackHighWaterMark( dactid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
+		}
 		vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);
 		if( volume_change ) {
 			volume_change--;
@@ -822,7 +833,7 @@ void Audio::enableAmplifier( bool enable )
 			gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
 			gpio_set_level(GPIO_NUM_19, 1 );
 			amplifier_enable = true;
-			delay(180);  // amplifier startup time ~175mS according to datasheet Fig. 21
+			vTaskDelay(pdMS_TO_TICKS(180));  // amplifier startup time ~175mS according to datasheet Fig. 21
 		}
 	}
 	else {
@@ -855,16 +866,19 @@ void Audio::dacDisable(){
 }
 
 bool Audio::lookup( float f, int& div, int &step ){
-	int fi = (int)(f + 0.5);
-	std::map<uint16_t,t_lookup_entry>::iterator low;
-	low = lftab.lower_bound(fi);
+	uint16_t fi = (uint16_t)(f + 0.5);
+
+	auto low = std::lower_bound(
+		lftab.begin(), lftab.end(), fi,
+		[](const auto &entry, uint16_t k) { return entry.first < k; });
+
 	if (low != lftab.end()) {
 		div =  low->second.div;
 		step = low->second.step;
-		// ESP_LOGI(FNAME, "found div:%d step:%d for F:%d", div, step, fi );
+		ESP_LOGI(FNAME, "found div:%d step:%d for F:%d", div, step, fi );
 		return true;
 	}
-	ESP_LOGW(FNAME,"F: %d not found in map", fi );
+	ESP_LOGI(FNAME,"F: %d not found in map", fi );
 	return false;
 }
 

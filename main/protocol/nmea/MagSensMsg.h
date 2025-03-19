@@ -10,17 +10,24 @@
 
 #include "protocol/NMEA.h"
 
-class OpenVarioMsg final : public NmeaPlugin
+class MagSensMsg final : public NmeaPlugin
 {
 public:
-    OpenVarioMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
-    virtual ~OpenVarioMsg() = default;
-    ConstParserMap* getPM() const { return &_pm; }
-    const char* getSenderId() const { return "PXC"; };
+    // static constexpr int MAGCTRL_ID = 0x30;
+    // static constexpr int MAGSTREAM_ID = 0x31;
 
-    // Declare send routines in NmeaPrtcl class !
+public:
+    MagSensMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    virtual ~MagSensMsg() = default;
+    ConstParserMap* getPM() const { return &_pm; }
+    const char* getSenderId() const { return "PMS"; };
+
 
 private:
     // Received messages
     static ConstParserMap _pm;
+    
+    // The receiver
+    static datalink_action_t magsensVersion(NmeaPrtcl *nmea);
+    static datalink_action_t magsensConfirmation(NmeaPrtcl *nmea);
 };

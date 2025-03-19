@@ -344,24 +344,29 @@ void StraightWind::newCirclingWind( float angle, float speed ){
 void StraightWind::test()
 {    // Class Test, check here the results: http://www.owoba.de/fliegerei/flugrechner.html
 	calculateWind( 90, 100, 0, 100, 0 );
-	if( int( windSpeed ) != 141 || int(windDir +0.5) != 135 )
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 135 ) {
 		ESP_LOGI(FNAME,"Failed");
+	}
 	calculateWind( 270, 100, 0, 100, 0 );
-	if( int( windSpeed ) != 141 || int(windDir +0.5) != 225 )
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 225 ) {
 		ESP_LOGI(FNAME,"Failed");
-
+	}
 	calculateWind( 0, 100, 90, 100, 0 );
-	if( int( windSpeed ) != 141 || int(windDir +0.5) != 315 )
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 315 ) {
 		ESP_LOGI(FNAME,"Failed");
+	}
 	calculateWind( 0, 100, 270, 100, 0 );
-	if( int( windSpeed ) != 141 || int(windDir +0.5) != 45 )
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 45 ) {
 		ESP_LOGI(FNAME,"Failed");
+	}
 
 	calculateWind( 90, 100, 180, 100, 0 );
-	if( int( windSpeed ) != 141 || int(windDir +0.5) != 45 )
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 45 ) {
 		ESP_LOGI(FNAME,"Failed");
+	}
 
 	calculateWind( 180, 100, 270, 100, 0 );
-	if( int( windSpeed ) != 141 || int(windDir +0.5) != 135  )
+	if( int( windSpeed ) != 141 || int(windDir +0.5) != 135  ) {
 		ESP_LOGI(FNAME,"Failed");
+	}
 }

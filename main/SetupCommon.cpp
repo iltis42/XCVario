@@ -162,14 +162,16 @@ bool SetupCommon::factoryReset(){
 				ESP_LOGE(FNAME,"Error init with default %s", (*instances)[i]->key() );
 				retsum = false;
 			}
-			else
+			else {
 				ESP_LOGI(FNAME,"%s successfully initialized with default", (*instances)[i]->key() );
+			}
 		}
 	}
-	if( retsum )
+	if( retsum ) {
 		ESP_LOGI(FNAME,"Factory reset SUCCESS");
-	else
+	} else {
 		ESP_LOGI(FNAME,"Factory reset FAILED!");
+	}
 	return retsum;
 }
 
@@ -177,15 +179,17 @@ bool SetupCommon::initSetup( bool& present ) {
 	bool ret=true;
 	ESP_LOGI(FNAME,"SetupCommon::initSetup()");
 	NVS.begin();
-	if( ahrs_licence_dig1.exists() )
+	if( ahrs_licence_dig1.exists() ) {
 		present = true;
-	else
+	} else {
 		present = false;
+	}
 
 	for(int i = 0; i < instances->size(); i++ ) {
 			bool ret = (*instances)[i]->init();
-			if( ret != true )
+			if( ret != true ) {
 				ESP_LOGE(FNAME,"Error init with default NVS: %s", (*instances)[i]->key() );
+			}
 	}
 
 	if( factory_reset.get() ) {
@@ -203,8 +207,9 @@ bool SetupCommon::initSetup( bool& present ) {
 					ESP_LOGE(FNAME,"Error init with default %s", (*instances)[i]->key() );
 					ret = false;
 				}
-				else
+				else {
 					ESP_LOGI(FNAME,"%s successfully initialized with default", (*instances)[i]->key() );
+				}
 			}
 		}
 	}

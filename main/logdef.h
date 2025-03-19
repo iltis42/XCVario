@@ -19,3 +19,6 @@ inline constexpr size_t get_file_name_offset(T (& str)[1])
 
 #define FNAME &__FILE__[get_file_name_offset(__FILE__)]
 
+#if defined(CONFIG_LOG_DISABLED)
+# include "logdefnone.h"
+#endif

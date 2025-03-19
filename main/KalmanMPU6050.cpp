@@ -232,7 +232,7 @@ void IMU::Process()
 	// ESP_LOGI(FNAME,"Circle Omega: %f", circle_omega );
 	euler_rad = att_quat.toEulerRad() * -1.f;
 	if ( (att_vector-att_prev).get_norm2() > 0.5 ) {
-		EulerAngles euler = rad2deg(euler_rad);
+		[[maybe_unused]] EulerAngles euler = rad2deg(euler_rad);
 		ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f OR:%.1f IMUP:%.1f %.1f@GA(%.3f,%.3f,%.3f)", euler.Roll(), euler.Pitch(), R2D(roll), R2D(pitch), R2D(w), axis.a, axis.b, axis.c );
 	}
 

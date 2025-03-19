@@ -101,8 +101,9 @@ void ObserverTask( void *args )
 				knob.up( abs(diff) );
 			}
 		}
-		if( uxTaskGetStackHighWaterMark( pid ) < 256 )
+		if( uxTaskGetStackHighWaterMark( pid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning rotary task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
+		}
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }

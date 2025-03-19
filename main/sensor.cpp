@@ -1345,8 +1345,9 @@ void system_startup(void *args){
 		logged_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 
 	}
-	else
+	else {
 		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
+	}
 
 	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
 	bmpVario.setup();

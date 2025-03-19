@@ -152,13 +152,16 @@ void Compass:: progress(){
 				m_headingValid = true;
 			}
 		}
-		if( uxTaskGetStackHighWaterMark( ctid  ) < 256 )
+		if( uxTaskGetStackHighWaterMark( ctid  ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
+		}
 		float diff = Vector::angleDiffDeg( m_gyro_fused_heading, _heading_average );
-		if( _heading_average == -1000 )
+		if( _heading_average == -1000 ) {
 			_heading_average = m_gyro_fused_heading;
-		else
+		}
+		else {
 			_heading_average += diff * (1/(20*compass_damping.get()));
+		}
 		_heading_average = Vector::normalizeDeg( _heading_average );
 		// ESP_LOGI(FNAME,"average hd=%.1f mag:%.1f gfh:%.1f", _heading_average, m_magn_heading, m_gyro_fused_heading );
 	}

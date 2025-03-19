@@ -68,17 +68,19 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
         if ( c == ',' ) {
             _sm._word_start.push_back(pos+1); // another word start
         }
-        if ( c == '*' ) {
-            _sm._word_start.push_back(pos+1);
-            _sm._state = CHECK_CRC1; // Expecting a CRC to check
-            break;
+        else {
+            if ( c == '*' ) {
+                _sm._word_start.push_back(pos+1);
+                _sm._state = CHECK_CRC1; // Expecting a CRC to check
+                break;
+            }
+            if ( c == '\r' || c == '\n' ) {
+                _sm._state = COMPLETE;
+                break;
+            }
         }
-        if ( c != '\r' && c != '\n' ) {
-            ESP_LOGD(FNAME, "Msg PAYLOAD");
-            nmeaIncrCRC(_sm._crc,c);
-            break;
-        }
-        _sm._state = COMPLETE;
+        ESP_LOGD(FNAME, "Msg PAYLOAD");
+        nmeaIncrCRC(_sm._crc,c);
         break;
     case CHECK_CRC1:
         _crc_buf[0] = c;

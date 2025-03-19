@@ -1474,7 +1474,7 @@ void system_startup(void *args){
 	}else if ( (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE)
 		&& Wifi ) {
 		DeviceManager* dm = DeviceManager::Instance();
-		dm->addDevice(NAVI_DEV, XCVARIO_P, 8880, 8880, WIFI);
+		dm->addDevice(NAVI_DEV, OPENVARIO_P, 8880, 8880, WIFI);
 		dm->addDevice(NAVI_DEV, FLARMHOST_P, 8881, 8881, WIFI);
 		dm->addDevice(NAVI_DEV, FLARMBIN_P, 8881, 8881, NO_PHY);
 	}
@@ -1648,14 +1648,14 @@ void system_startup(void *args){
 		centeraid = new CenterAid( MYUCG );
 	}
 	if( SetupCommon::isClient() ){
-		xTaskCreatePinnedToCore(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid, 0);
-		xTaskCreatePinnedToCore(&audioTask, "audioTask", 4096, NULL, 11, &apid, 0);
+		xTaskCreate(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid);
+		xTaskCreate(&audioTask, "audioTask", 4096, NULL, 11, &apid);
 	}
 	else {
-		xTaskCreatePinnedToCore(&readSensors, "readSensors", 5120, NULL, 12, &bpid, 0);
+		xTaskCreate(&readSensors, "readSensors", 5120, NULL, 12, &bpid);
 	}
-	xTaskCreatePinnedToCore(&readTemp, "readTemp", 3000, NULL, 5, &tpid, 0);       // increase stack by 500 byte
-	xTaskCreatePinnedToCore(&drawDisplay, "drawDisplay", 6144, NULL, 4, &dpid, 0); // increase stack by 1K
+	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid);       // increase stack by 500 byte
+	xTaskCreate(&drawDisplay, "drawDisplay", 6144, NULL, 4, &dpid); // increase stack by 1K
 
 	Audio::startAudio();
 }

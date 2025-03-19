@@ -28,6 +28,8 @@ extern bool netif_initialized;
 WifiApp *Wifi = nullptr;
 
 #define WIFI_BUFFER_SIZE 513
+#define MAX_CLIENTS   4
+
 
 bool WifiApp::full[NUM_TCP_PORTS] = { false, false, false, false };
 bool WifiApp::task_created=false;
@@ -72,61 +74,81 @@ public:
 			SetupCommon::syncEntry(msg);
 		}
 	}
-
-	// WiFi Task
+    // WiFi Task
 	static void socket_server(void *setup)
 	{
-		while (1)
-		{
-			for( int n = 0; n<NUM_TCP_PORTS; n++ ){
-				if( WifiApp::_socks[n] == nullptr )
+		while (1) {
+			for (int n = 0; n < NUM_TCP_PORTS; n++) {
+				if (WifiApp::_socks[n] == nullptr)
 					continue;
-				// ESP_LOGI(FNAME, "sock server, port: %d", 8880+n );
-				sock_server_t *config = (sock_server_t *)WifiApp::_socks[n];     // socks server for one port
-				std::list<client_record_t>  &clients = config->clients; // concrete list of clients for this port
-				struct sockaddr_in clientAddress;  // temporary variable to store client IP
-				socklen_t clientAddressLength = sizeof(clientAddress);
-				int new_client = accept(config->socket, (struct sockaddr *)&clientAddress, &clientAddressLength);
-				if( new_client >= 0 && clients.size() < 10 ){
-					client_record_t new_rec;
-					new_rec.client = new_client;
-					new_rec.retries = 0;
-					new_rec.clientAddress = clientAddress;  // we store this just for debugging purposes now
-					clients.push_back( new_rec );
-					ESP_LOGI(FNAME, "New sock client: %d, number of clients: %d", new_client, clients.size()  );
-				}
-				// ESP_LOGI(FNAME, "Number of clients %d, port %d, idle %d", clients.size(), config->port, config->idle );
-				if( clients.size() ) {
-					std::list<client_record_t>::iterator it;
-					for(it = clients.begin(); it != clients.end(); ++it)
-					{
-						client_record_t &client_rec = *it;
-						char r[SSTRLEN+1];
-						ESP_LOGI(FNAME, "read from wifi client %d", client_rec.client );
-						ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN-1, MSG_DONTWAIT);
-						if (sizeRead > 0) {
-							WifiApp *wifi = static_cast<WifiApp*>(config->mywifi);
-							auto dl = wifi->_dlink.find(config->port);
-							if ( dl != wifi->_dlink.end() ) {
-								dl->second->process(r, sizeRead);
-							}
-							// ESP_LOG_BUFFER_HEXDUMP(FNAME, r,sizeRead, ESP_LOG_INFO);
-						}
 
-						// ESP_LOGI(FNAME, "loop tcp client %d, port %d", client_rec.client, config->port );
-						if( client_rec.retries > 100 ){
-							ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send err: %s, remove!", client_rec.client,  config->port, strerror(errno) );
-							close(client_rec.client );
-							it = clients.erase( it );
-						}
+				sock_server_t *config = (sock_server_t *)WifiApp::_socks[n];
+				std::list<client_record_t> &clients = config->clients;
+				ESP_LOGI(FNAME, "sock server, port: %d, clients: %d", 8880+n, clients.size() );
+				fd_set read_fds;
+				struct timeval timeout;
+				int max_fd = config->socket;
+
+				FD_ZERO(&read_fds);
+				FD_SET(config->socket, &read_fds);
+
+				timeout.tv_sec = 0;
+				timeout.tv_usec = 200 * 1000; // Timeout of 200ms
+
+				for (auto &client_rec : clients) {
+					if (client_rec.client >= 0) {
+						FD_SET(client_rec.client, &read_fds);
+						max_fd = std::max(max_fd, client_rec.client);
 					}
 				}
-				Router::routeWLAN();   // to be removed at times
-				Router::routeCAN();    // dito
+				int select_result = select(max_fd + 1, &read_fds, nullptr, nullptr, &timeout);
+				if (select_result < 0) {
+					ESP_LOGE(FNAME, "select error: %d", errno);
+					continue;
+				}
+				if (FD_ISSET(config->socket, &read_fds)) {
+					ESP_LOGI(FNAME, "FD_ISSET socket: %d num clients %d, port %d", config->socket, clients.size(), config->port );
+					struct sockaddr_in clientAddress;
+					socklen_t clientAddressLength = sizeof(clientAddress);
+					int new_client = accept(config->socket, (struct sockaddr *)&clientAddress, &clientAddressLength);
+					if (new_client >= 0 && clients.size() < MAX_CLIENTS) {
+						client_record_t new_rec;
+						new_rec.client = new_client;
+						new_rec.retries = 0;
+						new_rec.clientAddress = clientAddress;
+						clients.push_back(new_rec);
+						ESP_LOGI(FNAME, "New client: %d, number of clients: %d", new_client, clients.size());
+					}
+				}
+				for (auto it = clients.begin(); it != clients.end(); ) {
+					client_record_t &client_rec = *it;
+					if (FD_ISSET(client_rec.client, &read_fds)) {
+						ESP_LOGI(FNAME, "FD_ISSET socket: client %d, port %d", client_rec.client, config->port );
+						char r[SSTRLEN + 1];
+						ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN - 1, MSG_DONTWAIT);
+						if (sizeRead > 0) {
+							ESP_LOGI(FNAME, "FD socket recv: client %d, port %d, read:%d bytes", client_rec.client, config->port, sizeRead );
+							WifiApp *wifi = static_cast<WifiApp *>(config->mywifi);
+							auto dl = wifi->_dlink.find(config->port);
+							if (dl != wifi->_dlink.end()) {
+								dl->second->process(r, sizeRead);
+							}
+						}
+					}
+					if (client_rec.retries > 100) {
+						ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send error: %s, removing!", client_rec.client, config->port, strerror(errno));
+						close(client_rec.client);
+						it = clients.erase(it);
+					} else {
+						++it;
+					}
+				}
+				Router::routeWLAN();  // to be removed later
+				Router::routeCAN();   // dito
+				if (uxTaskGetStackHighWaterMark(WifiApp::pid) < 128)
+					ESP_LOGW(FNAME, "Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark(WifiApp::pid), config->port);
 
-				if( uxTaskGetStackHighWaterMark( WifiApp::pid ) < 128 )
-					ESP_LOGW(FNAME,"Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark( WifiApp::pid ), config->port );
-				vTaskDelay(200/portTICK_PERIOD_MS);
+				vTaskDelay(200 / portTICK_PERIOD_MS);
 			}
 		}
 		vTaskDelete(NULL);
@@ -179,7 +201,7 @@ void WifiApp::ConfigureIntf(int port){
 		_socks[pidx] = sock = new sock_server_t(port, this);  // WiFiApp only once, all point to here
 		int socket = WIFI_EVENT_HANDLER::create_socket( port );  // Create already the socket for this port structure as interface to the server task
 		if( socket < 0 ) {
-			ESP_LOGE(FNAME, "Socket creation for %d port FAILED: Abort ConfigureIntf", port );
+			ESP_LOGE(FNAME, "Socket creation port %d FAILED with (%d): Abort ConfigureIntf", port, socket );
 			return;
 		}
 		fcntl(socket, F_SETFL, O_NONBLOCK); // socket should not block, so we can server several clients

@@ -14,7 +14,7 @@
 #include "comm/SerialLine.h"
 #include "nmea_util.h"
 
-#include <logdefnone.h>
+#include <logdef.h>
 
 static uint16_t xmodem_crc(const uint8_t *data, int length, uint16_t crc0 = 0);
 

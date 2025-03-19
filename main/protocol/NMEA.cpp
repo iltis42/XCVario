@@ -55,6 +55,7 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
                 _parser = it->second;
             }
             _sm._header_len = pos+1;
+            _sm._word_start.push_back(pos+1);
             _sm._state = PAYLOAD;
             ESP_LOGI(FNAME, "Msg HEADER, %s", k.toString().c_str());
             break;

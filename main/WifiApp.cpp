@@ -93,7 +93,7 @@ public:
 				FD_SET(config->socket, &read_fds);
 
 				timeout.tv_sec = 0;
-				timeout.tv_usec = 200 * 1000; // Timeout of 200ms
+				timeout.tv_usec = 5000 * 1000; // Timeout of 5 s
 
 				for (auto &client_rec : clients) {
 					if (client_rec.client >= 0) {
@@ -133,6 +133,18 @@ public:
 							if (dl != wifi->_dlink.end()) {
 								dl->second->process(r, sizeRead);
 							}
+						}else if (sizeRead == 0) {
+							// Client closed the connection
+							ESP_LOGI(FNAME, "Client %d disconnected", client_rec.client);
+							close(client_rec.client);
+							it = clients.erase(it); // Remove client from the list
+							continue; // Skip to the next iteration
+						} else {
+							// Error occurred
+							ESP_LOGW(FNAME, "Error reading from client %d: %s", client_rec.client, strerror(errno));
+							close(client_rec.client);
+							it = clients.erase(it); // Remove client from the list
+							continue; // Skip to the next iteration
 						}
 					}
 					if (client_rec.retries > 100) {
@@ -148,7 +160,7 @@ public:
 				if (uxTaskGetStackHighWaterMark(WifiApp::pid) < 128)
 					ESP_LOGW(FNAME, "Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark(WifiApp::pid), config->port);
 
-				vTaskDelay(200 / portTICK_PERIOD_MS);
+				// vTaskDelay(200 / portTICK_PERIOD_MS);
 			}
 		}
 		vTaskDelete(NULL);

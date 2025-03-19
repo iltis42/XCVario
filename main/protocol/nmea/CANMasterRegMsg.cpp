@@ -13,7 +13,7 @@
 #include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
 
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <cstring>
 

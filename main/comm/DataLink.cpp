@@ -329,7 +329,7 @@ ProtocolItf* DataLink::getBinary() const
 
 void DataLink::updateRoutes()
 {
-    ESP_LOGI(FNAME, "get routing for %d/%d", _did, _itf_id.port);
+    ESP_LOGD(FNAME, "get routing for %d/%d", _did, _itf_id.port);
     _routes = DEVMAN->getRouting(RoutingTarget(_did, _itf_id.port));
 }
 

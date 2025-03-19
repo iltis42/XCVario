@@ -13,7 +13,7 @@
 #include "KalmanMPU6050.h"
 #include "sensor.h"
 
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <cmath>
 
@@ -115,7 +115,7 @@ void NmeaPrtcl::sendStdXCVario(float baro, float dp, float te, float temp, float
         msg->buffer += ",,,,,";
     }
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
-    // ESP_LOGI(FNAME, "xcv %s", msg->buffer.c_str());
+    ESP_LOGD(FNAME, "xcv %s", msg->buffer.c_str());
     DEV::Send(msg);
 }
 

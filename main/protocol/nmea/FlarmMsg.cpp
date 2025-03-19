@@ -23,6 +23,11 @@
 // PFLAU,<RX>,<TX>,<GPS>,<Power>,<AlarmLevel>,<RelativeBearing>,<AlarmType>,<RelativeVertical>,<RelativeDistance>[,<ID>]
 // PFLAX,A*2E
 
+FlarmMsg::FlarmMsg(NmeaPrtcl &nr) :
+    NmeaPlugin(nr)
+{
+    _nmeaRef.setDefaultAction(DO_ROUTING);
+}
 
 // PFLAA,<AlarmLevel>,<RelativeNorth>,<RelativeEast>,<RelativeVertical>,<IDType>,<ID>,<Track>,<TurnRate>,<GroundSpeed>,<ClimbRate>,<AcftType>
 // e.g.
@@ -30,7 +35,7 @@
 datalink_action_t FlarmMsg::parsePFLAA(NmeaPrtcl *nmea)
 {
     ESP_LOGD(FNAME, "parsePFLAA");
-    return NOACTION;
+    return DO_ROUTING;
 }
 
 
@@ -179,9 +184,8 @@ datalink_action_t FlarmMsg::parsePFLAX(NmeaPrtcl *nmea)
             hostfb->setPeer(devfb);
         }
         Flarm::timeout = 10;
-        return DO_ROUTING;
     }
-    return NOACTION;
+    return DO_ROUTING;
 }
 
 

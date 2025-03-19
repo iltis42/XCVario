@@ -11,10 +11,10 @@
 #include "protocol/CANMasterReg.h"
 #include "protocol/JumboCmdHost.h"
 #include "protocol/nmea/FlarmMsg.h"
+#include "protocol/nmea/FlarmHostMsg.h"
 #include "protocol/nmea/GarminMsg.h"
 #include "protocol/nmea/GpsMsg.h"
 #include "protocol/nmea/XCVarioMsg.h"
-#include "protocol/FlarmHost.h"
 #include "protocol/FlarmBin.h"
 #include "protocol/MagSensHost.h"
 #include "protocol/MagSensBin.h"
@@ -63,7 +63,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         case FLARM_P:
         {
             ESP_LOGI(FNAME, "New Flarm");
-            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, FLARM_P, _sm, *this);
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
             nmea->addPlugin(new GpsMsg(*nmea));
             nmea->addPlugin(new GarminMsg(*nmea));
             nmea->addPlugin(new FlarmMsg(*nmea));
@@ -71,9 +71,13 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             break;
         }
         case FLARMHOST_P:
-            ESP_LOGI(FNAME, "New FlarmProxy");
-            tmp = new FlarmHost(sendport, _sm, *this);
+        {
+            ESP_LOGI(FNAME, "New FlarmHost proxy");
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new FlarmHostMsg(*nmea));
+            tmp = nmea;
             break;
+        }
         case FLARMBIN_P:
             ESP_LOGI(FNAME, "New FlarmBinary");
             tmp = new FlarmBinary(did, sendport, _sm, *this);
@@ -89,7 +93,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         case XCVARIO_P:
         {
             ESP_LOGI(FNAME, "New XCVario");
-            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, XCVARIO_P, _sm, *this);
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
             nmea->addPlugin(new XCVarioMsg(*nmea));
             tmp = nmea;
             break;

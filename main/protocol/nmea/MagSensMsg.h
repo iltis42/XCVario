@@ -8,36 +8,26 @@
 
 #pragma once
 
-#include "ProtocolItf.h"
+#include "protocol/NMEA.h"
 
-class MagSensHost final : public ProtocolItf
+class MagSensMsg final : public NmeaPlugin
 {
 public:
     // static constexpr int MAGCTRL_ID = 0x30;
     // static constexpr int MAGSTREAM_ID = 0x31;
 
 public:
-    MagSensHost(int mp, ProtocolState &sm, DataLink &dl) : ProtocolItf(DeviceId::MAGSENS_DEV, mp, sm, dl) {}
-    virtual ~MagSensHost() {}
+    MagSensMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    virtual ~MagSensMsg() = default;
+    ConstParserMap* getPM() const { return &_pm; }
+    const char* getSenderId() const { return "PMS"; };
 
-public:
-    ProtocolType getProtocolId() override { return MAGSENS_P; }
-    datalink_action_t nextByte(const char c) override;
-    bool isBinary() const override { return false; }
-
-    // Some transmitter
-    bool sendHello();
-    bool sendCalibration(); // Todo add calib param
-    bool startStream(int choice);
-    bool killStream();
-    bool prepareUpdate(int len, int pack);
-    bool firmwarePacket(const char *buf, int len);
-    int waitConfirmation();
 
 private:
+    // Received messages
+    static ConstParserMap _pm;
+    
     // The receiver
-    void Version();
-    void Confirmation();
-    // update packet counter
-    int _conf_pack_nr = 0;
+    static datalink_action_t magsensVersion(NmeaPrtcl *nmea);
+    static datalink_action_t magsensConfirmation(NmeaPrtcl *nmea);
 };

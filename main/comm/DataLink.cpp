@@ -16,8 +16,8 @@
 #include "protocol/nmea/GpsMsg.h"
 #include "protocol/nmea/XCVarioMsg.h"
 #include "protocol/nmea/OpenVarioMsg.h"
+#include "protocol/nmea/MagSensMsg.h"
 #include "protocol/FlarmBin.h"
-#include "protocol/MagSensHost.h"
 #include "protocol/MagSensBin.h"
 #include "protocol/TestQuery.h"
 #include "Messages.h"
@@ -73,7 +73,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         }
         case FLARMHOST_P:
         {
-            ESP_LOGI(FNAME, "New FlarmHost proxy");
+            ESP_LOGI(FNAME, "New FlarmHost");
             NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
             nmea->addPlugin(new FlarmHostMsg(*nmea));
             tmp = nmea;
@@ -84,9 +84,13 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             tmp = new FlarmBinary(did, sendport, _sm, *this);
             break;
         case MAGSENS_P:
+        {
             ESP_LOGI(FNAME, "New CAN MagSens");
-            tmp = new MagSensHost(sendport, _sm, *this);
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new MagSensMsg(*nmea));
+            tmp = nmea;
             break;
+        }
         case MAGSENSBIN_P:
             ESP_LOGI(FNAME, "New MAGCANBinary");
             tmp = new MagSensBinary(sendport, _sm, *this);

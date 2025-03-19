@@ -1,8 +1,8 @@
 
 
-#include "MagSensHost.h"
+#include "MagSensMsg.h"
 
-#include "nmea_util.h"
+#include "protocol/nmea_util.h"
 #include "comm/Messages.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/MagSensBin.h"
@@ -10,12 +10,15 @@
 #include "sensor.h"
 #include "SetupNG.h"
 #include "Version.h"
-#include <logdef.h>
+#include "logdef.h"
 
 #include <string>
 
+// update packet counter, assuming there will be only one magsense at a time
+static int Conf_Pack_Nr = 0;
 
-// MagSensHost NMEA protocol is just a simple one. Those queries are supported:
+
+// MagSensMsg NMEA protocol is just a simple one. Those queries are supported:
 // - Hello and version query:
 //   $PMSH\r\n
 //   response: $PMSV, <release_number>, <build_dateandtime>\r\n
@@ -34,98 +37,40 @@
 //   response: $PMSC, <enum>\r\n
 
 
-datalink_action_t MagSensHost::nextByte(const char c)
-{
-    int pos = _sm._frame.size() - 1; // c already in the buffer
-    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
-
-    switch(_sm._state) {
-    case START_TOKEN:
-        if ( c == '$' ) {
-            _sm._state = HEADER;
-            ESP_LOGI(FNAME, "Msg START_TOKEN");
-        }
-        break;
-    case HEADER:
-        NMEA::incrCRC(_sm._crc,c);
-        if ( pos < 3 ) { break; }
-        if ( _sm._frame.substr(1,3) != "PMS" ) { // MagSens  sender id
-            break;
-        }
-        _sm._state = PAYLOAD;
-        break;
-    case PAYLOAD:
-        if ( c == '*' ) {
-            _sm._state = CHECK_CRC1; // Expecting a CRC to check
-            break;
-        }
-        if ( c != '\r' && c != '\n' ) {
-            ESP_LOGD(FNAME, "Msg PAYLOAD");
-            NMEA::incrCRC(_sm._crc,c);
-            break;
-        }
-        _sm._state = COMPLETE;
-        break;
-    case CHECK_CRC1:
-        _crc_buf[0] = c;
-        _sm._state = CHECK_CRC2;
-        break;
-    case CHECK_CRC2:
-    {
-        _crc_buf[1] = c;
-        _crc_buf[2] = '\0';
-        char read_crc = (char)strtol(_crc_buf, NULL, 16);
-        ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
-        if ( read_crc != _sm._crc ) {
-            _sm._state = START_TOKEN;
-            break;
-        }
-        _sm._state = COMPLETE;
-        break;
-    }
-    case STOP_TOKEN:
-    case COMPLETE:
-        ESP_LOGD(FNAME, "Msg complete %s", _sm._frame.c_str());
-        _sm._state = START_TOKEN;
-        switch (_sm._frame[4]) {
-            case 'V':
-                Version();
-                break;
-            case 'C':
-                Confirmation();
-                break;
-            default:
-                break;
-        }
-        break;
-    default:
-        break;
-    }
-    return NOACTION;
-}
-
-void MagSensHost::Version()
+datalink_action_t MagSensMsg::magsensVersion(NmeaPrtcl *nmea)
 {
     //$PMSV, <release_number>, <build_dateandtime>\r\n
     ESP_LOGI(FNAME,"PMS version");
+    ProtocolState *sm = nmea->getSM();
 
     int mag_release;
     char mag_build[40];
-    sscanf(_sm._frame.c_str()+6, "%d, %s", &mag_release, mag_build);
+    sscanf(sm->_frame.c_str()+6, "%d, %s", &mag_release, mag_build);
     ESP_LOGI(FNAME,"R: %d B: %s", mag_release, mag_build);
+
+    return NOACTION;
 }
 
-void MagSensHost::Confirmation()
+datalink_action_t MagSensMsg::magsensConfirmation(NmeaPrtcl *nmea)
 {
     // $PMSC, <enum>\r\n
+    ProtocolState *sm = nmea->getSM();
 
-    int pos = 6;
-    _conf_pack_nr = std::stoi(NMEA::extractWord(_sm._frame, pos));
-    ESP_LOGI(FNAME,"PMS pack conf %d", _conf_pack_nr);
+    Conf_Pack_Nr = std::stoi(NMEA::extractWord(sm->_frame, sm->_word_start[0]));
+    ESP_LOGI(FNAME,"PMS pack conf %d", Conf_Pack_Nr);
+
+    return NOACTION;
 }
 
+// NMEA plugin table
+ConstParserMap MagSensMsg::_pm = {
+    { Key("PMSV"), MagSensMsg::magsensVersion },
+    { Key("PMSC"), MagSensMsg::magsensConfirmation }
+};
+
+
 // Transmitter 
-bool MagSensHost::sendHello()
+bool NmeaPrtcl::sendHello()
 {
     Message* msg = newMessage();
     ESP_LOGI(FNAME, "Hello MagSens %d/%d", msg->target_id, msg->port);
@@ -133,11 +78,11 @@ bool MagSensHost::sendHello()
     return DEV::Send(msg);
 }
 
-bool MagSensHost::sendCalibration()
+bool NmeaPrtcl::sendCalibration()
 {
     return false; // todo
 }
-bool MagSensHost::startStream(int choice)
+bool NmeaPrtcl::startStream(int choice)
 {
     Message* msg = newMessage();
     msg->buffer = "$PMSSr\r\n";
@@ -146,7 +91,7 @@ bool MagSensHost::startStream(int choice)
     }
     return DEV::Send(msg);
 }
-bool MagSensHost::killStream()
+bool NmeaPrtcl::killStream()
 {
     // block until mag stream is down
     MagSensBinary *prtc = static_cast<MagSensBinary*>(DEVMAN->getProtocol(MAGSENS_DEV, MAGSENSBIN_P));
@@ -165,7 +110,7 @@ bool MagSensHost::killStream()
     
     return true;
 }
-bool MagSensHost::prepareUpdate(int len, int pack)
+bool NmeaPrtcl::prepareUpdate(int len, int pack)
 {
     Message* msg = newMessage();
     msg->buffer = "$PMSU, " + std::to_string(len) + ", " + std::to_string(pack);
@@ -173,7 +118,7 @@ bool MagSensHost::prepareUpdate(int len, int pack)
     return DEV::Send(msg);
 }
 
-bool MagSensHost::firmwarePacket(const char *buf, int len)
+bool NmeaPrtcl::firmwarePacket(const char *buf, int len)
 {
     Message *msg = newMessage();
     if ( msg->buffer.max_size() < len ) {
@@ -181,22 +126,22 @@ bool MagSensHost::firmwarePacket(const char *buf, int len)
     }
     msg->buffer.assign(buf, len);
     // reset confirmation
-    _conf_pack_nr = -1;
+    Conf_Pack_Nr = -1;
     return DEV::Send(msg);
 }
 
-int MagSensHost::waitConfirmation()
+int NmeaPrtcl::waitConfirmation()
 {
     // block until a confirmation or timeout received
     int try_times = 150;
     do {
         vTaskDelay(pdMS_TO_TICKS(10));
-        if ( _conf_pack_nr > 0 ) {
+        if ( Conf_Pack_Nr > 0 ) {
             break;
         }
     }
     while ( --try_times > 0 );
 
-    return _conf_pack_nr;
+    return Conf_Pack_Nr;
 }
 

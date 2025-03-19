@@ -88,11 +88,21 @@ public:
     void addPlugin(NmeaPlugin *pm); // one way addition
     datalink_action_t nextByte(const char c) override;
 
-    // some transmitter routines
+    // XCV transmitter routines
     void sendStdXCVario(float baro, float dp, float te, float temp, float ias, float tas,
         float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, 
         float acc_x, float acc_y, float acc_z, float gx, float gy, float gz);
     void sendOpenVario(float baro, float dp, float te, float temp, bool validTemp);
+
+    // MagSens transmitter
+    bool sendHello();
+    bool sendCalibration(); // Todo add calib param
+    bool startStream(int choice);
+    bool killStream();
+    bool prepareUpdate(int len, int pack);
+    bool firmwarePacket(const char *buf, int len);
+    int waitConfirmation();
+    
     
 private:
     const ProtocolType _ptyp; // a protocol id different per instance

@@ -53,11 +53,11 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
             auto it = _parsmap.find(_mkey);
             if ( it != _parsmap.end() ) {
                 _parser = it->second;
-                _sm._header_len = pos+1;
-                _sm._state = PAYLOAD;
-                ESP_LOGI(FNAME, "Msg HEADER, %s", k.toString().c_str());
-                break;
             }
+            _sm._header_len = pos+1;
+            _sm._state = PAYLOAD;
+            ESP_LOGI(FNAME, "Msg HEADER, %s", k.toString().c_str());
+            break;
         }
         if (pos > 6) {
             _sm._state = START_TOKEN;
@@ -106,7 +106,9 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
         NMEA::ensureTermination(_sm._frame);
         _sm._state = START_TOKEN; // restart parsing
         ESP_LOGI(FNAME, "Msg complete %s", _mkey.toString().c_str());
-        action = (_parser)(this);
+        if ( _parser ) {
+            action = (_parser)(this);
+        }
     }
     return action;
 }

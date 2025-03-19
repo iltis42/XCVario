@@ -936,7 +936,6 @@ void system_startup(void *args){
 	the_can_mode = can_mode.get(); // initialize variable for CAN mode
 
 	// menu_screens.set(0);
-	wireless_type.set(WL_WLAN_STANDALONE);
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
 	stall_alarm_off_kmh = stall_speed.get()/3;
@@ -1070,14 +1069,18 @@ void system_startup(void *args){
 	ESP_LOGI(FNAME,"Custom Wirelss-ID: %s", custom_wireless_id.get().id );
 
 	std::string wireless_id("BT ID: ");
+	ESP_LOGI(FNAME,"Wirelss-Type: %d", wireless );
 	if( wireless == WL_BLUETOOTH ) {
+		ESP_LOGI(FNAME,"Start BT");
 		BTspp = new BTSender();
 		BTspp->start();
 	}
 	else if( wireless == WL_BLUETOOTH_LE ) {
+		ESP_LOGI(FNAME,"Start BLE");
 		blesender.begin();
 	}
 	else  if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) {
+		ESP_LOGI(FNAME,"Start WiFi");
 		wireless_id.assign("WLAN SID: ");
 		Wifi = new WifiApp();
 	}

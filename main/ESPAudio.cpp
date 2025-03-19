@@ -80,7 +80,7 @@ bool  Audio::_haveCAT5171=false;
 
 const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
 const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
-typedef struct lookup {  uint8_t div; uint8_t step; } t_lookup_entry;
+typedef struct {  uint8_t div; uint8_t step; } t_lookup_entry;
 //typedef struct volume {  uint16_t vol; uint8_t scale; uint8_t wiper; } t_scale_wip;
 
 #define FADING_STEPS 6  // steps used for fade in/out at chopping
@@ -100,7 +100,8 @@ Audio::Audio( ) {
 	speaker_volume = 63;
 }
 
-std::map<uint16_t, t_lookup_entry> lftab{
+// Keep the table in flash memory
+constexpr std::array lftab = std::to_array<std::pair<uint16_t, t_lookup_entry>>({
 	{ 18,{ 6,1}},   { 21,{5,1} },	{ 25,{4,1} },	{ 32,{3,1} },	{ 37,{6,2} },	{ 43,{5,2} },	{ 51,{4,2} },	{ 55,{6,3} },
 	{ 64,{5,3}},    { 74,{6,4} },	{ 77,{4,3} },	{ 86,{5,4} },	{ 92,{6,5} },	{ 97,{3,3} },	{ 103,{4,4} },	{ 108,{5,5} },
 	{ 111,{6,6}},	{ 129,{6,7} },	{ 148,{6,8} },	{ 151,{5,7} },	{ 155,{4,6} },	{ 162,{3,5} },	{ 166,{6,9} },	{ 172,{5,8} },
@@ -119,7 +120,7 @@ std::map<uint16_t, t_lookup_entry> lftab{
 	{ 870,{6,47}},	{ 875,{3,27} },	{ 881,{4,34} },	{ 886,{5,41} },	{ 889,{6,48} },	{ 907,{6,49} },	{ 926,{6,50} },	{ 929,{5,43} },
 	{ 933,{4,36}},	{ 940,{3,29} },	{ 944,{6,51} },	{ 951,{5,44} },	{ 959,{4,37} },	{ 963,{6,52} },	{ 972,{5,45} },	{ 982,{6,53} },
 	{ 985,{4,38}},	{ 994,{5,46} },	{ 1000,{6,54} }
-};
+});
 
 /*
  * Enable cosine waveform generator on a DAC channel
@@ -460,7 +461,7 @@ void Audio::startAudio(){
 	_testmode = false;
 	evaluateChopping();
 	speaker_volume = vario_mode_volume;
-	xTaskCreatePinnedToCore(&dactask, "dactask", 2400, NULL, 24, &dactid, 0);
+	xTaskCreate(&dactask, "dactask", 2400, NULL, 24, &dactid);
 }
 
 void Audio::calcS2Fmode( bool recalc ){
@@ -865,16 +866,19 @@ void Audio::dacDisable(){
 }
 
 bool Audio::lookup( float f, int& div, int &step ){
-	int fi = (int)(f + 0.5);
-	std::map<uint16_t,t_lookup_entry>::iterator low;
-	low = lftab.lower_bound(fi);
+	uint16_t fi = (uint16_t)(f + 0.5);
+
+	auto low = std::lower_bound(
+		lftab.begin(), lftab.end(), fi,
+		[](const auto &entry, uint16_t k) { return entry.first < k; });
+
 	if (low != lftab.end()) {
 		div =  low->second.div;
 		step = low->second.step;
-		// ESP_LOGI(FNAME, "found div:%d step:%d for F:%d", div, step, fi );
+		ESP_LOGI(FNAME, "found div:%d step:%d for F:%d", div, step, fi );
 		return true;
 	}
-	ESP_LOGW(FNAME,"F: %d not found in map", fi );
+	ESP_LOGI(FNAME,"F: %d not found in map", fi );
 	return false;
 }
 

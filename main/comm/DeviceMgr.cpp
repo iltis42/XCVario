@@ -36,6 +36,7 @@ static TaskHandle_t SendTask = nullptr;
 static RoutingMap Routes = {
     { {FLARM_DEV, 0}, {{NAVI_DEV, 0}, {NAVI_DEV, 8881}, {XCVARIOCLIENT_DEV, 20}} },
     { {NAVI_DEV, 0}, {{FLARM_DEV, 0}} },
+    { {NAVI_DEV, 8881}, {{FLARM_DEV, 0}} },
     { {XCVARIO_DEV, 0}, {{NAVI_DEV, 0}, {NAVI_DEV, 8880}} }
 };
 

@@ -141,13 +141,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
 	if( !validTemp )
 		temp=0;
-	if( proto == P_OPENVARIO ) {
-		if( validTemp )
-			sprintf(str,"$POV,P,%0.1f,Q,%0.1f,E,%0.1f,T,%0.1f",baro,dp,te,temp);
-		else
-			sprintf(str,"$POV,P,%0.1f,Q,%0.1f,E,%0.1f",baro,dp,te);
-	}
-	else if ( proto == P_BORGELT ) {
+	if ( proto == P_BORGELT ) {
 		/*
 			Sentence has following format:
 			$PBB50,AAA,BBB.B,C.C,DDDDD,EE,F.FF,G,HH*CHK crlf

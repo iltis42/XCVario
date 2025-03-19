@@ -15,6 +15,7 @@
 #include "protocol/nmea/GarminMsg.h"
 #include "protocol/nmea/GpsMsg.h"
 #include "protocol/nmea/XCVarioMsg.h"
+#include "protocol/nmea/OpenVarioMsg.h"
 #include "protocol/FlarmBin.h"
 #include "protocol/MagSensHost.h"
 #include "protocol/MagSensBin.h"
@@ -95,6 +96,14 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             ESP_LOGI(FNAME, "New XCVario");
             NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
             nmea->addPlugin(new XCVarioMsg(*nmea));
+            tmp = nmea;
+            break;
+        }
+        case OPENVARIO_P:
+        {
+            ESP_LOGI(FNAME, "New OpenVario");
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new OpenVarioMsg(*nmea));
             tmp = nmea;
             break;
         }

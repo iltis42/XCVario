@@ -489,10 +489,16 @@ static void toyFeed()
 		OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, gflags.validTemperature  );
 	}
 	else if( nmea_protocol.get() == OPENVARIO ){
-		OV.sendNMEA( P_OPENVARIO, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature  );
+		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, OPENVARIO_P); // Todo preliminary solution ..
+		if ( prtcl ) {
+			static_cast<NmeaPrtcl*>(prtcl)->sendOpenVario(baroP, dynamicP, te_vario.get(), OAT.get(), gflags.validTemperature );
+		}
 	}
-	else if( nmea_protocol.get() == CAMBRIDGE ){
-		OV.sendNMEA( P_CAMBRIDGE, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature  );
+	else if( nmea_protocol.get() == CAMBRIDGE ) {
+		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, CAMBRIDGE_P); // Todo preliminary solution ..
+		// if ( prtcl ) {
+		// 	// static_cast<NmeaPrtcl*>(prtcl)->sendOpenVario(baroP, dynamicP, te_vario.get(), OAT.get(), gflags.validTemperature );
+		// }
 	}
 	else if( nmea_protocol.get() == XCVARIO ) {
 		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P); // Todo preliminary solution ..

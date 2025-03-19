@@ -264,18 +264,21 @@ void Protocols::parseXS( const char *str ){
 					item->ack( val );
 				else
 					item->set( val, false );
-			}else
+			}else {
 				ESP_LOGW(FNAME,"Setup item with key %s not found", key );
+			}
 		}
 		else if( type == 'I' ){
 			SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
 			if( item != 0 ){
-				if( role == 'A' && val == item->get() )
+				if( role == 'A' && val == item->get() ) {
 					item->ack( val );
-				else
+				} else {
 					item->set( (int)val, false );
-			}else
+				}
+			}else {
 				ESP_LOGW(FNAME,"Setup item with key %s not found", key );
+			}
 		}
 
 	}else{
@@ -423,8 +426,9 @@ void Protocols::parseNMEA( const char *str ){
 				if( v<=100.0 && v >= 0.0 ){
 					audio_volume.set( v );
 					ESP_LOGI(FNAME,"Volume change: %d steps, new volume: %.0f", steps, v );
-				}else
+				}else {
 					ESP_LOGI(FNAME,"Volume change limit reached steps: %d volume: %.0f", steps, v );
+				}
 			}
 		}
 		if (str[3] == 'r') {  // nonstandard CAI 302 extension for Rotary Movement, e.g. for XCNav remote stick to navigate

@@ -375,8 +375,9 @@ void drawDisplay(void *pvParameters){
 			}
 		}
 		vTaskDelay(20/portTICK_PERIOD_MS);
-		if( uxTaskGetStackHighWaterMark( dpid ) < 512  )
+		if( uxTaskGetStackHighWaterMark( dpid ) < 512  ) {
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
+		}
 	}
 }
 
@@ -404,8 +405,9 @@ void audioTask(void *pvParameters){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		doAudio();
 		// Router::routeXCV();
-		if( uxTaskGetStackHighWaterMark( apid )  < 512 )
+		if( uxTaskGetStackHighWaterMark( apid )  < 512 ) {
 			ESP_LOGW(FNAME,"Warning audio task stack low: %d", uxTaskGetStackHighWaterMark( apid ) );
+		}
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
@@ -510,8 +512,9 @@ static void toyFeed()
 	else if( nmea_protocol.get() == NMEA_OFF ) {
 		;
 	}
-	else
+	else {
 		ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
+	}
 	xSemaphoreGive(xMutex);
 }
 
@@ -568,8 +571,9 @@ void clientLoop(void *pvParameters)
 				}
 			}
 			esp_task_wdt_reset();
-			if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
+			if( uxTaskGetStackHighWaterMark( bpid ) < 512 ) {
 				ESP_LOGW(FNAME,"Warning client task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
+			}
 		}
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
 	}
@@ -788,8 +792,9 @@ void readSensors(void *pvParameters){
 			MPU.temp_control( count, xcvTemp );
 		}
 		esp_task_wdt_reset();
-		if( uxTaskGetStackHighWaterMark( bpid ) < 512 )
+		if( uxTaskGetStackHighWaterMark( bpid ) < 512 ) {
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
+		}
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
@@ -851,10 +856,12 @@ void readTemp(void *pvParameters)
 
 		if( (ttick++ % 50) == 0) {
 			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
-			if( uxTaskGetStackHighWaterMark( tpid ) < 256 )
+			if( uxTaskGetStackHighWaterMark( tpid ) < 256 ) {
 				ESP_LOGW(FNAME,"Warning temperature task stack low: %d bytes", uxTaskGetStackHighWaterMark( tpid ) );
-			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 20000 )
+			}
+			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 20000 ) {
 				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+			}
 		}
 		if( (ttick%5) == 0 ){
 			SetupCommon::commitDirty();
@@ -1331,8 +1338,9 @@ void system_startup(void *args){
 			display->writeText( line++, "TE/Baro P: Unequal");
 			logged_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
 		}
-		else
+		else {
 			ESP_LOGI(FNAME,"Abs p sensor deta test PASSED, delta: %f hPa", abs(ba_p - te_p) );
+		}
 		// display->writeText( line++, "TE/Baro P: OK");
 		logged_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 

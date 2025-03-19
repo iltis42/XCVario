@@ -44,18 +44,23 @@ void IRAM_ATTR Sound::timer_isr(void* arg)
 	timer_group_enable_alarm_in_isr(TIMER_GROUP_0, (timer_idx_t)(uintptr_t)arg);
 	// TIMERG0.hw_timer[0].config.alarm_en = 1;
 	int len = 0;
-	if(sound == DING)
+	if(sound == DING) {
 		len = ding_co_wav_len;
-	else if(sound == HI)
-		len = hi_wav_len;
-	if( pos < len ) {
-		if( sound == DING )
-			dac_output_voltage(DAC_CHAN_0,ding_co_wav[pos++]);
-		else if( sound == HI )
-			dac_output_voltage(DAC_CHAN_0,hi_wav[pos++]);
 	}
-	else
+	else if(sound == HI) {
+		len = hi_wav_len;
+	}
+	if( pos < len ) {
+		if( sound == DING ) {
+			dac_output_voltage(DAC_CHAN_0,ding_co_wav[pos++]);
+		}
+		else if( sound == HI ) {
+			dac_output_voltage(DAC_CHAN_0,hi_wav[pos++]);
+		}
+	}
+	else {
 		ready = true;
+	}
 }
 
 void Sound::timerInitialise (int timer_period_us)

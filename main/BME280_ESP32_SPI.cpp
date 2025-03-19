@@ -119,9 +119,9 @@ bool BME280_ESP32_SPI::begin(){
 		ESP_LOGE(FNAME,"Error init BMP280 CS=%d", _cs );
 		init_err = true;
 	}
-	else
+	else {
 		ESP_LOGI(FNAME,"BMP280 ID = %02x", id );
-
+	}
 	WriteRegister(0xF2, ctrl_hum);
 	WriteRegister(0xF4, ctrl_meas);
 	WriteRegister(0xF5, config);

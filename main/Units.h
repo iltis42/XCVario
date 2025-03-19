@@ -6,28 +6,30 @@
 class Units {
 public:
 	static float Airspeed( float as ){
-		if( ias_unit.get() == SPEED_UNIT_KMH ) // km/h
+		if( ias_unit.get() == SPEED_UNIT_KMH ) { // km/h
 			return( as );
-		else if( ias_unit.get() == SPEED_UNIT_MPH ) // mph
+		} else if( ias_unit.get() == SPEED_UNIT_MPH ) { // mph
 			return( as*0.621371 );
-		else if( ias_unit.get() == SPEED_UNIT_KNOTS ) // knots
+		} else if( ias_unit.get() == SPEED_UNIT_KNOTS ) { // knots
 			return( as*0.539957 );
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for AS");
+		}
 		return 0;
 	};
 
 	static float Distance( float d ){  //
-		if( dst_unit.get() == DST_UNIT_M ) // meters per default
+		if( dst_unit.get() == DST_UNIT_M ) { // meters per default
 			return( d );
-		else if( dst_unit.get() == DST_UNIT_FT ) // ft
+		} else if( dst_unit.get() == DST_UNIT_FT ) { // ft
 			return( d*3.28084 );
-		else if( dst_unit.get() == DST_UNIT_MILES ) // mi
+		} else if( dst_unit.get() == DST_UNIT_MILES ) { // mi
 			return( d*0.000621371 );
-		else if( dst_unit.get() == DST_UNIT_NAUTICAL_MILES ) // sm
+		} else if( dst_unit.get() == DST_UNIT_NAUTICAL_MILES ) { // sm
 			return( d*0.000539957 );
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for Distance");
+		}
 		return d;
 	};
 
@@ -46,30 +48,31 @@ public:
 	};
 
 	static float kmh2knots( float kmh ){
-			return( kmh / 1.852 );
+		return( kmh / 1.852 );
 	};
 
 	static float kmh2ms( float kmh ){
-			return( kmh * 0.277778 );
+		return( kmh * 0.277778 );
 	};
 
 	static float ms2kmh( float ms ){
-			return( ms * 3.6 );
+		return( ms * 3.6 );
 	};
 
 	static float knots2kmh( float knots ){
-				return( knots * 1.852 );
+		return( knots * 1.852 );
 	};
 
 	static float Airspeed2Kmh( float as ){
-		if( ias_unit.get() == SPEED_UNIT_KMH ) // km/h
+		if( ias_unit.get() == SPEED_UNIT_KMH ) { // km/h
 			return( as );
-		else if( ias_unit.get() == SPEED_UNIT_MPH ) // mph
+		} else if( ias_unit.get() == SPEED_UNIT_MPH ) { // mph
 			return( as/0.621371 );
-		else if( ias_unit.get() == SPEED_UNIT_KNOTS ) // knots
+		} else if( ias_unit.get() == SPEED_UNIT_KNOTS ) { // knots
 			return( as/0.539957 );
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for AS");
+		}
 		return 0;
 	};
 
@@ -78,38 +81,42 @@ public:
     }
 
 	static float TemperatureUnit( float t ){
-		if( temperature_unit.get() == T_CELCIUS ) // °C
+		if( temperature_unit.get() == T_CELCIUS ) { // °C
 			return( t );
-		if( temperature_unit.get() == T_FAHRENHEIT ) // °F
+		} else if( temperature_unit.get() == T_FAHRENHEIT ) { // °F
 			return( (t * 1.8) + 32 );
-		if( temperature_unit.get() == T_KELVIN ) // °K
+		} else if( temperature_unit.get() == T_KELVIN ) { // °K
 			return( t +  273.15 );
-		else{
+		} else {
 			return( t ); // default °C
 		}
 	}
 
 	static const char* TemperatureUnitStr( int idx = -1 ){
-		if( idx == -1 )
+		if( idx == -1 ) {
 			idx = temperature_unit.get();
-		if( idx == T_FAHRENHEIT ) // °F
+		}
+		if( idx == T_FAHRENHEIT ) { // °F
 			return "°F";
-		if( idx == T_KELVIN ) // °F
+		} else if( idx == T_KELVIN ) { // °F
 			return "°K";
+		}
 		return "°C"; // default °C
 	}
 
 	static const char * AirspeedUnitStr( int u = -1 ){
-		if( u == -1 )
-			u=ias_unit.get();
-		if( u == SPEED_UNIT_KMH ) // km/h
+		if( u == -1 ) {
+			u = ias_unit.get();
+		}
+		if( u == SPEED_UNIT_KMH ) { // km/h
 			return("kmh");
-		if( u == SPEED_UNIT_MPH ) // mph
+		} else if( u == SPEED_UNIT_MPH ) { // mph
 			return("mph");
-		if( u == SPEED_UNIT_KNOTS ) // knots
+		} else if( u == SPEED_UNIT_KNOTS ) { // knots
 			return("kt");
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for airspeed");
+		}
 		return "none";
 	};
 
@@ -126,30 +133,32 @@ public:
 		else if( airspeed_mode.get() == MODE_SLIP ) {
 			return "SLIP";
 		}
-		else{
+		else {
 			return "nan";
 		}
 	}
 
 	static float Vario( const float te ){   // standard is m/s
-		if( vario_unit.get() == VARIO_UNIT_MS )
+		if( vario_unit.get() == VARIO_UNIT_MS ) {
 			return( te );
-		else if(  vario_unit.get() == VARIO_UNIT_FPM )
+		} else if(  vario_unit.get() == VARIO_UNIT_FPM ) {
 			return( te*1.9685 );
-		else if( vario_unit.get() == VARIO_UNIT_KNOTS )
+		} else if( vario_unit.get() == VARIO_UNIT_KNOTS ) {
 			return( te*1.94384 );         // knots
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for Vario");
+		}
 		return 0;
 	};
 
 	static float Qnh( float qnh ){   // standard is hPa
-		if( qnh_unit.get() == QNH_HPA )
+		if( qnh_unit.get() == QNH_HPA ) {
 			return( qnh );
-		else if(  qnh_unit.get() == QNH_INHG )
+		} else if(  qnh_unit.get() == QNH_INHG ) {
 			return( hPa2inHg( qnh ) );
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for Vario");
+		}
 		return 0;
 	};
 
@@ -185,67 +194,74 @@ public:
 	};
 
 	static float Vario2ms( float var ){
-		if( vario_unit.get() == VARIO_UNIT_MS )
+		if( vario_unit.get() == VARIO_UNIT_MS ) {
 			return( var );
-		else if(  vario_unit.get() == VARIO_UNIT_FPM )
+		} else if(  vario_unit.get() == VARIO_UNIT_FPM ) {
 			return( var/196.85 );
-		else if( vario_unit.get() == VARIO_UNIT_KNOTS )
+		} else if( vario_unit.get() == VARIO_UNIT_KNOTS ) {
 			return( var/1.94384 );         // knots
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for Vario");
+		}
 		return 0;
 	};
 
 	static float mcval2knots( float mc ){   // returns MC, stored according to vario setting, in knots
-		if( vario_unit.get() == VARIO_UNIT_MS )             // mc is in m/s
+		if( vario_unit.get() == VARIO_UNIT_MS ) {            // mc is in m/s
 			return( mc*1.94384 );
-		else if(  vario_unit.get() == VARIO_UNIT_FPM )       // mc is stored in feet per minute
+		} else if(  vario_unit.get() == VARIO_UNIT_FPM ) {      // mc is stored in feet per minute
 			return( mc * 0.00987472 );
-		else if( vario_unit.get() == VARIO_UNIT_KNOTS )        // knots we already have
+		} else if( vario_unit.get() == VARIO_UNIT_KNOTS ) {       // knots we already have
 			return( mc );
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for Vario");
+		}
 		return 0;
 	};
 
 
 	static const char * VarioUnit(){
-		if( vario_unit.get() == VARIO_UNIT_MS )
+		if( vario_unit.get() == VARIO_UNIT_MS ) {
 			return("m/s");
-		else if( vario_unit.get() == VARIO_UNIT_FPM )
+		} else if( vario_unit.get() == VARIO_UNIT_FPM ) {
 			return("ft/m");
-		else if( vario_unit.get() == VARIO_UNIT_KNOTS )
+		} else if( vario_unit.get() == VARIO_UNIT_KNOTS ) {
 			return("kt");
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for altitude");
+		}
 		return "nan";
 	};
 
 	static const char * QnhUnit( int unit = -1 ){
-		if( unit == -1 )
+		if( unit == -1 ) {
 			unit = qnh_unit.get();
-		if( unit == QNH_HPA )
+		}
+		if( unit == QNH_HPA ) {
 			return("hPa");
-		else if( unit == QNH_INHG )
+		} else if( unit == QNH_INHG ) {
 			return("inHg");
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for QNH");
+		}
 		return "nan";
 	};
 
 
 	static const char * VarioUnitLong( int unit = -1 ){
 		int u = unit;
-		if( u == -1 )
-			u=vario_unit.get();
-		if( u == VARIO_UNIT_MS )
+		if( u == -1 ) {
+			u = vario_unit.get();
+		}
+		if( u == VARIO_UNIT_MS ) {
 			return("m/s");
-		else if( u == VARIO_UNIT_FPM )
+		} else if( u == VARIO_UNIT_FPM ) {
 			return("x 100ft/m");
-		else if( u == VARIO_UNIT_KNOTS )
+		} else if( u == VARIO_UNIT_KNOTS ) {
 			return("knots");
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for altitude");
+		}
 		return "nan";
 	};
 
@@ -253,16 +269,18 @@ public:
 
 	static float Altitude( float alt, int unit = -1 ){
 		int u = unit;
-		if( u == -1 )
+		if( u == -1 ) {
 			u = alt_unit.get();
-		if( u == ALT_UNIT_METER )  //m
+		}
+		if( u == ALT_UNIT_METER ) { //m
 			return( alt );
-		else if( u == ALT_UNIT_FT ) //feet
+		} else if( u == ALT_UNIT_FT ) { //feet
 			return( alt*3.28084 );
-		else if( u == ALT_UNIT_FL ) //FL
+		} else if( u == ALT_UNIT_FL ) { //FL
 			return( alt*0.0328084 );
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for altitude");
+		}
 		return 0;
 	};
 
@@ -280,51 +298,57 @@ public:
 
 	static const char * AltitudeUnit( int unit = -1 ){
 		int u=unit;
-		if( u == -1 )
+		if( u == -1 ) {
 			u=alt_unit.get();
-		if( u == ALT_UNIT_METER )  //m
+		}
+		if( u == ALT_UNIT_METER ) { //m
 			return( "m" );
-		else if( u == ALT_UNIT_FT ) //feet
+		} else if( u == ALT_UNIT_FT ) { //feet
 			return( "ft" );
-		else if( u == ALT_UNIT_FL ) //FL
+		} else if( u == ALT_UNIT_FL ) { //FL
 			return( "FL" );
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for altitude %d", u );
+		}
 		return "nan";
 	};
 
 	static const char * AltitudeUnitMeterOrFeet( int unit = -1 ){
 		int u=unit;
-		if( u == -1 )
+		if( u == -1 ) {
 			u=alt_unit.get();
-		if( u == ALT_UNIT_METER )  //m
+		}
+		if( u == ALT_UNIT_METER ) { //m
 			return( "m" );
-		else if( u == ALT_UNIT_FT || u == ALT_UNIT_FL ) //feet
+		} else if( u == ALT_UNIT_FT || u == ALT_UNIT_FL ) { //feet
 			return( "ft" );
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for altitude %d", u );
+		}
 		return "nan";
 	};
 
 	static const char * DistanceUnit( int unit = -1 ){
 		int u=unit;
-		if( u == -1 )
+		if( u == -1 ) {
 			u=dst_unit.get();
-		if( u == DST_UNIT_M )      // kilometers km
+		}
+		if( u == DST_UNIT_M ) {     // kilometers km
 			return( "m" );
-		else if( u == DST_UNIT_FT ) // hundreds feet
+		} else if( u == DST_UNIT_FT ) { // hundreds feet
 			return( "ft" );
-		else if( u == DST_UNIT_MILES ) // Miles mi
+		} else if( u == DST_UNIT_MILES ) { // Miles mi
 			return( "mi" );
-		else if( u == DST_UNIT_NAUTICAL_MILES ) // nautical miles
+		} else if( u == DST_UNIT_NAUTICAL_MILES ) { // nautical miles
 			return( "nm" );
-		else
+		} else {
 			ESP_LOGE(FNAME,"Wrong unit for distance %d", u );
+		}
 		return "nan";
 	};
 
 	static float value( float val, e_unit_type_t u ){
-		switch( u ){
+		switch( u ) {
 		case UNIT_NONE:
 			return val;
 		case UNIT_TEMPERATURE:
@@ -343,7 +367,7 @@ public:
 	};
 
 	static const char * unit( e_unit_type_t u ){
-		switch( u ){
+		switch( u ) {
 		case UNIT_NONE:
 			return "";
 		case UNIT_TEMPERATURE:

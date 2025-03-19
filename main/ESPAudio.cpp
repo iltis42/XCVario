@@ -173,24 +173,28 @@ void Audio::begin( dac_channel_t ch  )
 	_ch = ch;
 	restart();
 	_testmode = true;
-	if( audio_equalizer.get() == AUDIO_EQ_LS4 )
+	if( audio_equalizer.get() == AUDIO_EQ_LS4 ) {
 		equalizerSpline  = new tk::spline(F1,VOL1, tk::spline::cspline_hermite );
-	else if( audio_equalizer.get() == AUDIO_EQ_LS8 )
+	} else if( audio_equalizer.get() == AUDIO_EQ_LS8 ) {
 		equalizerSpline  = new tk::spline(F2,VOL2, tk::spline::cspline_hermite );
-	else if( audio_equalizer.get() == AUDIO_EQ_LSEXT )
+	} else if( audio_equalizer.get() == AUDIO_EQ_LSEXT ) {
 		equalizerSpline  = new tk::spline(F3,VOL3, tk::spline::cspline_hermite );
+	}
 	vTaskDelay(pdMS_TO_TICKS(10));
 }
 
 float Audio::equal_volume( float volume ){
 	float freq_resp = ( 1 - (((current_frequency-minf) / (maxf-minf)) * (frequency_response.get()/100.0) ) );
 	float new_vol = volume * freq_resp;
-	if( equalizerSpline )
+	if( equalizerSpline ) {
 		new_vol = new_vol * (float)(*equalizerSpline)( (double)current_frequency );
-	if( new_vol >= max_volume.get() )
+	}
+	if( new_vol >= max_volume.get() ) {
 		new_vol = max_volume.get();
-	if( new_vol <= 0 )
+	}
+	if( new_vol <= 0 ) {
 		new_vol = 0;
+	}
 	// ESP_LOGI(FNAME,"Vol: %d Scaled: %f  F: %.0f spline: %.3f", volume, new_vol, current_frequency, (float)(*equalizerSpline)( (double)current_frequency ));
 	return new_vol;
 }
@@ -377,8 +381,9 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 		else if( style == AUDIO_ALARM_OFF ){
 			volume = 0;
 		}
-		else
+		else {
 			ESP_LOGE(FNAME,"Error, wrong alarm style %d", style );
+		}
 		calculateFrequency();
 		speaker_volume = volume;
 	}
@@ -697,8 +702,9 @@ void Audio::dactask(void* arg )
 							//ESP_LOGI(FNAME, "fade out sound, volume: %3.1f", volume );
 							volume = volume*0.75;
 							writeVolume( volume );
-							if (volume < 3.0)
+							if (volume < 3.0) {
 								volume = 0;
+							}
 							vTaskDelay(pdMS_TO_TICKS(1));
 						}
 						ESP_LOGI(FNAME, "fade out sound end");
@@ -707,13 +713,15 @@ void Audio::dactask(void* arg )
 					}
 					dacDisable();
 				}
-				if( disable_amp )
+				if( disable_amp ) {
 					enableAmplifier( false );
+				}
 			}
 		}
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
-		if( uxTaskGetStackHighWaterMark( dactid ) < 256 )
+		if( uxTaskGetStackHighWaterMark( dactid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
+		}
 		vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);
 		if( volume_change ) {
 			volume_change--;

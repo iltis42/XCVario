@@ -140,12 +140,14 @@ std::string WifiClient::scan(int master_xcv_num){
 			break;
 		ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&number, ap_info));
 		for (int i = 0; (i < DEFAULT_SCAN_LIST_SIZE) && (i < ap_count); i++) {
-			if( strncmp( (char*)ap_info[i].ssid, "XCVARIO-", 8 ) == 0 )
-			ESP_LOGI(FNAME, "SSID \t%s", ap_info[i].ssid);
+			if( strncmp( (char*)ap_info[i].ssid, "XCVARIO-", 8 ) == 0 ) {
+				ESP_LOGI(FNAME, "SSID \t%s", ap_info[i].ssid);
+			}
 			ESP_LOGI(FNAME, "LEVEL: \t%d SSID: \t%s", ap_info[i].rssi, ap_info[i].ssid);
 			char mxcv[14]="XCVario-";
-			if( master_xcv_num != 0 )
+			if( master_xcv_num != 0 ) {
 				sprintf( mxcv+strlen(mxcv),"%d", master_xcv_num );
+			}
 			ESP_LOGI(FNAME,"Hunt for %s", mxcv );
 			if( strncmp( (char*)ap_info[i].ssid, mxcv, strlen(mxcv) ) == 0 ) {
 				found = true;

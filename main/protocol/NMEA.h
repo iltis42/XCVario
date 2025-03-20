@@ -104,6 +104,16 @@ public:
     bool firmwarePacket(const char *buf, int len);
     int waitConfirmation();
     
+    // JumboCmd transmitter
+    bool sendJPConnect();
+    bool sendJPGetConfig(const int index);
+    bool sendJPGetInfo();
+    bool sendJPSelectConfig(const int wingconfig); // 0=full, 1=reduced, 2=config
+    bool sendJPStartWipe(const int side); // 0=Right, 1=Left
+    bool sendJPAbortWipe(const int side);
+    bool sendJPShortPress(const int side);
+    bool sendJPHoldPressed(const int side);
+    bool sendJPReleasePressed(const int side);
     
 private:
     const ProtocolType _ptyp; // a protocol id different per instance

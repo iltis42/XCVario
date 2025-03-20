@@ -8,39 +8,27 @@
 
 #pragma once
 
-#include "ProtocolItf.h"
+#include "protocol/NMEA.h"
 
-#include <string>
 
-class JumboCmdHost final : public ProtocolItf
+class JumboCmdMsg final : public NmeaPlugin
 {
 public:
     static constexpr int PROTOCOL_VERSION = 1;
 
 public:
-    JumboCmdHost(int mp, ProtocolState &sm, DataLink &dl) : ProtocolItf(DeviceId::JUMBO_DEV, mp, sm, dl) {}
-    virtual ~JumboCmdHost() = default;
-    ProtocolType getProtocolId() override { return JUMBOCMD_P; }
-
-public:
-    datalink_action_t nextByte(const char c) override;
-
-    // Some transmitter
-    bool sendConnect();
-    bool sendGetConfig(const int index);
-    bool sendGetInfo();
-    bool sendSelectConfig(const int wingconfig); // 0=full, 1=reduced, 2=config
-    bool sendStartWipe(const int side); // 0=Right, 1=Left
-    bool sendAbortWipe(const int side);
-    bool sendShortPress(const int side);
-    bool sendHoldPressed(const int side);
-    bool sendReleasePressed(const int side);
+JumboCmdMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    virtual ~JumboCmdMsg() = default;
+    ConstParserMap* getPM() const { return &_pm; }
 
 private:
+    // Received messages
+    static ConstParserMap _pm;
+
     // Received jumbo messages
-    void connected();
-    void config();
-    void info();
-    void alive();
-    void event();
+    static datalink_action_t connected(NmeaPrtcl *nmea);
+    static datalink_action_t config(NmeaPrtcl *nmea);
+    static datalink_action_t info(NmeaPrtcl *nmea);
+    static datalink_action_t alive(NmeaPrtcl *nmea);
+    static datalink_action_t event(NmeaPrtcl *nmea);
 };

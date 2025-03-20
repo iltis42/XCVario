@@ -6,9 +6,9 @@
  ***       Copyright (C) Rohs Engineering Design         ***
  ***********************************************************/
 
-#include "JumboCmdHost.h"
+#include "JumboCmdMsg.h"
 
-#include "nmea_util.h"
+#include "protocol/nmea_util.h"
 
 #include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
@@ -68,103 +68,21 @@
 //
 //
 
-
-datalink_action_t JumboCmdHost::nextByte(const char c)
-{
-    int pos = _sm._frame.size() - 1; // c already in the buffer
-    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
-    switch(_sm._state) {
-    case START_TOKEN:
-        if ( c == '$' ) {
-            _sm._state = HEADER;
-            ESP_LOGD(FNAME, "Msg START_TOKEN");
-        }
-        break;
-    case HEADER:
-        NMEA::incrCRC(_sm._crc,c);
-        if ( pos < 4 ) { break; }
-        if ( _sm._frame.substr(1,3) != "PJP" ) {
-            _sm._state = START_TOKEN;
-            break;
-        }
-        _sm._state = PAYLOAD;
-        ESP_LOGD(FNAME, "Msg HEADER");
-        break;
-    case PAYLOAD:
-        if ( c == '*' ) {
-            _sm._state = CHECK_CRC1; // Expecting a CRC to check
-            break;
-        }
-        if ( c != '\r' && c != '\n' ) {
-            ESP_LOGD(FNAME, "Msg PAYLOAD");
-            NMEA::incrCRC(_sm._crc,c);
-            break;
-        }
-        _sm._state = COMPLETE;
-        break;
-    case CHECK_CRC1:
-        _crc_buf[0] = c;
-        _sm._state = CHECK_CRC2;
-        break;
-    case CHECK_CRC2:
-    {
-        _crc_buf[1] = c;
-        _crc_buf[2] = '\0';
-        char read_crc = (char)strtol(_crc_buf, NULL, 16);
-        ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
-        if ( read_crc != _sm._crc ) {
-            _sm._state = START_TOKEN;
-            break;
-        }
-        _sm._state = COMPLETE;
-        break;
-    }
-    default:
-        break;
-    }
-
-    if ( _sm._state == COMPLETE )
-    {
-        NMEA::ensureTermination(_sm._frame);
-        _sm._state = START_TOKEN; // restart parsing
-        ESP_LOGI(FNAME, "Msg complete %c%c", _sm._frame.at(4), _sm._frame.at(5));
-        uint16_t mid = (_sm._frame.at(4)<<8) + _sm._frame.at(5);
-        switch (mid) {
-            case (('R' << 8) | 'P'):
-                connected();
-                break;
-            case (('R' << 8) | 'C'):
-                config();
-                break;
-            case (('R' << 8) | 'I'):
-                info();
-                break;
-            case (('A' << 8) | ' '):
-                alive();
-                break;
-            case (('E' << 8) | ' '):
-                event();
-                break;
-            default:
-                break;
-        }
-    }
-    return NOACTION;
-}
-
-void JumboCmdHost::connected()
+datalink_action_t JumboCmdMsg::connected(NmeaPrtcl *nmea)
 {
     ESP_LOGI(FNAME, "JP connected");
     // todo set a flag
+    return NOACTION;
 }
 
 typedef std::vector<const char*> TokenTable;
 static TokenTable CONF_ITEM = { "WSPAN", "WSP_1", "LCORR", "RCORR", "WDFLT", "KICIT", "SEQNC", "REMDR", "WCONF"};
 
-void JumboCmdHost::config()
+datalink_action_t JumboCmdMsg::config(NmeaPrtcl *nmea)
 {
     // grab token from e.g. message "$PJPRC WSPAN, "
-    std::string itoken = _sm._frame.substr(7);
+    ProtocolState *sm = nmea->getSM();
+    std::string itoken = sm->_frame.substr(7);
     int idx = 0;
     TokenTable::iterator it = CONF_ITEM.begin();
     for ( ; it != CONF_ITEM.end(); it++, idx++ ) {
@@ -175,9 +93,9 @@ void JumboCmdHost::config()
 
     ESP_LOGI(FNAME, "JP config");
     if ( it == CONF_ITEM.end() ) {
-        return; // unknown token
+        return NOACTION; // unknown token
     }
-    int value = atoi(_sm._frame.substr(13).c_str());
+    int value = atoi(sm->_frame.substr(13).c_str());
     switch (idx) {
     case 0:
         // todo // 0.1m
@@ -209,31 +127,43 @@ void JumboCmdHost::config()
     default:
         break;
     }
+    return NOACTION;
 }
 
-void JumboCmdHost::info()
+datalink_action_t JumboCmdMsg::info(NmeaPrtcl *nmea)
 {
     ESP_LOGI(FNAME, "JP info");
     // todo
+    return NOACTION;
 }
 
-void JumboCmdHost::alive()
+datalink_action_t JumboCmdMsg::alive(NmeaPrtcl *nmea)
 {
     ESP_LOGI(FNAME, "JP alive");
     // todo
+    return NOACTION;
 }
 
-void JumboCmdHost::event()
+datalink_action_t JumboCmdMsg::event(NmeaPrtcl *nmea)
 {
     ESP_LOGI(FNAME, "JP event");
     // todo
+    return NOACTION;
 }
 
+// NMEA plugin table
+ConstParserMap JumboCmdMsg::_pm = {
+    { Key("JPRP"), JumboCmdMsg::connected },
+    { Key("JPRC"), JumboCmdMsg::config },
+    { Key("JPRI"), JumboCmdMsg::info },
+    { Key("JPJA"), JumboCmdMsg::alive },
+    { Key("JPJE"), JumboCmdMsg::event }
+};
 
 //
 // Transmitter routines
 //
-bool JumboCmdHost::sendConnect()
+bool NmeaPrtcl::sendJPConnect()
 {
     Message* msg = newMessage(); // set target
     if ( ! msg ) return false;
@@ -242,7 +172,7 @@ bool JumboCmdHost::sendConnect()
     return DEV::Send(msg);
 }
 
-bool JumboCmdHost::sendGetConfig(const int item_nr)
+bool NmeaPrtcl::sendJPGetConfig(const int item_nr)
 {
     Message* msg = newMessage();
     if ( ! msg ) return false;
@@ -253,7 +183,7 @@ bool JumboCmdHost::sendGetConfig(const int item_nr)
     return DEV::Send(msg);
 }
 
-bool JumboCmdHost::sendGetInfo()
+bool NmeaPrtcl::sendJPGetInfo()
 {
     Message* msg = newMessage();
     if ( ! msg ) return false;
@@ -262,7 +192,7 @@ bool JumboCmdHost::sendGetInfo()
     return DEV::Send(msg);
 }
 
-bool JumboCmdHost::sendSelectConfig(const int wingconfig)
+bool NmeaPrtcl::sendJPSelectConfig(const int wingconfig)
 {
     Message* msg = newMessage();
     if ( ! msg ) return false;
@@ -272,7 +202,7 @@ bool JumboCmdHost::sendSelectConfig(const int wingconfig)
     return DEV::Send(msg);
 }
 
-bool JumboCmdHost::sendStartWipe(const int side)
+bool NmeaPrtcl::sendJPStartWipe(const int side)
 {
     Message* msg = newMessage();
     if ( ! msg ) return false;
@@ -287,7 +217,7 @@ bool JumboCmdHost::sendStartWipe(const int side)
     return DEV::Send(msg);
 }
 
-bool JumboCmdHost::sendAbortWipe(const int side)
+bool NmeaPrtcl::sendJPAbortWipe(const int side)
 {
     Message* msg = newMessage();
     if ( ! msg ) return false;
@@ -302,7 +232,7 @@ bool JumboCmdHost::sendAbortWipe(const int side)
     return DEV::Send(msg);
 }
 
-bool JumboCmdHost::sendShortPress(const int side)
+bool NmeaPrtcl::sendJPShortPress(const int side)
 {
     Message* msg = newMessage();
     if ( ! msg ) return false;
@@ -317,7 +247,7 @@ bool JumboCmdHost::sendShortPress(const int side)
     return DEV::Send(msg);
 }
 
-bool JumboCmdHost::sendHoldPressed(const int side)
+bool NmeaPrtcl::sendJPHoldPressed(const int side)
 {
     Message* msg = newMessage();
     if ( ! msg ) return false;
@@ -332,7 +262,7 @@ bool JumboCmdHost::sendHoldPressed(const int side)
     return DEV::Send(msg);
 }
 
-bool JumboCmdHost::sendReleasePressed(const int side)
+bool NmeaPrtcl::sendJPReleasePressed(const int side)
 {
     Message* msg = newMessage();
     if ( ! msg ) return false;

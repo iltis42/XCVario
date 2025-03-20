@@ -46,7 +46,7 @@
 // #include "comm/DataLink.h"
 // #include "comm/Devices.h"
 #include "comm/DeviceMgr.h"
-#include "protocol/JumboCmdHost.h"
+#include "protocol/NMEA.h"
 #include "comm/SerialLine.h"
 
 SetupMenuSelect *audio_range_sm = 0;
@@ -485,10 +485,9 @@ int crew_weight_adj(SetupMenuValFloat *p) {
 }
 
 int wiper_button(SetupMenuSelect *p) {
-	JumboCmdHost *jumbo = static_cast<JumboCmdHost*>(DEVMAN->getProtocol(
-			DeviceId::JUMBO_DEV, ProtocolType::JUMBOCMD_P));
+	NmeaPrtcl *jumbo = static_cast<NmeaPrtcl*>(DEVMAN->getProtocol(DeviceId::JUMBO_DEV, ProtocolType::JUMBOCMD_P));
 
-	jumbo->sendShortPress(p->getSelect());
+	jumbo->sendJPShortPress(p->getSelect());
 	return 0;
 }
 

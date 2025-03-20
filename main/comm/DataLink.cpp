@@ -9,7 +9,7 @@
 #include "DataLink.h"
 
 #include "protocol/nmea/CANMasterRegMsg.h"
-#include "protocol/JumboCmdHost.h"
+#include "protocol/nmea/JumboCmdMsg.h"
 #include "protocol/nmea/FlarmMsg.h"
 #include "protocol/nmea/FlarmHostMsg.h"
 #include "protocol/nmea/GarminMsg.h"
@@ -64,9 +64,13 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             break;
         }
         case JUMBOCMD_P:
+        {
             ESP_LOGI(FNAME, "New JumboCmdHost");
-            tmp = new JumboCmdHost(sendport, _sm, *this);
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new JumboCmdMsg(*nmea));
+            tmp = nmea;
             break;
+        }
         case FLARM_P:
         {
             ESP_LOGI(FNAME, "New Flarm");

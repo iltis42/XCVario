@@ -6,13 +6,15 @@
  */
 
 #include "S2F.h"
-#include "math.h"
+
 #include "Polars.h"
-#include "logdef.h"
 #include "Protocols.h"
 #include "Units.h"
 #include "Blackboard.h"
 #include "KalmanMPU6050.h"
+#include "logdef.h"
+
+#include <cmath>
 
 S2F::S2F() {
 	a0=a1=a2=0;
@@ -121,13 +123,13 @@ void S2F::calculateOverweight()
 void S2F::change_ballast()
 {
 	ESP_LOGI(FNAME,"S2F::change_ballast()" );
-	float refw = polar_wingload.get() * polar_wingarea.get();
+	[[maybe_unused]] float refw = polar_wingload.get() * polar_wingarea.get();
 	ESP_LOGI(FNAME,"Reference weight: %.1f kg", refw);
 	ESP_LOGI(FNAME,"Empty weight    : %.1f kg", empty_weight.get());
 	ESP_LOGI(FNAME,"Crew weight     : %.1f kg", crew_weight.get());
 	ESP_LOGI(FNAME,"Water Ballast   : %.1f kg", ballast_kg.get());
 	ESP_LOGI(FNAME,"Gross weight    : %.1f kg", gross_weight.get());
-	float max_bal = polar_max_ballast.get();
+	[[maybe_unused]] float max_bal = polar_max_ballast.get();
 	if( (int)(polar_max_ballast.get()) == 0 ) { // We use 100 liters as default once its not with the polar
 		max_bal = 100;
 	}
@@ -190,9 +192,9 @@ double S2F::speed( double netto_vario, bool circling )
 	}
 	// ESP_LOGI(FNAME,"speed() S2F: %f netto_vario: %f circ: %d, a0: %f, MC %f", stf, netto_vario, circling, a0, MC.get() );
 	// ESP_LOGI(FNAME,"max speed %.1f km/h", v_max.get() );
-	if( (stf < _min_speed) || isnan(stf) )
+	if( (stf < _min_speed) || std::isnan(stf) )
 		return _min_speed;
-	if( stf > v_max.get() || isinf( stf) )
+	if( stf > v_max.get() || std::isinf( stf) )
 		return v_max.get();
 	else
 		return stf;

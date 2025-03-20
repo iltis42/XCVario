@@ -1467,6 +1467,7 @@ void system_startup(void *args){
 			DeviceManager* dm = DeviceManager::Instance();
 			dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, BT_SPP);
 			dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
+			dm->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, NO_PHY);
 			display->writeText( line++, "Bluetooth: OK");
 			logged_tests += "Bluetooth test: PASSED\n";
 		}
@@ -1477,7 +1478,7 @@ void system_startup(void *args){
 	}else if ( (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE)
 		&& Wifi ) {
 		DeviceManager* dm = DeviceManager::Instance();
-		dm->addDevice(NAVI_DEV, OPENVARIO_P, 8880, 8880, WIFI);
+		dm->addDevice(NAVI_DEV, XCVARIO_P, 8880, 8880, WIFI);
 		dm->addDevice(NAVI_DEV, FLARMHOST_P, 8881, 8881, WIFI);
 		dm->addDevice(NAVI_DEV, FLARMBIN_P, 8881, 8881, NO_PHY);
 	}

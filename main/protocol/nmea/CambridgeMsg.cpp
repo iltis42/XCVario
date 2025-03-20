@@ -47,7 +47,7 @@ void NmeaPrtcl::sendCambridge(float te, float tas, float mc, int bugs, float alt
 
     msg->buffer = "!w,0,0,0,0,";
     char buffer[50];
-    std::sprintf(buffer, "%d", int(alt+1000));
+    std::sprintf(buffer, "%d", int(alt+1000.5));
     msg->buffer += buffer;
     std::sprintf(buffer, ",%4.2f", QNH.get());
     msg->buffer += buffer;

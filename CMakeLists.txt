@@ -15,6 +15,3 @@ set(SDKCONFIG_DEFAULTS "sdkconfig.defaults")
 project(sensor)
 
 include (${project_dir}/html/CMakeLists.txt)
-
-# uncommet for release builds
-#add_compile_definitions(CONFIG_LOG_DISABLED)

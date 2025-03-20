@@ -4,7 +4,7 @@
             "name": "ESP-IDF",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${HOME}/opt/esp-idf_5/components/**"
+                "/home/hjr/opt/esp-idf_5/components/**"
             ],
             "compilerPath": "${config:idf.toolsPath}/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc",
             "intelliSenseMode": "linux-clang-x64",

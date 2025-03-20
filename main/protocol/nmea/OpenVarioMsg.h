@@ -16,7 +16,6 @@ public:
     OpenVarioMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
     virtual ~OpenVarioMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
-    const char* getSenderId() const { return "PXC"; };
 
     // Declare send routines in NmeaPrtcl class !
 

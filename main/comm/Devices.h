@@ -45,6 +45,7 @@ typedef enum
     MAGSENSBIN_P,
     XCVARIO_P,
     OPENVARIO_P,
+    BORGELT_P,
     CAMBRIDGE_P,
     NMEA_P,
     TEST_P

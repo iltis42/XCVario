@@ -10,23 +10,16 @@
 
 #include "protocol/NMEA.h"
 
-class MagSensMsg final : public NmeaPlugin
+class BorgeltMsg final : public NmeaPlugin
 {
 public:
-    // static constexpr int MAGCTRL_ID = 0x30;
-    // static constexpr int MAGSTREAM_ID = 0x31;
-
-public:
-    MagSensMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
-    virtual ~MagSensMsg() = default;
+    BorgeltMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    virtual ~BorgeltMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
 
+    // Declare send routines in NmeaPrtcl class !
 
 private:
     // Received messages
     static ConstParserMap _pm;
-    
-    // The receiver
-    static datalink_action_t magsensVersion(NmeaPrtcl *nmea);
-    static datalink_action_t magsensConfirmation(NmeaPrtcl *nmea);
 };

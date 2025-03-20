@@ -6,14 +6,14 @@
  ***       Copyright (C) Rohs Engineering Design         ***
  ***********************************************************/
 
-#include "CANMasterReg.h"
+#include "CANMasterRegMsg.h"
 
-#include "nmea_util.h"
-#include "Clock.h"
+#include "protocol/nmea_util.h"
+#include "protocol/Clock.h"
 #include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
 
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <cstring>
 
@@ -35,8 +35,8 @@ extern InterfaceCtrl* CAN;
 //      of containing the same pair of token and protocol type. In case the token is different it might be another clients query.
 //      __Important__: This query is supposed to happen once for the upptime of the client! In case the master gets restarted and
 //      not so the client this query will not be happening another time. The master is expected to store the distributed id's
-//      permanently and has to be able to double check after a power-cycle event if clients are still preset. This might happen through 
-//      connect message of the JumboCmd protocol. A client that has not yet registered will not respond on the connect message.
+//      permanently and has to be able to double check after a power-cycle event if clients are still present. OR, just sent the 
+//      broadcast to re-register.
 //      At this moment it does not matter if the power-cycle is an out of the ordinary event, or just ordinary next event the systems 
 //      are comming up.
 //      A power-cycled client will restart the registration from scratch.
@@ -50,121 +50,49 @@ extern InterfaceCtrl* CAN;
 // - Re-registration broadcast: Trigger a new registration cycle from devices. This comes handy when a master reboots unintendedly.
 //   $PJMLOR\r\n
 
-CANMasterReg::CANMasterReg(int sendport, ProtocolState &sm, DataLink &dl) :
-    ProtocolItf(MASTER_DEV, sendport, sm, dl),
+CANMasterRegMsg::CANMasterRegMsg(NmeaPrtcl &nr) :
+    NmeaPlugin(nr),
     Clock_I(200)
 {
     Clock::start(this);
 }
 
-datalink_action_t CANMasterReg::nextByte(const char c)
-{
-    int pos = _sm._frame.size() - 1;
-    ESP_LOGI(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
-     switch (_sm._state)
-     {
-    case START_TOKEN:
-        if (c == '$')
-        {
-            _sm._state = HEADER;
-            ESP_LOGD(FNAME, "Msg START_TOKEN");
-        }
-        break;
-    case HEADER:
-        NMEA::incrCRC(_sm._crc, c);
-        if (pos < 4)
-        {
-            break;
-        }
-        if (_sm._frame.substr(1, 3) != "PJP")
-        {
-            _sm._state = START_TOKEN;
-            break;
-        }
-        _sm._state = PAYLOAD;
-         ESP_LOGD(FNAME, "Msg HEADER");
-        break;
-    case PAYLOAD:
-        if (c == '*')
-        {
-            _sm._state = CHECK_CRC1; // Expecting a CRC to check
-            break;
-        }
-        if (c != '\r' && c != '\n')
-        {
-            ESP_LOGD(FNAME, "Msg PAYLOAD");
-            NMEA::incrCRC(_sm._crc, c);
-            break;
-        }
-        _sm._state = COMPLETE;
-        break;
-    case CHECK_CRC1:
-        // this is the first crc character
-        _crc_buf[0] = c;
-        _sm._state = CHECK_CRC2;
-        break;
-    case CHECK_CRC2:
-    {
-        _crc_buf[1] = c;
-        _crc_buf[2] = '\0';
-        char read_crc = (char)strtol(_crc_buf, NULL, 16);
-        ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
-        if ( read_crc != _sm._crc ) {
-            _sm._state = START_TOKEN;
-            break;
-        }
-        _sm._state = COMPLETE;
-        break;
-    }
-    default:
-        break;
-    }
-    if ( _sm._state == COMPLETE )
-    {
-        _sm._state = START_TOKEN;   // restart parsing
-        ESP_LOGD(FNAME, "Msg complete %s", _sm._frame.c_str());
-        if ( _sm._frame.compare(4, 3, "REG") == 0 )
-        {
-            registration_query();
-        }
-    }
 
-    return NOACTION;
-}
-
-bool CANMasterReg::tick()
+bool CANMasterRegMsg::tick()
 {
     sendLossOfResgitrations();
     return true;
 }
 
-void CANMasterReg::sendLossOfResgitrations()
+void CANMasterRegMsg::sendLossOfResgitrations()
 {
-    Message* msg = newMessage();
+    Message* msg = DEV::acqMessage(_nmeaRef.getDeviceId(), _nmeaRef.getSendPort());
     ESP_LOGI(FNAME, "Pls re-register");
     msg->buffer = "$PJMLOR\r\n";
     DEV::Send(msg);
 }
 
-void CANMasterReg::registration_query()
+datalink_action_t CANMasterRegMsg::registration_query(NmeaPrtcl *nmea)
 {
     ESP_LOGI(FNAME, "JP registration query");
     // e.g. read message "$PJPREG, 123, proto"
-    if ( _sm._frame.size() < 12 ) {
-        return;
+    ProtocolState *sm = nmea->getSM();
+    if ( sm->_frame.size() < 12 ) {
+        return NOACTION;
     }
 
-    int pos = 8;
-    std::string token = NMEA::extractWord(_sm._frame, pos);
+    int pos = sm->_word_start[0];
+    ESP_LOGD(FNAME, "wordstart0 %d", pos);
+    std::string token = NMEA::extractWord(sm->_frame, pos);
     if ( token.size() != 3 ) {
-        return;
+        return NOACTION;
     }
-    ESP_LOGI(FNAME, "JP reg token %s", token.c_str());
+    ESP_LOGD(FNAME, "JP reg token %s", token.c_str());
 
     // read the protocol type
-    ESP_LOGI(FNAME, "JP comma %d", pos);
-    std::string protocol = NMEA::extractWord(_sm._frame, pos);
-    ESP_LOGI(FNAME, "JP proto %s", protocol.c_str());
+    ESP_LOGD(FNAME, "JP comma %d", pos);
+    std::string protocol = NMEA::extractWord(sm->_frame, pos);
+    ESP_LOGD(FNAME, "JP proto %s", protocol.c_str());
 
     // Todo option to use the token, when more devices of one kind need to be connected
 
@@ -185,11 +113,11 @@ void CANMasterReg::registration_query()
             client_ch = DeviceManager::getFreeCANId(1);
             ESP_LOGD(FNAME, "new port %d", client_ch);
         }
-        if ( client_ch == -1 ) return; // no luck
+        if ( client_ch == -1 ) return NOACTION; // no luck
 
         ESP_LOGD(FNAME, "use port %d", client_ch);
 
-        Message* msg = newMessage(); // set target
+        Message* msg = DEV::acqMessage(nmea->getDeviceId(), nmea->getSendPort());
 
         int master_ch = client_ch + 1;
         DEVMAN->addDevice(ndev, nproto, master_ch, client_ch, CAN_BUS);
@@ -200,6 +128,10 @@ void CANMasterReg::registration_query()
         DEV::Send(msg);
     }
 
-    return;
+    return DO_ROUTING;
 }
+
+ConstParserMap CANMasterRegMsg::_pm = {
+    { Key("PREG"), CANMasterRegMsg::registration_query }
+};
 

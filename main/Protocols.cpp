@@ -141,46 +141,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
 	if( !validTemp )
 		temp=0;
-	if ( proto == P_BORGELT ) {
-		/*
-			Sentence has following format:
-			$PBB50,AAA,BBB.B,C.C,DDDDD,EE,F.FF,G,HH*CHK crlf
-			AAA = TAS 0 to 150 knots
-			BBB.B = Vario, -10 to +15 knots, negative sign for sink
-			C.C = MacCready 0 to 8.0 knots
-			DDDDD = IAS squared 0 to 22500
-			EE = bugs degradation, 0 = clean to 30 %
-			F.FF = Ballast 1.00 to 1.60
-			G = 0 in climb, 1 in cruise
-			HH = Outside airtemp in degrees celcius ( may have leading negative sign )
-			CHK = standard NMEA checksum
-		 */
-		float iaskn = Units::kmh2knots( ias );
-		sprintf(str,"$PBB50,%03d,%3.1f,%1.1f,%d,%d,%1.2f,%1d,%2d", (int)(Units::kmh2knots(tas)+0.5), Units::ms2knots(te), Units::mcval2knots(mc), (int)((iaskn*iaskn)+0.5), bugs, (aballast+100)/100.0, !cruise, (int)(temp+0.5) );
-	}
-	else if( proto == P_CAMBRIDGE ){
-		/*
-		 * Cambridge 302 Format
-			!W,<1>,<2>,<3>,<4>,<5>,<6>,<7>,<8>,<9>,<10>,<11>,<12>,<13>*hh<CR><LF>
-			<1>    Vector wind direction in degrees
-			<2>    Vector wind speed in 10ths of meters per second
-			<3>    Vector wind age in seconds
-			<4>    Component wind in 10ths of Meters per second + 500 (500 = 0, 495 = 0.5 m/s tailwind)
-			<5>    True altitude in Meters + 1000
-			<6>    Instrument QNH setting
-			<7>    True airspeed in 100ths of Meters per second
-			<8>    Variometer reading in 10ths of knots + 200
-			<9>    Averager reading in 10ths of knots + 200
-			<10>   Relative variometer reading in 10ths of knots + 200
-			<11>   Instrument MacCready setting in 10ths of knots
-			<12>   Instrument Ballast setting in percent of capacity
-			<13>   Instrument Bug setting
-		 *hh   Checksum, XOR of all bytes of the sentence after the ‘!’ and before the ‘*’
-		 */
-		int cballast = int((100*ballast_kg.get() / polar_max_ballast.get()));
-		sprintf(str, "!w,0,0,0,0,%d,%4.2f,%d,%d,0,0,%d,%d,%d", int(alt+1000), QNH.get(), int(Units::kmh2ms(tas)*100), int((Units::ms2knots(te)*10)+200), int( Units::mcval2knots(mc)*10 ), cballast, (int)(100-bugs) );
-	}
-	else if( proto == P_EYE_PEYA ){
+	if( proto == P_EYE_PEYA ){
 		// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
 		// Total pressure from aircraft pneumatic system [hPA] (i.e. 1015.5)
 		// Pressure altitude [m] (i.e. 10260)

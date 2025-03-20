@@ -8,7 +8,7 @@
 
 #include "DataLink.h"
 
-#include "protocol/CANMasterReg.h"
+#include "protocol/nmea/CANMasterRegMsg.h"
 #include "protocol/JumboCmdHost.h"
 #include "protocol/nmea/FlarmMsg.h"
 #include "protocol/nmea/FlarmHostMsg.h"
@@ -16,6 +16,8 @@
 #include "protocol/nmea/GpsMsg.h"
 #include "protocol/nmea/XCVarioMsg.h"
 #include "protocol/nmea/OpenVarioMsg.h"
+#include "protocol/nmea/BorgeltMsg.h"
+#include "protocol/nmea/CambridgeMsg.h"
 #include "protocol/nmea/MagSensMsg.h"
 #include "protocol/FlarmBin.h"
 #include "protocol/MagSensBin.h"
@@ -54,9 +56,13 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         switch (ptyp)
         {
         case REGISTRATION_P:
-            ESP_LOGI(FNAME, "New MasterReg");
-            tmp = new CANMasterReg(sendport, _sm, *this);
+        {
+            ESP_LOGI(FNAME, "New CANMasterReg");
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new CANMasterRegMsg(*nmea));
+            tmp = nmea;
             break;
+        }
         case JUMBOCMD_P:
             ESP_LOGI(FNAME, "New JumboCmdHost");
             tmp = new JumboCmdHost(sendport, _sm, *this);
@@ -108,6 +114,22 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             ESP_LOGI(FNAME, "New OpenVario");
             NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
             nmea->addPlugin(new OpenVarioMsg(*nmea));
+            tmp = nmea;
+            break;
+        }
+        case BORGELT_P:
+        {
+            ESP_LOGI(FNAME, "New Borgelt");
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new BorgeltMsg(*nmea));
+            tmp = nmea;
+            break;
+        }
+        case CAMBRIDGE_P:
+        {
+            ESP_LOGI(FNAME, "New Cambridge");
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new CambridgeMsg(*nmea));
             tmp = nmea;
             break;
         }
@@ -325,7 +347,7 @@ ProtocolItf* DataLink::getBinary() const
 
 void DataLink::updateRoutes()
 {
-    ESP_LOGI(FNAME, "get routing for %d/%d", _did, _itf_id.port);
+    ESP_LOGD(FNAME, "get routing for %d/%d", _did, _itf_id.port);
     _routes = DEVMAN->getRouting(RoutingTarget(_did, _itf_id.port));
 }
 

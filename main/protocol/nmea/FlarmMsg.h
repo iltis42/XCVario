@@ -16,7 +16,6 @@ public:
     FlarmMsg(NmeaPrtcl &nr);
     virtual ~FlarmMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
-    const char* getSenderId() const { return "PFL"; }; // might be not needed
 
 private:
     // Received messages

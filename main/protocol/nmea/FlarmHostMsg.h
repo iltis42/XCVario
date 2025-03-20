@@ -16,7 +16,6 @@ public:
     FlarmHostMsg(NmeaPrtcl &nr);
     virtual ~FlarmHostMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
-    const char* getSenderId() const { return "PFL"; }; // might be not needed
 
 public:
     // Received messages

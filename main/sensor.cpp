@@ -487,8 +487,11 @@ static void toyFeed()
 				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 	}
 	if( nmea_protocol.get() == BORGELT ) {
-		OV.sendNMEA( P_BORGELT, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, gflags.validTemperature  );
-		OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, gflags.validTemperature  );
+		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, BORGELT_P); // Todo preliminary solution ..
+		if ( prtcl ) {
+			static_cast<NmeaPrtcl*>(prtcl)->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), gflags.validTemperature );
+		}
+		// OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, gflags.validTemperature  );
 	}
 	else if( nmea_protocol.get() == OPENVARIO ){
 		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, OPENVARIO_P); // Todo preliminary solution ..
@@ -496,11 +499,11 @@ static void toyFeed()
 			static_cast<NmeaPrtcl*>(prtcl)->sendOpenVario(baroP, dynamicP, te_vario.get(), OAT.get(), gflags.validTemperature );
 		}
 	}
-	else if( nmea_protocol.get() == CAMBRIDGE ) {
+	if( nmea_protocol.get() == CAMBRIDGE ) {
 		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, CAMBRIDGE_P); // Todo preliminary solution ..
-		// if ( prtcl ) {
-		// 	// static_cast<NmeaPrtcl*>(prtcl)->sendOpenVario(baroP, dynamicP, te_vario.get(), OAT.get(), gflags.validTemperature );
-		// }
+		if ( prtcl ) {
+			static_cast<NmeaPrtcl*>(prtcl)->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
+		}
 	}
 	else if( nmea_protocol.get() == XCVARIO ) {
 		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P); // Todo preliminary solution ..
@@ -509,10 +512,7 @@ static void toyFeed()
 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 		}
 	}
-	else if( nmea_protocol.get() == NMEA_OFF ) {
-		;
-	}
-	else {
+	else if( nmea_protocol.get() != NMEA_OFF ) {
 		ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
 	}
 	xSemaphoreGive(xMutex);

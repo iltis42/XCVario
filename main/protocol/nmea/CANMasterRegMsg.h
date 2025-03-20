@@ -8,22 +8,20 @@
 
 #pragma once
 
-#include "ProtocolItf.h"
-#include "ClockIntf.h"
+#include "protocol/NMEA.h"
+#include "protocol/ClockIntf.h"
 
-class CANMasterReg  final : public ProtocolItf, public Clock_I
+class CANMasterRegMsg  final : public NmeaPlugin, public Clock_I
 {
 public:
     // The master registry takes it's own identity, not knowing what kind of device
     // will request. Registration happens on one single port and a unique query id.
-    explicit CANMasterReg(int sendport, ProtocolState &sm, DataLink &dl);
-    virtual ~CANMasterReg() = default;
+    explicit CANMasterRegMsg(NmeaPrtcl &nr); //int sendport, ProtocolState &sm, DataLink &dl);
+    virtual ~CANMasterRegMsg() = default;
 
-    virtual ProtocolType getProtocolId() { return REGISTRATION_P; }
+    ConstParserMap* getPM() const { return &_pm; }
 
 public:
-    virtual datalink_action_t nextByte(const char c) override;
-
     // Clock tick callback
     bool tick() override;
 
@@ -31,6 +29,7 @@ public:
     void sendLossOfResgitrations();
 
 private:
-    // Received jumbo messages
-    void registration_query();
+    // Received messages
+    static datalink_action_t registration_query(NmeaPrtcl *nmea);
+    static ConstParserMap _pm;
 };

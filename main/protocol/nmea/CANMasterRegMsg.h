@@ -20,7 +20,6 @@ public:
     virtual ~CANMasterRegMsg() = default;
 
     ConstParserMap* getPM() const { return &_pm; }
-    const char* getSenderId() const { return "PJP"; }; // might be not needed
 
 public:
     // Clock tick callback

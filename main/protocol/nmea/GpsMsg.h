@@ -16,7 +16,6 @@ public:
     GpsMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
     virtual ~GpsMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
-    const char* getSenderId() const { return "GP"; };
 
 private:
     // Received messages

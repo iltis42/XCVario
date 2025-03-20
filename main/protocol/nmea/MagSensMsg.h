@@ -20,7 +20,6 @@ public:
     MagSensMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
     virtual ~MagSensMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
-    const char* getSenderId() const { return "PMS"; };
 
 
 private:

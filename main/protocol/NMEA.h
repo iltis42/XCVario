@@ -69,7 +69,6 @@ public:
 
     // API
     virtual ConstParserMap* getPM() const = 0;
-    virtual const char* getSenderId() const = 0;  // might be not needed
 
 protected:
     // access to state machine and buffers for the parse routines

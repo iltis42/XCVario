@@ -16,7 +16,6 @@ public:
     GarminMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
     virtual ~GarminMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
-    const char* getSenderId() const { return "PGR"; };
 
 private:
     // Received messages

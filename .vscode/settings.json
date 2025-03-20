@@ -88,10 +88,10 @@
         "state": "cpp",
         "timer": "cpp"
     },
-    "idf.espIdfPath": "${HOME}/opt/esp-idf_5",
-    "idf.toolsPath": "${HOME}/.espressif",
+    "idf.espIdfPath": "/home/hjr//opt/esp-idf_5",
+    "idf.toolsPath": "/home/hjr/.espressif",
     "idf.customExtraVars": {
-        "OPENOCD_SCRIPTS": "${HOME}/.espressif/tools/openocd-esp32/v0.12.0-esp32-20240318/openocd-esp32/share/openocd/scripts",
+        "OPENOCD_SCRIPTS": "/home/hjr/.espressif/tools/openocd-esp32/v0.12.0-esp32-20240318/openocd-esp32/share/openocd/scripts",
         "IDF_TARGET": "esp32"
     }
 }

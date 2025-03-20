@@ -92,6 +92,8 @@ public:
         float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, 
         float acc_x, float acc_y, float acc_z, float gx, float gy, float gz);
     void sendOpenVario(float baro, float dp, float te, float temp, bool validTemp);
+    void sendBorgelt(float te, float temp, float ias, float tas, float mc, int bugs, float aballast, bool cruise, bool validTemp);
+    void sendCambridge(float te, float tas, float mc, int bugs, float alt);
 
     // MagSens transmitter
     bool sendHello();

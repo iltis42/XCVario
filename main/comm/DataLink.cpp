@@ -16,6 +16,8 @@
 #include "protocol/nmea/GpsMsg.h"
 #include "protocol/nmea/XCVarioMsg.h"
 #include "protocol/nmea/OpenVarioMsg.h"
+#include "protocol/nmea/BorgeltMsg.h"
+#include "protocol/nmea/CambridgeMsg.h"
 #include "protocol/nmea/MagSensMsg.h"
 #include "protocol/FlarmBin.h"
 #include "protocol/MagSensBin.h"
@@ -112,6 +114,22 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             ESP_LOGI(FNAME, "New OpenVario");
             NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
             nmea->addPlugin(new OpenVarioMsg(*nmea));
+            tmp = nmea;
+            break;
+        }
+        case BORGELT_P:
+        {
+            ESP_LOGI(FNAME, "New Borgelt");
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new BorgeltMsg(*nmea));
+            tmp = nmea;
+            break;
+        }
+        case CAMBRIDGE_P:
+        {
+            ESP_LOGI(FNAME, "New Cambridge");
+            NmeaPrtcl *nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+            nmea->addPlugin(new CambridgeMsg(*nmea));
             tmp = nmea;
             break;
         }

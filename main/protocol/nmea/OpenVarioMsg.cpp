@@ -13,7 +13,7 @@
 #include "logdefnone.h"
 
 
-// The XCVario protocol parser.
+// The Open Vario protocol parser.
 //
 // Supported messages:
 

@@ -1012,7 +1012,7 @@ void IpsDisplay::drawWifi( int x, int y ) {
 			btq=0;
 	}
 	else if( wireless == WL_WLAN_STANDALONE || wireless == WL_WLAN_MASTER  )
-		btq=WifiApp::queueFull();
+		btq=WifiAP::queueFull();
 	else
 		return;
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){

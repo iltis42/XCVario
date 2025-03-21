@@ -1082,7 +1082,7 @@ void system_startup(void *args){
 	else  if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) {
 		ESP_LOGI(FNAME,"Start WiFi");
 		wireless_id.assign("WLAN SID: ");
-		Wifi = new WifiApp();
+		Wifi = new WifiAP();
 	}
 	wireless_id += SetupCommon::getID();
 	display->writeText(line++, wireless_id.c_str() );

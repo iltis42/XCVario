@@ -12,7 +12,7 @@
 #include <cstring>
 #include <list>
 
-class WifiApp;
+class WifiAP;
 
 #define NUM_TCP_PORTS 4
 
@@ -23,23 +23,23 @@ typedef struct client_record {
 }client_record_t;
 
 typedef struct xcv_sock_server {
-	xcv_sock_server(int p, WifiApp* mw) : port(p), mywifi(mw) {};
+	xcv_sock_server(int p, WifiAP* mw) : port(p), mywifi(mw) {};
 	// This should store the handle to send data to the port
 	const int port;
 	int socket;
 	int idle = 0;
 	std::list<client_record_t>  clients;
-	WifiApp *mywifi;
+	WifiAP *mywifi;
 }sock_server_t;
 
-class WifiApp final : public InterfaceCtrl
+class WifiAP final : public InterfaceCtrl
 {
 	friend class WIFI_EVENT_HANDLER;
 	friend void socket_server(void *setup);
 
 public:
-	WifiApp();
-	~WifiApp();
+	WifiAP();
+	~WifiAP();
 
 public:
     // Ctrl
@@ -62,4 +62,4 @@ private:
 	void wifi_init_softap();
 };
 
-extern WifiApp *Wifi;
+extern WifiAP *Wifi;

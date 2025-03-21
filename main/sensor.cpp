@@ -45,7 +45,7 @@
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "I2Cbus.hpp"
 #include "KalmanMPU6050.h"
-#include "WifiApp.h"
+#include "comm/WifiAP.h"
 #include "WifiClient.h"
 #include "LeakTest.h"
 #include "Units.h"

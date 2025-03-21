@@ -12,7 +12,6 @@
 #include "BLESender.h"
 #include "OneWireESP32.h"
 #include "WifiClient.h"
-#include "WifiApp.h"
 #include "sensor.h"
 #include "Units.h"
 #include "Flap.h"
@@ -20,6 +19,7 @@
 #include "Compass.h"
 #include "CircleWind.h"
 #include "comm/CanBus.h"
+#include "comm/WifiAP.h"
 #include "Blackboard.h"
 
 #include "freertos/FreeRTOS.h"

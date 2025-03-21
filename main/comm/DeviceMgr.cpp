@@ -11,6 +11,7 @@
 #include "InterfaceCtrl.h"
 #include "comm/Messages.h"
 #include "comm/CanBus.h"
+#include "comm/WifiAP.h"
 #include "SerialLine.h"
 #include "protocol/ProtocolItf.h"
 #include "DataMonitor.h"

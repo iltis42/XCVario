@@ -14,7 +14,6 @@
 #include "comm/CanBus.h"
 #include "Compass.h"
 #include "SetupCommon.h"
-#include "WifiApp.h"
 #include "ESP32NVS.h"
 
 
@@ -111,6 +110,23 @@ typedef enum e_equalizer_type {  AUDIO_EQ_DISABLE, AUDIO_EQ_LS4, AUDIO_EQ_LS8, A
 typedef enum e_logging { LOG_DISABLE, LOG_SENSOR_RAW } e_logging_t;
 typedef enum e_tek_compensation { TE_TEK_PROBE, TE_TEK_EPOT, TE_TEK_PRESSURE } e_tek_compensation_t;
 
+typedef struct str_tenchar_id {
+	char id[10];
+	str_tenchar_id() {};
+	str_tenchar_id( const char *val ) { strcpy( id, val ); };
+	str_tenchar_id(  const str_tenchar_id &val ) { strcpy( id, val.id ); };
+	bool operator == ( const struct str_tenchar_id &other ) const {
+		return( strcmp( id, other.id ) == 0 );
+    };
+	struct str_tenchar_id operator = ( const struct str_tenchar_id &other ) {
+			strcpy( id, other.id );
+			return *this;
+	};
+	struct str_tenchar_id operator = ( const char * other ) {
+			strcpy( id, other );
+			return *this;
+	};
+}t_tenchar_id;
 
 typedef struct setup_flags{
 	bool _reset    :1;
@@ -675,7 +691,7 @@ extern SetupNG<int> 		screen_centeraid;
 extern SetupNG<int> 		data_monitor_mode;
 extern SetupNG<t_bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;
-extern SetupNG<t_wireless_id>  custom_wireless_id;
+extern SetupNG<t_tenchar_id>  custom_wireless_id;
 extern SetupNG<int> 		drawing_prio;
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;

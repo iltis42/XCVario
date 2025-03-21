@@ -7,12 +7,11 @@
    CONDITIONS OF ANY KIND, either express or implied.
  */
 
-#include "WifiApp.h"
+#include "WifiAP.h"
 #include "Router.h"
 #include "sensor.h"
 #include "DataMonitor.h"
 #include "comm/DataLink.h"
-#include "WifiClient.h"
 #include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
@@ -160,8 +159,6 @@ public:
 				if (uxTaskGetStackHighWaterMark(WifiApp::pid) < 128) {
 					ESP_LOGW(FNAME, "Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark(WifiApp::pid), config->port);
 				}
-
-				// vTaskDelay(200 / portTICK_PERIOD_MS);
 			}
 		}
 		vTaskDelete(NULL);

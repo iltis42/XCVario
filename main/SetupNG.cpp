@@ -33,7 +33,6 @@
 #include "ESPAudio.h"
 #include "Flap.h"
 #include <esp_http_server.h>
-#include "WifiApp.h"
 #include "OneWireESP32.h"
 
 void change_mc() {
@@ -391,7 +390,7 @@ SetupNG<int> 			screen_centeraid("SCR_CA", 0, RST_NONE, SYNC_NONE  );
 SetupNG<int> 			data_monitor_mode("DATAMONM", MON_MOD_ASCII, true, SYNC_NONE, VOLATILE  );
 SetupNG<t_bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
-SetupNG<t_wireless_id>  custom_wireless_id("WLID", t_wireless_id("") );
+SetupNG<t_tenchar_id>  custom_wireless_id("WLID", t_tenchar_id("") );
 SetupNG<int> 			drawing_prio("DRAWP", DP_NEEDLE );
 SetupNG<int> 			logging("LOGGING", LOG_DISABLE );
 SetupNG<float>      	display_clock_adj("DSCLADHJ", 0 );

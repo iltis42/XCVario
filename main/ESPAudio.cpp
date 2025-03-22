@@ -13,7 +13,7 @@
 #include "I2Cbus.hpp"
 #include "sensor.h"
 #include "SetupNG.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>

@@ -15,7 +15,6 @@
 
 #include <set>
 #include <map>
-#include <vector>
 
 class DataLink;
 class InterfaceCtrl;

@@ -12,7 +12,7 @@
 
 #include "comm/DeviceMgr.h"
 
-#include "logdef.h"
+#include "logdefnone.h"
 
 
 // The FLARM protocol parser.
@@ -178,10 +178,10 @@ datalink_action_t FlarmMsg::parsePFLAX(NmeaPrtcl *nmea)
         if ( host && host->getProtocol(FLARMBIN_P) && nmea->getDL()->getProtocol(FLARMBIN_P)) {
             // Host side
             FlarmBinary *hostfb = static_cast<FlarmBinary*>(host->goBIN());
-            ESP_LOGI(FNAME, "Host side %d", hostfb->getDeviceId);
+            ESP_LOGI(FNAME, "Host side %d", hostfb->getDeviceId());
             // Device side
             FlarmBinary *devfb = static_cast<FlarmBinary*>(nmea->getDL()->goBIN());
-            ESP_LOGI(FNAME, "Device side %d", devfb->getDeviceId);
+            ESP_LOGI(FNAME, "Device side %d", devfb->getDeviceId());
             // Cross link them
             devfb->setPeer(hostfb);
             hostfb->setPeer(devfb);

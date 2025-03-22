@@ -352,7 +352,7 @@ ProtocolItf* DataLink::getBinary() const
 void DataLink::updateRoutes()
 {
     ESP_LOGD(FNAME, "get routing for %d/%d", _did, _itf_id.port);
-    _routes = DEVMAN->getRouting(RoutingTarget(_did, _itf_id.port));
+    _routes = DEVMAN->getRouting(RoutingTarget(_did, ItfTarget(_itf_id.iid, _itf_id.port)));
 }
 
 PortList DataLink::getAllSendPorts() const
@@ -376,8 +376,8 @@ void DataLink::forwardMsg(DeviceId src_dev)
 {
     // consider forwarding
     for ( auto &target : _routes ) {
-        Message* msg = DEV::acqMessage(target.did, target.port);
-        ESP_LOGD(FNAME, "route %d/%d to %d/%d", src_dev, _itf_id.port, msg->target_id, target.port);
+        Message* msg = DEV::acqMessage(target.did, target.getItfTarget().port);
+        ESP_LOGD(FNAME, "route %d/%d to %d/%d", src_dev, _itf_id.port, msg->target_id, target.getItfTarget().port);
         msg->buffer = _sm._frame;
         DEV::Send(msg);
     }

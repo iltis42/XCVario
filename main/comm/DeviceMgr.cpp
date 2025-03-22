@@ -8,7 +8,7 @@
 
 #include "DeviceMgr.h"
 
-#include "InterfaceCtrl.h"
+#include "RoutingTargets.h"
 #include "comm/Messages.h"
 #include "comm/CanBus.h"
 #include "comm/WifiAP.h"
@@ -35,10 +35,10 @@ static TaskHandle_t SendTask = nullptr;
 
 // static routing table on device level
 static RoutingMap Routes = {
-    { {FLARM_DEV, 0}, {{NAVI_DEV, 0}, {NAVI_DEV, 8881}, {XCVARIOCLIENT_DEV, 20}} },
-    { {NAVI_DEV, 0}, {{FLARM_DEV, 0}} },
-    { {NAVI_DEV, 8881}, {{FLARM_DEV, 0}} },
-    { {XCVARIO_DEV, 0}, {{NAVI_DEV, 0}, {NAVI_DEV, 8880}} }
+    { {FLARM_DEV, NO_PHY, 0}, {{NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}} },
+    { {NAVI_DEV, S2_RS232, 0}, {{FLARM_DEV, S1_RS232, 0}} },
+    { {NAVI_DEV, WIFI, 8881}, {{FLARM_DEV, S1_RS232, 0}} }
+    // { {XCVARIO_DEV, NO_PHY, 0}, {{NAVI_DEV, NO_PHY, 0}, {NAVI_DEV, WIFI, 8880}} }
 };
 
 // a dummy interface
@@ -62,7 +62,7 @@ static int tt_snd(Message *msg)
         ESP_LOGD(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getStringId(), port, len, msg->buffer.c_str());
         plsrety = itf->Send(msg->buffer.c_str(), len, port);
         if ( plsrety > 0 ) {
-            ESP_LOGI(FNAME, "reshedule message %d/%d", len, msg->buffer.length());
+            ESP_LOGD(FNAME, "reshedule message %d/%d", len, msg->buffer.length());
             msg->buffer.erase(0, len); // chop sent bytes off
         }
         else if ( plsrety == 0 ) {
@@ -104,18 +104,18 @@ void TransmitTask(void *arg)
             }
             if ( wait ) {
                 // put this straight onto the later queue
-                ESP_LOGI(FNAME, "straight wait");
+                ESP_LOGD(FNAME, "straight wait");
                 later.push_back(msg);
             }
             else {
                 // Regular case
-                // ESP_LOGI(FNAME, "regular send");
+                ESP_LOGD(FNAME, "regular send");
                 pls_retry = tt_snd(msg);
                 if ( pls_retry < 1 ) {
-                    // ESP_LOGI(FNAME, "regular done");
+                    ESP_LOGD(FNAME, "regular done");
                     DEV::relMessage(msg);
                 } else {
-                    ESP_LOGI(FNAME, "retry pushed");
+                    ESP_LOGD(FNAME, "retry pushed");
                     later.push_back(msg);
                     continue; // just pushed this one, no need to check again
                 }
@@ -127,7 +127,7 @@ void TransmitTask(void *arg)
         while ( !later.empty() ) {
             msg = later.front();
             int cmplen = msg->buffer.size();
-            ESP_LOGI(FNAME, "postponed send %d", cmplen);
+            ESP_LOGD(FNAME, "postponed send %d", cmplen);
             pls_retry = tt_snd(msg);
             if ( pls_retry > 0 ) {
                 if ( (cmplen - msg->buffer.size()) > 0 ) {
@@ -337,30 +337,42 @@ InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
     return nullptr;
 }
 
-// Result should be cashed for performance purpose. Todo dirty flag mechanism
+// Result should be cashed for performance purpose.
 RoutingList DeviceManager::getRouting(RoutingTarget target)
 {
-    RoutingMap::iterator route_it = Routes.find(target);
+    // find routing entry, respect NO_PHY wildcards
+    RoutingMap::iterator route_it = std::find_if(Routes.begin(), Routes.end(), [&](const auto& pair) {return pair.first.match(target);});
+    ESP_LOGI(FNAME, "Search route: %x(%d:%d:%d)", (unsigned)target.raw, target.getDeviceId(), target.getItfTarget().iid, target.getItfTarget().port);
     if ( route_it != Routes.end() )
     {
+        // ESP_LOGI(FNAME, "Found route: %x", (unsigned)route_it->first.raw);
         // remove not existing devices from the routing list
         RoutingList res = route_it->second;
         for (RoutingList::iterator tit=res.begin(); tit != res.end(); ) 
         {
-            // is dev configured, is the port identical
+            // ESP_LOGI(FNAME, "Try match: %x", (unsigned)tit->raw);
+            // is dev configured, are itf and port identical
             DevMap::iterator devit = _device_map.find(tit->did);
             if ( devit == _device_map.end() ) {
-                ESP_LOGD(FNAME, "remove %d from routing list.", tit->did);
-                tit = res.erase(tit);
+                // ESP_LOGI(FNAME, "Dev not found: %d", tit->did);
+                tit = res.erase(tit); // drop it
             }
             else {
-                // check the port
+                // check itf and  port
                 Device *dev = devit->second;
-                PortList pl = dev->getPortList();
-                if ( pl.find(tit->port) == pl.end() ) {
-                    tit = res.erase(tit);
-                } else {
-                    tit++;
+                // ESP_LOGI(FNAME, "Found def on itf: %d", dev->_itf->getId());
+                if ( dev->_itf->getId() != tit->getItfTarget().iid ) {
+                    tit = res.erase(tit); // drop it
+                }
+                else {
+                    // ESP_LOGI(FNAME, "Itfmatch: %d==%d", devit->first, dev->_itf->getId());
+                    PortList pl = dev->getPortList();
+                    if ( pl.find(tit->getItfTarget().port) == pl.end() ) {
+                        tit = res.erase(tit); // drop it
+                    } else {
+                        ESP_LOGI(FNAME, "Take dev %d from routing list.", tit->did);
+                        tit++; // Ok, take this route
+                    }
                 }
             }
         }

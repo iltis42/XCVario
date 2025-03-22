@@ -48,7 +48,10 @@ union ItfTarget {
         return raw != other.raw;
     }
     constexpr bool matchNoPhy(const ItfTarget& other) const {
-        return ( (iid == NO_PHY && port == other.port) || raw == other.raw );
+        return ( (iid == NO_PHY && port == 0)               // both wildcards
+                || (iid == NO_PHY && port == other.port)    // interface as wildcard
+                || (iid == other.iid && port == 0)          // port as wildcard
+                || raw == other.raw );
     }
 };
 

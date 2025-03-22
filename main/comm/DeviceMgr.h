@@ -82,7 +82,7 @@ struct DevConfigItem
 
 class DeviceManager
 {
-    typedef std::map<DeviceId, Device*> DevMap;
+    typedef std::map<DeviceId, Device*> DevMap; // dynamic RAM data
 
 private:
     DeviceManager();

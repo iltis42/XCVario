@@ -34,12 +34,25 @@ MessagePool MP;
 static TaskHandle_t SendTask = nullptr;
 
 // static routing table on device level
-static RoutingMap Routes = {
-    { {FLARM_DEV, NO_PHY, 0}, {{NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}} },
-    { {NAVI_DEV, S2_RS232, 0}, {{FLARM_DEV, S1_RS232, 0}} },
-    { {NAVI_DEV, WIFI, 8881}, {{FLARM_DEV, S1_RS232, 0}} }
-    // { {XCVARIO_DEV, NO_PHY, 0}, {{NAVI_DEV, NO_PHY, 0}, {NAVI_DEV, WIFI, 8880}} }
+//
+// entries with zero termination, entirely as ro flash data, no RAM usage
+static constexpr RoutingTarget flarm_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
+static constexpr RoutingTarget navi_routes[] = { {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {FLARM_DEV, CAN_BUS, 20}, {} };
+static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
+    { RoutingTarget(FLARM_DEV, NO_PHY, 0), flarm_routes },
+    { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes }
 };
+// Search the flash data table
+static constexpr const RoutingTarget* findRoute(const RoutingTarget& target) {
+    // Search through Routes and find a match to the source device
+    for (const auto& entry : Routes) {
+        if (entry.first.match(target)) {
+            return entry.second; // Return the matched routing list
+        }
+    }
+    return nullptr;
+}
+
 
 // a dummy interface
 class DmyItf final : public InterfaceCtrl
@@ -341,42 +354,35 @@ InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
 RoutingList DeviceManager::getRouting(RoutingTarget target)
 {
     // find routing entry, respect NO_PHY wildcards
-    RoutingMap::iterator route_it = std::find_if(Routes.begin(), Routes.end(), [&](const auto& pair) {return pair.first.match(target);});
+    const RoutingTarget *route_it = findRoute(target);
     ESP_LOGI(FNAME, "Search route: %x(%d:%d:%d)", (unsigned)target.raw, target.getDeviceId(), target.getItfTarget().iid, target.getItfTarget().port);
-    if ( route_it != Routes.end() )
+    if ( route_it )
     {
-        // ESP_LOGI(FNAME, "Found route: %x", (unsigned)route_it->first.raw);
-        // remove not existing devices from the routing list
-        RoutingList res = route_it->second;
-        for (RoutingList::iterator tit=res.begin(); tit != res.end(); ) 
+        RoutingList activeList;
+
+        ESP_LOGD(FNAME, "Found route: %x", (unsigned)route_it->raw);
+        // look for existing devices and push only those to the routing list
+        for (const RoutingTarget* entry = route_it; entry->raw != 0; ++entry)
         {
-            // ESP_LOGI(FNAME, "Try match: %x", (unsigned)tit->raw);
+            ESP_LOGD(FNAME, "Try match: %x", (unsigned)entry->raw);
             // is dev configured, are itf and port identical
-            DevMap::iterator devit = _device_map.find(tit->did);
-            if ( devit == _device_map.end() ) {
-                // ESP_LOGI(FNAME, "Dev not found: %d", tit->did);
-                tit = res.erase(tit); // drop it
-            }
-            else {
+            DevMap::iterator devit = _device_map.find(entry->did);
+            if ( devit != _device_map.end() ) {
                 // check itf and  port
                 Device *dev = devit->second;
-                // ESP_LOGI(FNAME, "Found def on itf: %d", dev->_itf->getId());
-                if ( dev->_itf->getId() != tit->getItfTarget().iid ) {
-                    tit = res.erase(tit); // drop it
-                }
-                else {
-                    // ESP_LOGI(FNAME, "Itfmatch: %d==%d", devit->first, dev->_itf->getId());
+                ESP_LOGD(FNAME, "Found dev %d on itf: %d", devit->first, dev->_itf->getId());
+                if ( dev->_itf->getId() == entry->getItfTarget().iid ) {
+                    ESP_LOGD(FNAME, "Itfmatch: %d==%d", dev->_itf->getId(), dev->_itf->getId());
                     PortList pl = dev->getPortList();
-                    if ( pl.find(tit->getItfTarget().port) == pl.end() ) {
-                        tit = res.erase(tit); // drop it
-                    } else {
-                        ESP_LOGI(FNAME, "Take dev %d from routing list.", tit->did);
-                        tit++; // Ok, take this route
+                    if ( pl.find(entry->getItfTarget().port) != pl.end() ) {
+                        ESP_LOGI(FNAME, "Take dev %d from routing list.", entry->did);
+                        activeList.push_back(*entry); // Ok, take this route
                     }
                 }
             }
         }
-        return res;
+        activeList.shrink_to_fit();
+        return activeList; // will be a move by RVO
     }
     else {
         return RoutingList();

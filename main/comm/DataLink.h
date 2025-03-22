@@ -13,6 +13,9 @@
 #include "InterfaceCtrl.h"
 
 #include <vector>
+#include <set>
+
+using PortList = std::set<int>;
 
 // Data link layer to multiplex data stream to proper protocol parser.
 class DataLink

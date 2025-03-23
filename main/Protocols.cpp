@@ -29,7 +29,6 @@
 #include "CircleWind.h"
 
 S2F *   Protocols::_s2f = 0;
-uint8_t Protocols::_protocol_version = 1;
 bool    Protocols::_can_send_error = false;
 Protocols::Protocols(S2F * s2f) {
 	_s2f = s2f;
@@ -123,19 +122,6 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 	}
 }
 
-void Protocols::sendNmeaXCVCmd( const char *item, float value ){
-	// ESP_LOGI(FNAME,"sendNMEACmd: %s: %f", item, value );
-	char str[40];
-	sprintf( str,"!xcv,%s,%d", item, (int)(value+0.5) );
-	int cs = calcNMEACheckSum(&str[1]);
-	int i = strlen(str);
-	sprintf( &str[i], "*%02X\r\n", cs );
-	ESP_LOGI(FNAME,"sendNMEACmd: %s", str );
-	// SString nmea( str );
-	// if( !Router::forwardMsg( nmea, xcv_tx_q ) ){
-	// 	ESP_LOGW(FNAME,"Warning: Overrun in send to XCV tx queue %d bytes", nmea.length() );
-	// }
-}
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
@@ -212,64 +198,6 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 void Protocols::parseNMEA( const char *str ){
 	// ESP_LOGI(FNAME,"parseNMEA: %s, len: %d", str,  strlen(str) );
 
-		if( strncmp( str+5, "crew-weight,", 12 ) == 0 ){
-			ESP_LOGI(FNAME,"Detected crew-weight cmd");
-			int weight;
-			int cs;
-			sscanf(str+17, "%d*%02x", &weight, &cs);
-			int calc_cs=calcNMEACheckSum( str );
-			if( calc_cs != cs ){
-				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
-			}
-			else{
-				ESP_LOGI(FNAME,"New crew-weight: %d", weight );
-				crew_weight.set( (float)weight );
-			}
-		}
-		else if( strncmp( str+5, "empty-weight,", 13 ) == 0 ){
-			ESP_LOGI(FNAME,"Detected empty-weight cmd");
-			int weight;
-			int cs;
-			sscanf(str+18, "%d*%02x", &weight, &cs);
-			int calc_cs=calcNMEACheckSum( str );
-			if( calc_cs != cs ){
-				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
-			}
-			else{
-				ESP_LOGI(FNAME,"New empty_weight: %d", weight );
-				empty_weight.set( (float)weight );
-			}
-		}
-		else if( strncmp( str+5, "bal-water,", 10 ) == 0 ){
-			ESP_LOGI(FNAME,"Detected bal_water cmd");
-			int weight;
-			int cs;
-			sscanf(str+15, "%d*%02x", &weight, &cs);
-			int calc_cs=calcNMEACheckSum( str );
-			if( calc_cs != cs ){
-				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
-			}
-			else{
-				ESP_LOGI(FNAME,"New ballast: %d", weight );
-				ballast_kg.set( (float)weight );
-			}
-		}
-		else if( strncmp( str+5, "version,", 8 ) == 0 ){
-			ESP_LOGI(FNAME,"Detected version cmd");
-			int version;
-			int cs;
-			sscanf(str+13, "%d*%02x", &version, &cs);
-			int calc_cs=calcNMEACheckSum( str );
-			if( calc_cs != cs ){
-				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
-			}
-			else{
-				ESP_LOGI(FNAME,"Got xcv protocol version: %d", version );
-				_protocol_version = version;
-				sendNmeaXCVCmd( "version", 2 );
-			}
-		}
-	}
 	else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
 		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
 		if (str[3] == 'b') {  // this may reach master or client with an own navi

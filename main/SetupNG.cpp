@@ -48,24 +48,26 @@ void change_ballast() {
 	Speed2Fly.change_ballast();
 }
 
-void change_crew_weight(){
-	if( Protocols::getXcvProtocolVersion() > 1 ){
-		Protocols::sendNmeaXCVCmd( "crew-weight", crew_weight.get() );
+void change_crew_weight() {
+	ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P);
+	if ( prtcl ) {
+		(static_cast<NmeaPrtcl*>(prtcl))->sendXCVCrewWeight(crew_weight.get());
 	}
 	change_ballast();
 }
 
 void change_empty_weight(){
-	ESP_LOGI(FNAME,"change_empty_weight, pv: %d", Protocols::getXcvProtocolVersion()  );
-	if( Protocols::getXcvProtocolVersion() > 1 ){
-		Protocols::sendNmeaXCVCmd( "empty-weight", empty_weight.get() );
+	ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P);
+	if ( prtcl ) {
+		(static_cast<NmeaPrtcl*>(prtcl))->sendXCVEmptyWeight(empty_weight.get());
 	}
 	change_ballast();
 }
 
 void change_bal_water(){
-	if( Protocols::getXcvProtocolVersion() > 1 ){
-		Protocols::sendNmeaXCVCmd( "bal-water", ballast_kg.get() );
+	ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P);
+	if ( prtcl ) {
+		(static_cast<NmeaPrtcl*>(prtcl))->sendXCVWaterWeight(ballast_kg.get());
 	}
 	change_ballast();
 }

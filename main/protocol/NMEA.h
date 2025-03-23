@@ -131,7 +131,5 @@ private:
     Key _mkey;
     NmeaMessageParser _parser;
     inline void nmeaIncrCRC(int &crc, const char c) {crc ^= c;}
-    // Todo, there are now many plugins, but only one protocol version
-    uint8_t _protocol_version = 1;
 };
 

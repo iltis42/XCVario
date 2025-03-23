@@ -1,5 +1,8 @@
-#ifndef EGLIB_H
-#define EGLIB_H
+#pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // #include "eglib/config.h"
 #include "eglib/types.h"
@@ -63,4 +66,6 @@ void eglib_setScrollMargins( eglib_t *eglib, coordinate_t top, coordinate_t bott
 // scroll by number of lines (pixels)
 void eglib_scrollScreen( eglib_t *eglib, coordinate_t num_lines );
 
+#ifdef __cplusplus
+}
 #endif

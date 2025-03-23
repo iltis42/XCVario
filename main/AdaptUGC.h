@@ -1,6 +1,4 @@
-extern "C" {
 #include "eglib.h"
-}
 #include <cinttypes>
 #include <cstring>
 

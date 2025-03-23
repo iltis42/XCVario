@@ -29,7 +29,6 @@ public:
 
 	static void parseNMEA( const char *str );
 	static void sendNmeaXCVCmd( const char *item, float value );
-	static void parseXS( const char *str );
 	static int calcNMEACheckSum(const char *nmea);
 	static int getNMEACheckSum(const char *nmea);
 	static int getXcvProtocolVersion() { return _protocol_version; };

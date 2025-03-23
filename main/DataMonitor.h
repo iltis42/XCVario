@@ -27,13 +27,13 @@ public:
 	void down( int count ) {};
 	void longPress();
 	void escape() {};
-	int maxChar( const char *s, int pos, int len, bool binary=false );
+	int maxChar( const char *s, int pos, int len, bool binary );
 	void begin(AdaptUGC *theUcg) { ucg = theUcg; };
 	bool active() { return mon_started; };
 
 private:
 	void printString( int ch, e_dir_t dir, const char *s, bool binary, int len );
-	void header( int ch, bool binary=false );
+	void header( int ch, bool binary );
 	void scroll(int scroll);
 	bool mon_started;
 	AdaptUGC *ucg;

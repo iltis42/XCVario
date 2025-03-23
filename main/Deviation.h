@@ -20,8 +20,8 @@ Author: Eckhard Völlm, December 2021
 
 #include "QMC5883L.h"
 #include "spline.h"
+
 #include <map>
-#include "Compass.h"
 
 class Deviation
 {

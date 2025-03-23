@@ -1,5 +1,6 @@
 #include "LeakTest.h"
 #include "ESPRotary.h"
+#include "logdef.h"
 
 #define LOOPS 150
 

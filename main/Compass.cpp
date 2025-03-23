@@ -21,10 +21,10 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 #include "QMCMagCAN.h"
 #include "QMC5883L.h"
 #include "quaternion.h"
-
-#include "esp_log.h"
-#include "esp_system.h"
 #include "sensor.h"
+#include "logdef.h"
+
+#include <esp_system.h>
 
 #include <cassert>
 #include <cmath>

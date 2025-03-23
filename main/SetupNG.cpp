@@ -6,24 +6,12 @@
  */
 
 #include "SetupNG.h"
+
 #include "quaternion.h"
-#include <string>
-#include <stdio.h>
-#include "esp_system.h"
-#include <esp_log.h>
-#include "sdkconfig.h"
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "ESP32NVS.h"
-#include "esp32/rom/uart.h"
-#include <iostream>
-#include <map>
-#include <math.h>
 #include "ESPAudio.h"
 #include "BMPVario.h"
 #include "Polars.h"
-#include <logdef.h>
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"
 #include "Router.h"
@@ -32,8 +20,25 @@
 #include "Protocols.h"
 #include "ESPAudio.h"
 #include "Flap.h"
-#include <esp_http_server.h>
 #include "OneWireESP32.h"
+#include "comm/DeviceMgr.h"
+#include "protocol/NMEA.h"
+#include "logdef.h"
+
+// #include <sdkconfig.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include <esp_log.h>
+#include <esp32/rom/uart.h>
+#include <esp_system.h>
+#include <esp_http_server.h>
+
+#include <cstdio>
+#include <cmath>
+#include <string>
+#include <iostream>
+#include <map>
 
 void change_mc() {
 	Speed2Fly.change_mc();

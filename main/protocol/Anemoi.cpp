@@ -1,5 +1,6 @@
 #include "Anemoi.h"
 #include "SetupNG.h"
+#include "logdef.h"
 
 // Anemoi protocol message id's and their message length
 static const char *ANEMOI_IDS = "ADMSWadw";

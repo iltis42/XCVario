@@ -20,9 +20,9 @@ Last update: 2021-02-25
 #include "DisplayDeviations.h"
 #include "SetupNG.h"
 #include "sensor.h"
+#include "AdaptUGC.h"
 
-#include <AdaptUGC.h>
-#include <esp_log.h>
+#include "logdef.h"
 
 
 DisplayDeviations::DisplayDeviations( const char * title ) :

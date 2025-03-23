@@ -4,7 +4,7 @@
 #include "logdef.h"
 #include "Setup.h"
 
-#include <eglib.h>
+
 #include <eglib/display/ili9341.h>
 #include <eglib/hal/four_wire_spi/esp32/esp32_ili9341.h>
 #include <driver/spi_master.h>

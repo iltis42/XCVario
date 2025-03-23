@@ -1,8 +1,10 @@
-#include "eglib.h"
+
+#pragma once
+
+#include <eglib.h>
 #include <cinttypes>
 #include <cstring>
 
-#pragma once
 
 #define FREQ_BMP_SPI 13111111  // *3 for SPI display clock, /2 for BMP pressure sensor clock
 

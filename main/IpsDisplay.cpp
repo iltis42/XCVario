@@ -20,6 +20,7 @@
 #include "CircleWind.h"
 #include "comm/CanBus.h"
 #include "comm/WifiAP.h"
+#include "comm/BTspp.h"
 #include "Blackboard.h"
 
 #include "freertos/FreeRTOS.h"

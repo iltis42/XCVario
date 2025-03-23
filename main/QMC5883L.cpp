@@ -31,6 +31,7 @@ Last update: 2021-04-05
 #include "Router.h"
 #include "vector.h"
 #include "sensor.h"
+#include "logdef.h"
 
 #include <cassert>
 #include <cmath>

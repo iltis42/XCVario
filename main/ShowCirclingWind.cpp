@@ -23,9 +23,9 @@ Last update: 2021-04-18
 #include "SetupNG.h"
 #include "Units.h"
 #include "sensor.h"
+#include "logdef.h"
 
-#include <AdaptUGC.h>
-#include <esp_log.h>
+#include "AdaptUGC.h"
 
 ShowCirclingWind::ShowCirclingWind( const char* title ) :
 SetupMenuDisplay( title, nullptr )

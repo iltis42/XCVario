@@ -14,6 +14,7 @@
 #include "AdaptUGC.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
+#include "logdef.h"
 
 static const int X=75;
 static const int Y=215;

@@ -42,9 +42,6 @@
 #include <algorithm>
 #include <cstring>
 #include <string>
-#include "DataLink.h"
-// #include "comm/DataLink.h"
-// #include "comm/Devices.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/NMEA.h"
 #include "comm/SerialLine.h"

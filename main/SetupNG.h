@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include "logdef.h"
-#include "comm/BTspp.h"
 #include "Polars.h"
 #include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
 #include "comm/CanBus.h"
@@ -18,17 +16,17 @@
 
 
 #include <freertos/FreeRTOS.h>
-#include <esp_timer.h>
 #include <freertos/queue.h>
+#include <esp_timer.h>
 #include <esp_system.h>
 
 #include <esp_partition.h>
 #include <esp_err.h>
 #include <nvs_flash.h>
 #include <nvs.h>
-#include <string>
 #include <cstdio>
 #include <cstring>
+#include <string>
 #include <iostream>
 #include <vector>
 
@@ -117,14 +115,14 @@ typedef struct str_tenchar_id {
 	str_tenchar_id(  const str_tenchar_id &val ) { strcpy( id, val.id ); };
 	bool operator == ( const struct str_tenchar_id &other ) const {
 		return( strcmp( id, other.id ) == 0 );
-    };
+	};
 	struct str_tenchar_id operator = ( const struct str_tenchar_id &other ) {
-			strcpy( id, other.id );
-			return *this;
+		strcpy( id, other.id );
+		return *this;
 	};
 	struct str_tenchar_id operator = ( const char * other ) {
-			strcpy( id, other );
-			return *this;
+		strcpy( id, other );
+		return *this;
 	};
 }t_tenchar_id;
 
@@ -161,8 +159,9 @@ public:
 	)
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
-		if( strlen( akey ) > 15 )
-			ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
+		// if( strlen( akey ) > 15 ) {
+		// 	ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
+		// }
 		instances->push_back( this );  // add into vector
 		_key = akey;
 		_default = adefault;
@@ -362,7 +361,7 @@ public:
 		else {
 			// ESP_LOGI(FNAME,"NVS %s size: %d", _key, required_size );
 			if( required_size > sizeof( T ) ) {
-				ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , sizeof( T ) );
+				// ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , sizeof( T ) );
 				erase();
 				set( _default );  // try to init
 				return false;
@@ -372,7 +371,7 @@ public:
 				ret = NVS.getBlob(_key, &_value, &required_size);
 
 				if ( !ret ){
-					ESP_LOGE(FNAME, "NVS nvs_get_blob returned error");
+					// ESP_LOGE(FNAME, "NVS nvs_get_blob returned error");
 					erase();
 					set( _default );  // try to init
 					commit();

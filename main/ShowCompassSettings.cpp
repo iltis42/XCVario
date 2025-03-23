@@ -24,7 +24,7 @@ Last update: 2021-04-18
 #include "sensor.h"
 
 #include <AdaptUGC.h>
-#include <esp_log.h>
+#include <logdef.h>
 
 ShowCompassSettings::ShowCompassSettings( const char* title) :
 SetupMenuDisplay( title, nullptr )

@@ -24,7 +24,7 @@ Last update: 2021-04-18
 #include "sensor.h"
 #include "Compass.h"
 
-#include <esp_log.h>
+#include "logdef.h"
 
 
 ShowStraightWind::ShowStraightWind( const char* title ) :

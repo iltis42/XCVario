@@ -8,10 +8,12 @@
 #include "S2F.h"
 
 #include "Polars.h"
-#include "Protocols.h"
+// #include "Protocols.h"
 #include "Units.h"
 #include "Blackboard.h"
 #include "KalmanMPU6050.h"
+#include "comm/DeviceMgr.h"
+#include "protocol/NMEA.h"
 #include "logdef.h"
 
 #include <cmath>

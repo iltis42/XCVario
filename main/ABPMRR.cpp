@@ -152,10 +152,11 @@ bool ABPMRR::doOffset( bool force ){
 	ESP_LOGI(FNAME,"ABPMRR doOffset()");
 
 	_offset = as_offset.get();
-	if( _offset < 0 )
+	if( _offset < 0 ) {
 		ESP_LOGI(FNAME,"offset not yet done: need to recalibrate" );
-	else
+	} else {
 		ESP_LOGI(FNAME,"offset from NVS: %0.1f", _offset );
+	}
 
 	uint16_t adcval,T;
 	fetch_pressure( adcval, T );
@@ -163,16 +164,18 @@ bool ABPMRR::doOffset( bool force ){
 	ESP_LOGI(FNAME,"offset from ADC %d", adcval );
 
 	bool plausible = offsetPlausible( adcval );
-	if( plausible )
+	if( plausible ) {
 		ESP_LOGI(FNAME,"offset from ADC is plausible");
-	else
+	} else {
 		ESP_LOGI(FNAME,"offset from ADC is NOT plausible");
+	}
 
 	int deviation = abs( _offset - adcval );
-	if( deviation < MAX_AUTO_CORRECTED_OFFSET )
+	if( deviation < MAX_AUTO_CORRECTED_OFFSET ) {
 		ESP_LOGI(FNAME,"Deviation in bounds");
-	else
+	} else {
 		ESP_LOGI(FNAME,"Deviation out of bounds");
+	}
 
 	// Long term stability of Sensor as from datasheet 0.5% per year -> 4000 * 0.005 = 20
 	if( (_offset < 0 ) || ( plausible && (deviation < MAX_AUTO_CORRECTED_OFFSET ) ) || autozero.get() )

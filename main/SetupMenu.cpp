@@ -45,6 +45,7 @@
 #include "comm/DeviceMgr.h"
 #include "protocol/NMEA.h"
 #include "comm/SerialLine.h"
+#include "coredump_to_server.h"
 
 SetupMenuSelect *audio_range_sm = 0;
 SetupMenuSelect *mpu = 0;
@@ -1792,6 +1793,10 @@ void SetupMenu::options_menu_create_wireless(MenuEntry *top) {
 			"Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate",
 			215);
 	cusid->addCreator(options_menu_create_wireless_custom_id);
+
+	SetupMenuSelect *clearcore = new SetupMenuSelect("Clear coredump", RST_NONE, reinterpret_cast<int (*)(SetupMenuSelect*)>(clear_coredump), false, nullptr);
+	clearcore->addEntry("doit");
+	top->addEntry(clearcore);
 }
 
 void SetupMenu::options_menu_create_gload(MenuEntry *top) {

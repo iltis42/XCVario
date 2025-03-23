@@ -28,13 +28,13 @@ public:
 	void down( int count ) override {};
 	void longPress() override;
 	void escape() override {};
-	int maxChar( const char *s, int pos, int len, bool binary=false );
+	int maxChar( const char *s, int pos, int len, bool binary );
 	void begin(AdaptUGC *theUcg) { ucg = theUcg; };
 	bool active() { return mon_started; };
 
 private:
 	void printString( ItfTarget ch, e_dir_t dir, const char *s, bool binary, int len );
-	void header( ItfTarget ch, bool binary=false, int len=0, e_dir_t dir=DIR_RX );
+	void header( ItfTarget ch, bool binary, int len=0, e_dir_t dir=DIR_RX );
 	void scroll(int scroll);
 	bool mon_started;
 	AdaptUGC *ucg;

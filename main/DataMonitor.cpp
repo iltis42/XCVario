@@ -197,7 +197,7 @@ void DataMonitor::start(SetupMenuSelect * p, ItfTarget ch){
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_tr, true );
 	paused = false;
-	header( channel );
+	header( channel, data_monitor_mode.get() == MON_MOD_BINARY );
 	if( display_orientation.get() == DISPLAY_TOPDOWN )
 		ucg->scrollSetMargins( 0, SCROLL_TOP );
 	else

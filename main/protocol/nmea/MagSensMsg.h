@@ -19,12 +19,12 @@ public:
 public:
     MagSensMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, MAGSENS_P) {};
     virtual ~MagSensMsg() = default;
-    ConstParserMap* getPM() const { return &_pm; }
+    const ParserEntry* getPT() const override { return _pt; }
 
 
 private:
     // Received messages
-    static ConstParserMap _pm;
+    static const ParserEntry _pt[];
     
     // The receiver
     static datalink_action_t magsensVersion(NmeaPrtcl *nmea);

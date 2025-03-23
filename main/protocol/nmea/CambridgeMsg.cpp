@@ -55,8 +55,9 @@ datalink_action_t CambridgeMsg::parseExcl_g(NmeaPrtcl *nmea)
     return NOACTION;
 }
 
-ConstParserMap CambridgeMsg::_pm = {
-    {Key("g"), CambridgeMsg::parseExcl_g}
+const ParserEntry CambridgeMsg::_pt[] = {
+    {Key("g"), CambridgeMsg::parseExcl_g},
+    {}
 };
 
 /*

@@ -131,7 +131,8 @@ datalink_action_t CANMasterRegMsg::registration_query(NmeaPrtcl *nmea)
     return DO_ROUTING;
 }
 
-ConstParserMap CANMasterRegMsg::_pm = {
-    { Key("PREG"), CANMasterRegMsg::registration_query }
-};
 
+const ParserEntry CANMasterRegMsg::_pt[] = {
+    { Key("PREG"), CANMasterRegMsg::registration_query },
+    {}
+};

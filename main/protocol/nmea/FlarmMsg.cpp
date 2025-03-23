@@ -211,12 +211,13 @@ datalink_action_t FlarmMsg::parseExcl_xc(NmeaPrtcl *nmea)
     return NOACTION;
 }
 
-ConstParserMap FlarmMsg::_pm = {
+const ParserEntry FlarmMsg::_pt[] = {
     { Key("FLAA"), FlarmMsg::parsePFLAA },
     { Key("FLAE"), FlarmMsg::parsePFLAE },
     { Key("FLAU"), FlarmMsg::parsePFLAU },
     { Key("FLAX"), FlarmMsg::parsePFLAX },
-    { Key("xc"), FlarmMsg::parseExcl_xc }
+    { Key("xc"), FlarmMsg::parseExcl_xc },
+    {}
 };
 
 

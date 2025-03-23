@@ -18,7 +18,8 @@
 // Supported messages:
 
 
-ConstParserMap OpenVarioMsg::_pm = {
+const ParserEntry OpenVarioMsg::_pt[] = {
+    {}
 };
 
 

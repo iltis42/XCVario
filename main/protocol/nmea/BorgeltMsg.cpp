@@ -20,7 +20,8 @@
 // Supported messages:
 
 
-ConstParserMap BorgeltMsg::_pm = {
+const ParserEntry BorgeltMsg::_pt[] = {
+    {}
 };
 
 /*

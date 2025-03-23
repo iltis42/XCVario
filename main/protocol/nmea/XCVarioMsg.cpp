@@ -101,11 +101,12 @@ datalink_action_t XCVarioMsg::parseExcl_xcs(NmeaPrtcl *nmea)
     return NOACTION;
 }
 
-ConstParserMap XCVarioMsg::_pm = {
+const ParserEntry XCVarioMsg::_pt[] = {
     {Key("xsA"), XCVarioMsg::parseExcl_xsX},
     {Key("xsC"), XCVarioMsg::parseExcl_xsX},
     {Key("xsM"), XCVarioMsg::parseExcl_xsX},
-    {Key("xcs"), XCVarioMsg::parseExcl_xcs}
+    {Key("xcs"), XCVarioMsg::parseExcl_xcs},
+    {}
 };
 
 /*

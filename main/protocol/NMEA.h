@@ -57,7 +57,7 @@ union Key {
 class NmeaPrtcl;
 class NmeaPlugin;
 using NmeaMessageParser = std::function<datalink_action_t(NmeaPrtcl*)>;
-typedef const std::map<Key, NmeaMessageParser> ConstParserMap; // intrinsicly const to reside in flash memory
+typedef std::pair<Key, NmeaMessageParser> ParserEntry; // use const to reside in flash memory
 typedef std::map<Key, NmeaMessageParser> ParserMap;
 
 // nmea message extension
@@ -69,7 +69,7 @@ public:
     ProtocolType getPtyp() const { return _belongs; }
 
     // API
-    virtual ConstParserMap* getPM() const = 0;
+    virtual const ParserEntry* getPT() const = 0;
 
 protected:
     // access to state machine and buffers for the parse routines

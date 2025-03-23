@@ -15,7 +15,7 @@ class XCVarioMsg final : public NmeaPlugin
 public:
     XCVarioMsg(NmeaPrtcl &nr, ProtocolType p) : NmeaPlugin(nr, p) {};
     virtual ~XCVarioMsg() = default;
-    ConstParserMap* getPM() const { return &_pm; }
+    const ParserEntry* getPT() const override { return _pt; }
 
     static int getXcvProtocolVersion() { return _protocol_version; };
 
@@ -26,6 +26,6 @@ private:
     static datalink_action_t parseExcl_xsX(NmeaPrtcl *nmea);
     static datalink_action_t parseExcl_xcs(NmeaPrtcl *nmea);
 
-    static ConstParserMap _pm;
+    static const ParserEntry _pt[];
     static uint8_t _protocol_version;
 };

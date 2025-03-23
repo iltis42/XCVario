@@ -19,7 +19,7 @@ public:
     explicit CANMasterRegMsg(NmeaPrtcl &nr);
     virtual ~CANMasterRegMsg() = default;
 
-    ConstParserMap* getPM() const { return &_pm; }
+    const ParserEntry* getPT() const override { return _pt; }
 
 public:
     // Clock tick callback
@@ -31,5 +31,5 @@ public:
 private:
     // Received messages
     static datalink_action_t registration_query(NmeaPrtcl *nmea);
-    static ConstParserMap _pm;
+    static const ParserEntry _pt[];
 };

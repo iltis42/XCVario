@@ -63,9 +63,10 @@ datalink_action_t MagSensMsg::magsensConfirmation(NmeaPrtcl *nmea)
 }
 
 // NMEA plugin table
-ConstParserMap MagSensMsg::_pm = {
+const ParserEntry MagSensMsg::_pt[] = {
     { Key("PMSV"), MagSensMsg::magsensVersion },
-    { Key("PMSC"), MagSensMsg::magsensConfirmation }
+    { Key("PMSC"), MagSensMsg::magsensConfirmation },
+    {}
 };
 
 

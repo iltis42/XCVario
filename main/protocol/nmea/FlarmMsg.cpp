@@ -24,7 +24,7 @@
 // PFLAX,A*2E
 
 FlarmMsg::FlarmMsg(NmeaPrtcl &nr) :
-    NmeaPlugin(nr)
+    NmeaPlugin(nr, FLARM_P)
 {
     _nmeaRef.setDefaultAction(DO_ROUTING);
 }

@@ -13,7 +13,7 @@
 class CambridgeMsg final : public NmeaPlugin
 {
 public:
-    CambridgeMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    CambridgeMsg(NmeaPrtcl &nr, ProtocolType p) : NmeaPlugin(nr, p) {};
     virtual ~CambridgeMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
 

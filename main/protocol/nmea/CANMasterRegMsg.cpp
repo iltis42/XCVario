@@ -51,7 +51,7 @@ extern InterfaceCtrl* CAN;
 //   $PJMLOR\r\n
 
 CANMasterRegMsg::CANMasterRegMsg(NmeaPrtcl &nr) :
-    NmeaPlugin(nr),
+    NmeaPlugin(nr, REGISTRATION_P),
     Clock_I(200)
 {
     Clock::start(this);

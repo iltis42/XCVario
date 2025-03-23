@@ -13,7 +13,7 @@
 class XCVarioMsg final : public NmeaPlugin
 {
 public:
-XCVarioMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    XCVarioMsg(NmeaPrtcl &nr, ProtocolType p) : NmeaPlugin(nr, p) {};
     virtual ~XCVarioMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
 

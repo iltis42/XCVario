@@ -17,7 +17,7 @@ public:
     static constexpr int PROTOCOL_VERSION = 1;
 
 public:
-JumboCmdMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    JumboCmdMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, JUMBOCMD_P) {};
     virtual ~JumboCmdMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
 

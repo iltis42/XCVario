@@ -13,7 +13,7 @@
 class OpenVarioMsg final : public NmeaPlugin
 {
 public:
-    OpenVarioMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    OpenVarioMsg(NmeaPrtcl &nr, ProtocolType p) : NmeaPlugin(nr, p) {};
     virtual ~OpenVarioMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
 

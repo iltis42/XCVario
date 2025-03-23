@@ -26,11 +26,25 @@ NmeaPrtcl::~NmeaPrtcl()
 
 void NmeaPrtcl::addPlugin(NmeaPlugin *pm)
 {
-    _plugs.push_back(pm);
+    ESP_LOGI(FNAME, "Add plugin %d", pm->getPtyp());
+    _plugs.push_back(pm); // multiples are allowed
     // copy the parser table
     for (const auto& [key, value] : *pm->getPM()) {
-        _parsmap[key] = value;
+        if ( _parsmap.find(key) == _parsmap.end() ) { // do not overwrite entries
+            _parsmap[key] = value;
+            ESP_LOGI(FNAME, "copy parser for %s", key.toString().c_str());
+        }
     }
+}
+
+bool NmeaPrtcl::hasProtocol(ProtocolType p)
+{
+    for ( auto &pl : _plugs ) {
+        if ( pl->getPtyp() == p ) {
+            return true;
+        }
+    }
+    return false;
 }
 
 datalink_action_t NmeaPrtcl::nextByte(const char c)
@@ -57,7 +71,7 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
             _sm._header_len = pos+1;
             _sm._word_start.push_back(pos+1);
             _sm._state = PAYLOAD;
-            ESP_LOGI(FNAME, "Msg HEADER, %s", k.toString().c_str());
+            ESP_LOGD(FNAME, "Msg HEADER, %s", _mkey.toString().c_str());
             break;
         }
         if (pos > 6) {
@@ -108,7 +122,7 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
     {
         NMEA::ensureTermination(_sm._frame);
         _sm._state = START_TOKEN; // restart parsing
-        ESP_LOGI(FNAME, "Msg complete %s", _mkey.toString().c_str());
+        ESP_LOGD(FNAME, "Msg complete %s", _mkey.toString().c_str());
         action = _default_action;
         if ( _parser ) {
             action = (_parser)(this);

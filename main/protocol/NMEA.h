@@ -64,8 +64,9 @@ typedef std::map<Key, NmeaMessageParser> ParserMap;
 class NmeaPlugin
 {
 public:
-    explicit NmeaPlugin(NmeaPrtcl &nr) : _nmeaRef(nr) {}
+    explicit NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp) : _nmeaRef(nr), _belongs(ptyp) {}
     virtual ~NmeaPlugin() = default;
+    ProtocolType getPtyp() const { return _belongs; }
 
     // API
     virtual ConstParserMap* getPM() const = 0;
@@ -73,6 +74,7 @@ public:
 protected:
     // access to state machine and buffers for the parse routines
     NmeaPrtcl &_nmeaRef;
+    ProtocolType _belongs;
 };
 
 // generic mnea message parser
@@ -83,9 +85,12 @@ public:
     virtual ~NmeaPrtcl();
 
 public:
+    // general API
     ProtocolType getProtocolId() override { return _ptyp; }
     void addPlugin(NmeaPlugin *pm); // one way addition
+    bool hasProtocol(ProtocolType p);
     datalink_action_t nextByte(const char c) override;
+
 
     // XCV transmitter routines
     void sendStdXCVario(float baro, float dp, float te, float temp, float ias, float tas,
@@ -94,6 +99,10 @@ public:
     void sendOpenVario(float baro, float dp, float te, float temp, bool validTemp);
     void sendBorgelt(float te, float temp, float ias, float tas, float mc, int bugs, float aballast, bool cruise, bool validTemp);
     void sendCambridge(float te, float tas, float mc, int bugs, float alt);
+    void sendXCVCrewWeight(float w);
+    void sendXCVEmptyWeight(float w);
+    void sendXCVWaterWeight(float v);
+    void sendXCVVersion(int v);
 
     // MagSens transmitter
     bool sendHello();

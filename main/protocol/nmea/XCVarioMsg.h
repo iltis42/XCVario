@@ -13,14 +13,19 @@
 class XCVarioMsg final : public NmeaPlugin
 {
 public:
-XCVarioMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    XCVarioMsg(NmeaPrtcl &nr, ProtocolType p) : NmeaPlugin(nr, p) {};
     virtual ~XCVarioMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
+
+    static int getXcvProtocolVersion() { return _protocol_version; };
 
     // Declare send routines in NmeaPrtcl class !
 
 private:
     // Received messages
-    static datalink_action_t parsePXCV(NmeaPrtcl *nmea);
+    static datalink_action_t parseExcl_xsX(NmeaPrtcl *nmea);
+    static datalink_action_t parseExcl_xcs(NmeaPrtcl *nmea);
+
     static ConstParserMap _pm;
+    static uint8_t _protocol_version;
 };

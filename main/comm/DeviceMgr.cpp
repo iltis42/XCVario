@@ -8,9 +8,11 @@
 
 #include "DeviceMgr.h"
 
-#include "InterfaceCtrl.h"
+#include "RoutingTargets.h"
 #include "comm/Messages.h"
 #include "comm/CanBus.h"
+#include "comm/WifiAP.h"
+#include "comm/BTspp.h"
 #include "SerialLine.h"
 #include "protocol/ProtocolItf.h"
 #include "DataMonitor.h"
@@ -33,12 +35,25 @@ MessagePool MP;
 static TaskHandle_t SendTask = nullptr;
 
 // static routing table on device level
-static RoutingMap Routes = {
-    { {FLARM_DEV, 0}, {{NAVI_DEV, 0}, {NAVI_DEV, 8881}, {XCVARIOCLIENT_DEV, 20}} },
-    { {NAVI_DEV, 0}, {{FLARM_DEV, 0}} },
-    { {NAVI_DEV, 8881}, {{FLARM_DEV, 0}} },
-    { {XCVARIO_DEV, 0}, {{NAVI_DEV, 0}, {NAVI_DEV, 8880}} }
+//
+// entries with zero termination, entirely as ro flash data, no RAM usage
+static constexpr RoutingTarget flarm_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
+static constexpr RoutingTarget navi_routes[] = { {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {FLARM_DEV, CAN_BUS, 20}, {} };
+static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
+    { RoutingTarget(FLARM_DEV, NO_PHY, 0), flarm_routes },
+    { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes }
 };
+// Search the flash data table
+static constexpr const RoutingTarget* findRoute(const RoutingTarget& target) {
+    // Search through Routes and find a match to the source device
+    for (const auto& entry : Routes) {
+        if (entry.first.match(target)) {
+            return entry.second; // Return the matched routing list
+        }
+    }
+    return nullptr;
+}
+
 
 // a dummy interface
 class DmyItf final : public InterfaceCtrl
@@ -61,7 +76,7 @@ static int tt_snd(Message *msg)
         ESP_LOGD(FNAME, "send %s/%d NMEA len %d, msg: %s", itf->getStringId(), port, len, msg->buffer.c_str());
         plsrety = itf->Send(msg->buffer.c_str(), len, port);
         if ( plsrety > 0 ) {
-            ESP_LOGI(FNAME, "reshedule message %d/%d", len, msg->buffer.length());
+            ESP_LOGD(FNAME, "reshedule message %d/%d", len, msg->buffer.length());
             msg->buffer.erase(0, len); // chop sent bytes off
         }
         else if ( plsrety == 0 ) {
@@ -103,18 +118,18 @@ void TransmitTask(void *arg)
             }
             if ( wait ) {
                 // put this straight onto the later queue
-                ESP_LOGI(FNAME, "straight wait");
+                ESP_LOGD(FNAME, "straight wait");
                 later.push_back(msg);
             }
             else {
                 // Regular case
-                // ESP_LOGI(FNAME, "regular send");
+                ESP_LOGD(FNAME, "regular send");
                 pls_retry = tt_snd(msg);
                 if ( pls_retry < 1 ) {
-                    // ESP_LOGI(FNAME, "regular done");
+                    ESP_LOGD(FNAME, "regular done");
                     DEV::relMessage(msg);
                 } else {
-                    ESP_LOGI(FNAME, "retry pushed");
+                    ESP_LOGD(FNAME, "retry pushed");
                     later.push_back(msg);
                     continue; // just pushed this one, no need to check again
                 }
@@ -126,7 +141,7 @@ void TransmitTask(void *arg)
         while ( !later.empty() ) {
             msg = later.front();
             int cmplen = msg->buffer.size();
-            ESP_LOGI(FNAME, "postponed send %d", cmplen);
+            ESP_LOGD(FNAME, "postponed send %d", cmplen);
             pls_retry = tt_snd(msg);
             if ( pls_retry > 0 ) {
                 if ( (cmplen - msg->buffer.size()) > 0 ) {
@@ -336,34 +351,39 @@ InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
     return nullptr;
 }
 
-// Result should be cashed for performance purpose. Todo dirty flag mechanism
+// Result should be cashed for performance purpose.
 RoutingList DeviceManager::getRouting(RoutingTarget target)
 {
-    RoutingMap::iterator route_it = Routes.find(target);
-    if ( route_it != Routes.end() )
+    // find routing entry, respect NO_PHY wildcards
+    const RoutingTarget *route_it = findRoute(target);
+    ESP_LOGI(FNAME, "Search route: %x(%d:%d:%d)", (unsigned)target.raw, target.getDeviceId(), target.getItfTarget().iid, target.getItfTarget().port);
+    if ( route_it )
     {
-        // remove not existing devices from the routing list
-        RoutingList res = route_it->second;
-        for (RoutingList::iterator tit=res.begin(); tit != res.end(); ) 
+        RoutingList activeList;
+
+        ESP_LOGD(FNAME, "Found route: %x", (unsigned)route_it->raw);
+        // look for existing devices and push only those to the routing list
+        for (const RoutingTarget* entry = route_it; entry->raw != 0; ++entry)
         {
-            // is dev configured, is the port identical
-            DevMap::iterator devit = _device_map.find(tit->did);
-            if ( devit == _device_map.end() ) {
-                ESP_LOGD(FNAME, "remove %d from routing list.", tit->did);
-                tit = res.erase(tit);
-            }
-            else {
-                // check the port
+            ESP_LOGD(FNAME, "Try match: %x", (unsigned)entry->raw);
+            // is dev configured, are itf and port identical
+            DevMap::iterator devit = _device_map.find(entry->did);
+            if ( devit != _device_map.end() ) {
+                // check itf and  port
                 Device *dev = devit->second;
-                PortList pl = dev->getPortList();
-                if ( pl.find(tit->port) == pl.end() ) {
-                    tit = res.erase(tit);
-                } else {
-                    tit++;
+                ESP_LOGD(FNAME, "Found dev %d on itf: %d", devit->first, dev->_itf->getId());
+                if ( dev->_itf->getId() == entry->getItfTarget().iid ) {
+                    ESP_LOGD(FNAME, "Itfmatch: %d==%d", dev->_itf->getId(), dev->_itf->getId());
+                    PortList pl = dev->getPortList();
+                    if ( pl.find(entry->getItfTarget().port) != pl.end() ) {
+                        ESP_LOGI(FNAME, "Take dev %d from routing list.", entry->did);
+                        activeList.push_back(*entry); // Ok, take this route
+                    }
                 }
             }
         }
-        return res;
+        activeList.shrink_to_fit();
+        return activeList; // will be a move by RVO
     }
     else {
         return RoutingList();

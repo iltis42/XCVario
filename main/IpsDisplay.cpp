@@ -12,7 +12,6 @@
 #include "BLESender.h"
 #include "OneWireESP32.h"
 #include "WifiClient.h"
-#include "WifiApp.h"
 #include "sensor.h"
 #include "Units.h"
 #include "Flap.h"
@@ -20,6 +19,8 @@
 #include "Compass.h"
 #include "CircleWind.h"
 #include "comm/CanBus.h"
+#include "comm/WifiAP.h"
+#include "comm/BTspp.h"
 #include "Blackboard.h"
 
 #include "freertos/FreeRTOS.h"
@@ -1012,7 +1013,7 @@ void IpsDisplay::drawWifi( int x, int y ) {
 			btq=0;
 	}
 	else if( wireless == WL_WLAN_STANDALONE || wireless == WL_WLAN_MASTER  )
-		btq=WifiApp::queueFull();
+		btq=WifiAP::queueFull();
 	else
 		return;
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){

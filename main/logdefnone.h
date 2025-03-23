@@ -1,6 +1,11 @@
 
 #pragma once
 
+#if defined(ESP_LOGV)
+# undef ESP_LOGV
+#endif
+#define ESP_LOGV(l, fmt, ...) // Do nothing
+
 #if defined(ESP_LOGD)
 # undef ESP_LOGD
 #endif

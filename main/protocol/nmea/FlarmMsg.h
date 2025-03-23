@@ -23,5 +23,7 @@ private:
     static datalink_action_t parsePFLAE(NmeaPrtcl *nmea);
     static datalink_action_t parsePFLAU(NmeaPrtcl *nmea);
     static datalink_action_t parsePFLAX(NmeaPrtcl *nmea);
+    static datalink_action_t parseExcl_xc(NmeaPrtcl *nmea);
+    
     static ConstParserMap _pm;
 };

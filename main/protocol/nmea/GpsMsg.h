@@ -13,7 +13,7 @@
 class GpsMsg final : public NmeaPlugin
 {
 public:
-    GpsMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    GpsMsg(NmeaPrtcl &nr, ProtocolType p) : NmeaPlugin(nr, p) {};
     virtual ~GpsMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
 

@@ -19,8 +19,8 @@ Last update: 2021-02-25
 #include "IpsDisplay.h"
 #include "SetupMenuDisplay.h"
 #include "sensor.h"
+#include "logdef.h"
 
-#include <esp_log.h>
 #include <esp_system.h>
 
 SetupMenuDisplay::SetupMenuDisplay( const char* title, int (*action)(SetupMenuDisplay *p) ) : MenuEntry()

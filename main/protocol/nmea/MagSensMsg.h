@@ -17,7 +17,7 @@ public:
     // static constexpr int MAGSTREAM_ID = 0x31;
 
 public:
-    MagSensMsg(NmeaPrtcl &nr) : NmeaPlugin(nr) {};
+    MagSensMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, MAGSENS_P) {};
     virtual ~MagSensMsg() = default;
     ConstParserMap* getPM() const { return &_pm; }
 

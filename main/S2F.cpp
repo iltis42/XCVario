@@ -8,10 +8,12 @@
 #include "S2F.h"
 
 #include "Polars.h"
-#include "Protocols.h"
+// #include "Protocols.h"
 #include "Units.h"
 #include "Blackboard.h"
 #include "KalmanMPU6050.h"
+#include "comm/DeviceMgr.h"
+#include "protocol/NMEA.h"
 #include "logdef.h"
 
 #include <cmath>
@@ -100,8 +102,9 @@ void S2F::setPolar()
 	polar_max_ballast.set( p.max_ballast );
 	polar_wingarea.set( p.wingarea, true, false );
 	empty_weight.set( (p.wingload * p.wingarea) - 80.0, true, false ); // Calculate default for emtpy mass
-	if( Protocols::getXcvProtocolVersion() > 1 ){
-		Protocols::sendNmeaXCVCmd( "empty-weight", empty_weight.get() );
+	ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P);
+	if ( prtcl ) {
+		(static_cast<NmeaPrtcl*>(prtcl))->sendXCVEmptyWeight(empty_weight.get());
 	}
 	ESP_LOGI(FNAME,"Reference weight:%.1f, new empty_weight: %.1f", (p.wingload * p.wingarea), empty_weight.get() );
 	modifyPolar();

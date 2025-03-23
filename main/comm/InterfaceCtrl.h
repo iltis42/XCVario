@@ -13,7 +13,7 @@
 
 class DataLink;
 
-// All managed interfaces
+// All managed interfaces -> max 16 (setup uses 4 bits to store)
 typedef enum {
     NO_PHY = 0,
     CAN_BUS,
@@ -27,18 +27,16 @@ typedef enum {
 } InterfaceId;
 
 // Interface target
-struct ItfTarget {
-    union {
-        struct {
-            InterfaceId iid  : 8;
-            int         port : 24;
-        };
-        uint32_t raw;
+union ItfTarget {
+    struct {
+        InterfaceId iid  : 4;
+        int         port : 21;
     };
+    uint32_t raw;
 
     // Convenience
     constexpr ItfTarget(InterfaceId iid, int port=0)
-        : raw((static_cast<InterfaceId>(iid) & 0xff) | ((static_cast<int>(port) & 0xffffff) << 8)) {}
+        : raw((static_cast<InterfaceId>(iid) & 0xf) | ((static_cast<int>(port) & 0x1fffff) << 4)) {}
     constexpr ItfTarget(int r = 0) : raw(r) {}
     constexpr bool operator<(const ItfTarget& other) const {
         return raw < other.raw;
@@ -48,6 +46,12 @@ struct ItfTarget {
     }
     constexpr bool operator!=(const ItfTarget& other) const {
         return raw != other.raw;
+    }
+    constexpr bool matchNoPhy(const ItfTarget& other) const {
+        return ( (iid == NO_PHY && port == 0)               // both wildcards
+                || (iid == NO_PHY && port == other.port)    // interface as wildcard
+                || (iid == other.iid && port == 0)          // port as wildcard
+                || raw == other.raw );
     }
 };
 

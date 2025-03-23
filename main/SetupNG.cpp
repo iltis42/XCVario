@@ -6,24 +6,12 @@
  */
 
 #include "SetupNG.h"
+
 #include "quaternion.h"
-#include <string>
-#include <stdio.h>
-#include "esp_system.h"
-#include <esp_log.h>
-#include "sdkconfig.h"
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
 #include "ESP32NVS.h"
-#include "esp32/rom/uart.h"
-#include <iostream>
-#include <map>
-#include <math.h>
 #include "ESPAudio.h"
 #include "BMPVario.h"
 #include "Polars.h"
-#include <logdef.h>
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"
 #include "Router.h"
@@ -32,9 +20,25 @@
 #include "Protocols.h"
 #include "ESPAudio.h"
 #include "Flap.h"
-#include <esp_http_server.h>
-#include "WifiApp.h"
 #include "OneWireESP32.h"
+#include "comm/DeviceMgr.h"
+#include "protocol/NMEA.h"
+#include "logdef.h"
+
+// #include <sdkconfig.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+#include <esp_log.h>
+#include <esp32/rom/uart.h>
+#include <esp_system.h>
+#include <esp_http_server.h>
+
+#include <cstdio>
+#include <cmath>
+#include <string>
+#include <iostream>
+#include <map>
 
 void change_mc() {
 	Speed2Fly.change_mc();
@@ -44,24 +48,26 @@ void change_ballast() {
 	Speed2Fly.change_ballast();
 }
 
-void change_crew_weight(){
-	if( Protocols::getXcvProtocolVersion() > 1 ){
-		Protocols::sendNmeaXCVCmd( "crew-weight", crew_weight.get() );
+void change_crew_weight() {
+	ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P);
+	if ( prtcl ) {
+		(static_cast<NmeaPrtcl*>(prtcl))->sendXCVCrewWeight(crew_weight.get());
 	}
 	change_ballast();
 }
 
 void change_empty_weight(){
-	ESP_LOGI(FNAME,"change_empty_weight, pv: %d", Protocols::getXcvProtocolVersion()  );
-	if( Protocols::getXcvProtocolVersion() > 1 ){
-		Protocols::sendNmeaXCVCmd( "empty-weight", empty_weight.get() );
+	ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P);
+	if ( prtcl ) {
+		(static_cast<NmeaPrtcl*>(prtcl))->sendXCVEmptyWeight(empty_weight.get());
 	}
 	change_ballast();
 }
 
 void change_bal_water(){
-	if( Protocols::getXcvProtocolVersion() > 1 ){
-		Protocols::sendNmeaXCVCmd( "bal-water", ballast_kg.get() );
+	ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P);
+	if ( prtcl ) {
+		(static_cast<NmeaPrtcl*>(prtcl))->sendXCVWaterWeight(ballast_kg.get());
 	}
 	change_ballast();
 }
@@ -391,7 +397,7 @@ SetupNG<int> 			screen_centeraid("SCR_CA", 0, RST_NONE, SYNC_NONE  );
 SetupNG<int> 			data_monitor_mode("DATAMONM", MON_MOD_ASCII, true, SYNC_NONE, VOLATILE  );
 SetupNG<t_bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
-SetupNG<t_wireless_id>  custom_wireless_id("WLID", t_wireless_id("") );
+SetupNG<t_tenchar_id>  custom_wireless_id("WLID", t_tenchar_id("") );
 SetupNG<int> 			drawing_prio("DRAWP", DP_NEEDLE );
 SetupNG<int> 			logging("LOGGING", LOG_DISABLE );
 SetupNG<float>      	display_clock_adj("DSCLADHJ", 0 );

@@ -9,10 +9,11 @@
 #include "FlarmMsg.h"
 #include "protocol/FlarmBin.h"
 #include "Flarm.h"
+#include "sensor.h"
 
 #include "comm/DeviceMgr.h"
 
-#include "logdef.h"
+#include "logdefnone.h"
 
 
 // The FLARM protocol parser.
@@ -24,7 +25,7 @@
 // PFLAX,A*2E
 
 FlarmMsg::FlarmMsg(NmeaPrtcl &nr) :
-    NmeaPlugin(nr)
+    NmeaPlugin(nr, FLARM_P)
 {
     _nmeaRef.setDefaultAction(DO_ROUTING);
 }
@@ -178,10 +179,10 @@ datalink_action_t FlarmMsg::parsePFLAX(NmeaPrtcl *nmea)
         if ( host && host->getProtocol(FLARMBIN_P) && nmea->getDL()->getProtocol(FLARMBIN_P)) {
             // Host side
             FlarmBinary *hostfb = static_cast<FlarmBinary*>(host->goBIN());
-            ESP_LOGI(FNAME, "Host side %d", hostfb->getDeviceId);
+            ESP_LOGI(FNAME, "Host side %d", hostfb->getDeviceId());
             // Device side
             FlarmBinary *devfb = static_cast<FlarmBinary*>(nmea->getDL()->goBIN());
-            ESP_LOGI(FNAME, "Device side %d", devfb->getDeviceId);
+            ESP_LOGI(FNAME, "Device side %d", devfb->getDeviceId());
             // Cross link them
             devfb->setPeer(hostfb);
             hostfb->setPeer(devfb);
@@ -192,11 +193,30 @@ datalink_action_t FlarmMsg::parsePFLAX(NmeaPrtcl *nmea)
 }
 
 
+// The flarm simulator on BT bridge (development only)
+datalink_action_t FlarmMsg::parseExcl_xc(NmeaPrtcl *nmea)
+{
+    // need this to support Wind Simulator with Compass simulation
+
+    ProtocolState *sm = nmea->getSM();
+    const char *s = sm->_frame.c_str();
+    const std::vector<int> *word = &sm->_word_start;
+
+    // ESP_LOGI(FNAME,"Compass heading detected=%3.1f TAS: %3.1f NMEA:%s", heading, TAS, str );
+    if( compass ) {
+        compass->setHeading( atof(s + word->at(0)) );
+    }
+    tas = atof(s + word->at(1));
+
+    return NOACTION;
+}
+
 ConstParserMap FlarmMsg::_pm = {
     { Key("FLAA"), FlarmMsg::parsePFLAA },
     { Key("FLAE"), FlarmMsg::parsePFLAE },
     { Key("FLAU"), FlarmMsg::parsePFLAU },
-    { Key("FLAX"), FlarmMsg::parsePFLAX }
+    { Key("FLAX"), FlarmMsg::parsePFLAX },
+    { Key("xc"), FlarmMsg::parseExcl_xc }
 };
 
 

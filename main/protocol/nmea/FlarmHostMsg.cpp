@@ -16,7 +16,7 @@
 // PFL*
 
 FlarmHostMsg::FlarmHostMsg(NmeaPrtcl &nr) :
-    NmeaPlugin(nr)
+    NmeaPlugin(nr, FLARMHOST_P)
 {
     _nmeaRef.setDefaultAction(DO_ROUTING);
 }

@@ -29,7 +29,6 @@
 #include "CircleWind.h"
 
 S2F *   Protocols::_s2f = 0;
-uint8_t Protocols::_protocol_version = 1;
 bool    Protocols::_can_send_error = false;
 Protocols::Protocols(S2F * s2f) {
 	_s2f = s2f;
@@ -123,19 +122,6 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 	}
 }
 
-void Protocols::sendNmeaXCVCmd( const char *item, float value ){
-	// ESP_LOGI(FNAME,"sendNMEACmd: %s: %f", item, value );
-	char str[40];
-	sprintf( str,"!xcv,%s,%d", item, (int)(value+0.5) );
-	int cs = calcNMEACheckSum(&str[1]);
-	int i = strlen(str);
-	sprintf( &str[i], "*%02X\r\n", cs );
-	ESP_LOGI(FNAME,"sendNMEACmd: %s", str );
-	// SString nmea( str );
-	// if( !Router::forwardMsg( nmea, xcv_tx_q ) ){
-	// 	ESP_LOGW(FNAME,"Warning: Overrun in send to XCV tx queue %d bytes", nmea.length() );
-	// }
-}
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
@@ -207,157 +193,14 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
 
-void Protocols::parseXS( const char *str ){
-	// ESP_LOGI(FNAME,"parseXS %s", str );
-	char key[20];
-	char type;
-	char role; // M | C
-	int cs;
-	float val;
-	sscanf(str, "!xs%c,%[^,],%c,%f*%02x", &role, key, &type, &val, &cs );  // !xsM,FLPS,F,1.5000*27
-	int calc_cs=calcNMEACheckSum( str );
-	if( cs == calc_cs ){
-		// ESP_LOGI(FNAME,"parsed NMEA: role=%c type=%c key=%s val=%f vali=%d", role, type , key, val, (int)val );
-		if( type == 'F' ){
-			SetupNG<float> *item = (SetupNG<float> *)SetupCommon::getMember( key );
-			if( item != 0 ){
-				if( role == 'A' )
-					item->ack( val );
-				else
-					item->set( val, false );
-			}else {
-				ESP_LOGW(FNAME,"Setup item with key %s not found", key );
-			}
-		}
-		else if( type == 'I' ){
-			SetupNG<int> *item = (SetupNG<int> *)SetupCommon::getMember( key );
-			if( item != 0 ){
-				if( role == 'A' && val == item->get() ) {
-					item->ack( val );
-				} else {
-					item->set( (int)val, false );
-				}
-			}else {
-				ESP_LOGW(FNAME,"Setup item with key %s not found", key );
-			}
-		}
-
-	}else{
-		ESP_LOGW(FNAME,"!xs messgae CS error got:%X != calculated:%X", cs, calc_cs );
-		ESP_LOG_BUFFER_HEXDUMP(FNAME,str,32, ESP_LOG_WARN);
-	}
-}
 
 
 void Protocols::parseNMEA( const char *str ){
 	// ESP_LOGI(FNAME,"parseNMEA: %s, len: %d", str,  strlen(str) );
 
-	if ( strncmp( str, "!xc,", 4 ) == 0 ) { // need this to support Wind Simulator with Compass simulation
-		float heading;
-		float TAS;
-		sscanf( str,"!xc,%f,%f", &heading, &TAS );
-		// ESP_LOGI(FNAME,"Compass heading detected=%3.1f TAS: %3.1f NMEA:%s", heading, TAS, str );
-		if( compass )
-			compass->setHeading( heading );
-		tas = TAS;
-	}
-	else if ( strncmp( str, "!xcs,", 5 ) == 0 ) {
-		if( strncmp( str+5, "crew-weight,", 12 ) == 0 ){
-			ESP_LOGI(FNAME,"Detected crew-weight cmd");
-			int weight;
-			int cs;
-			sscanf(str+17, "%d*%02x", &weight, &cs);
-			int calc_cs=calcNMEACheckSum( str );
-			if( calc_cs != cs ){
-				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
-			}
-			else{
-				ESP_LOGI(FNAME,"New crew-weight: %d", weight );
-				crew_weight.set( (float)weight );
-			}
-		}
-		else if( strncmp( str+5, "empty-weight,", 13 ) == 0 ){
-			ESP_LOGI(FNAME,"Detected empty-weight cmd");
-			int weight;
-			int cs;
-			sscanf(str+18, "%d*%02x", &weight, &cs);
-			int calc_cs=calcNMEACheckSum( str );
-			if( calc_cs != cs ){
-				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
-			}
-			else{
-				ESP_LOGI(FNAME,"New empty_weight: %d", weight );
-				empty_weight.set( (float)weight );
-			}
-		}
-		else if( strncmp( str+5, "bal-water,", 10 ) == 0 ){
-			ESP_LOGI(FNAME,"Detected bal_water cmd");
-			int weight;
-			int cs;
-			sscanf(str+15, "%d*%02x", &weight, &cs);
-			int calc_cs=calcNMEACheckSum( str );
-			if( calc_cs != cs ){
-				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
-			}
-			else{
-				ESP_LOGI(FNAME,"New ballast: %d", weight );
-				ballast_kg.set( (float)weight );
-			}
-		}
-		else if( strncmp( str+5, "version,", 8 ) == 0 ){
-			ESP_LOGI(FNAME,"Detected version cmd");
-			int version;
-			int cs;
-			sscanf(str+13, "%d*%02x", &version, &cs);
-			int calc_cs=calcNMEACheckSum( str );
-			if( calc_cs != cs ){
-				ESP_LOGW(FNAME,"CS Error in %s; %d != %d", str, cs, calc_cs );
-			}
-			else{
-				ESP_LOGI(FNAME,"Got xcv protocol version: %d", version );
-				_protocol_version = version;
-				sendNmeaXCVCmd( "version", 2 );
-			}
-		}
-	}
-	else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
-		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
-		if (str[3] == 'b') {  // this may reach master or client with an own navi
-			ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
-			float aballast;
-			sscanf(str, "!g,b%f", &aballast);
-			aballast = aballast * 10; // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
-			ESP_LOGI(FNAME,"New Ballast: %.1f %% of max ", aballast);
-			float liters = (aballast/100.0) * polar_max_ballast.get();
-			ESP_LOGI(FNAME,"New Ballast in liters/kg: %.1f ", liters);
-			ballast_kg.set( liters );
-		}
-		if (str[3] == 'm' ) {
-			ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
-			float mc;
-			sscanf(str, "!g,m%f", &mc);
-			mc = mc*0.1;   // comes in knots*10, unify to knots
-			float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
-			if( vario_unit.get() == VARIO_UNIT_KNOTS )
-				mc_ms =  std::roundf(Units::knots2ms(mc)*100.f)/100.f; // higher resolution for knots
-			ESP_LOGI(FNAME,"New MC: %1.1f knots, %f m/s", mc, mc_ms );
-			MC.set( mc_ms );  // set mc in m/s
-		}
-		if (str[3] == 'u') {
-			int mybugs;
-			sscanf(str, "!g,u%d", &mybugs);
-			mybugs = 100-mybugs;
-			ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
-			bugs.set( mybugs );
-		}
-		if (str[3] == 'q') {  // nonstandard CAI 302 extension for QNH setting in XCVario in int or float e.g. 1013 or 1020.20
-			float qnh;
-			sscanf(str, "!g,q%f", &qnh);
-			ESP_LOGI(FNAME,"New QNH: %.2f", qnh);
-			QNH.set( qnh );
-		}
-	}
-	else if( strncmp( str, "$g,", 3 ) == 0 ) {
+
+
+	if( strncmp( str, "$g,", 3 ) == 0 ) {
 		ESP_LOGI(FNAME,"Remote cmd %s", str );
 		if (str[3] == 's') {  // nonstandard CAI 302 extension for S2F mode switch, e.g. for XCNav remote stick
 			ESP_LOGI(FNAME,"Detected S2F cmd");

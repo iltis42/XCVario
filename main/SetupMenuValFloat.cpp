@@ -12,7 +12,7 @@
 #include "Polars.h"
 #include "sensor.h"
 #include "ESPAudio.h"
-#include <esp_log.h>
+#include "logdef.h"
 
 
 SetupMenuValFloat * SetupMenuValFloat::qnh_menu = 0;

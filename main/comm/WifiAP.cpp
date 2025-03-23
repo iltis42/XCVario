@@ -7,12 +7,11 @@
    CONDITIONS OF ANY KIND, either express or implied.
  */
 
-#include "WifiApp.h"
+#include "WifiAP.h"
 #include "Router.h"
 #include "sensor.h"
 #include "DataMonitor.h"
 #include "comm/DataLink.h"
-#include "WifiClient.h"
 #include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
@@ -25,16 +24,16 @@
 
 extern bool netif_initialized;
 
-WifiApp *Wifi = nullptr;
+WifiAP *Wifi = nullptr;
 
 #define WIFI_BUFFER_SIZE 513
 #define MAX_CLIENTS   4
 
 
-bool WifiApp::full[NUM_TCP_PORTS] = { false, false, false, false };
-bool WifiApp::task_created=false;
-sock_server_t *WifiApp::_socks[NUM_TCP_PORTS] = { nullptr, nullptr, nullptr, nullptr };
-TaskHandle_t WifiApp::pid = nullptr;
+bool WifiAP::full[NUM_TCP_PORTS] = { false, false, false, false };
+bool WifiAP::task_created=false;
+sock_server_t *WifiAP::_socks[NUM_TCP_PORTS] = { nullptr, nullptr, nullptr, nullptr };
+TaskHandle_t WifiAP::pid = nullptr;
 
 class WIFI_EVENT_HANDLER
 {
@@ -79,10 +78,10 @@ public:
 	{
 		while (1) {
 			for (int n = 0; n < NUM_TCP_PORTS; n++) {
-				if (WifiApp::_socks[n] == nullptr)
+				if (WifiAP::_socks[n] == nullptr)
 					continue;
 
-				sock_server_t *config = (sock_server_t *)WifiApp::_socks[n];
+				sock_server_t *config = (sock_server_t *)WifiAP::_socks[n];
 				std::list<client_record_t> &clients = config->clients;
 				ESP_LOGI(FNAME, "sock server, port: %d, clients: %d", 8880+n, clients.size() );
 				fd_set read_fds;
@@ -128,7 +127,7 @@ public:
 						ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN - 1, MSG_DONTWAIT);
 						if (sizeRead > 0) {
 							ESP_LOGI(FNAME, "FD socket recv: client %d, port %d, read:%d bytes", client_rec.client, config->port, sizeRead );
-							WifiApp *wifi = static_cast<WifiApp *>(config->mywifi);
+							WifiAP *wifi = static_cast<WifiAP *>(config->mywifi);
 							auto dl = wifi->_dlink.find(config->port);
 							if (dl != wifi->_dlink.end()) {
 								dl->second->process(r, sizeRead);
@@ -157,11 +156,9 @@ public:
 				}
 				// Router::routeWLAN();  // to be removed later
 				// Router::routeCAN();   // dito
-				if (uxTaskGetStackHighWaterMark(WifiApp::pid) < 128) {
-					ESP_LOGW(FNAME, "Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark(WifiApp::pid), config->port);
+				if (uxTaskGetStackHighWaterMark(WifiAP::pid) < 128) {
+					ESP_LOGW(FNAME, "Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark(WifiAP::pid), config->port);
 				}
-
-				// vTaskDelay(200 / portTICK_PERIOD_MS);
 			}
 		}
 		vTaskDelete(NULL);
@@ -181,19 +178,19 @@ public:
 }; // WIFI_EVENT_HANDLER
 
 
-WifiApp::WifiApp(): InterfaceCtrl()
+WifiAP::WifiAP(): InterfaceCtrl()
 {
 	for(int i=0; i<NUM_TCP_PORTS; i++) {
 		_socks[i] = nullptr;
 	}
 }
 
-WifiApp::~WifiApp()
+WifiAP::~WifiAP()
 {
 	vTaskDelete(pid);
 }
 
-int  WifiApp::queueFull(){
+int  WifiAP::queueFull(){
 	// ESP_LOGI(FNAME, "WQF: 0:%d 1:%d 2:%d 3:%d", full[0], full[0],full[0],full[0] );
 	if( full[0] || full[1] || full[2] || full[3] )
 		return 1;
@@ -202,7 +199,7 @@ int  WifiApp::queueFull(){
 }
 
 // it's mostly static IP a cfg dependig of port so give here port minus 8880
-void WifiApp::ConfigureIntf(int port){
+void WifiAP::ConfigureIntf(int port){
 	if (port < 8880 || port > 8883) {
 		ESP_LOGE(FNAME, "Invalid cfg: %d, should be between 8880 and 8883", port);
 		return;
@@ -211,7 +208,7 @@ void WifiApp::ConfigureIntf(int port){
 	int pidx = port-8880;
 	sock_server_t *sock = _socks[pidx];  // particular pointer to socket server record for this port
 	if ( sock == nullptr ) {  // its a one-way train, we can only create those ATM
-		_socks[pidx] = sock = new sock_server_t(port, this);  // WiFiApp only once, all point to here
+		_socks[pidx] = sock = new sock_server_t(port, this);  // WiFiAP only once, all point to here
 		int socket = WIFI_EVENT_HANDLER::create_socket( port );  // Create already the socket for this port structure as interface to the server task
 		if( socket < 0 ) {
 			ESP_LOGE(FNAME, "Socket creation port %d FAILED with (%d): Abort ConfigureIntf", port, socket );
@@ -228,7 +225,7 @@ void WifiApp::ConfigureIntf(int port){
 	}
 }
 
-int WifiApp::Send(const char *msg, int &len, int port)
+int WifiAP::Send(const char *msg, int &len, int port)
 {
 	if (port < 8880 || port > 8884) {
 		ESP_LOGE(FNAME, "Invalid port: %d, should be between 8880 and 8884", port);
@@ -266,7 +263,7 @@ int WifiApp::Send(const char *msg, int &len, int port)
 	return 50;  // this port -> socket number is currently unavailable please try again 50 ms later
 }
 
-void WifiApp::wifi_init_softap()
+void WifiAP::wifi_init_softap()
 {
 	if ( ! netif_initialized ) {
 		netif_initialized = true;

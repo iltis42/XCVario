@@ -64,8 +64,9 @@ typedef std::map<Key, NmeaMessageParser> ParserMap;
 class NmeaPlugin
 {
 public:
-    explicit NmeaPlugin(NmeaPrtcl &nr) : _nmeaRef(nr) {}
+    explicit NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp) : _nmeaRef(nr), _belongs(ptyp) {}
     virtual ~NmeaPlugin() = default;
+    ProtocolType getPtyp() const { return _belongs; }
 
     // API
     virtual ConstParserMap* getPM() const = 0;
@@ -73,6 +74,7 @@ public:
 protected:
     // access to state machine and buffers for the parse routines
     NmeaPrtcl &_nmeaRef;
+    ProtocolType _belongs;
 };
 
 // generic mnea message parser
@@ -83,9 +85,12 @@ public:
     virtual ~NmeaPrtcl();
 
 public:
+    // general API
     ProtocolType getProtocolId() override { return _ptyp; }
     void addPlugin(NmeaPlugin *pm); // one way addition
+    bool hasProtocol(ProtocolType p);
     datalink_action_t nextByte(const char c) override;
+
 
     // XCV transmitter routines
     void sendStdXCVario(float baro, float dp, float te, float temp, float ias, float tas,
@@ -94,6 +99,10 @@ public:
     void sendOpenVario(float baro, float dp, float te, float temp, bool validTemp);
     void sendBorgelt(float te, float temp, float ias, float tas, float mc, int bugs, float aballast, bool cruise, bool validTemp);
     void sendCambridge(float te, float tas, float mc, int bugs, float alt);
+    void sendXCVCrewWeight(float w);
+    void sendXCVEmptyWeight(float w);
+    void sendXCVWaterWeight(float v);
+    void sendXCVVersion(int v);
 
     // MagSens transmitter
     bool sendHello();
@@ -104,6 +113,16 @@ public:
     bool firmwarePacket(const char *buf, int len);
     int waitConfirmation();
     
+    // JumboCmd transmitter
+    bool sendJPConnect();
+    bool sendJPGetConfig(const int index);
+    bool sendJPGetInfo();
+    bool sendJPSelectConfig(const int wingconfig); // 0=full, 1=reduced, 2=config
+    bool sendJPStartWipe(const int side); // 0=Right, 1=Left
+    bool sendJPAbortWipe(const int side);
+    bool sendJPShortPress(const int side);
+    bool sendJPHoldPressed(const int side);
+    bool sendJPReleasePressed(const int side);
     
 private:
     const ProtocolType _ptyp; // a protocol id different per instance
@@ -112,7 +131,5 @@ private:
     Key _mkey;
     NmeaMessageParser _parser;
     inline void nmeaIncrCRC(int &crc, const char c) {crc ^= c;}
-    // Todo, there are now many plugins, but only one protocol version
-    uint8_t _protocol_version = 1;
 };
 

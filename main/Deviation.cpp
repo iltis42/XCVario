@@ -17,13 +17,14 @@ Last update: 2021-03-29
 
  **************************************************************************/
 
-#include <cassert>
-#include <cmath>
-#include "esp_log.h"
-#include "esp_system.h"
-#include "sensor.h"
 #include "Deviation.h"
 #include "KalmanMPU6050.h"
+#include "sensor.h"
+#include "logdef.h"
+
+#include <esp_system.h>
+#include <cassert>
+#include <cmath>
 
 SemaphoreHandle_t Deviation::splineMutex = 0;
 

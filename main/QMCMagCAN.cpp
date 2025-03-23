@@ -19,6 +19,7 @@
 #include "Router.h"
 #include "vector.h"
 #include "comm/CanBus.h"
+#include "logdef.h"
 
 #include <cassert>
 #include <cmath>

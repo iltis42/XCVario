@@ -20,9 +20,6 @@
  *
  *  Last update: 2021-04-21
  */
-#include <algorithm>
-#include <cmath>
-#include "esp_system.h"
 #include "Compass.h"
 #include "Flarm.h"
 #include "SetupNG.h"
@@ -35,6 +32,12 @@
 #include "sensor.h"
 #include "KalmanMPU6050.h"
 #include "vector.h"  // D2R, R2D
+#include "logdef.h"
+
+#include <esp_system.h>
+
+#include <algorithm>
+#include <cmath>
 
 
 StraightWind::StraightWind() :

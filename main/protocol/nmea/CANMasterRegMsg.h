@@ -16,7 +16,7 @@ class CANMasterRegMsg  final : public NmeaPlugin, public Clock_I
 public:
     // The master registry takes it's own identity, not knowing what kind of device
     // will request. Registration happens on one single port and a unique query id.
-    explicit CANMasterRegMsg(NmeaPrtcl &nr); //int sendport, ProtocolState &sm, DataLink &dl);
+    explicit CANMasterRegMsg(NmeaPrtcl &nr);
     virtual ~CANMasterRegMsg() = default;
 
     ConstParserMap* getPM() const { return &_pm; }

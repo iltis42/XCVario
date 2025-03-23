@@ -42,12 +42,10 @@
 #include <algorithm>
 #include <cstring>
 #include <string>
-#include "DataLink.h"
-// #include "comm/DataLink.h"
-// #include "comm/Devices.h"
 #include "comm/DeviceMgr.h"
-#include "protocol/JumboCmdHost.h"
+#include "protocol/NMEA.h"
 #include "comm/SerialLine.h"
+#include "coredump_to_server.h"
 
 SetupMenuSelect *audio_range_sm = 0;
 SetupMenuSelect *mpu = 0;
@@ -485,10 +483,9 @@ int crew_weight_adj(SetupMenuValFloat *p) {
 }
 
 int wiper_button(SetupMenuSelect *p) {
-	JumboCmdHost *jumbo = static_cast<JumboCmdHost*>(DEVMAN->getProtocol(
-			DeviceId::JUMBO_DEV, ProtocolType::JUMBOCMD_P));
+	NmeaPrtcl *jumbo = static_cast<NmeaPrtcl*>(DEVMAN->getProtocol(DeviceId::JUMBO_DEV, ProtocolType::JUMBOCMD_P));
 
-	jumbo->sendShortPress(p->getSelect());
+	jumbo->sendJPShortPress(p->getSelect());
 	return 0;
 }
 
@@ -1796,6 +1793,10 @@ void SetupMenu::options_menu_create_wireless(MenuEntry *top) {
 			"Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate",
 			215);
 	cusid->addCreator(options_menu_create_wireless_custom_id);
+
+	SetupMenuSelect *clearcore = new SetupMenuSelect("Clear coredump", RST_NONE, reinterpret_cast<int (*)(SetupMenuSelect*)>(clear_coredump), false, nullptr);
+	clearcore->addEntry("doit");
+	top->addEntry(clearcore);
 }
 
 void SetupMenu::options_menu_create_gload(MenuEntry *top) {

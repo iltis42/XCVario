@@ -6,6 +6,7 @@
 #include "SetupMenuValFloat.h"
 #include "average.h"
 #include "KalmanMPU6050.h"
+#include "logdef.h"
 
 Flap* Flap::_instance = nullptr;
 

@@ -930,7 +930,7 @@ void system_startup(void *args){
 	ESP_LOGI( FNAME,"%dMB %s flash\n", (int)flash_size / (1024 * 1024),
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %.1f hPa", QNH.get() );
-	register_coredump();
+	// register_coredump();
 	Polars::begin();
 
 	the_can_mode = can_mode.get(); // initialize variable for CAN mode

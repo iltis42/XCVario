@@ -9,6 +9,7 @@
 #include "FlarmMsg.h"
 #include "protocol/FlarmBin.h"
 #include "Flarm.h"
+#include "sensor.h"
 
 #include "comm/DeviceMgr.h"
 
@@ -192,11 +193,30 @@ datalink_action_t FlarmMsg::parsePFLAX(NmeaPrtcl *nmea)
 }
 
 
+// The flarm simulator on BT bridge (development only)
+datalink_action_t FlarmMsg::parseExcl_xc(NmeaPrtcl *nmea)
+{
+    // need this to support Wind Simulator with Compass simulation
+
+    ProtocolState *sm = nmea->getSM();
+    const char *s = sm->_frame.c_str();
+    const std::vector<int> *word = &sm->_word_start;
+
+    // ESP_LOGI(FNAME,"Compass heading detected=%3.1f TAS: %3.1f NMEA:%s", heading, TAS, str );
+    if( compass ) {
+        compass->setHeading( atof(s + word->at(0)) );
+    }
+    tas = atof(s + word->at(1));
+
+    return NOACTION;
+}
+
 ConstParserMap FlarmMsg::_pm = {
     { Key("FLAA"), FlarmMsg::parsePFLAA },
     { Key("FLAE"), FlarmMsg::parsePFLAE },
     { Key("FLAU"), FlarmMsg::parsePFLAU },
-    { Key("FLAX"), FlarmMsg::parsePFLAX }
+    { Key("FLAX"), FlarmMsg::parsePFLAX },
+    { Key("xc"), FlarmMsg::parseExcl_xc }
 };
 
 

@@ -252,16 +252,6 @@ void Protocols::parseXS( const char *str ){
 void Protocols::parseNMEA( const char *str ){
 	// ESP_LOGI(FNAME,"parseNMEA: %s, len: %d", str,  strlen(str) );
 
-	if ( strncmp( str, "!xc,", 4 ) == 0 ) { // need this to support Wind Simulator with Compass simulation
-		float heading;
-		float TAS;
-		sscanf( str,"!xc,%f,%f", &heading, &TAS );
-		// ESP_LOGI(FNAME,"Compass heading detected=%3.1f TAS: %3.1f NMEA:%s", heading, TAS, str );
-		if( compass )
-			compass->setHeading( heading );
-		tas = TAS;
-	}
-	else if ( strncmp( str, "!xcs,", 5 ) == 0 ) {
 		if( strncmp( str+5, "crew-weight,", 12 ) == 0 ){
 			ESP_LOGI(FNAME,"Detected crew-weight cmd");
 			int weight;

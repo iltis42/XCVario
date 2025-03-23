@@ -21,5 +21,6 @@ public:
 
 private:
     // Received messages
+    static datalink_action_t parseExcl_g(NmeaPrtcl *nmea);
     static ConstParserMap _pm;
 };

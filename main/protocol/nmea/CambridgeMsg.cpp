@@ -9,18 +9,54 @@
 #include "CambridgeMsg.h"
 #include "protocol/nmea_util.h"
 #include "comm/Messages.h"
-#include "SetupNG.h"
+#include "Blackboard.h"
 #include "Units.h"
 
-#include "logdefnone.h"
+#include "logdef.h"
 
 
 // The Cambridge protocol parser.
 //
-// Supported messages:
 
+datalink_action_t CambridgeMsg::parseExcl_g(NmeaPrtcl *nmea)
+{
+    const char *s = nmea->getSM()->_frame.c_str();
+
+    ESP_LOGI(FNAME,"Cambridge C302 / Borgelt !g: %s", s);
+ 
+    if (s[3] == 'b') {
+        ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
+        // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
+        float liters = (atof(s+4)/10.0) * polar_max_ballast.get();
+        ESP_LOGI(FNAME,"New Ballast in liters/kg: %.1f ", liters);
+        ballast_kg.set( liters );
+    }
+    else if (s[3] == 'm') {
+        ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
+        float mc = atof(s+4);
+        mc = mc*0.1;   // comes in knots*10, unify to knots
+        float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
+        // FIXME -> only SI units internally
+        if( vario_unit.get() == VARIO_UNIT_KNOTS )
+            mc_ms =  std::roundf(Units::knots2ms(mc)*100.f)/100.f; // higher resolution for knots
+        ESP_LOGI(FNAME,"New MC: %1.1f knots, %f m/s", mc, mc_ms );
+        MC.set( mc_ms );  // set mc in m/s
+    }
+    else if (s[3] == 'u') {
+        int mybugs = 100 - atoi(s+4);
+        ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
+        bugs.set( mybugs );
+    }
+    else if (s[3] == 'q') {
+        // nonstandard CAI 302 extension for QNH setting in XCVario in int or float e.g. 1013 or 1020.20
+        ESP_LOGI(FNAME,"New QNH");
+        QNH.set( atof(s+4) );
+    }
+    return NOACTION;
+}
 
 ConstParserMap CambridgeMsg::_pm = {
+    {Key("g"), CambridgeMsg::parseExcl_g}
 };
 
 /*

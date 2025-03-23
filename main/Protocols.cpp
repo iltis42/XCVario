@@ -198,44 +198,9 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 void Protocols::parseNMEA( const char *str ){
 	// ESP_LOGI(FNAME,"parseNMEA: %s, len: %d", str,  strlen(str) );
 
-	else if ( (strncmp( str, "!g,", 3 ) == 0)    ) {
-		ESP_LOGI(FNAME,"parseNMEA, Cambridge C302 style command !g detected: %s",str);
-		if (str[3] == 'b') {  // this may reach master or client with an own navi
-			ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
-			float aballast;
-			sscanf(str, "!g,b%f", &aballast);
-			aballast = aballast * 10; // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
-			ESP_LOGI(FNAME,"New Ballast: %.1f %% of max ", aballast);
-			float liters = (aballast/100.0) * polar_max_ballast.get();
-			ESP_LOGI(FNAME,"New Ballast in liters/kg: %.1f ", liters);
-			ballast_kg.set( liters );
-		}
-		if (str[3] == 'm' ) {
-			ESP_LOGI(FNAME,"parseNMEA, BORGELT, MC modification");
-			float mc;
-			sscanf(str, "!g,m%f", &mc);
-			mc = mc*0.1;   // comes in knots*10, unify to knots
-			float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
-			if( vario_unit.get() == VARIO_UNIT_KNOTS )
-				mc_ms =  std::roundf(Units::knots2ms(mc)*100.f)/100.f; // higher resolution for knots
-			ESP_LOGI(FNAME,"New MC: %1.1f knots, %f m/s", mc, mc_ms );
-			MC.set( mc_ms );  // set mc in m/s
-		}
-		if (str[3] == 'u') {
-			int mybugs;
-			sscanf(str, "!g,u%d", &mybugs);
-			mybugs = 100-mybugs;
-			ESP_LOGI(FNAME,"New Bugs: %d %%", mybugs);
-			bugs.set( mybugs );
-		}
-		if (str[3] == 'q') {  // nonstandard CAI 302 extension for QNH setting in XCVario in int or float e.g. 1013 or 1020.20
-			float qnh;
-			sscanf(str, "!g,q%f", &qnh);
-			ESP_LOGI(FNAME,"New QNH: %.2f", qnh);
-			QNH.set( qnh );
-		}
-	}
-	else if( strncmp( str, "$g,", 3 ) == 0 ) {
+
+
+	if( strncmp( str, "$g,", 3 ) == 0 ) {
 		ESP_LOGI(FNAME,"Remote cmd %s", str );
 		if (str[3] == 's') {  // nonstandard CAI 302 extension for S2F mode switch, e.g. for XCNav remote stick
 			ESP_LOGI(FNAME,"Detected S2F cmd");

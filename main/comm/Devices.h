@@ -21,6 +21,7 @@ typedef enum
     FLARM_DEV,
     NAVI_DEV,
     MAGSENS_DEV,
+    RADIO_KRT2_DEV,
     TEST_DEV,
     TEST_DEV2
 } DeviceId;

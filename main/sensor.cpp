@@ -1439,8 +1439,8 @@ void system_startup(void *args){
 		DeviceManager* dm = DeviceManager::Instance();
 		dm->addDevice(FLARM_DEV, FLARM_P, 0, 0, S1_RS232);
 		dm->addDevice(FLARM_DEV, FLARMBIN_P, 0, 0, NO_PHY);
-		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
-		// dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, S2_RS232);
+		S2 = new SerialLine((uart_port_t)2,GPIO_NUM_18,GPIO_NUM_4);
+		dm->addDevice(RADIO_KRT2_DEV, KRT2_REMOTE_P, 0, 0, S2_RS232);
 		// dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
 		// dm->addDevice(TEST_DEV, TEST_P, 0, 0, S2_RS232);
 		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
@@ -1481,6 +1481,7 @@ void system_startup(void *args){
 		dm->addDevice(NAVI_DEV, XCVARIO_P, 8880, 8880, WIFI);
 		dm->addDevice(NAVI_DEV, FLARMHOST_P, 8881, 8881, WIFI);
 		dm->addDevice(NAVI_DEV, FLARMBIN_P, 8881, 8881, NO_PHY);
+		dm->addDevice(NAVI_DEV, KRT2_REMOTE_P, 8882, 8882, WIFI);
 	}
 
 	if( compass_enable.get() == CS_CAN ){

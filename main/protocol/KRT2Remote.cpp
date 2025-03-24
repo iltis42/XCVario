@@ -75,11 +75,6 @@ KRT2Remote::KRT2Remote(DeviceId did, int mp, ProtocolState &sm, DataLink &dl)
 	ESP_LOGI(FNAME, "KRT2Remote Protocol @DeviceId: %d", did );
 }
 
-KRT2Remote::~KRT2Remote()
-{
-
-}
-
 datalink_action_t KRT2Remote::nextByte(const char c)
 {
 	int pos = _sm._frame.size() - 1; // c already in the buffer

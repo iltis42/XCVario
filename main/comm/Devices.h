@@ -44,7 +44,7 @@ typedef enum
     BORGELT_P,
     CAMBRIDGE_P,
     NMEA_P,
-	KRT2_REMOTE_P,
+    KRT2_REMOTE_P,
     TEST_P
 } ProtocolType;
 

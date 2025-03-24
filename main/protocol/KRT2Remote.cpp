@@ -68,10 +68,10 @@ typedef enum  {
 } gen_state_t;
 */
 
-KRT2Remote::KRT2Remote(DeviceId did, int mp, ProtocolState &sm, DataLink &dl)
-    : ProtocolItf(did, mp, sm, dl)
+KRT2Remote::KRT2Remote(int mp, ProtocolState &sm, DataLink &dl)
+    : ProtocolItf(RADIO_KRT2_DEV, mp, sm, dl)
 {
-    ESP_LOGI(FNAME, "KRT2Remote Protocol @DeviceId: %d", did);
+    ESP_LOGI(FNAME, "KRT2Remote Protocol @DeviceId %d", RADIO_KRT2_DEV);
 }
 
 datalink_action_t KRT2Remote::nextByte(const char c)

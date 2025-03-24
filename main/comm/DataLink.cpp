@@ -20,6 +20,7 @@
 #include "protocol/nmea/CambridgeMsg.h"
 #include "protocol/nmea/MagSensMsg.h"
 #include "protocol/FlarmBin.h"
+#include "protocol/KRT2Remote.h"
 #include "protocol/MagSensBin.h"
 #include "protocol/TestQuery.h"
 #include "Messages.h"
@@ -151,6 +152,10 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         tmp = nmea;
         break;
     }
+    case KRT2_REMOTE_P:
+        ESP_LOGI(FNAME, "New KRT2 Remote");
+        tmp = new KRT2Remote(sendport, _sm, *this);
+        break;
     case TEST_P:
         ESP_LOGI(FNAME, "New Test Proto");
         // tmp = new TestQuery(did, sendport, _sm, *this); todo, test proto does not fit into scheme any more

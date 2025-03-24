@@ -16,7 +16,7 @@
 class KRT2Remote final : public ProtocolItf
 {
 public:
-    explicit KRT2Remote(DeviceId did, int mp, ProtocolState &sm, DataLink &dl);
+    explicit KRT2Remote(int mp, ProtocolState &sm, DataLink &dl);
     virtual ~KRT2Remote() = default;
     ProtocolType getProtocolId() override { return KRT2_REMOTE_P; }
     bool isBinary() const override { return true; }

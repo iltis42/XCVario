@@ -52,9 +52,10 @@ const uint8_t KRT2_SET_ACTFREQ = 0x55;
 
 // state machine definition
 
+/*
 typedef enum  {
 	GET_KRT2_FRAME,
-	GET_KRT2_CMD,
+	GET_KRT2_COMMAND,
 	GET_KRT2_MHZ,
 	GET_KRT2_KHZ,
 	GET_KRT2_NAME,
@@ -66,6 +67,7 @@ typedef enum  {
 	GET_KRT2_SINGLE_DATABYTE,
 	GET_KRT2_CHECKSUM
 } gen_state_t;
+*/
 
 KRT2Remote::KRT2Remote(DeviceId did, int mp, ProtocolState &sm, DataLink &dl)
 : ProtocolItf(did, mp, sm, dl)
@@ -87,10 +89,10 @@ datalink_action_t KRT2Remote::nextByte(const char c)
 		case GET_KRT2_FRAME:
 			if( c == KRT2_STX_START ){
 				ESP_LOGI(FNAME, "STX Start at %d", pos );
-				_sm._state = KRT2_STX_START;
+				_sm._state = GET_KRT2_COMMAND;
 			}
 		break;
-		case KRT2_STX_START:
+		case GET_KRT2_COMMAND:
 			switch(c){
 				// Single byte commands
 				case KRT2_EXCHG_ACTSTBY: // commands, single byte
@@ -130,7 +132,7 @@ datalink_action_t KRT2Remote::nextByte(const char c)
 				case KRT2_SET_STBYFREQ:
 				case KRT2_SET_ACTFREQ:
 					data_len = 8;
-					_sm._state = GET_KRT2_DATA;
+					_sm._state = GET_KRT2_NAME;
 				break;
 				default:
 				break;
@@ -140,7 +142,7 @@ datalink_action_t KRT2Remote::nextByte(const char c)
 			// State handlers
 			case GET_KRT2_SINGLE_DATABYTE:
 				_sm._state = GET_KRT2_FRAME;
-				ret = (COMPLETE_BIT | FORWARD_BIT);
+				ret = datalink_action_t(COMPLETE_BIT | FORWARD_BIT);
 				break;
 			case GET_KRT2_VOL:
 				_sm._state = GET_KRT2_SQL;
@@ -156,7 +158,7 @@ datalink_action_t KRT2Remote::nextByte(const char c)
 			case GET_KRT2_VOL_CS:
 				if( c == (mhz+khz) ){
 					_sm._state = GET_KRT2_FRAME;
-					ret = (COMPLETE_BIT | FORWARD_BIT);
+					ret = datalink_action_t(COMPLETE_BIT | FORWARD_BIT);
 				}
 				break;
 
@@ -168,18 +170,18 @@ datalink_action_t KRT2Remote::nextByte(const char c)
 			case GET_KRT2_KHZ:
 				khz = c;
 				cs = mhz^khz;  // CS is XOR of mhz and khz according to spec
-				_sm._state = GET_KRT2_DATA;
+				_sm._state = GET_KRT2_NAME;
 				break;
 
 			case GET_KRT2_NAME:
-				expected_len--;
-				if( !expected_len ){
+				data_len--;
+				if( !data_len ){
 					_sm._state = GET_KRT2_CHECKSUM;
 				}
 				break;
 			case GET_KRT2_CHECKSUM:
 				if( cs == c )
-					ret = (COMPLETE_BIT | FORWARD_BIT);
+					ret = datalink_action_t(COMPLETE_BIT | FORWARD_BIT);
 				else
 					ret = NOACTION;
 				break;

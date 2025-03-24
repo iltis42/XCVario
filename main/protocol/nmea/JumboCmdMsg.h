@@ -19,11 +19,11 @@ public:
 public:
     JumboCmdMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, JUMBOCMD_P) {};
     virtual ~JumboCmdMsg() = default;
-    ConstParserMap* getPM() const { return &_pm; }
+    const ParserEntry* getPT() const override { return _pt; }
 
 private:
     // Received messages
-    static ConstParserMap _pm;
+    static const ParserEntry _pt[];
 
     // Received jumbo messages
     static datalink_action_t connected(NmeaPrtcl *nmea);

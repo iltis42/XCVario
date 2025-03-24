@@ -15,7 +15,7 @@ class FlarmMsg final : public NmeaPlugin
 public:
     FlarmMsg(NmeaPrtcl &nr);
     virtual ~FlarmMsg() = default;
-    ConstParserMap* getPM() const { return &_pm; }
+    const ParserEntry* getPT() const override { return _pt; }
 
 private:
     // Received messages
@@ -25,5 +25,5 @@ private:
     static datalink_action_t parsePFLAX(NmeaPrtcl *nmea);
     static datalink_action_t parseExcl_xc(NmeaPrtcl *nmea);
     
-    static ConstParserMap _pm;
+    static const ParserEntry _pt[];
 };

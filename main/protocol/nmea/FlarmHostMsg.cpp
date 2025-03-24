@@ -31,6 +31,7 @@ datalink_action_t FlarmHostMsg::parsePFLAX(NmeaPrtcl *nmea)
     return DO_ROUTING;
 }
 
-ConstParserMap FlarmHostMsg::_pm = {
-    { Key("FLAX"), FlarmHostMsg::parsePFLAX }
+const ParserEntry FlarmHostMsg::_pt[] = {
+    { Key("FLAX"), FlarmHostMsg::parsePFLAX },
+    {}
 };

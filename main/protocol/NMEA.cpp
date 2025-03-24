@@ -29,7 +29,9 @@ void NmeaPrtcl::addPlugin(NmeaPlugin *pm)
     ESP_LOGI(FNAME, "Add plugin %d", pm->getPtyp());
     _plugs.push_back(pm); // multiples are allowed
     // copy the parser table
-    for (const auto& [key, value] : *pm->getPM()) {
+    for (const ParserEntry* entry = pm->getPT(); entry->second != nullptr; ++entry) {
+        Key key = entry->first;
+        NmeaMessageParser value = entry->second;
         if ( _parsmap.find(key) == _parsmap.end() ) { // do not overwrite entries
             _parsmap[key] = value;
             ESP_LOGI(FNAME, "copy parser for %s", key.toString().c_str());

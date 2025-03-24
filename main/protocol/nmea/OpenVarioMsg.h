@@ -15,11 +15,11 @@ class OpenVarioMsg final : public NmeaPlugin
 public:
     OpenVarioMsg(NmeaPrtcl &nr, ProtocolType p) : NmeaPlugin(nr, p) {};
     virtual ~OpenVarioMsg() = default;
-    ConstParserMap* getPM() const { return &_pm; }
+    const ParserEntry* getPT() const override { return _pt; }
 
     // Declare send routines in NmeaPrtcl class !
 
 private:
     // Received messages
-    static ConstParserMap _pm;
+    static const ParserEntry _pt[];
 };

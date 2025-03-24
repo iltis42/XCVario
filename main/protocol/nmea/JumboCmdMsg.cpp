@@ -152,12 +152,13 @@ datalink_action_t JumboCmdMsg::event(NmeaPrtcl *nmea)
 }
 
 // NMEA plugin table
-ConstParserMap JumboCmdMsg::_pm = {
+const ParserEntry JumboCmdMsg::_pt[] = {
     { Key("JPRP"), JumboCmdMsg::connected },
     { Key("JPRC"), JumboCmdMsg::config },
     { Key("JPRI"), JumboCmdMsg::info },
     { Key("JPJA"), JumboCmdMsg::alive },
-    { Key("JPJE"), JumboCmdMsg::event }
+    { Key("JPJE"), JumboCmdMsg::event },
+    {}
 };
 
 //

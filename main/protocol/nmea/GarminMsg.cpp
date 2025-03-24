@@ -42,8 +42,9 @@ datalink_action_t GarminMsg::parsePGRMZ(NmeaPrtcl *nmea)
 
 
 
-ConstParserMap GarminMsg::_pm = {
-    { Key("GRMZ"), GarminMsg::parsePGRMZ }
+const ParserEntry GarminMsg::_pt[] = {
+    { Key("GRMZ"), GarminMsg::parsePGRMZ },
+    {}
 };
 
 

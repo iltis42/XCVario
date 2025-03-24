@@ -69,7 +69,6 @@ public:
     virtual datalink_action_t nextStreamChunk(const char *cptr, int count) { return NOACTION; } // for binary protocols
     inline Message* newMessage() const { return DEV::acqMessage(_did, _send_port); }
     void setDefaultAction(datalink_action_t da) { _default_action = da; }
-    // gen_state_t getState() const { return _state; }
     virtual bool isBinary() const { return false; }
     int getSendPort() const { return _send_port; }
     DataLink* getDL() const { return &_dl; }

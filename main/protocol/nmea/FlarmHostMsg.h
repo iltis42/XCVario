@@ -15,10 +15,10 @@ class FlarmHostMsg final : public NmeaPlugin
 public:
     FlarmHostMsg(NmeaPrtcl &nr);
     virtual ~FlarmHostMsg() = default;
-    ConstParserMap* getPM() const { return &_pm; }
+    const ParserEntry* getPT() const override { return _pt; }
 
 public:
     // Received messages
     static datalink_action_t parsePFLAX(NmeaPrtcl *nmea);
-    static ConstParserMap _pm;
+    static const ParserEntry _pt[];
 };

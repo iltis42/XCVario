@@ -16,19 +16,17 @@
 class KRT2Remote final : public ProtocolItf
 {
 public:
-    explicit KRT2Remote(DeviceId did, int mp, ProtocolState &sm, DataLink &dl);
-    virtual ~KRT2Remote();
-
+    explicit KRT2Remote(int mp, ProtocolState &sm, DataLink &dl);
+    virtual ~KRT2Remote() = default;
     ProtocolType getProtocolId() override { return KRT2_REMOTE_P; }
+    bool isBinary() const override { return true; }
 
 public:
     datalink_action_t nextByte(const char c) override;
 
 
-
 private:
     // Actions on commands
-    int data_len;
     uint8_t cs;
     uint8_t mhz;
     uint8_t khz;

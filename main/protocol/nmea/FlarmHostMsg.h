@@ -19,6 +19,6 @@ public:
 
 public:
     // Received messages
-    static datalink_action_t parsePFLAX(NmeaPrtcl *nmea);
+    static dl_action_t parsePFLAX(NmeaPrtcl *nmea);
     static const ParserEntry _pt[];
 };

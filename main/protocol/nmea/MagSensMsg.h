@@ -27,6 +27,6 @@ private:
     static const ParserEntry _pt[];
     
     // The receiver
-    static datalink_action_t magsensVersion(NmeaPrtcl *nmea);
-    static datalink_action_t magsensConfirmation(NmeaPrtcl *nmea);
+    static dl_action_t magsensVersion(NmeaPrtcl *nmea);
+    static dl_action_t magsensConfirmation(NmeaPrtcl *nmea);
 };

@@ -21,7 +21,7 @@
 
 // $PGRMZ,880,F,2*3A
 //
-datalink_action_t GarminMsg::parsePGRMZ(NmeaPrtcl *nmea)
+dl_action_t GarminMsg::parsePGRMZ(NmeaPrtcl *nmea)
 {
     if (alt_select.get() != AS_EXTERNAL) {
         return NOACTION;

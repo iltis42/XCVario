@@ -38,9 +38,9 @@ void FlarmBinary::send_chunk()
 }
 
 
-datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
+dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
 {
-    datalink_action_t last_action = NOACTION;
+    dl_action_t last_action = NOACTION;
 
     // The state machine variable useage here:
     // _esc is used as ESCAPE flag
@@ -132,7 +132,7 @@ datalink_action_t FlarmBinary::nextStreamChunk(const char *cptr, int count)
         }
     }
 
-    return last_action;
+    return dl_control_t(last_action, count);
 }
 
 bool FlarmBinary::setBaudrate(int fnr, int br)

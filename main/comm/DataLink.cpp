@@ -54,9 +54,9 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     ProtocolItf *tmp = nullptr;
 
     // Check if already there
-    if ( _nmea /* && _nmea->hasProtocol(ptyp) */ ) {
+    if ( _nmea && _nmea->hasProtocol(ptyp) ) {
         tmp = _nmea;
-    } else if (_binary && _binary->getProtocolId() == ptyp) {
+    } else if (_binary && _binary->hasProtocol(ptyp)) {
         tmp = _binary;
     }
     if ( tmp ) {
@@ -178,10 +178,10 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
 
         if ( tmp->isBinary() ) {
             _binary = tmp;
-            if ( !_nmea ) { _bin_mode = true; }
+            if ( !_nmea ) { _active = tmp; }
         } else {
-            _nmea = static_cast<NmeaPrtcl*>(tmp);
-            _bin_mode = false;
+            _nmea = tmp;
+            _active = tmp;
         }
     }
 
@@ -223,12 +223,12 @@ void DataLink::deleteProtocol(ProtocolItf *proto)
     if ( _nmea == proto ) {
         delete(_nmea);
         _nmea = nullptr;
-        _bin_mode = true;
+        _active = _binary;
     }
     else if ( _binary == proto ) {
         delete(_binary);
         _binary = nullptr;
-        _bin_mode = false;
+        _active = _nmea;
     }
 }
 
@@ -237,11 +237,9 @@ void DataLink::process(const char *packet, int len)
     // Feed the data monitor
     DM.monitorString(_itf_id, DIR_RX, packet, len);
 
-    if ( !_nmea && !_binary ) {
+    if ( !_active ) {
         return;
     }
-
-    datalink_action_t action = NOACTION;
 
     if (packet == nullptr)
     {
@@ -252,50 +250,54 @@ void DataLink::process(const char *packet, int len)
         return;
     }
     
-    if ( _bin_mode && _binary ) {
-        ESP_LOGD(FNAME, "%d procB %dchar: %c", _itf_id.iid, len, *packet);
-        if ( _binary->nextStreamChunk(packet, len) == GO_NMEA ) {
-            goNMEA();
-        }
-    }
-    else if ( _nmea )
-    {
-        ESP_LOGI(FNAME, "if( _nmea): %d procN %dchar: %s", _itf_id.iid, len, packet);
-        // process every frame byte through state machine
-        for (int i = 0; i < len; i++) {
-            if ( _sm.push(packet[i]) ) {
-            	ESP_LOGI(FNAME, "_nmea->nextByte( %c ) ", packet[i] );
-                action = _nmea->nextByte(packet[i]);
-                if ( action )
-                {
-                    if ( action & FORWARD_BIT ) {
-                        forwardMsg(_nmea->getDeviceId());
-                    }
-                    if ( action == NXT_PROTO ) {
-                        _sm.reset();
-                        break; // end loop imidiately
-                    }
-                }
-                ESP_LOGD(FNAME, "crc := %d", _sm._crc);
-            } else {
-                _sm.reset();
+    ESP_LOGD(FNAME, "%d proc %dchar: %c", _itf_id.iid, len, *packet);
+    // process every frame byte through state machine
+    for (; len > 0; ) {
+        dl_control_t control = dl_control_t(NOACTION);
+        if ( _sm.push(*packet) ) // only push one byte, beyond that it is protocol resposibility
+        {
+            control = _active->nextBytes(packet, len);
+            if ( control.act & FORWARD_BIT ) {
+                forwardMsg(_active->getDeviceId());
             }
+            if ( control.act == NXT_PROTO ) {
+                switchProtocol();
+                _sm.reset();
+                break; // end loop imidiately
+            }
+        } else {
+            _sm.reset();
         }
+        len -= control.pcount;
+        packet += control.pcount;
     }
 }
 
 ProtocolItf* DataLink::goBIN()
 {
     if ( _binary ) {
-        _bin_mode = true;
+        _active = _binary;
     }
+    _sm.reset();
     return _binary;
 }
 
 void DataLink::goNMEA()
 {
-    _bin_mode = false;
+    if ( _nmea ) {
+        _active = _nmea;
+    }
     _sm.reset();
+}
+
+void DataLink::switchProtocol()
+{
+    if ( _active == _nmea ) {
+        goBIN();
+    }
+    else {
+        goNMEA();
+    }
 }
 
 ProtocolItf* DataLink::getBinary() const
@@ -332,10 +334,15 @@ void DataLink::dumpProto()
 void DataLink::forwardMsg(DeviceId src_dev)
 {
     // consider forwarding
+    // std::string log("route ");
+    // log += std::to_string(src_dev) + "/" + std::to_string(_itf_id.port) + " to ";
     for ( auto &target : _routes ) {
         Message* msg = DEV::acqMessage(target.did, target.getItfTarget().port);
-        ESP_LOGD(FNAME, "route %d/%d to %d/%d", src_dev, _itf_id.port, msg->target_id, target.getItfTarget().port);
+        // log += std::to_string(target.did) + "/" + std::to_string(target.getItfTarget().port) + ", ";
         msg->buffer = _sm._frame;
         DEV::Send(msg);
     }
+    // if ( _routes.size() > 0 ) {
+    //     ESP_LOGI(FNAME, "%s", log.c_str());
+    // }
 }

@@ -17,9 +17,9 @@ class FlarmBinary final : public ProtocolItf
 public:
     FlarmBinary(DeviceId did, int mp, ProtocolState &sm, DataLink &dl) : ProtocolItf(did, mp, sm, dl) {}
     virtual ~FlarmBinary() = default;
-    ProtocolType getProtocolId() override { return FLARMBIN_P; }
+    ProtocolType getProtocolId() const override { return FLARMBIN_P; }
     bool isBinary() const override { return true; }
-    datalink_action_t nextStreamChunk(const char *cptr, int count) override;
+    dl_control_t nextBytes(const char *cptr, int count) override;
     void setPeer(FlarmBinary *p);
     int getFrameCnt() { return _frame_counter++; }
     

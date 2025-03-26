@@ -9,7 +9,7 @@
 #include "NMEA.h"
 
 #include "nmea_util.h"
-#include "logdefnone.h"
+#include "logdef.h"
 
 
 // A generic and extendable NMEA message parser.
@@ -49,13 +49,13 @@ bool NmeaPrtcl::hasProtocol(ProtocolType p)
     return false;
 }
 
-datalink_action_t NmeaPrtcl::nextByte(const char c)
+dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
 {
     int pos = _sm._frame.size() - 1; // c already in the buffer
-    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
+    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, *c);
     switch(_sm._state) {
     case START_TOKEN:
-        if (c == '$' || c == '!') {
+        if (*c == '$' || *c == '!') {
             _sm._state = HEADER;
             _sm._word_start.clear();
             _mkey.value = 0;
@@ -64,8 +64,8 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
         }
         break;
     case HEADER:
-        nmeaIncrCRC(_sm._crc,c);
-        if ( _mkey.shiftIn(c) ) {
+        nmeaIncrCRC(_sm._crc, *c);
+        if ( _mkey.shiftIn(*c) ) {
             auto it = _parsmap.find(_mkey);
             if ( it != _parsmap.end() ) {
                 _parser = it->second;
@@ -81,30 +81,30 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
         }
         break;
     case PAYLOAD:
-        if ( c == ',' ) {
+        if ( *c == ',' ) {
             _sm._word_start.push_back(pos+1); // another word start
         }
         else {
-            if ( c == '*' ) {
+            if ( *c == '*' ) {
                 _sm._word_start.push_back(pos+1);
                 _sm._state = CHECK_CRC1; // Expecting a CRC to check
                 break;
             }
-            if ( c == '\r' || c == '\n' ) {
+            if ( *c == '\r' || *c == '\n' ) {
                 _sm._state = COMPLETE;
                 break;
             }
         }
         ESP_LOGD(FNAME, "Msg PAYLOAD");
-        nmeaIncrCRC(_sm._crc,c);
+        nmeaIncrCRC(_sm._crc, *c);
         break;
     case CHECK_CRC1:
-        _crc_buf[0] = c;
+        _crc_buf[0] = *c;
         _sm._state = CHECK_CRC2;
         break;
     case CHECK_CRC2:
     {
-        _crc_buf[1] = c;
+        _crc_buf[1] = *c;
         _crc_buf[2] = '\0';
         char read_crc = (char)strtol(_crc_buf, NULL, 16);
         ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
@@ -119,18 +119,18 @@ datalink_action_t NmeaPrtcl::nextByte(const char c)
         break;
     }
 
-    datalink_action_t action = NOACTION;
+    dl_action_t action = NOACTION;
     if ( _sm._state == COMPLETE )
     {
         NMEA::ensureTermination(_sm._frame);
         _sm._state = START_TOKEN; // restart parsing
-        ESP_LOGD(FNAME, "Msg complete %s", _mkey.toString().c_str());
+        ESP_LOGI(FNAME, "Msg complete %s", _mkey.toString().c_str());
         action = _default_action;
         if ( _parser ) {
             action = (_parser)(this);
         }
     }
-    return action;
+    return dl_control_t(action);
 }
 
 

@@ -9,6 +9,7 @@
 #pragma once
 
 #include "comm/Devices.h"
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -47,7 +48,18 @@ typedef enum
     NOROUTING = COMPLETE_BIT,
     NXT_PROTO = COMPLETE_BIT | FORWARD_BIT | 1,
     GO_NMEA = COMPLETE_BIT | FORWARD_BIT | 2
-} datalink_action_t;
+} dl_action_t;
+
+union dl_control_t {
+    struct {
+        int      pcount : 24;
+        dl_action_t act : 8;
+    };
+    uint32_t raw;
+    // Convenience
+    constexpr dl_control_t(dl_action_t act, int pc=1)
+        : raw(static_cast<uint32_t>(act << 24) | (pc & 0xffffff)) {}
+};
 
 class ProtocolState;
 class DataLink;
@@ -64,11 +76,11 @@ public:
 public:
     // API
     DeviceId getDeviceId() { return _did; } // The connected (!) device through protocol
-    virtual ProtocolType getProtocolId() { return NO_ONE; }
-    virtual datalink_action_t nextByte(const char c) { return NOACTION; } // return action for data link
-    virtual datalink_action_t nextStreamChunk(const char *cptr, int count) { return NOACTION; } // for binary protocols
+    virtual ProtocolType getProtocolId() const { return NO_ONE; }
+    virtual bool hasProtocol(ProtocolType pid) const { return getProtocolId() == pid; }
+    virtual dl_control_t nextBytes(const char *cptr, int count) { return dl_control_t(NOACTION); } // control the datalink stream loop with the return value
     inline Message* newMessage() const { return DEV::acqMessage(_did, _send_port); }
-    void setDefaultAction(datalink_action_t da) { _default_action = da; }
+    void setDefaultAction(dl_action_t da) { _default_action = da; }
     virtual bool isBinary() const { return false; }
     int getSendPort() const { return _send_port; }
     DataLink* getDL() const { return &_dl; }
@@ -78,7 +90,7 @@ protected:
     // routing
     const DeviceId _did;
     const int _send_port;
-    datalink_action_t _default_action = NOACTION; // no forwarding by default
+    dl_action_t _default_action = NOACTION; // no forwarding by default
 
     // state machine
     ProtocolState &_sm;

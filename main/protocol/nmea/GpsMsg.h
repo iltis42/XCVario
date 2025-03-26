@@ -19,8 +19,8 @@ public:
 
 private:
     // Received messages
-    static datalink_action_t parseGPRMC(NmeaPrtcl *nmea);
-    static datalink_action_t parseGPGGA(NmeaPrtcl *nmea);
+    static dl_action_t parseGPRMC(NmeaPrtcl *nmea);
+    static dl_action_t parseGPGGA(NmeaPrtcl *nmea);
 
     static const ParserEntry _pt[];
 };

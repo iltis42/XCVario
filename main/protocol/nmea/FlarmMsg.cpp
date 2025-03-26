@@ -33,7 +33,7 @@ FlarmMsg::FlarmMsg(NmeaPrtcl &nr) :
 // PFLAA,<AlarmLevel>,<RelativeNorth>,<RelativeEast>,<RelativeVertical>,<IDType>,<ID>,<Track>,<TurnRate>,<GroundSpeed>,<ClimbRate>,<AcftType>
 // e.g.
 // $PFLAA,0,-1234,1234,220,2,DD8F12,180,,30,-1.4,1*
-datalink_action_t FlarmMsg::parsePFLAA(NmeaPrtcl *nmea)
+dl_action_t FlarmMsg::parsePFLAA(NmeaPrtcl *nmea)
 {
     ESP_LOGD(FNAME, "parsePFLAA");
     return DO_ROUTING;
@@ -95,7 +95,7 @@ datalink_action_t FlarmMsg::parsePFLAA(NmeaPrtcl *nmea)
 // <Message> Field is omitted if data port version <7 or if DEVTYPE = Flarm04.
 //         String. Maximum 40 ASCII characters. Textual description of the error in English. The field may be empty.
 
-datalink_action_t FlarmMsg::parsePFLAE(NmeaPrtcl *nmea)
+dl_action_t FlarmMsg::parsePFLAE(NmeaPrtcl *nmea)
 {
     ESP_LOGD(FNAME, "parsePFLAE");
     ProtocolState *sm = nmea->getSM();
@@ -135,7 +135,7 @@ datalink_action_t FlarmMsg::parsePFLAE(NmeaPrtcl *nmea)
 // E = unknown
 // F = static object
 //
-datalink_action_t FlarmMsg::parsePFLAU(NmeaPrtcl *nmea)
+dl_action_t FlarmMsg::parsePFLAU(NmeaPrtcl *nmea)
 {
     ESP_LOGD(FNAME,"parsePFLAU");
     ProtocolState *sm = nmea->getSM();
@@ -166,7 +166,7 @@ datalink_action_t FlarmMsg::parsePFLAU(NmeaPrtcl *nmea)
 // Note, if the Flarm switch to binary mode was accepted, Flarm will answer
 // with $PFLAX,A*2E. In error case you will get as answer $PFLAX,A,<error>*
 // and the Flarm stays in text mode.
-datalink_action_t FlarmMsg::parsePFLAX(NmeaPrtcl *nmea)
+dl_action_t FlarmMsg::parsePFLAX(NmeaPrtcl *nmea)
 {
     ESP_LOGI(FNAME,"parsePFLAX A ----------------> switch to binary");
     ProtocolState *sm = nmea->getSM();
@@ -194,7 +194,7 @@ datalink_action_t FlarmMsg::parsePFLAX(NmeaPrtcl *nmea)
 
 
 // The flarm simulator on BT bridge (development only)
-datalink_action_t FlarmMsg::parseExcl_xc(NmeaPrtcl *nmea)
+dl_action_t FlarmMsg::parseExcl_xc(NmeaPrtcl *nmea)
 {
     // need this to support Wind Simulator with Compass simulation
 

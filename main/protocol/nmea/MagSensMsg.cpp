@@ -37,7 +37,7 @@ static int Conf_Pack_Nr = 0;
 //   response: $PMSC, <enum>\r\n
 
 
-datalink_action_t MagSensMsg::magsensVersion(NmeaPrtcl *nmea)
+dl_action_t MagSensMsg::magsensVersion(NmeaPrtcl *nmea)
 {
     //$PMSV, <release_number>, <build_dateandtime>\r\n
     ESP_LOGI(FNAME,"PMS version");
@@ -51,7 +51,7 @@ datalink_action_t MagSensMsg::magsensVersion(NmeaPrtcl *nmea)
     return NOACTION;
 }
 
-datalink_action_t MagSensMsg::magsensConfirmation(NmeaPrtcl *nmea)
+dl_action_t MagSensMsg::magsensConfirmation(NmeaPrtcl *nmea)
 {
     // $PMSC, <enum>\r\n
     ProtocolState *sm = nmea->getSM();

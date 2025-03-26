@@ -26,9 +26,9 @@ private:
     static const ParserEntry _pt[];
 
     // Received jumbo messages
-    static datalink_action_t connected(NmeaPrtcl *nmea);
-    static datalink_action_t config(NmeaPrtcl *nmea);
-    static datalink_action_t info(NmeaPrtcl *nmea);
-    static datalink_action_t alive(NmeaPrtcl *nmea);
-    static datalink_action_t event(NmeaPrtcl *nmea);
+    static dl_action_t connected(NmeaPrtcl *nmea);
+    static dl_action_t config(NmeaPrtcl *nmea);
+    static dl_action_t info(NmeaPrtcl *nmea);
+    static dl_action_t alive(NmeaPrtcl *nmea);
+    static dl_action_t event(NmeaPrtcl *nmea);
 };

@@ -18,9 +18,9 @@ public:
     MagSensBinary(int mp, ProtocolState &sm, DataLink &dl);
     virtual ~MagSensBinary() = default;
     
-    ProtocolType getProtocolId() override { return MAGSENSBIN_P; }
+    ProtocolType getProtocolId() const override { return MAGSENSBIN_P; }
     bool isBinary() const override { return true; }
-    datalink_action_t nextStreamChunk(const char *cptr, int count) override;
+    dl_control_t nextBytes(const char *cptr, int count) override;
 
     bool connected() const { return _connected > 0; }
     bool isActive() const;

@@ -19,10 +19,10 @@ public:
     explicit TestQuery(DeviceId did, int mp, ProtocolState &sm, DataLink &dl);
     virtual ~TestQuery();
 
-    ProtocolType getProtocolId() override { return TEST_P; }
+    ProtocolType getProtocolId() const override { return TEST_P; }
 
 public:
-    datalink_action_t nextByte(const char c) override;
+    dl_control_t nextBytes(const char* c, int len) override;
 
     // The only transmitter
     bool sendTestQuery();

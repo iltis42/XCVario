@@ -32,20 +32,20 @@ TestQuery::~TestQuery()
     Clock::stop(this); // deregister time-out
 }
 
-datalink_action_t TestQuery::nextByte(const char c)
+dl_control_t TestQuery::nextBytes(const char* c, int len)
 {
     int pos = _sm._frame.size() - 1; // c already in the buffer
-    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
+    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, *c);
     switch(_sm._state) {
     case START_TOKEN:
-        if ( c == '$' ) {
+        if ( *c == '$' ) {
             _sm._state = HEADER;
             _crc_buf[0] = '\0';
             ESP_LOGD(FNAME, "Msg START_TOKEN");
         }
         break;
     case HEADER:
-        NMEA::incrCRC(_sm._crc,c);
+        NMEA::incrCRC(_sm._crc, *c);
         if ( pos < 4 ) { break; }
         if ( _sm._frame.substr(1,3) != "PJM" ) {
             _sm._state = START_TOKEN;
@@ -55,24 +55,24 @@ datalink_action_t TestQuery::nextByte(const char c)
         ESP_LOGD(FNAME, "Msg HEADER");
         break;
     case PAYLOAD:
-        if ( c == '*' ) {
+        if ( *c == '*' ) {
             _sm._state = CHECK_CRC1; // Expecting a CRC to check
             break;
         }
-        if ( c != '\r' && c != '\n' ) {
+        if ( *c != '\r' && *c != '\n' ) {
             ESP_LOGD(FNAME, "Msg PAYLOAD");
-            NMEA::incrCRC(_sm._crc,c);
+            NMEA::incrCRC(_sm._crc, *c);
             break;
         }
         _sm._state = COMPLETE;
         break;
     case CHECK_CRC1:
-        _crc_buf[0] = c;
+        _crc_buf[0] = *c;
         _sm._state = CHECK_CRC2;
         break;
     case CHECK_CRC2:
     {
-        _crc_buf[1] = c;
+        _crc_buf[1] = *c;
         _crc_buf[2] = '\0';
         char read_crc = (char)strtol(_crc_buf, NULL, 16);
         ESP_LOGD(FNAME, "Msg CRC %s/%x - %x", _crc_buf, read_crc, _sm._crc);
@@ -91,7 +91,7 @@ datalink_action_t TestQuery::nextByte(const char c)
     default:
         break;
     }
-    return NOACTION;
+    return dl_control_t(NOACTION);
 }
 
 void TestQuery::parseTest()

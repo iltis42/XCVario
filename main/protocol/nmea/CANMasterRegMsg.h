@@ -30,6 +30,6 @@ public:
 
 private:
     // Received messages
-    static datalink_action_t registration_query(NmeaPrtcl *nmea);
+    static dl_action_t registration_query(NmeaPrtcl *nmea);
     static const ParserEntry _pt[];
 };

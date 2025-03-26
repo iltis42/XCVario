@@ -43,9 +43,9 @@ NmeaPrtcl *DataLink::enforceNmea(DeviceId did, int sendport, ProtocolType ptyp)
 {
     if ( !_nmea ) {
         // Create an NMEA protocol first
-        return new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+        return static_cast<NmeaPrtcl*> ( new NmeaPrtcl(did, sendport, ptyp, _sm, *this) );
     }
-    return _nmea;
+    return static_cast<NmeaPrtcl*>( _nmea);
 }
 
 // protocol factory
@@ -54,7 +54,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     ProtocolItf *tmp = nullptr;
 
     // Check if already there
-    if ( _nmea && _nmea->hasProtocol(ptyp) ) {
+    if ( _nmea /* && _nmea->hasProtocol(ptyp) */ ) {
         tmp = _nmea;
     } else if (_binary && _binary->getProtocolId() == ptyp) {
         tmp = _binary;
@@ -260,10 +260,11 @@ void DataLink::process(const char *packet, int len)
     }
     else if ( _nmea )
     {
-        ESP_LOGD(FNAME, "%d procN %dchar: %s", _itf_id.iid, len, packet);
+        ESP_LOGI(FNAME, "if( _nmea): %d procN %dchar: %s", _itf_id.iid, len, packet);
         // process every frame byte through state machine
         for (int i = 0; i < len; i++) {
             if ( _sm.push(packet[i]) ) {
+            	ESP_LOGI(FNAME, "_nmea->nextByte( %c ) ", packet[i] );
                 action = _nmea->nextByte(packet[i]);
                 if ( action )
                 {

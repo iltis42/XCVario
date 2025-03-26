@@ -46,7 +46,7 @@ private:
 
 private:
     // ProtocolItf *_active; // the currently used one
-    NmeaPrtcl   *_nmea   = nullptr; // The nmea protocoll shell
+    ProtocolItf   *_nmea   = nullptr; // The nmea protocoll shell
     ProtocolItf *_binary = nullptr; // If set it will be the priority parser
     bool _bin_mode = false;
     ProtocolState _sm; // The message buffer for all protocol parser

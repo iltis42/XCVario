@@ -19,7 +19,7 @@ public:
     explicit KRT2Remote(int mp, ProtocolState &sm, DataLink &dl);
     virtual ~KRT2Remote() = default;
     ProtocolType getProtocolId() override { return KRT2_REMOTE_P; }
-    bool isBinary() const override { return true; }
+    // bool isBinary() const override { return true; }
 
 public:
     datalink_action_t nextByte(const char c) override;

@@ -72,13 +72,14 @@ KRT2Remote::KRT2Remote(int mp, ProtocolState &sm, DataLink &dl)
     : ProtocolItf(RADIO_KRT2_DEV, mp, sm, dl)
 {
     ESP_LOGI(FNAME, "KRT2Remote Protocol @DeviceId %d", RADIO_KRT2_DEV);
+    _sm._state = GET_KRT2_FRAME;
 }
 
 datalink_action_t KRT2Remote::nextByte(const char c)
 {
     int pos = _sm._frame.size() - 1; // c already in the buffer
     datalink_action_t ret = NOACTION;
-    ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
+    // ESP_LOGI(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
     switch (_sm._state)
     {
     case GET_KRT2_FRAME:
@@ -128,8 +129,7 @@ datalink_action_t KRT2Remote::nextByte(const char c)
         // 10 byte commands, 2 bytes frequency, 8 bytes station name
         case KRT2_SET_STBYFREQ:
         case KRT2_SET_ACTFREQ:
-            _sm._frame_len = 8;
-            _sm._state = GET_KRT2_NAME;
+            _sm._state = GET_KRT2_MHZ;
             break;
         default:
             break;
@@ -155,38 +155,45 @@ datalink_action_t KRT2Remote::nextByte(const char c)
     case GET_KRT2_VOL_CS:
         if (c == (mhz + khz))
         {
-            _sm._state = GET_KRT2_FRAME;
             ret = DO_ROUTING;
         }
+        _sm._state = GET_KRT2_FRAME;
         break;
 
     case GET_KRT2_MHZ:
         mhz = c;
+        // ESP_LOGI(FNAME, "KRT2 Mhz:%d", mhz );
         _sm._state = GET_KRT2_KHZ;
         break;
 
     case GET_KRT2_KHZ:
         khz = c;
+        // ESP_LOGI(FNAME, "KRT2 Khz:%d", khz );
         cs = mhz ^ khz; // CS is XOR of mhz and khz according to spec
+        _sm._frame_len = 8;
         _sm._state = GET_KRT2_NAME;
         break;
 
     case GET_KRT2_NAME:
-    _sm._frame_len--;
+    	// ESP_LOGI(FNAME, "KRT2 NAME, len: %d",  _sm._frame_len );
+    	_sm._frame_len--;
         if (_sm._frame_len == 0)
         {
             _sm._state = GET_KRT2_CHECKSUM;
         }
         break;
     case GET_KRT2_CHECKSUM:
+    	ESP_LOGI(FNAME, "KRT2 Checksum RX:%d calc:%d  OKAY:%d", c, cs, cs == c );
         if (cs == c)
         {
             ret = DO_ROUTING;
         }
+        _sm._state = GET_KRT2_FRAME;
         break;
 
     default:
         break;
     }
+    // ESP_LOGI(FNAME,"KRT2 ret:%d", ret );
     return ret;
 }

@@ -38,11 +38,11 @@ static TaskHandle_t SendTask = nullptr;
 //
 // entries with zero termination, entirely as ro flash data, no RAM usage
 static constexpr RoutingTarget flarm_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
-static constexpr RoutingTarget krt2_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
+static constexpr RoutingTarget krt2_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI, 8882}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
 static constexpr RoutingTarget navi_routes[] = { {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {RADIO_KRT2_DEV, S2_RS232, 0}, {FLARM_DEV, CAN_BUS, 20}, {} };
 static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(FLARM_DEV, NO_PHY, 0), flarm_routes },
-    { RoutingTarget(RADIO_KRT2_DEV, NO_PHY, 0), flarm_routes },
+    { RoutingTarget(RADIO_KRT2_DEV, NO_PHY, 0), krt2_routes },
     { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes }
 };
 // Search the flash data table

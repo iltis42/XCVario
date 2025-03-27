@@ -9,7 +9,7 @@
 #include "NMEA.h"
 
 #include "nmea_util.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 
 // A generic and extendable NMEA message parser.

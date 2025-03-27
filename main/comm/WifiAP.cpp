@@ -76,23 +76,23 @@ public:
     // WiFi Task
 	static void socket_server(void *setup)
 	{
+		sock_server_t *config;
 		while (1) {
-			for (int n = 0; n < NUM_TCP_PORTS; n++) {
-				if (WifiAP::_socks[n] == nullptr)
-					continue;
+			int max_fd = 0;
+			fd_set read_fds;
+			FD_ZERO(&read_fds);
 
-				sock_server_t *config = (sock_server_t *)WifiAP::_socks[n];
+			// prepare select condition
+			for (int n = 0; n < NUM_TCP_PORTS; n++) {
+				if (WifiAP::_socks[n] == nullptr) {
+					continue;
+				}
+
+				config = (sock_server_t *)WifiAP::_socks[n];
 				std::list<client_record_t> &clients = config->clients;
 				ESP_LOGI(FNAME, "sock server, port: %d, clients: %d", 8880+n, clients.size() );
-				fd_set read_fds;
-				struct timeval timeout;
-				int max_fd = config->socket;
-
-				FD_ZERO(&read_fds);
+				max_fd = std::max(max_fd, config->socket);
 				FD_SET(config->socket, &read_fds);
-
-				timeout.tv_sec = 0;
-				timeout.tv_usec = 5000 * 1000; // Timeout of 5 s
 
 				for (auto &client_rec : clients) {
 					if (client_rec.client >= 0) {
@@ -100,11 +100,25 @@ public:
 						max_fd = std::max(max_fd, client_rec.client);
 					}
 				}
-				int select_result = select(max_fd + 1, &read_fds, nullptr, nullptr, &timeout);
-				if (select_result < 0) {
-					ESP_LOGE(FNAME, "select error: %d", errno);
+			}
+
+			// block max 5sec to allow controlling of this task, incl. termination
+			struct timeval timeout;
+			timeout.tv_sec = 0;
+			timeout.tv_usec = 5000 * 1000; // Timeout of 5 s
+			int select_result = select(max_fd + 1, &read_fds, nullptr, nullptr, &timeout);
+			if (select_result < 0) {
+				ESP_LOGE(FNAME, "select error: %d", errno);
+				continue;
+			}
+
+			for (int n = 0; n < NUM_TCP_PORTS; n++) {
+				if (WifiAP::_socks[n] == nullptr) {
 					continue;
 				}
+				config = (sock_server_t *)WifiAP::_socks[n];
+				std::list<client_record_t> &clients = config->clients;
+
 				if (FD_ISSET(config->socket, &read_fds)) {
 					ESP_LOGI(FNAME, "FD_ISSET socket: %d num clients %d, port %d", config->socket, clients.size(), config->port );
 					struct sockaddr_in clientAddress;
@@ -154,8 +168,6 @@ public:
 						++it;
 					}
 				}
-				// Router::routeWLAN();  // to be removed later
-				// Router::routeCAN();   // dito
 				if (uxTaskGetStackHighWaterMark(WifiAP::pid) < 128) {
 					ESP_LOGW(FNAME, "Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark(WifiAP::pid), config->port);
 				}

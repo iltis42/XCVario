@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <algorithm>
 
 
 // Assuming that all seen NMEA message id's last 4 chars are different,
@@ -44,7 +45,13 @@ union Key {
     }
 
     std::string toString() const {
-        return std::string(str, 4).c_str();  // Null termination
+        std::string rev;
+        for (int last = 3; last>=0; last--) {
+            if (str[last] != '\0') {
+                rev.push_back(str[last]);
+            }
+        }
+        return rev.c_str(); // Null termination
     }
 
     // comparator for the std::map

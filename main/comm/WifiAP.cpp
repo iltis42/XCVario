@@ -51,6 +51,7 @@ public:
 		serverAddress.sin_family = AF_INET;
 		serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 		serverAddress.sin_port = htons(port);
+
 		int rc  = bind(mysock, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
 		if (rc < 0) {
 			ESP_LOGE(FNAME, "bind: %d %s", rc, strerror(errno));

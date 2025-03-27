@@ -15,7 +15,9 @@
 
 constexpr uint8_t KRT2_STX_START = 0x02;
 
-// Single byte commands:
+// Single byte commands ACK/NACK:
+constexpr uint8_t KRT2_ACK = 0x06;
+constexpr uint8_t KRT2_NACK = 0x15;
 constexpr uint8_t KRT2_SET_SET25 = 0x36;
 constexpr uint8_t KRT2_SET_SET83 = 0x38;
 constexpr uint8_t KRT2_EXCHG_ACTSTBY = 0x43;
@@ -51,22 +53,23 @@ constexpr uint8_t KRT2_SET_ACTFREQ = 0x55;
 
 // state machine definition
 
-/*
+
 typedef enum  {
-    GET_KRT2_FRAME,
-    GET_KRT2_COMMAND,
-    GET_KRT2_MHZ,
-    GET_KRT2_KHZ,
-    GET_KRT2_NAME,
-    GET_KRT2_VOX,
-    GET_KRT2_VOL,
-    GET_KRT2_SQL,
-    GET_KRT2_PTT,
-    GET_KRT2_ICV,
-    GET_KRT2_SINGLE_DATABYTE,
-    GET_KRT2_CHECKSUM
-} gen_state_t;
-*/
+	GET_KRT2_FRAME = 0,
+	GET_KRT2_COMMAND,
+	GET_KRT2_MHZ,
+	GET_KRT2_KHZ,
+	GET_KRT2_NAME,
+	GET_KRT2_VOL_CS,
+	GET_KRT2_VOX,
+	GET_KRT2_VOL,
+	GET_KRT2_SQL,
+	GET_KRT2_PTT,
+	GET_KRT2_ICV,
+	GET_KRT2_SINGLE_DATABYTE,
+	GET_KRT2_CHECKSUM
+} krt2_state_t;
+
 
 KRT2Remote::KRT2Remote(int mp, ProtocolState &sm, DataLink &dl)
     : ProtocolItf(RADIO_KRT2_DEV, mp, sm, dl)
@@ -82,7 +85,7 @@ dl_control_t KRT2Remote::nextBytes(const char* c, int len)
     // ESP_LOGI(FNAME, "state %d, pos %d next char %c", _sm._state, pos, *c);
     switch (_sm._state)
     {
-    case GET_KRT2_FRAME:
+    case START_TOKEN:
         if (*c == KRT2_STX_START)
         {
             ESP_LOGI(FNAME, "STX Start at %d", pos);
@@ -93,6 +96,8 @@ dl_control_t KRT2Remote::nextBytes(const char* c, int len)
         switch (*c)
         {
         // Single byte commands
+        case KRT2_ACK:
+        case KRT2_NACK:
         case KRT2_EXCHG_ACTSTBY: // commands, single byte
         case KRT2_SET_SET83:
         case KRT2_SET_SET25:
@@ -108,7 +113,7 @@ dl_control_t KRT2Remote::nextBytes(const char* c, int len)
         case KRT2_I2C_error:
         case KRT2_ANTSW_error:
         case KRT2_CLEAR_error:
-            _sm._state = GET_KRT2_FRAME;
+            _sm._state = START_TOKEN;
             ret = DO_ROUTING;
             break;
 
@@ -138,7 +143,7 @@ dl_control_t KRT2Remote::nextBytes(const char* c, int len)
 
     // State handlers
     case GET_KRT2_SINGLE_DATABYTE:
-        _sm._state = GET_KRT2_FRAME;
+        _sm._state = START_TOKEN;
         ret = DO_ROUTING;
         break;
     case GET_KRT2_VOL:
@@ -157,7 +162,7 @@ dl_control_t KRT2Remote::nextBytes(const char* c, int len)
         {
             ret = DO_ROUTING;
         }
-        _sm._state = GET_KRT2_FRAME;
+        _sm._state = START_TOKEN;
         break;
 
     case GET_KRT2_MHZ:
@@ -188,7 +193,7 @@ dl_control_t KRT2Remote::nextBytes(const char* c, int len)
         {
             ret = DO_ROUTING;
         }
-        _sm._state = GET_KRT2_FRAME;
+        _sm._state = START_TOKEN;
         break;
 
     default:

@@ -22,20 +22,7 @@ typedef enum
     STOP_TOKEN,
     CHECK_CRC1,
     CHECK_CRC2,
-    COMPLETE,
-	GET_KRT2_FRAME,
-	GET_KRT2_COMMAND,
-	GET_KRT2_MHZ,
-	GET_KRT2_KHZ,
-	GET_KRT2_NAME,
-	GET_KRT2_VOL_CS,
-	GET_KRT2_VOX,
-	GET_KRT2_VOL,
-	GET_KRT2_SQL,
-	GET_KRT2_PTT,
-	GET_KRT2_ICV,
-	GET_KRT2_SINGLE_DATABYTE,
-	GET_KRT2_CHECKSUM
+    COMPLETE
 } gen_state_t;
 
 
@@ -135,7 +122,7 @@ public:
     // frame buffer and state machine vars
     std::string _frame;
     int         _frame_len;
-    gen_state_t _state = START_TOKEN;
+    int       _state = START_TOKEN;  // must be the first with value '0' for every protocol
     int         _crc = 0; // checksum (binary)
     int         _opt = 0; // some space to carry an optional datum
     int         _esc = 0; // another optional container

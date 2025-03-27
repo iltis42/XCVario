@@ -56,7 +56,7 @@ union Key {
 // message table
 class NmeaPrtcl;
 class NmeaPlugin;
-using NmeaMessageParser = std::function<datalink_action_t(NmeaPrtcl*)>;
+using NmeaMessageParser = std::function<dl_action_t(NmeaPrtcl*)>;
 typedef std::pair<Key, NmeaMessageParser> ParserEntry; // use const to reside in flash memory
 typedef std::map<Key, NmeaMessageParser> ParserMap;
 
@@ -86,10 +86,10 @@ public:
 
 public:
     // general API
-    ProtocolType getProtocolId() override { return _ptyp; }
+    ProtocolType getProtocolId() const override { return _ptyp; }
     void addPlugin(NmeaPlugin *pm); // one way addition
     bool hasProtocol(ProtocolType p);
-    datalink_action_t nextByte(const char c) override;
+    dl_control_t nextBytes(const char* c, int len) override;
 
 
     // XCV transmitter routines

@@ -24,7 +24,7 @@ uint8_t XCVarioMsg::_protocol_version = 1;
 // The XCVario protocol parser.
 //
 
-datalink_action_t XCVarioMsg::parseExcl_xsX(NmeaPrtcl *nmea)
+dl_action_t XCVarioMsg::parseExcl_xsX(NmeaPrtcl *nmea)
 {
     ProtocolState *sm = nmea->getSM();
     const std::vector<int> *word = &sm->_word_start;
@@ -61,7 +61,7 @@ datalink_action_t XCVarioMsg::parseExcl_xsX(NmeaPrtcl *nmea)
     return NOACTION;
 }
 
-datalink_action_t XCVarioMsg::parseExcl_xcs(NmeaPrtcl *nmea)
+dl_action_t XCVarioMsg::parseExcl_xcs(NmeaPrtcl *nmea)
 {
     ProtocolState *sm = nmea->getSM();
     const std::vector<int> *word = &sm->_word_start;

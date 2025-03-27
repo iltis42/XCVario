@@ -21,7 +21,7 @@ FlarmHostMsg::FlarmHostMsg(NmeaPrtcl &nr) :
     _nmeaRef.setDefaultAction(DO_ROUTING);
 }
 
-datalink_action_t FlarmHostMsg::parsePFLAX(NmeaPrtcl *nmea)
+dl_action_t FlarmHostMsg::parsePFLAX(NmeaPrtcl *nmea)
 {
     ProtocolState *sm = nmea->getSM();
     if ( sm->_frame.at(6) != ',' ) {

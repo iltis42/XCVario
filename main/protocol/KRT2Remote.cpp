@@ -75,22 +75,22 @@ KRT2Remote::KRT2Remote(int mp, ProtocolState &sm, DataLink &dl)
     _sm._state = GET_KRT2_FRAME;
 }
 
-datalink_action_t KRT2Remote::nextByte(const char c)
+dl_control_t KRT2Remote::nextBytes(const char* c, int len)
 {
     int pos = _sm._frame.size() - 1; // c already in the buffer
-    datalink_action_t ret = NOACTION;
-    // ESP_LOGI(FNAME, "state %d, pos %d next char %c", _sm._state, pos, c);
+    dl_action_t ret = NOACTION;
+    // ESP_LOGI(FNAME, "state %d, pos %d next char %c", _sm._state, pos, *c);
     switch (_sm._state)
     {
     case GET_KRT2_FRAME:
-        if (c == KRT2_STX_START)
+        if (*c == KRT2_STX_START)
         {
             ESP_LOGI(FNAME, "STX Start at %d", pos);
             _sm._state = GET_KRT2_COMMAND;
         }
         break;
     case GET_KRT2_COMMAND:
-        switch (c)
+        switch (*c)
         {
         // Single byte commands
         case KRT2_EXCHG_ACTSTBY: // commands, single byte
@@ -145,15 +145,15 @@ datalink_action_t KRT2Remote::nextByte(const char c)
         _sm._state = GET_KRT2_SQL;
         break;
     case GET_KRT2_SQL:
-        mhz = c; // its sql but we recycle mhz for CS here
+        mhz = *c; // its sql but we recycle mhz for CS here
         _sm._state = GET_KRT2_VOX;
         break;
     case GET_KRT2_VOX:
-        khz = c; // its vox but we recycle khz for CS here
+        khz = *c; // its vox but we recycle khz for CS here
         _sm._state = GET_KRT2_VOL_CS;
         break;
     case GET_KRT2_VOL_CS:
-        if (c == (mhz + khz))
+        if (*c == (mhz + khz))
         {
             ret = DO_ROUTING;
         }
@@ -161,13 +161,13 @@ datalink_action_t KRT2Remote::nextByte(const char c)
         break;
 
     case GET_KRT2_MHZ:
-        mhz = c;
+        mhz = *c;
         // ESP_LOGI(FNAME, "KRT2 Mhz:%d", mhz );
         _sm._state = GET_KRT2_KHZ;
         break;
 
     case GET_KRT2_KHZ:
-        khz = c;
+        khz = *c;
         // ESP_LOGI(FNAME, "KRT2 Khz:%d", khz );
         cs = mhz ^ khz; // CS is XOR of mhz and khz according to spec
         _sm._frame_len = 8;
@@ -183,8 +183,8 @@ datalink_action_t KRT2Remote::nextByte(const char c)
         }
         break;
     case GET_KRT2_CHECKSUM:
-    	ESP_LOGI(FNAME, "KRT2 Checksum RX:%d calc:%d  OKAY:%d", c, cs, cs == c );
-        if (cs == c)
+    	ESP_LOGI(FNAME, "KRT2 Checksum RX:%d calc:%d  OKAY:%d", *c, cs, cs == *c );
+        if (cs == *c)
         {
             ret = DO_ROUTING;
         }
@@ -195,5 +195,5 @@ datalink_action_t KRT2Remote::nextByte(const char c)
         break;
     }
     // ESP_LOGI(FNAME,"KRT2 ret:%d", ret );
-    return ret;
+    return dl_control_t(ret);
 }

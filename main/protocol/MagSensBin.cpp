@@ -23,7 +23,7 @@ MagSensBinary::MagSensBinary(int mp, ProtocolState &sm, DataLink &dl)
     _delta_time = 100; // expect 10Hz
 }
 
-datalink_action_t MagSensBinary::nextStreamChunk(const char *cptr, int count)
+dl_control_t MagSensBinary::nextBytes(const char *cptr, int count)
 {
     // ESP_LOGI(FNAME, "Got data");
     QMCMagCAN* ms = static_cast<QMCMagCAN*>(Compass::getSensInst());
@@ -43,7 +43,7 @@ datalink_action_t MagSensBinary::nextStreamChunk(const char *cptr, int count)
          }
     }
 
-    return NOACTION;
+    return dl_control_t(NOACTION);
 }
 
 bool MagSensBinary::isActive() const

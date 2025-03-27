@@ -18,7 +18,7 @@
 // The Cambridge protocol parser.
 //
 
-datalink_action_t CambridgeMsg::parseExcl_g(NmeaPrtcl *nmea)
+dl_action_t CambridgeMsg::parseExcl_g(NmeaPrtcl *nmea)
 {
     const char *s = nmea->getSM()->_frame.c_str();
 

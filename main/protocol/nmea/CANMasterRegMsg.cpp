@@ -72,7 +72,7 @@ void CANMasterRegMsg::sendLossOfResgitrations()
     DEV::Send(msg);
 }
 
-datalink_action_t CANMasterRegMsg::registration_query(NmeaPrtcl *nmea)
+dl_action_t CANMasterRegMsg::registration_query(NmeaPrtcl *nmea)
 {
     ESP_LOGI(FNAME, "JP registration query");
     // e.g. read message "$PJPREG, 123, proto"

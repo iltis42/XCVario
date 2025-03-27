@@ -9,25 +9,25 @@ static const int ANEMOI_LEN[] = {9, 14, 5, 5, 10, 9, 14, 10};
 static uint8_t crc8ccitt(const void * data, size_t size);
 static void anemoiCRC(int &crc, const char c);
 
-datalink_action_t Anemoi::nextByte(const char c)
+dl_control_t Anemoi::nextBytes(const char* c, int len)
 {
     char *ptr;
     int pos = _sm._frame.size() - 1; // c already in the buffer
 
     switch(_sm._state) {
     case START_TOKEN:
-        if ( c == '$' ) { //0x24
+        if ( *c == '$' ) { //0x24
             _sm._state = HEADER;
             _sm.reset();
         }
         ESP_LOGD(FNAME, "ANEMOI START_TOKEN");
         break;
     case HEADER:
-        ptr = strchr(ANEMOI_IDS, c);
+        ptr = strchr(ANEMOI_IDS, *c);
         if ( ptr != nullptr ) {
             expected_len = ANEMOI_LEN[int(ptr-ANEMOI_IDS)];
             _sm._state = PAYLOAD;
-            ESP_LOGD(FNAME, "ANEMOI HEADER %c/%d", c, expected_len);
+            ESP_LOGD(FNAME, "ANEMOI HEADER %c/%d", *c, expected_len);
         }
         else {
             _sm._state = START_TOKEN;
@@ -41,8 +41,8 @@ datalink_action_t Anemoi::nextByte(const char c)
         ESP_LOGD(FNAME, "ANEMOI PAYLOAD");
         break;
     case STOP_TOKEN: // fixme
-        if( c == 0x0a ) {
-            ESP_LOGD(FNAME, "ANEMOI STOP_TOKEN %x", c);
+        if( *c == 0x0a ) {
+            ESP_LOGD(FNAME, "ANEMOI STOP_TOKEN %x", *c);
         }
         _sm._state = COMPLETE;
         break;
@@ -129,7 +129,7 @@ void Anemoi::parseWind()
 /*
  * crc8ccitt
  */
-static const uint8_t CRC_TABLE[256] = {
+static constexpr const uint8_t CRC_TABLE[] = {
     0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15,
     0x38, 0x3F, 0x36, 0x31, 0x24, 0x23, 0x2A, 0x2D,
     0x70, 0x77, 0x7E, 0x79, 0x6C, 0x6B, 0x62, 0x65,

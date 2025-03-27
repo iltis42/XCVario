@@ -9,9 +9,9 @@ public:
     virtual ~Anemoi() {}
 
 public:
-    ProtocolType getProtocolId() override { return ANEMOI_P; }
+    ProtocolType getProtocolId() const override { return ANEMOI_P; }
     bool isBinary() const override { return true; }
-    datalink_action_t nextByte(const char c) override;
+    dl_control_t nextBytes(const char* c, int len) override;
 
 private:
     void parseWind();

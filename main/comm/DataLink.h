@@ -46,7 +46,7 @@ private:
     NmeaPrtcl *enforceNmea(DeviceId did, int sendport, ProtocolType ptyp);
 
 private:
-    ProtocolItf *_active; // the currently used one
+    ProtocolItf *_active = nullptr; // the currently used one
     ProtocolItf *_nmea   = nullptr; // the nmea protocoll shell
     ProtocolItf *_binary = nullptr; // if set it will be the priority parser
     ProtocolState _sm; // The message buffer for all protocol parser

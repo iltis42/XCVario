@@ -161,7 +161,7 @@ int flap_cal_act( SetupMenuSelect *p )
 static SetupMenuSelect *wkes = 0;
 static SetupMenuSelect *wkcal = 0;
 
-void Flap::setupSensorMenueEntries(MenuEntry *wkm)
+void Flap::setupSensorMenueEntries(SetupMenu *wkm)
 {
 	wkes = new SetupMenuSelect( "Flap Sensor", RST_NONE, select_flap_sens_pin, true, &flap_sensor );
 	wkes->addEntry( "Disable");
@@ -184,7 +184,7 @@ static SetupMenuValFloat *flgnd = 0;
 static SetupMenu *flapss = 0;
 static SetupMenu *flapls = 0;
 
-void Flap::speeds_setup_menu_create(MenuEntry*top){
+void Flap::speeds_setup_menu_create(SetupMenu* top){
 	SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "",  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
 	plus3->setHelp("Speed for transition from +3 to +3 flap setting");
 	top->addEntry( plus3 );
@@ -210,7 +210,7 @@ void Flap::speeds_setup_menu_create(MenuEntry*top){
 	top->addEntry( min3 );
 }
 
-void Flap::position_labels_menu_create(MenuEntry* top){
+void Flap::position_labels_menu_create(SetupMenu* top){
 	SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label +3", RST_NONE, flap_lab_act, false, &wk_label_plus_3 );
 	top->addEntry( flab );
 	flab->addEntryList( flap_labels, sizeof(flap_labels)/4 ); // Initialize Flap Label Entries
@@ -234,7 +234,7 @@ void Flap::position_labels_menu_create(MenuEntry* top){
 	flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
 }
 
-void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
+void Flap::setupIndicatorMenueEntries(SetupMenu *wkm)
 {
 	ESP_LOGI(FNAME,"Flap Indicator Menue");
 
@@ -267,12 +267,12 @@ void Flap::setupIndicatorMenueEntries(MenuEntry *wkm)
 	setupSensorMenueEntries(wkm);
 }
 
-void Flap::setupMenue( MenuEntry *parent ){
+void Flap::setupMenue(SetupMenu *parent){
 	ESP_LOGI(FNAME,"Flap::setupMenue");
 	if( ! parent  ){
 		return;
 	}
-	MenuEntry* wkm = new SetupMenu( "Flap (WK) Indicator" );
+	SetupMenu* wkm = new SetupMenu( "Flap (WK) Indicator" );
 	parent->addEntry( wkm );
 	wkm->addCreator( setupIndicatorMenueEntries );
 }

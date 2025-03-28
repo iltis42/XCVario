@@ -29,7 +29,6 @@ public:
 		hypos = 0;
 		_title = 0;
 		subtree_created = 0;
-		menu_create_ptr = 0;
 	};
 	virtual ~MenuEntry();
 	virtual void display( int mode=0 ) = 0;
@@ -49,7 +48,6 @@ public:
 	void uprint( int x, int y, const char* str );
     void restart();
     bool get_restart() { return _restart; };
-    void addCreator( void (menu_create)(SetupMenu* ptr) ){ menu_create_ptr=menu_create; }
     static void setRoot( MenuEntry *root ) { selected = root; };
 public:
 	std::vector<MenuEntry*>  _childs;
@@ -59,7 +57,6 @@ public:
 	uint8_t   pressed;
 	char      *helptext;
 	int16_t    hypos;
-	void (*menu_create_ptr)(SetupMenu*);
 	uint8_t subtree_created;
 	static AdaptUGC *ucg;
 	static MenuEntry *root;

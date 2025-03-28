@@ -256,13 +256,11 @@ void Flap::setupIndicatorMenueEntries(SetupMenu *wkm)
 	flgnd->setHelp("Flap position to be set on ground for takeoff, when there is no airspeed");
 	wkm->addEntry( flgnd, nflneg );
 
-	flapss = new SetupMenu( "Flap Speeds Setup" );
+	flapss = new SetupMenu("Flap Speeds Setup", speeds_setup_menu_create);
 	wkm->addEntry( flapss, flgnd );
-	flapss->addCreator( speeds_setup_menu_create );
 
-	flapls = new SetupMenu( "Flap Position Labels" );
+	flapls = new SetupMenu("Flap Position Labels", position_labels_menu_create);
 	wkm->addEntry( flapls, flapss );
-	flapls->addCreator( position_labels_menu_create );
 
 	setupSensorMenueEntries(wkm);
 }
@@ -272,9 +270,8 @@ void Flap::setupMenue(SetupMenu *parent){
 	if( ! parent  ){
 		return;
 	}
-	SetupMenu* wkm = new SetupMenu( "Flap (WK) Indicator" );
+	SetupMenu* wkm = new SetupMenu("Flap (WK) Indicator", setupIndicatorMenueEntries);
 	parent->addEntry( wkm );
-	wkm->addCreator( setupIndicatorMenueEntries );
 }
 
 void Flap::drawSmallBar( float wkf ){

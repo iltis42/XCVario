@@ -5,11 +5,9 @@
  *      Author: iltis
  */
 
-#ifndef _SetupMenu_H_
-#define _SetupMenu_H_
+#pragma once
+
 #include "MenuEntry.h"
-#include <string>
-#include <driver/gpio.h>
 #include "SetupMenuValFloat.h"
 
 class IpsDisplay;
@@ -20,10 +18,9 @@ class AnalogInput;
 class SetupMenu:  public MenuEntry {
 public:
 	SetupMenu();
-	SetupMenu( const char* title );
+	explicit SetupMenu( const char* title, void (menu_create)(SetupMenu* ptr)  );
 	virtual ~SetupMenu();
 	void begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *adc );
-	void setup();
 	void display( int mode=0 );
 	const char *value() { return 0; };
 	void up( int count );  // step up to parent
@@ -35,12 +32,13 @@ public:
 	void create_subtree();
 	void delete_subtree();
 
-
 	static void catchFocus( bool activate );
 	static bool focus;
 	static gpio_num_t getGearWarningIO();
 
 	static SetupMenuValFloat * createQNHMenu();
+
+private:
+	void (*menu_create_ptr)(SetupMenu*);
 };
 
-#endif

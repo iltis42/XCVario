@@ -916,7 +916,7 @@ void system_startup(void *args){
 
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
-	Menu = new SetupMenu();
+	Menu = new SetupMenu(); // the root setup menu
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d; Max Prio: %d Wifi: %d",  ESP_LOG_INFO, configMAX_PRIORITIES, ESP_TASKD_EVENT_PRIO-5 );
 	esp_chip_info_t chip_info;
 	esp_chip_info(&chip_info);

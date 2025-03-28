@@ -47,6 +47,63 @@
 #include "comm/SerialLine.h"
 #include "coredump_to_server.h"
 
+
+static void setup_create_root(SetupMenu *top);
+
+static void wiper_menu_create(SetupMenu *top);
+static void bugs_item_create(SetupMenu *top);
+static void vario_menu_create(SetupMenu *top);
+static void vario_menu_create_damping(SetupMenu *top);
+static void vario_menu_create_meanclimb(SetupMenu *top);
+static void vario_menu_create_s2f(SetupMenu *top);
+static void vario_menu_create_ec(SetupMenu *top);
+
+static void audio_menu_create(SetupMenu *top);
+static void audio_menu_create_volume(SetupMenu *top);
+static void audio_menu_create_tonestyles(SetupMenu *top);
+static void audio_menu_create_deadbands(SetupMenu *top);
+static void audio_menu_create_equalizer(SetupMenu *top);
+static void audio_menu_create_mute(SetupMenu *top);
+
+static void glider_menu_create(SetupMenu *top);
+static void glider_menu_create_polarpoints(SetupMenu *top);
+
+static void options_menu_create(SetupMenu *top);
+static void options_menu_create_units(SetupMenu *top);
+static void options_menu_create_flarm(SetupMenu *top);
+static void options_menu_create_compasswind(SetupMenu *top);
+static void options_menu_create_compasswind_compass(SetupMenu *top);
+static void options_menu_create_compasswind_compass_dev(SetupMenu *top);
+static void options_menu_create_compasswind_compass_nmea(SetupMenu *top);
+static void options_menu_create_compasswind_straightwind(SetupMenu *top);
+static void options_menu_create_compasswind_straightwind_limits(SetupMenu *top);
+static void options_menu_create_compasswind_straightwind_filters(SetupMenu *top);
+static void options_menu_create_compasswind_circlingwind(SetupMenu *top);
+static void options_menu_create_wireless(SetupMenu *top);
+static void options_menu_create_wireless_custom_id(SetupMenu *top);
+static void options_menu_create_wireless_routing(SetupMenu *top);
+static void options_menu_create_gload(SetupMenu *top);
+
+static void system_menu_create(SetupMenu *top);
+static void system_menu_create_software(SetupMenu *top);
+static void system_menu_create_battery(SetupMenu *top);
+static void system_menu_create_hardware(SetupMenu *top);
+static void system_menu_create_altimeter_airspeed(SetupMenu *top);
+static void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top);
+static void system_menu_create_interfaceS1(SetupMenu *top);
+static void system_menu_create_interfaceS1_routing(SetupMenu *top);
+static void system_menu_create_interfaceS2(SetupMenu *top);
+static void system_menu_create_interfaceS2_routing(SetupMenu *top);
+static void system_menu_create_interfaceCAN(SetupMenu *top);
+static void system_menu_create_interfaceCAN_routing(SetupMenu *top);
+static void system_menu_create_hardware_type(SetupMenu *top);
+static void system_menu_create_hardware_rotary(SetupMenu *top);
+static void system_menu_create_hardware_rotary_screens(SetupMenu *top);
+static void system_menu_create_hardware_ahrs(SetupMenu *top);
+static void system_menu_create_ahrs_calib(SetupMenu *top);
+static void system_menu_create_hardware_ahrs_lc(SetupMenu *top);
+static void system_menu_create_hardware_ahrs_parameter(SetupMenu *top);
+
 SetupMenuSelect *audio_range_sm = 0;
 SetupMenuSelect *mpu = 0;
 
@@ -824,7 +881,7 @@ void SetupMenu::escape() {
 	}
 }
 
-void SetupMenu::vario_menu_create_damping(SetupMenu *top) {
+void vario_menu_create_damping(SetupMenu *top) {
 	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", 2.0, 10.0,
 			0.1, vario_setup, false, &vario_delay);
 	vda->setHelp(
@@ -838,7 +895,7 @@ void SetupMenu::vario_menu_create_damping(SetupMenu *top) {
 	top->addEntry(vdav);
 }
 
-void SetupMenu::vario_menu_create_meanclimb(SetupMenu *top) {
+void vario_menu_create_meanclimb(SetupMenu *top) {
 	SetupMenuValFloat *vccm = new SetupMenuValFloat("Minimum climb", "", 0.0,
 			2.0, 0.1, 0, false, &core_climb_min);
 	vccm->setHelp(
@@ -864,7 +921,7 @@ void SetupMenu::vario_menu_create_meanclimb(SetupMenu *top) {
 	top->addEntry(vcmc);
 }
 
-void SetupMenu::vario_menu_create_s2f(SetupMenu *top) {
+void vario_menu_create_s2f(SetupMenu *top) {
 	SetupMenuValFloat *vds2 = new SetupMenuValFloat("Damping", "sec", 0.10001,
 			10.0, 0.1, 0, false, &s2f_delay);
 	vds2->setHelp("Time constant of S2F low pass filter");
@@ -935,7 +992,7 @@ void SetupMenu::vario_menu_create_s2f(SetupMenu *top) {
 	top->addEntry(s2fnc);
 }
 
-void SetupMenu::vario_menu_create_ec(SetupMenu *top) {
+void vario_menu_create_ec(SetupMenu *top) {
 	SetupMenuSelect *enac = new SetupMenuSelect("eCompensation", RST_NONE, 0,
 			false, &te_comp_enable);
 	enac->setHelp(
@@ -952,7 +1009,7 @@ void SetupMenu::vario_menu_create_ec(SetupMenu *top) {
 	top->addEntry(elca);
 }
 
-void SetupMenu::wiper_menu_create(SetupMenu *top) {
+void wiper_menu_create(SetupMenu *top) {
 	SetupMenuSelect *wiper = new SetupMenuSelect("Start Wipe", RST_NONE,
 			wiper_button, false);
 	wiper->setHelp("Select a side and start the jumbo wiper run.");
@@ -963,7 +1020,7 @@ void SetupMenu::wiper_menu_create(SetupMenu *top) {
 	bugs_item_create(top);
 }
 
-void SetupMenu::bugs_item_create(SetupMenu *top) {
+void bugs_item_create(SetupMenu *top) {
 	SetupMenuValFloat *bgs = new SetupMenuValFloat("Bugs", "%", 0.0, 50, 1,
 			bug_adj, true, &bugs);
 	bgs->setHelp(
@@ -971,7 +1028,7 @@ void SetupMenu::bugs_item_create(SetupMenu *top) {
 	top->addEntry(bgs);
 }
 
-void SetupMenu::vario_menu_create(SetupMenu *vae) {
+void vario_menu_create(SetupMenu *vae) {
 	ESP_LOGI(FNAME,"SetupMenu::vario_menu_create( %p )", vae );
 
 	SetupMenuValFloat *vga = new SetupMenuValFloat("Range", "", 1.0, 30.0, 1,
@@ -1046,7 +1103,7 @@ void SetupMenu::vario_menu_create(SetupMenu *vae) {
 	elco->addCreator(vario_menu_create_ec);
 }
 
-void SetupMenu::audio_menu_create_tonestyles(SetupMenu *top) {
+void audio_menu_create_tonestyles(SetupMenu *top) {
 	SetupMenuValFloat *cf = new SetupMenuValFloat("CenterFreq", "Hz", 200.0,
 			2000.0, 10.0, audio_setup_f, false, &center_freq);
 	cf->setHelp("Center frequency for Audio at zero Vario or zero S2F delta");
@@ -1098,7 +1155,7 @@ void SetupMenu::audio_menu_create_tonestyles(SetupMenu *top) {
 	top->addEntry(advarto);
 }
 
-void SetupMenu::audio_menu_create_deadbands(SetupMenu *top) {
+void audio_menu_create_deadbands(SetupMenu *top) {
 	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", -5.0,
 			0, 0.1, 0, false, &deadband_neg);
 	dbminlv->setHelp(
@@ -1124,7 +1181,7 @@ void SetupMenu::audio_menu_create_deadbands(SetupMenu *top) {
 	top->addEntry(dbmaxls2f);
 }
 
-void SetupMenu::audio_menu_create_equalizer(SetupMenu *top) {
+void audio_menu_create_equalizer(SetupMenu *top) {
 	SetupMenuSelect *audeqt = new SetupMenuSelect("Equalizer", RST_ON_EXIT, 0,
 			true, &audio_equalizer);
 	audeqt->setHelp(
@@ -1142,7 +1199,7 @@ void SetupMenu::audio_menu_create_equalizer(SetupMenu *top) {
 	top->addEntry(frqr);
 }
 
-void SetupMenu::audio_menu_create_volume(SetupMenu *top) {
+void audio_menu_create_volume(SetupMenu *top) {
 
 	SetupMenuValFloat *vol = new SetupMenuValFloat("Current Volume", "%", 0.0,
 			100.0, 2.0, vol_adj, false, &audio_volume);
@@ -1187,7 +1244,7 @@ void SetupMenu::audio_menu_create_volume(SetupMenu *top) {
 	top->addEntry(amspvol);
 }
 
-void SetupMenu::audio_menu_create_mute(SetupMenu *top) {
+void audio_menu_create_mute(SetupMenu *top) {
 	SetupMenuSelect *asida = new SetupMenuSelect("In Sink", RST_NONE, 0, true,
 			&audio_mute_sink);
 	asida->setHelp("Select whether vario audio will be muted while in sink");
@@ -1221,7 +1278,7 @@ void SetupMenu::audio_menu_create_mute(SetupMenu *top) {
 	top->addEntry(amps);
 }
 
-void SetupMenu::audio_menu_create(SetupMenu *audio) {
+void audio_menu_create(SetupMenu *audio) {
 
 	// volume menu has gone out of scope by now
 	// make sure update_volume_menu_max() does not try and dereference it
@@ -1274,7 +1331,7 @@ void SetupMenu::audio_menu_create(SetupMenu *audio) {
 	audio->addEntry(afac);
 }
 
-void SetupMenu::glider_menu_create_polarpoints(SetupMenu *top) {
+void glider_menu_create_polarpoints(SetupMenu *top) {
 	SetupMenuValFloat *wil = new SetupMenuValFloat("Ref Wingload", "kg/m2",
 			10.0, 100.0, 0.1, 0, false, &polar_wingload);
 	wil->setHelp(
@@ -1306,7 +1363,7 @@ void SetupMenu::glider_menu_create_polarpoints(SetupMenu *top) {
 	top->addEntry(pos3);
 }
 
-void SetupMenu::glider_menu_create(SetupMenu *poe) {
+void glider_menu_create(SetupMenu *poe) {
 	SetupMenuSelect *glt = new SetupMenuSelect("Glider-Type", RST_NONE,
 			polar_select, true, &glider_type);
 	poe->addEntry(glt);
@@ -1345,7 +1402,7 @@ void SetupMenu::glider_menu_create(SetupMenu *poe) {
 	poe->addEntry(fixball);
 }
 
-void SetupMenu::options_menu_create_units(SetupMenu *top) {
+void options_menu_create_units(SetupMenu *top) {
 	SetupMenuSelect *alu = new SetupMenuSelect("Altimeter", RST_NONE, 0, true,
 			&alt_unit);
 	alu->addEntry("Meter (m)");
@@ -1382,7 +1439,7 @@ void SetupMenu::options_menu_create_units(SetupMenu *top) {
 	top->addEntry(dst);
 }
 
-void SetupMenu::options_menu_create_flarm(SetupMenu *top) {
+void options_menu_create_flarm(SetupMenu *top) {
 	SetupMenuSelect *flarml = new SetupMenuSelect("Alarm Level", RST_NONE, 0,
 			true, &flarm_warning);
 	flarml->setHelp(
@@ -1411,7 +1468,7 @@ void SetupMenu::options_menu_create_flarm(SetupMenu *top) {
 	top->addEntry(flarms);
 }
 
-void SetupMenu::options_menu_create_compasswind_compass_dev(SetupMenu *top) {
+void options_menu_create_compasswind_compass_dev(SetupMenu *top) {
 	const char *skydirs[8] = { "0°", "45°", "90°", "135°", "180°", "225°",
 			"270°", "315°" };
 	for (int i = 0; i < 8; i++) {
@@ -1423,7 +1480,7 @@ void SetupMenu::options_menu_create_compasswind_compass_dev(SetupMenu *top) {
 	}
 }
 
-void SetupMenu::options_menu_create_compasswind_compass_nmea(SetupMenu *top) {
+void options_menu_create_compasswind_compass_nmea(SetupMenu *top) {
 	SetupMenuSelect *nmeaHdm = new SetupMenuSelect("Magnetic Heading", RST_NONE,
 			0, true, &compass_nmea_hdm);
 	nmeaHdm->addEntry("Disable");
@@ -1441,7 +1498,7 @@ void SetupMenu::options_menu_create_compasswind_compass_nmea(SetupMenu *top) {
 	top->addEntry(nmeaHdt);
 }
 
-void SetupMenu::options_menu_create_compasswind_compass(SetupMenu *top) {
+void options_menu_create_compasswind_compass(SetupMenu *top) {
 	SetupMenuSelect *compSensor = new SetupMenuSelect("Sensor Option",
 			RST_ON_EXIT, compass_ena, true, &compass_enable);
 	compSensor->addEntry("Disable");
@@ -1512,8 +1569,7 @@ void SetupMenu::options_menu_create_compasswind_compass(SetupMenu *top) {
 	top->addEntry(scs);
 }
 
-void SetupMenu::options_menu_create_compasswind_straightwind_filters(
-		SetupMenu *top) {
+void options_menu_create_compasswind_straightwind_filters(SetupMenu *top) {
 	SetupMenuValFloat *smgsm = new SetupMenuValFloat("Airspeed Lowpass", "", 0,
 			0.05, 0.001, nullptr, false, &wind_as_filter);
 	smgsm->setPrecision(3);
@@ -1543,8 +1599,7 @@ void SetupMenu::options_menu_create_compasswind_straightwind_filters(
 			"Number of measurements (seconds) averaged in straight flight live wind estimation");
 }
 
-void SetupMenu::options_menu_create_compasswind_straightwind_limits(
-		SetupMenu *top) {
+void options_menu_create_compasswind_straightwind_limits(SetupMenu *top) {
 	SetupMenuValFloat *smdev = new SetupMenuValFloat("Deviation Limit", "°",
 			0.0, 180.0, 1.0, nullptr, false, &wind_max_deviation);
 	smdev->setHelp(
@@ -1573,7 +1628,7 @@ void SetupMenu::options_menu_create_compasswind_straightwind_limits(
 			"Maximum delta in airspeed estimation from wind and GPS during straight flight accepted for straight wind calculation");
 }
 
-void SetupMenu::options_menu_create_compasswind_straightwind(SetupMenu *top) {
+void options_menu_create_compasswind_straightwind(SetupMenu *top) {
 	SetupMenu *strWindFM = new SetupMenu("Filters");
 	top->addEntry(strWindFM);
 	strWindFM->addCreator(options_menu_create_compasswind_straightwind_filters);
@@ -1584,7 +1639,7 @@ void SetupMenu::options_menu_create_compasswind_straightwind(SetupMenu *top) {
 	top->addEntry(ssw);
 }
 
-void SetupMenu::options_menu_create_compasswind_circlingwind(SetupMenu *top) {
+void options_menu_create_compasswind_circlingwind(SetupMenu *top) {
 	// Show Circling Wind Status
 	ShowCirclingWind *scw = new ShowCirclingWind("Circling Wind Status");
 	top->addEntry(scw);
@@ -1617,7 +1672,7 @@ void SetupMenu::options_menu_create_compasswind_circlingwind(SetupMenu *top) {
 			"Maximum wind direction delta from last measurement accepted for circling wind calculation");
 }
 
-void SetupMenu::options_menu_create_compasswind(SetupMenu *top) {
+void options_menu_create_compasswind(SetupMenu *top) {
 	SetupMenu *compassMenu = new SetupMenu("Compass");
 	top->addEntry(compassMenu);
 	compassMenu->addCreator(options_menu_create_compasswind_compass);
@@ -1676,7 +1731,7 @@ void SetupMenu::options_menu_create_compasswind(SetupMenu *top) {
 	top->addEntry(windlog);
 }
 
-void SetupMenu::options_menu_create_wireless_routing(SetupMenu *top) {
+void options_menu_create_wireless_routing(SetupMenu *top) {
 	SetupMenuSelect *wloutxcv = new SetupMenuSelect("XCVario", RST_NONE, 0,
 			true, &rt_xcv_wl);
 	wloutxcv->addEntry("Disable");
@@ -1699,7 +1754,7 @@ void SetupMenu::options_menu_create_wireless_routing(SetupMenu *top) {
 	top->addEntry(wloutxcan);
 }
 
-void SetupMenu::options_menu_create_wireless_custom_id(SetupMenu *top) {
+void options_menu_create_wireless_custom_id(SetupMenu *top) {
 	SetupMenuChar *c1 = new SetupMenuChar("Letter 1", RST_NONE, update_id,
 			false, custom_wireless_id.get().id, 0);
 	SetupMenuChar *c2 = new SetupMenuChar("Letter 2", RST_NONE, update_id,
@@ -1730,7 +1785,7 @@ void SetupMenu::options_menu_create_wireless_custom_id(SetupMenu *top) {
 	c6->addEntryList(keys, sizeof(keys) / 4);
 }
 
-void SetupMenu::options_menu_create_wireless(SetupMenu *top) {
+void options_menu_create_wireless(SetupMenu *top) {
 	SetupMenuSelect *btm = new SetupMenuSelect("Wireless", RST_ON_EXIT, 0, true,
 			&wireless_type);
 	btm->setHelp(
@@ -1799,7 +1854,7 @@ void SetupMenu::options_menu_create_wireless(SetupMenu *top) {
 	top->addEntry(clearcore);
 }
 
-void SetupMenu::options_menu_create_gload(SetupMenu *top) {
+void options_menu_create_gload(SetupMenu *top) {
 	SetupMenuSelect *glmod = new SetupMenuSelect("Activation Mode", RST_NONE, 0,
 			true, &gload_mode);
 	glmod->setHelp(
@@ -1875,7 +1930,7 @@ void SetupMenu::options_menu_create_gload(SetupMenu *top) {
 	top->addEntry(gloadres);
 }
 
-void SetupMenu::options_menu_create(SetupMenu *opt) {
+void options_menu_create(SetupMenu *opt) {
 	if (student_mode.get() == 0) {
 		SetupMenuSelect *stumo = new SetupMenuSelect("Student Mode",
 				RST_ON_EXIT, 0, true, &student_mode);
@@ -1947,7 +2002,7 @@ void SetupMenu::options_menu_create(SetupMenu *opt) {
 	gload->addCreator(options_menu_create_gload);
 }
 
-void SetupMenu::system_menu_create_software(SetupMenu *top) {
+void system_menu_create_software(SetupMenu *top) {
 	Version V;
 	SetupMenuSelect *ver = new SetupMenuSelect("Software Vers.", RST_NONE, 0,
 			false);
@@ -1963,7 +2018,7 @@ void SetupMenu::system_menu_create_software(SetupMenu *top) {
 	top->addEntry(upd);
 }
 
-void SetupMenu::system_menu_create_battery(SetupMenu *top) {
+void system_menu_create_battery(SetupMenu *top) {
 	SetupMenuValFloat *blow = new SetupMenuValFloat("Battery Low", "Volt ", 0.0,
 			28.0, 0.1, 0, false, &bat_low_volt);
 	SetupMenuValFloat *bred = new SetupMenuValFloat("Battery Red", "Volt ", 0.0,
@@ -1988,7 +2043,7 @@ void SetupMenu::system_menu_create_battery(SetupMenu *top) {
 	top->addEntry(batv);
 }
 
-void SetupMenu::system_menu_create_hardware_type(SetupMenu *top) {
+void system_menu_create_hardware_type(SetupMenu *top) {
 	// UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
 	SetupMenuSelect *dtype = new SetupMenuSelect("HW Type", RST_NONE, 0, true,
 			&display_type);
@@ -2049,7 +2104,7 @@ void SetupMenu::system_menu_create_hardware_type(SetupMenu *top) {
 
 }
 
-void SetupMenu::system_menu_create_hardware_rotary_screens(SetupMenu *top) {
+void system_menu_create_hardware_rotary_screens(SetupMenu *top) {
 	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE,
 			upd_screens, true, &screen_gmeter);
 	scrgmet->addEntry("Disable");
@@ -2064,7 +2119,7 @@ void SetupMenu::system_menu_create_hardware_rotary_screens(SetupMenu *top) {
 	}
 }
 
-void SetupMenu::system_menu_create_hardware_rotary(SetupMenu *top) {
+void system_menu_create_hardware_rotary(SetupMenu *top) {
 	SetupMenu *screens = new SetupMenu("Screens");
 	top->addEntry(screens);
 	screens->setHelp(
@@ -2107,7 +2162,7 @@ void SetupMenu::system_menu_create_hardware_rotary(SetupMenu *top) {
 	sact->addEntry("Long Press");
 }
 
-void SetupMenu::system_menu_create_ahrs_calib(SetupMenu *top) {
+void system_menu_create_ahrs_calib(SetupMenu *top) {
 	SetupMenuSelect *ahrs_calib_collect = new SetupMenuSelect(
 			"Axis calibration", RST_NONE, imu_calib, false);
 	ahrs_calib_collect->setHelp(
@@ -2131,7 +2186,7 @@ static const char  lkeys[][4] { "0", "1", "2", "3", "4", "5", "6", "7",
 		"F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
 		"T", "U", "V", "W", "X", "Y", "Z" };
 
-void SetupMenu::system_menu_create_hardware_ahrs_lc(SetupMenu *top) {
+void system_menu_create_hardware_ahrs_lc(SetupMenu *top) {
 	SetupMenuSelect *ahrslc1 = new SetupMenuSelect("First    Letter", RST_NONE,
 			add_key, false, &ahrs_licence_dig1);
 	SetupMenuSelect *ahrslc2 = new SetupMenuSelect("Second Letter", RST_NONE,
@@ -2150,7 +2205,7 @@ void SetupMenu::system_menu_create_hardware_ahrs_lc(SetupMenu *top) {
 	ahrslc4->addEntryList(lkeys, sizeof(lkeys) / 4);
 }
 
-void SetupMenu::system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
+void system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
 	SetupMenuValFloat *ahrsgf = new SetupMenuValFloat("Gyro Max Trust", "x", 0,
 			100, 1, 0, false, &ahrs_gyro_factor);
 	ahrsgf->setPrecision(0);
@@ -2198,7 +2253,7 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
 
 }
 
-void SetupMenu::system_menu_create_hardware_ahrs(SetupMenu *top) {
+void system_menu_create_hardware_ahrs(SetupMenu *top) {
 	SetupMenuSelect *ahrsid = new SetupMenuSelect("AHRS ID", RST_NONE, 0,
 			false);
 	ahrsid->addEntry(Cipher::id());
@@ -2238,7 +2293,7 @@ void SetupMenu::system_menu_create_hardware_ahrs(SetupMenu *top) {
 	rpyl->addEntry("Enable");
 }
 
-void SetupMenu::system_menu_create_hardware(SetupMenu *top) {
+void system_menu_create_hardware(SetupMenu *top) {
 	SetupMenu *display = new SetupMenu("DISPLAY Setup");
 	top->addEntry(display);
 	display->addCreator(system_menu_create_hardware_type);
@@ -2282,7 +2337,7 @@ void SetupMenu::system_menu_create_hardware(SetupMenu *top) {
 	top->addEntry(met_adj);
 }
 
-void SetupMenu::system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
+void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
 	SetupMenuSelect *stawaen = new SetupMenuSelect("Stall Warning", RST_NONE, 0,
 			false, &stall_warning);
 	top->addEntry(stawaen);
@@ -2298,7 +2353,7 @@ void SetupMenu::system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
 	top->addEntry(staspe);
 }
 
-void SetupMenu::system_menu_create_altimeter_airspeed(SetupMenu *top) {
+void system_menu_create_altimeter_airspeed(SetupMenu *top) {
 	SetupMenuSelect *als = new SetupMenuSelect("Altimeter Source", RST_NONE, 0,
 			true, &alt_select);
 	top->addEntry(als);
@@ -2344,7 +2399,7 @@ void SetupMenu::system_menu_create_altimeter_airspeed(SetupMenu *top) {
 	top->addEntry(vmax);
 }
 
-void SetupMenu::system_menu_create_interfaceS1_routing(SetupMenu *top) {
+void system_menu_create_interfaceS1_routing(SetupMenu *top) {
 	SetupMenuSelect *s1outxcv = new SetupMenuSelect("XCVario", RST_NONE,
 			update_routing, true, &rt_s1_xcv);
 	s1outxcv->addEntry("Disable");
@@ -2370,7 +2425,7 @@ void SetupMenu::system_menu_create_interfaceS1_routing(SetupMenu *top) {
 	top->addEntry(s1outcan);
 }
 
-void SetupMenu::system_menu_create_interfaceS1(SetupMenu *top) {
+void system_menu_create_interfaceS1(SetupMenu *top) {
 	SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT,
 			update_s1_baud, true, &serial1_speed);
 	top->addEntry(s1sp2);
@@ -2435,7 +2490,7 @@ void SetupMenu::system_menu_create_interfaceS1(SetupMenu *top) {
 
 }
 
-void SetupMenu::system_menu_create_interfaceS2_routing(SetupMenu *top) {
+void system_menu_create_interfaceS2_routing(SetupMenu *top) {
 	SetupMenuSelect *s2outxcv = new SetupMenuSelect("XCVario", RST_NONE,
 			update_routing, true, &rt_s2_xcv);
 	s2outxcv->addEntry("Disable");
@@ -2458,7 +2513,7 @@ void SetupMenu::system_menu_create_interfaceS2_routing(SetupMenu *top) {
 	top->addEntry(s2outcan);
 }
 
-void SetupMenu::system_menu_create_interfaceS2(SetupMenu *top) {
+void system_menu_create_interfaceS2(SetupMenu *top) {
 	SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT,
 			update_s2_baud, true, &serial2_speed);
 	top->addEntry(s2sp2);
@@ -2522,7 +2577,7 @@ void SetupMenu::system_menu_create_interfaceS2(SetupMenu *top) {
 	top->addEntry(datamon);
 }
 
-void SetupMenu::system_menu_create_interfaceCAN_routing(SetupMenu *top) {
+void system_menu_create_interfaceCAN_routing(SetupMenu *top) {
 	SetupMenuSelect *canoutxcv = new SetupMenuSelect("XCVario", RST_NONE, 0,
 			true, &rt_can_xcv);
 	canoutxcv->addEntry("Disable");
@@ -2548,7 +2603,7 @@ void SetupMenu::system_menu_create_interfaceCAN_routing(SetupMenu *top) {
 	top->addEntry(canouts2);
 }
 
-void SetupMenu::system_menu_create_interfaceCAN(SetupMenu *top) {
+void system_menu_create_interfaceCAN(SetupMenu *top) {
 	SetupMenuSelect *canmode = new SetupMenuSelect("Datarate", RST_ON_EXIT, 0,
 			true, &can_speed);
 	top->addEntry(canmode);
@@ -2574,7 +2629,7 @@ void SetupMenu::system_menu_create_interfaceCAN(SetupMenu *top) {
 	devmod->addEntry("Standalone");
 }
 
-void SetupMenu::system_menu_create(SetupMenu *sye) {
+void system_menu_create(SetupMenu *sye) {
 	SetupMenu *soft = new SetupMenu("Software Update");
 	sye->addEntry(soft);
 	soft->addCreator(system_menu_create_software);
@@ -2644,7 +2699,7 @@ void SetupMenu::system_menu_create(SetupMenu *sye) {
 
 }
 
-void SetupMenu::setup_create_root(SetupMenu *top) {
+void setup_create_root(SetupMenu *top) {
 	ESP_LOGI(FNAME,"setup_create_root()");
 	if (rot_default.get() == 0) {
 		SetupMenuValFloat *mc = new SetupMenuValFloat("MC", "", 0.0, 9.9, 0.1,

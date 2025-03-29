@@ -234,10 +234,11 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     }
     InterfaceCtrl *itf = &dummy_itf;
     if ( iid == CAN_BUS ) {
-        if (CAN && !CAN->isInitialized()) {
-            if (CAN->begin()) {
-                itf = CAN;
+        if ( CAN ) {
+            if(!CAN->isInitialized()) {
+                CAN->begin();
             }
+            itf = CAN;
         }
     }
     else if ( iid == WIFI) {

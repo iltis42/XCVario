@@ -145,8 +145,7 @@ void SetupMenuSelect::display( int mode ){
 			ucg->drawFrame( 1,(_select+1)*25+3,238,25 );
 		}
 
-		int y=_numval*25+50;
-		showhelp( y );
+		showhelp();
 		if(mode == 1 && bits._save == true ){
 			ucg->setColor( COLOR_BLACK );
 			ucg->drawBox( 1,280,240,40 );

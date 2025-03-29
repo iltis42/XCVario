@@ -87,16 +87,14 @@ void SetupMenuValFloat::display( int mode ){
 	if( (selected != this) || !gflags.inSetup )
 		return;
 	// ESP_LOGI(FNAME,"display() pressed=%d instance=%x mode=%d", pressed, (int)this, mode );
-	int y= 75;
 	if( mode == 0 ){ // normal mode
 		uprintf( 5,25, selected->_title );
 		displayVal();
 		if( _action != 0 )
 			(*_action)( this );
-		showhelp( y );
+		showhelp();
 	}
 	else if (mode == 1){   // save mode, do show only "Saved"true
-		y+=24;
 		ucg->setPrintPos( 1, 300 );
 		ucg->print("Saved");
 		vTaskDelay(1000 / portTICK_PERIOD_MS);

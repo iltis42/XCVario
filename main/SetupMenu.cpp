@@ -698,8 +698,7 @@ void SetupMenu::display(int mode) {
 		ucg->setColor( COLOR_WHITE);
 		// ESP_LOGI(FNAME,"Child: %s y=%d",child->_title ,y );
 	}
-	y += 170;
-	showhelp(y);
+	showhelp();
 	xSemaphoreGive(display_mutex);
 }
 

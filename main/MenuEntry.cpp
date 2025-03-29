@@ -77,7 +77,7 @@ void MenuEntry::uprint( int x, int y, const char* str ) {
 	ucg->print( str );
 }
 
-void MenuEntry::showhelp( int y ){
+void MenuEntry::showhelp(){
 	if( helptext != 0 ){
 		int w=0;
 		char *buf = (char *)malloc(512);

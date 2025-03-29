@@ -36,7 +36,7 @@ public:
 	virtual const char* value() = 0;
 	void togglePressed() { pressed = ! pressed; }
 	void setHelp( const char *txt, int y=180 ) { helptext = (char*)txt; hypos = y; };
-	void showhelp( int y );
+	void showhelp();
 	void clear();
 	const MenuEntry* findMenu(const char *title) const;
 	void uprintf( int x, int y, const char* format, ...);
@@ -48,8 +48,7 @@ public:
 	SetupMenu *_parent;
 	const char *_title;
 	bool      pressed;
-	char      *helptext;
-	int16_t    hypos;
+
 	static AdaptUGC *ucg;
 	static MenuEntry *root;
 	static MenuEntry *selected;
@@ -57,4 +56,8 @@ public:
 	static AnalogInput* _adc;
 	static PressureSensor *_bmp;
 	static bool _restart;
+
+protected:
+	char      *helptext;
+	int16_t    hypos;
 };

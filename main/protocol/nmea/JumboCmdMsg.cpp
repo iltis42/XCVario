@@ -7,6 +7,7 @@
  ***********************************************************/
 
 #include "JumboCmdMsg.h"
+#include "setup/SetupAction.h"
 
 #include "protocol/nmea_util.h"
 
@@ -16,6 +17,11 @@
 #include <logdef.h>
 
 #include <cstring>
+
+
+SetupAction* JumboCmdMsg::RightAction = nullptr;
+SetupAction* JumboCmdMsg::LeftAction = nullptr;
+
 
 // The jumbo command host side protocol parser. Those commands/queries are supported:
 //
@@ -139,8 +145,21 @@ dl_action_t JumboCmdMsg::info(NmeaPrtcl *nmea)
 
 dl_action_t JumboCmdMsg::alive(NmeaPrtcl *nmea)
 {
+    // $PJPJA, R97
     ESP_LOGI(FNAME, "JP alive");
-    // todo
+    ProtocolState *sm = nmea->getSM();
+    int tmp = 7;
+    std::string token = NMEA::extractWord(sm->_frame, tmp);
+    char* endptr;
+    tmp = std::strtol(token.c_str() + 1, &endptr, 10);
+    if ( token[0] == 'R' ) {
+        if ( RightAction ) {
+            RightAction->display(tmp);
+        }
+    }
+    else if ( LeftAction ) {
+        LeftAction->display(tmp);
+    }
     return NOACTION;
 }
 

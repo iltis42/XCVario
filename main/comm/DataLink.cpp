@@ -26,7 +26,7 @@
 #include "Messages.h"
 #include "DeviceMgr.h"
 #include "DataMonitor.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <array>
 

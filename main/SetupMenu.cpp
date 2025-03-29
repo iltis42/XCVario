@@ -19,6 +19,7 @@
 #include "SetupMenuSelect.h"
 #include "SetupMenuValFloat.h"
 #include "SetupMenuChar.h"
+#include "setup/SetupAction.h"
 #include "DisplayDeviations.h"
 #include "ShowCompassSettings.h"
 #include "ShowCirclingWind.h"
@@ -45,6 +46,7 @@
 #include "protocol/NMEA.h"
 #include "comm/SerialLine.h"
 #include "coredump_to_server.h"
+#include "protocol/nmea/JumboCmdMsg.h"
 
 
 static void setup_create_root(SetupMenu *top);
@@ -538,11 +540,11 @@ int crew_weight_adj(SetupMenuValFloat *p) {
 	return 0;
 }
 
-int wiper_button(SetupMenuValFloat *p) {
+int wiper_button(SetupAction *p) {
 	NmeaPrtcl *jumbo = static_cast<NmeaPrtcl*>(DEVMAN->getProtocol(DeviceId::JUMBO_DEV, ProtocolType::JUMBOCMD_P));
 
-	ESP_LOGI(FNAME, "wipe %f", p->getFloat());
-	jumbo->sendJPShortPress((int)p->getFloat());
+	ESP_LOGI(FNAME, "wipe %d", p->getCode());
+	jumbo->sendJPShortPress(p->getCode());
 	return 0;
 }
 
@@ -680,7 +682,9 @@ void SetupMenu::display(int mode) {
 	for (int i = 0; i < _childs.size(); i++) {
 		MenuEntry *child = _childs[i];
 		ucg->setPrintPos(1, (i + 1) * 25 + 25);
-		ucg->setColor( COLOR_HEADER_LIGHT);
+		if (!child->isLeaf() || child->value()) {
+			ucg->setColor( COLOR_HEADER_LIGHT);
+		}
 		ucg->printf("%s", child->_title);
 		// ESP_LOGI(FNAME,"Child Title: %s", child->_title );
 		if (child->value()) {
@@ -1080,11 +1084,10 @@ void vario_menu_create_ec(SetupMenu *top) {
 }
 
 void wiper_menu_create(SetupMenu *top) {
-	SetupMenuValFloat *wiperL = new SetupMenuValFloat("Wipe left       ", "", 1.0, 1.0, 0, wiper_button, false);
-	SetupMenuValFloat *wiperR = new SetupMenuValFloat("Wipe       right", "", 0.0, 0.0, 0, wiper_button, false);
-
-	wiperL->setHelp("Start the jumbo wiper run.");
-	wiperR->setHelp("Start the jumbo wiper run.");
+	SetupAction *wiperL = new SetupAction("Wipe left         ", wiper_button, 1);
+	JumboCmdMsg::LeftAction = wiperL;
+	SetupAction *wiperR = new SetupAction("Wipe       right", wiper_button, 0);
+	JumboCmdMsg::RightAction = wiperR;
 	top->addEntry(wiperL);
 	top->addEntry(wiperR);
 

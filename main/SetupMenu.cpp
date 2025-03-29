@@ -6,6 +6,7 @@
  */
 
 #include "SetupMenu.h"
+#include "setup/SubMenuDevices.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"
@@ -2676,31 +2677,38 @@ void system_menu_create(SetupMenu *sye) {
 	SetupMenu *aia = new SetupMenu("Altimeter, Airspeed", system_menu_create_altimeter_airspeed);
 	sye->addEntry(aia);
 
-	// _serial1_speed
-	SetupMenu *rs232 = new SetupMenu("RS232 Interface S1", system_menu_create_interfaceS1);
-	sye->addEntry(rs232);
+	// Devices menu
+	SetupMenu *devices = new SetupMenu("Connected Devices", system_menu_create_devices);
+	devices->setHelp("Devices, Interfaces, Protocols", 240);
+	sye->addEntry(devices);
 
-	if (hardwareRevision.get() >= XCVARIO_21) {
-		SetupMenu *rs232_2 = new SetupMenu("RS232 Interface S2", system_menu_create_interfaceS2);
-		sye->addEntry(rs232_2);
-	}
-	if (hardwareRevision.get() >= XCVARIO_22) {
-		// Can Interface C1
+	// // _serial1_speed
+	// SetupMenu *rs232 = new SetupMenu("RS232 Interface S1", system_menu_create_interfaceS1);
+	// sye->addEntry(rs232);
+
 		SetupMenu *can = new SetupMenu("CAN Interface", system_menu_create_interfaceCAN);
-		sye->addEntry(can);
-	}
 
-	// NMEA protocol of variometer
-	SetupMenuSelect *nmea = new SetupMenuSelect("NMEA Protocol", RST_NONE, 0,
-			true, &nmea_protocol);
-	sye->addEntry(nmea);
-	nmea->setHelp(
-			"Setup the protocol used for sending NMEA sentences. This needs to match the device driver chosen in XCSoar/LK8000");
-	nmea->addEntry("OpenVario");
-	nmea->addEntry("Borgelt");
-	nmea->addEntry("Cambridge");
-	nmea->addEntry("XCVario");
-	nmea->addEntry("Disable");
+	// if (hardwareRevision.get() >= XCVARIO_21) {
+	// 	SetupMenu *rs232_2 = new SetupMenu("RS232 Interface S2", system_menu_create_interfaceS2);
+	// 	sye->addEntry(rs232_2);
+	// }
+	// if (hardwareRevision.get() >= XCVARIO_22) {
+	// 	// Can Interface C1
+	// 	SetupMenu *can = new SetupMenu("CAN Interface", system_menu_create_interfaceCAN);
+	// 	sye->addEntry(can);
+	// }
+
+	// // NMEA protocol of variometer
+	// SetupMenuSelect *nmea = new SetupMenuSelect("NMEA Protocol", RST_NONE, 0,
+	// 		true, &nmea_protocol);
+	// sye->addEntry(nmea);
+	// nmea->setHelp(
+	// 		"Setup the protocol used for sending NMEA sentences. This needs to match the device driver chosen in XCSoar/LK8000");
+	// nmea->addEntry("OpenVario");
+	// nmea->addEntry("Borgelt");
+	// nmea->addEntry("Cambridge");
+	// nmea->addEntry("XCVario");
+	// nmea->addEntry("Disable");
 
 	SetupMenuSelect *logg = new SetupMenuSelect("Logging", RST_NONE, 0, true,
 			&logging);

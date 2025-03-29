@@ -175,7 +175,7 @@ void Flap::setupSensorMenueEntries(SetupMenu *wkm)
 	wkcal->addEntry( "Cancel");
 	wkcal->addEntry( "Start");
 	wkcal->setHelp(  "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
-	wkm->addEntry( wkcal, wkes );
+	wkm->addEntry( wkcal );
 }
 
 static SetupMenuValFloat *nflpos = 0;
@@ -236,7 +236,7 @@ void Flap::position_labels_menu_create(SetupMenu* top){
 
 void Flap::setupIndicatorMenueEntries(SetupMenu *wkm)
 {
-	ESP_LOGI(FNAME,"Flap Indicator Menue");
+	ESP_LOGI(FNAME,"Flap Indicator Menu");
 
 	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", RST_NONE, 0, true, &flap_enable );
 	wke->addEntry( "Disable");
@@ -246,21 +246,21 @@ void Flap::setupIndicatorMenueEntries(SetupMenu *wkm)
 
 	nflpos = new SetupMenuValFloat("Max positive Flap", "", 0., 3., 1., flap_pos_act, false, &flap_pos_max);
 	nflpos->setHelp("Maximum positive flap position to be displayed");
-	wkm->addEntry( nflpos, wkm->getFirst() );
+	wkm->addEntry( nflpos );
 
 	nflneg = new SetupMenuValFloat("Max negative Flap", "", -3., 0., 1., flap_pos_act, false, &flap_neg_max);
 	nflneg->setHelp("Maximum negative flap position to be displayed");
-	wkm->addEntry( nflneg, nflpos );
+	wkm->addEntry( nflneg );
 
 	flgnd = new SetupMenuValFloat("Takeoff Flap","", -3, 3, 1, 0, false, &flap_takeoff  );
 	flgnd->setHelp("Flap position to be set on ground for takeoff, when there is no airspeed");
-	wkm->addEntry( flgnd, nflneg );
+	wkm->addEntry( flgnd );
 
 	flapss = new SetupMenu("Flap Speeds Setup", speeds_setup_menu_create);
-	wkm->addEntry( flapss, flgnd );
+	wkm->addEntry( flapss );
 
 	flapls = new SetupMenu("Flap Position Labels", position_labels_menu_create);
-	wkm->addEntry( flapls, flapss );
+	wkm->addEntry( flapls );
 
 	setupSensorMenueEntries(wkm);
 }

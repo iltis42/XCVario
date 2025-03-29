@@ -27,7 +27,6 @@ public:
 	// the submenu structure
     MenuEntry* getFirst() const;
 	MenuEntry* addEntry(MenuEntry* item);
-	MenuEntry* addEntry(MenuEntry* item, const MenuEntry* after );
 	void       delEntry(MenuEntry* item);
 	const MenuEntry* findMenu(const char *title) const;
 

@@ -721,23 +721,6 @@ MenuEntry* SetupMenu::addEntry( MenuEntry * item ) {
 	}
 }
 
-MenuEntry* SetupMenu::addEntry( MenuEntry * item, const MenuEntry* after ) {
-	// ESP_LOGI(FNAME,"SetupMenu title %s after %s", item->_title, after->_title );
-	if( root == 0   ){
-		return addEntry(item);
-	}
-	else{
-        std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), after );
-        if (position != _childs.end()) {
-            item->_parent = this;
-            _childs.insert( ++position, item );
-            return item;
-        }
-        else { return addEntry(item); }
-	}
-}
-
-
 void SetupMenu::delEntry( MenuEntry * item ) {
 	ESP_LOGI(FNAME,"SetupMenu delMenu() title %s", item->_title );
 	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
@@ -1129,7 +1112,7 @@ void vario_menu_create(SetupMenu *vae) {
 	vlogscale->setHelp("Use a logarithmic scale in the vario gauge");
 	vlogscale->addEntry("DISABLE");
 	vlogscale->addEntry("ENABLE");
-	vae->addEntry(vlogscale, vga);
+	vae->addEntry(vlogscale);
 
 	SetupMenuSelect *vamod = new SetupMenuSelect("Mode", RST_NONE, 0, true,
 			&vario_mode);
@@ -1138,7 +1121,7 @@ void vario_menu_create(SetupMenu *vae) {
 	vamod->addEntry("Brutto");
 	vamod->addEntry("Netto");
 	vamod->addEntry("Cruise-Netto");
-	vae->addEntry(vamod, vlogscale);
+	vae->addEntry(vamod);
 
 	SetupMenuSelect *nemod = new SetupMenuSelect("Netto Mode", RST_NONE, 0,
 			true, &netto_mode);
@@ -1146,7 +1129,7 @@ void vario_menu_create(SetupMenu *vae) {
 			"In 'Relative' mode (also called 'Super-Netto') circling sink is considered,  to show climb rate as if you were circling there");
 	nemod->addEntry("Normal");
 	nemod->addEntry("Relative");
-	vae->addEntry(nemod, vamod);
+	vae->addEntry(nemod);
 
 	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, 0, true,
 			&ps_display);
@@ -1154,7 +1137,7 @@ void vario_menu_create(SetupMenu *vae) {
 			"Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
 	sink->addEntry("DISABLE");
 	sink->addEntry("ENABLE");
-	vae->addEntry(sink, nemod);
+	vae->addEntry(sink);
 
 	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, 0,
 			true, &needle_color);
@@ -1162,28 +1145,28 @@ void vario_menu_create(SetupMenu *vae) {
 	ncolor->addEntry("White");
 	ncolor->addEntry("Orange");
 	ncolor->addEntry("Red");
-	vae->addEntry(ncolor, sink);
+	vae->addEntry(ncolor);
 
 	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_ON_EXIT, 0,
 			true, &screen_centeraid);
 	scrcaid->setHelp("Enable/disable display of centering aid (reboots)");
 	scrcaid->addEntry("Disable");
 	scrcaid->addEntry("Enable");
-	vae->addEntry(scrcaid, ncolor);
+	vae->addEntry(scrcaid);
 
 	SetupMenu *vdamp = new SetupMenu("Vario Damping", vario_menu_create_damping);
-	vae->addEntry(vdamp, scrcaid);
+	vae->addEntry(vdamp);
 
 	SetupMenu *meanclimb = new SetupMenu("Mean Climb", vario_menu_create_meanclimb);
 	meanclimb->setHelp(
 			"Options for calculation of Mean Climb (MC recommendation) displayed by green/red rhombus");
-	vae->addEntry(meanclimb, vdamp);
+	vae->addEntry(meanclimb);
 
 	SetupMenu *s2fs = new SetupMenu("S2F Settings", vario_menu_create_s2f);
-	vae->addEntry(s2fs, meanclimb);
+	vae->addEntry(s2fs);
 
 	SetupMenu *elco = new SetupMenu("Electronic Compensation", vario_menu_create_ec);
-	vae->addEntry(elco, s2fs);
+	vae->addEntry(elco);
 }
 
 void audio_menu_create_tonestyles(SetupMenu *top) {

@@ -11,6 +11,8 @@
 
 #include "logdef.h"
 
+constexpr const char action_help[] = "Long Press to exit action control.";
+
 SetupAction::SetupAction(const char *title, int (*action)(SetupAction *), int code, bool end_menu) :
     _action(action),
     _code(code),
@@ -18,6 +20,7 @@ SetupAction::SetupAction(const char *title, int (*action)(SetupAction *), int co
 {
     ESP_LOGI(FNAME, "SetupAction( %s ) ", title);
     _title = title;
+    helptext = action_help;
     attach(this);
 }
 
@@ -50,6 +53,7 @@ void SetupAction::press()
     {
         // trap until long press
         pressed = true;
+        showhelp();
     }
 }
 

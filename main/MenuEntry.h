@@ -19,13 +19,15 @@ class PressureSensor;
 class AdaptUGC;
 class SetupMenu;
 
+constexpr const int DEFAULT_HELP_Y_POS = 180;
+
 class MenuEntry: public RotaryObserver {
 public:
 	MenuEntry() : RotaryObserver() {
 		_parent = 0;
 		pressed = false;
 		helptext = 0;
-		hypos = 0;
+		hypos = DEFAULT_HELP_Y_POS;
 		_title = 0;
 	};
 	virtual ~MenuEntry();
@@ -35,7 +37,7 @@ public:
 	void longPress() override {};
 	virtual const char* value() = 0;
 	void togglePressed() { pressed = ! pressed; }
-	void setHelp( const char *txt, int y=180 ) { helptext = (char*)txt; hypos = y; };
+	void setHelp( const char *txt, int y=DEFAULT_HELP_Y_POS ) { helptext = (char*)txt; hypos = y; };
 	void showhelp();
 	void clear();
 	const MenuEntry* findMenu(const char *title) const;
@@ -58,6 +60,6 @@ public:
 	static bool _restart;
 
 protected:
-	char      *helptext;
-	int16_t    hypos;
+	const char *helptext;
+	int16_t    	hypos;
 };

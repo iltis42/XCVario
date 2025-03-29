@@ -447,6 +447,19 @@ void DeviceManager::dumpMap() const
     }
 }
 
+std::vector<const Device*> DeviceManager::allDevs() const
+{
+    std::vector<const Device*> ret;
+    for ( auto &it : _device_map ) {
+        ret.push_back(it.second);
+    }
+    return ret;
+}
+
+//
+// A Device
+//
+
 // Resolve the existance of a device
 Device::~Device()
 {

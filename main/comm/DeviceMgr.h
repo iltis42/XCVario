@@ -15,6 +15,7 @@
 
 #include <set>
 #include <map>
+#include <vector>
 
 class DataLink;
 class InterfaceCtrl;
@@ -107,6 +108,9 @@ public:
     static int getFreeCANId(int prio);
     // debugging
     void dumpMap() const;
+    // Setup access
+    // DevMap::const_iterator startIterate() const { return _device_map.begin(); }
+    std::vector<const Device*> allDevs() const; //  { return _device_map.end(); }
 
 private:
     // Complete list of all devices known at runtime

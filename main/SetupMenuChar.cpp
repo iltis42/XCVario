@@ -79,7 +79,6 @@ SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (
 	_select = 0;
 	_select_save = 0;
 	bits._end_menu = end_menu;
-	highlight = -1;
 	_mychar = 0;
 	_char_index = index;
 	if( achar ) {
@@ -100,7 +99,7 @@ SetupMenuChar::~SetupMenuChar()
 void SetupMenuChar::display( int mode ){
 	if( (selected != this) || !gflags.inSetup  )
 		return;
-	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x hl:%d", pressed, _title, (int)(_action), highlight );
+	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x", pressed, _title, (int)(_action));
 	clear();
 	if( bits._ext_handler ){  // handling is done only in action method
 		ESP_LOGI(FNAME,"ext handler");
@@ -200,8 +199,8 @@ void SetupMenuChar::press(){
 		else if( _parent != 0) {
 			ESP_LOGI(FNAME,"go to parent");
 			selected = _parent;
+			_parent->menuSetTop();
 		}
-		selected->highlight = -1;
 		selected->pressed = true;
 		pressed = false;
 		if( _action != 0 ){

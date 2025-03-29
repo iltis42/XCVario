@@ -24,6 +24,10 @@ public:
 	void display( int mode=0 ) override;
 	bool isLeaf() const override { return false; }
 	const char *value() { return 0; };
+	int getMenuPos() const { return highlight; }
+	int menuPosInc() { return ++highlight; }
+	void menuSetTop() { highlight = -1; }
+	
 	// the submenu structure
     MenuEntry* getFirst() const;
 	MenuEntry* addEntry(MenuEntry* item);
@@ -49,5 +53,6 @@ private:
 	void (*menu_create_ptr)(SetupMenu*);
 	std::vector<MenuEntry*>  _childs;
 	uint8_t subtree_created;
+	int8_t    highlight;
 };
 

@@ -114,9 +114,9 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	p->ucg->printf( "Saved" );
 	delay(500);
 	p->ucg->setPrintPos( 1, 300 );
-	p->_parent->highlight++;
-	if(p->_parent->highlight > 7 )
-		p->_parent->highlight = -1;
+	p->_parent->menuPosInc();
+	if(p->_parent->getMenuPos() > 7 )
+		p->_parent->menuSetTop();
 	p->ucg->printf( "Press key for next" );
 	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",	p->getEntry() );
 	return 0;

@@ -22,7 +22,6 @@ class SetupMenu;
 class MenuEntry: public RotaryObserver {
 public:
 	MenuEntry() : RotaryObserver() {
-		highlight = 0;
 		_parent = 0;
 		pressed = false;
 		helptext = 0;
@@ -46,10 +45,9 @@ public:
     bool get_restart() { return _restart; };
     static void setRoot( MenuEntry *root ) { selected = root; };
 public:
-	MenuEntry *_parent;
-	const char * _title;
-	int8_t    highlight;
-	uint8_t   pressed;
+	SetupMenu *_parent;
+	const char *_title;
+	bool      pressed;
 	char      *helptext;
 	int16_t    hypos;
 	static AdaptUGC *ucg;

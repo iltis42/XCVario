@@ -24,7 +24,6 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
 	attach(this);
 	_title = title;
-	highlight = -1;
 	_nvs = 0;
 	bits._restart = restart;
 	if( unit != 0 )
@@ -185,9 +184,11 @@ void SetupMenuValFloat::press(){
 		display( 1 );
 		if( bits._end_menu )
 			selected = root;
-		else if( _parent != 0 )
+		else if( _parent != 0 ) {
 			selected = _parent;
-		selected->highlight = -1;  // to topmost selection when back
+			_parent->menuSetTop();
+			// selected->highlight = -1;  // to topmost selection when back fixme -> return value of exit()
+		}
 		selected->pressed = true;
 		ESP_LOGI(FNAME,"Check if _value: %f != _value_safe: %f", _value, _value_safe );
 		if( _value != _value_safe ){

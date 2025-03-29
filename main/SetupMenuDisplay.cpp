@@ -55,10 +55,10 @@ void SetupMenuDisplay::press()
 	if( pressed )
     {
 	    // called during menu exit press
-      if( _parent != 0 )
+      if( _parent != 0 ) {
         selected = _parent;
-
-      selected->highlight = -1;  // to topmost selection when back
+        _parent->menuSetTop();  // to topmost selection when back
+      }
       selected->pressed = true;
       pressed = false;
     }

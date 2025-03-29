@@ -623,12 +623,12 @@ SetupMenu::SetupMenu() :
 SetupMenu::SetupMenu(const char *title, void (menu_create)(SetupMenu* ptr)) :
 	MenuEntry(),
 	menu_create_ptr(menu_create),
-	subtree_created(0)
+	subtree_created(0),
+	highlight(-1)
 {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
 	attach(this);
 	_title = title;
-	highlight = -1;
 }
 
 SetupMenu::~SetupMenu() {
@@ -675,8 +675,8 @@ void SetupMenu::display(int mode) {
 	ucg->setFont(ucg_font_ncenR14_hr);
 	ucg->setPrintPos(1, y);
 	ucg->setFontPosBottom();
-	ucg->printf("<< %s", selected->_title);
-	ucg->drawFrame(1, (selected->highlight + 1) * 25 + 3, 238, 25);
+	ucg->printf("<< %s", _title);
+	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	for (int i = 0; i < _childs.size(); i++) {
 		MenuEntry *child = _childs[i];
 		ucg->setPrintPos(1, (i + 1) * 25 + 25);
@@ -749,46 +749,6 @@ const MenuEntry* SetupMenu::findMenu(const char *title) const
 	return nullptr;
 }
 
-
-void SetupMenu::down(int count) {
-	if (selected == this && !gflags.inSetup) {
-		// ESP_LOGI(FNAME,"root: down");
-		if (rot_default.get() == 1) {	 // MC Value
-			float mc = MC.get();
-			float step = Units::Vario2ms(0.1);
-			mc -= step * count;
-			if (mc < 0.0)
-				mc = 0.0;
-			MC.set(mc);
-		} else {  // Volume
-			float vol = audio_volume.get();
-			for (int i = 0; i < count; i++)
-				vol = vol * 0.77;
-			if (vol < 1.5) // allow smaller volumes to better support new 50% scale mode of ESP32 sine generator (default is 25%)
-				vol = 0;
-			audio_volume.set(vol);
-			// ESP_LOGI(FNAME,"NEW DN VOL: %f", vol );
-		}
-	}
-	if ((selected != this) || !gflags.inSetup)
-		return;
-	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
-	if (focus)
-		return;
-	ucg->setColor(COLOR_BLACK);
-	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	ucg->setColor(COLOR_WHITE);
-	count &= 7;     // limit to some maximum
-	while( /* (highlight  >= -1) && */ count > 0 ){
-		highlight--;
-		count--;
-	}
-	if (highlight < -1)
-		highlight = (int) (_childs.size() - 1);
-	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	pressed = true;
-}
-
 void SetupMenu::up(int count) {
 	if (selected == this && !gflags.inSetup) {
 		// ESP_LOGI(FNAME,"root: up");
@@ -833,8 +793,48 @@ void SetupMenu::up(int count) {
 	pressed = true;
 }
 
+void SetupMenu::down(int count) {
+	if (selected == this && !gflags.inSetup) {
+		// ESP_LOGI(FNAME,"root: down");
+		if (rot_default.get() == 1) {	 // MC Value
+			float mc = MC.get();
+			float step = Units::Vario2ms(0.1);
+			mc -= step * count;
+			if (mc < 0.0)
+				mc = 0.0;
+			MC.set(mc);
+		} else {  // Volume
+			float vol = audio_volume.get();
+			for (int i = 0; i < count; i++)
+				vol = vol * 0.77;
+			if (vol < 1.5) // allow smaller volumes to better support new 50% scale mode of ESP32 sine generator (default is 25%)
+				vol = 0;
+			audio_volume.set(vol);
+			// ESP_LOGI(FNAME,"NEW DN VOL: %f", vol );
+		}
+	}
+	if ((selected != this) || !gflags.inSetup)
+		return;
+	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
+	if (focus)
+		return;
+	ucg->setColor(COLOR_BLACK);
+	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
+	ucg->setColor(COLOR_WHITE);
+	count &= 7;     // limit to some maximum
+	while( /* (highlight  >= -1) && */ count > 0 ){
+		highlight--;
+		count--;
+	}
+	if (highlight < -1)
+		highlight = (int) (_childs.size() - 1);
+	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
+	pressed = true;
+}
+
+
 void SetupMenu::showMenu() {
-	// ESP_LOGI(FNAME,"showMenu() p:%d h:%d parent:%x", pressed, highlight, (int)_parent );
+	ESP_LOGI(FNAME,"showMenu() p:%d h:%d parent:%p", pressed, highlight, _parent );
 	// default is not pressed, so just display, but we toogle pressed state at the end
 	// so next time we either step up to parent,
 	if (pressed) {
@@ -842,7 +842,7 @@ void SetupMenu::showMenu() {
 			// ESP_LOGI(FNAME,"SetupMenu to parent");
 			if (_parent != 0) {
 				selected = _parent;
-				selected->highlight = -1;
+				_parent->menuSetTop();
 				selected->pressed = true;
 				delete_subtree();
 			}

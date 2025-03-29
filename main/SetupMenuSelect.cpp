@@ -97,7 +97,6 @@ SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, i
 	_select = 0;
 	_select_save = 0;
 	bits._end_menu = end_menu;
-	highlight = -1;
 	if( !anvs ) {
 		_select_save = _select;
 	}
@@ -121,7 +120,7 @@ SetupMenuSelect::~SetupMenuSelect()
 void SetupMenuSelect::display( int mode ){
 	if( (selected != this) || !gflags.inSetup  )
 		return;
-	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x hl:%d", pressed, _title, (int)(_action), highlight );
+	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x", pressed, _title, (int)(_action));
 	clear();
 	if( bits._ext_handler ){  // handling is done only in action method
 		ESP_LOGI(FNAME,"ext handler");
@@ -231,8 +230,8 @@ void SetupMenuSelect::press(){
 		else if( _parent != 0) {
 			ESP_LOGI(FNAME,"go to parent");
 			selected = _parent;
+			_parent->menuSetTop();
 		}
-		selected->highlight = -1;
 		selected->pressed = true;
 		if( _nvs ){
 			_nvs->set((int)_select, false ); // do sync in next step

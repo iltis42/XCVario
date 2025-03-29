@@ -27,6 +27,7 @@ public:
 	void displayVal();
 	void setPrecision( int prec );
 	const char *value();
+	float getFloat() const { return _nvs->get(); }
 	static void showMenu( float val, SetupMenuValFloat *menu  );
 	void up( int count );  // step up to parent
 	void down( int count );

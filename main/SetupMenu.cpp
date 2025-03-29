@@ -41,7 +41,6 @@
 #include <iterator>
 #include <algorithm>
 #include <cstring>
-#include <string>
 #include "comm/DeviceMgr.h"
 #include "protocol/NMEA.h"
 #include "comm/SerialLine.h"
@@ -539,10 +538,11 @@ int crew_weight_adj(SetupMenuValFloat *p) {
 	return 0;
 }
 
-int wiper_button(SetupMenuSelect *p) {
+int wiper_button(SetupMenuValFloat *p) {
 	NmeaPrtcl *jumbo = static_cast<NmeaPrtcl*>(DEVMAN->getProtocol(DeviceId::JUMBO_DEV, ProtocolType::JUMBOCMD_P));
 
-	jumbo->sendJPShortPress(p->getSelect());
+	ESP_LOGI(FNAME, "wipe %f", p->getFloat());
+	jumbo->sendJPShortPress((int)p->getFloat());
 	return 0;
 }
 
@@ -1080,12 +1080,13 @@ void vario_menu_create_ec(SetupMenu *top) {
 }
 
 void wiper_menu_create(SetupMenu *top) {
-	SetupMenuSelect *wiper = new SetupMenuSelect("Start Wipe", RST_NONE,
-			wiper_button, false);
-	wiper->setHelp("Select a side and start the jumbo wiper run.");
-	wiper->addEntry("Left");
-	wiper->addEntry("Right");
-	top->addEntry(wiper);
+	SetupMenuValFloat *wiperL = new SetupMenuValFloat("Wipe left       ", "", 1.0, 1.0, 0, wiper_button, false);
+	SetupMenuValFloat *wiperR = new SetupMenuValFloat("Wipe       right", "", 0.0, 0.0, 0, wiper_button, false);
+
+	wiperL->setHelp("Start the jumbo wiper run.");
+	wiperR->setHelp("Start the jumbo wiper run.");
+	top->addEntry(wiperL);
+	top->addEntry(wiperR);
 
 	bugs_item_create(top);
 }
@@ -2727,11 +2728,12 @@ void setup_create_root(SetupMenu *top) {
 		top->addEntry(vol);
 	}
 
+	ESP_LOGI(FNAME, "Create bugs menu");
 	Device *jumbo = DEVMAN->getDevice(DeviceId::JUMBO_DEV);
 	if (jumbo) {
-		std::string title("Bugs at ");
-		title += std::to_string(int(bugs.get())) + "%";
-		SetupMenu *wiper = new SetupMenu(title.c_str(), wiper_menu_create);
+		static char wiper_title[20];
+		sprintf(wiper_title, "Bugs at %d%%", int(bugs.get()));
+		SetupMenu *wiper = new SetupMenu(wiper_title, wiper_menu_create);
 		top->addEntry(wiper);
 	} else {
 		bugs_item_create(top);

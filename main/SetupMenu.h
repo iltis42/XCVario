@@ -49,5 +49,6 @@ public:
 private:
 	void (*menu_create_ptr)(SetupMenu*);
 	std::vector<MenuEntry*>  _childs;
+	uint8_t subtree_created;
 };
 

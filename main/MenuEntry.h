@@ -28,7 +28,6 @@ public:
 		helptext = 0;
 		hypos = 0;
 		_title = 0;
-		subtree_created = 0;
 	};
 	virtual ~MenuEntry();
 	virtual void display( int mode=0 ) = 0;
@@ -53,7 +52,6 @@ public:
 	uint8_t   pressed;
 	char      *helptext;
 	int16_t    hypos;
-	uint8_t subtree_created;
 	static AdaptUGC *ucg;
 	static MenuEntry *root;
 	static MenuEntry *selected;

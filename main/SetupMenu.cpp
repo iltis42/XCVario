@@ -612,7 +612,8 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 //
 SetupMenu::SetupMenu() :
 	MenuEntry(),
-	menu_create_ptr(0)
+	menu_create_ptr(0),
+	subtree_created(0)
 {
 	highlight = -1;
 	_parent = 0;
@@ -621,7 +622,8 @@ SetupMenu::SetupMenu() :
 
 SetupMenu::SetupMenu(const char *title, void (menu_create)(SetupMenu* ptr)) :
 	MenuEntry(),
-	menu_create_ptr(menu_create)
+	menu_create_ptr(menu_create),
+	subtree_created(0)
 {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
 	attach(this);

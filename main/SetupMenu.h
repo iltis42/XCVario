@@ -21,13 +21,21 @@ public:
 	explicit SetupMenu( const char* title, void (menu_create)(SetupMenu* ptr)  );
 	virtual ~SetupMenu();
 	void begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *adc );
-	void display( int mode=0 );
+	void display( int mode=0 ) override;
+	bool isLeaf() const override { return false; }
 	const char *value() { return 0; };
-	void up( int count );  // step up to parent
-	void down( int count );
-	void press();
-	void longPress();
-	void escape();
+	// the submenu structure
+    MenuEntry* getFirst() const;
+	MenuEntry* addEntry(MenuEntry* item);
+	MenuEntry* addEntry(MenuEntry* item, const MenuEntry* after );
+	void       delEntry(MenuEntry* item);
+	const MenuEntry* findMenu(const char *title) const;
+
+	void up( int count ) override;
+	void down( int count ) override;
+	void press() override;
+	void longPress() override;
+	void escape() override;
 	void showMenu();
 	void create_subtree();
 	void delete_subtree();
@@ -40,5 +48,6 @@ public:
 
 private:
 	void (*menu_create_ptr)(SetupMenu*);
+	std::vector<MenuEntry*>  _childs;
 };
 

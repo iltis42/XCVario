@@ -607,6 +607,9 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 	return 0;
 }
 
+//
+// SetupMenu
+//
 SetupMenu::SetupMenu() :
 	MenuEntry(),
 	menu_create_ptr(0)
@@ -628,7 +631,9 @@ SetupMenu::SetupMenu(const char *title, void (menu_create)(SetupMenu* ptr)) :
 
 SetupMenu::~SetupMenu() {
 	// ESP_LOGI(FNAME,"del SetupMenu( %s ) ", _title );
-	detach(this);
+	for (MenuEntry *c : _childs) {
+		delete c;
+	}
 }
 
 void SetupMenu::begin(IpsDisplay *display, PressureSensor *bmp,
@@ -691,6 +696,74 @@ void SetupMenu::display(int mode) {
 	showhelp(y);
 	xSemaphoreGive(display_mutex);
 }
+
+MenuEntry* SetupMenu::getFirst() const {
+	// ESP_LOGI(FNAME,"SetupMenu::getFirst()");
+	return _childs.front();
+}
+
+MenuEntry* SetupMenu::addEntry( MenuEntry * item ) {
+	// ESP_LOGI(FNAME,"SetupMenu addMenu() title %s", item->_title );
+	if( root == 0 ){
+		ESP_LOGI(FNAME,"Init root menu");
+		root = item;
+		item->_parent = 0;
+		selected = item;
+		return item;
+	}
+	else{
+		// ESP_LOGI(FNAME,"add to childs");
+		item->_parent = this;
+		_childs.push_back( item );
+		return item;
+	}
+}
+
+MenuEntry* SetupMenu::addEntry( MenuEntry * item, const MenuEntry* after ) {
+	// ESP_LOGI(FNAME,"SetupMenu title %s after %s", item->_title, after->_title );
+	if( root == 0   ){
+		return addEntry(item);
+	}
+	else{
+        std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), after );
+        if (position != _childs.end()) {
+            item->_parent = this;
+            _childs.insert( ++position, item );
+            return item;
+        }
+        else { return addEntry(item); }
+	}
+}
+
+
+void SetupMenu::delEntry( MenuEntry * item ) {
+	ESP_LOGI(FNAME,"SetupMenu delMenu() title %s", item->_title );
+	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
+	if (position != _childs.end()) { // == myVector.end() means the element was not found
+		ESP_LOGI(FNAME,"found entry, now erase" );
+		_childs.erase(position);
+        delete *position;
+	}
+}
+
+const MenuEntry* SetupMenu::findMenu(const char *title) const
+{
+	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title, this );
+	if( std::strcmp(_title, title) == 0 ) {
+		ESP_LOGI(FNAME,"Menu entry found for start %s", title );
+		return this;
+	}
+	for (const MenuEntry* child : static_cast<const SetupMenu*>(this)->_childs) {
+		const MenuEntry* m = child->findMenu(title);
+		if( m != nullptr ) {
+			ESP_LOGI(FNAME,"Menu entry found for %s", title);
+			return m;
+		}
+	}
+	ESP_LOGW(FNAME,"Menu entry not found for %s", title);
+	return nullptr;
+}
+
 
 void SetupMenu::down(int count) {
 	if (selected == this && !gflags.inSetup) {
@@ -1829,9 +1902,9 @@ void options_menu_create_wireless(SetupMenu *top) {
 	top->addEntry(cusid);
 	cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate",215);
 
-	SetupMenuSelect *clearcore = new SetupMenuSelect("Clear coredump", RST_NONE, reinterpret_cast<int (*)(SetupMenuSelect*)>(clear_coredump), false, nullptr);
-	clearcore->addEntry("doit");
-	top->addEntry(clearcore);
+	// SetupMenuSelect *clearcore = new SetupMenuSelect("Clear coredump", RST_NONE, reinterpret_cast<int (*)(SetupMenuSelect*)>(clear_coredump), false, nullptr);
+	// clearcore->addEntry("doit");
+	// top->addEntry(clearcore);
 }
 
 void options_menu_create_gload(SetupMenu *top) {

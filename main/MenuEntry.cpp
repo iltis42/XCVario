@@ -35,10 +35,16 @@ MenuEntry::~MenuEntry()
 {
     // ESP_LOGI(FNAME,"del menu %s",_title );
     detach(this);
-    for ( MenuEntry* c : _childs ) {
-        delete c;
-        c = nullptr;
-    }
+}
+
+const MenuEntry* MenuEntry::findMenu(const char *title) const
+{
+	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title, this );
+	if( std::strcmp(_title, title) == 0 ) {
+		ESP_LOGI(FNAME,"Menu entry found for start %s", title );
+		return this;
+	}
+	return nullptr;
 }
 
 void MenuEntry::uprintf( int x, int y, const char* format, ...) {
@@ -69,75 +75,6 @@ void MenuEntry::uprint( int x, int y, const char* str ) {
 	}
 	ucg->setPrintPos(x,y);
 	ucg->print( str );
-}
-
-MenuEntry* MenuEntry::getFirst() const {
-	// ESP_LOGI(FNAME,"MenuEntry::getFirst()");
-	return _childs.front();
-}
-
-MenuEntry* MenuEntry::addEntry( MenuEntry * item ) {
-	// ESP_LOGI(FNAME,"MenuEntry addMenu() title %s", item->_title );
-	if( root == 0 ){
-		ESP_LOGI(FNAME,"Init root menu");
-		root = item;
-		item->_parent = 0;
-		selected = item;
-		return item;
-	}
-	else{
-		// ESP_LOGI(FNAME,"add to childs");
-		item->_parent = this;
-		_childs.push_back( item );
-		return item;
-	}
-}
-
-MenuEntry* MenuEntry::addEntry( MenuEntry * item, const MenuEntry* after ) {
-	// ESP_LOGI(FNAME,"AddMenuEntry title %s after %s", item->_title, after->_title );
-	if( root == 0   ){
-		return addEntry(item);
-	}
-	else{
-        std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), after );
-        if (position != _childs.end()) {
-            item->_parent = this;
-            _childs.insert( ++position, item );
-            return item;
-        }
-        else { return addEntry(item); }
-	}
-}
-
-
-void MenuEntry::delEntry( MenuEntry * item ) {
-	ESP_LOGI(FNAME,"MenuEntry delMenu() title %s", item->_title );
-	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
-	if (position != _childs.end()) { // == myVector.end() means the element was not found
-		ESP_LOGI(FNAME,"found entry, now erase" );
-		_childs.erase(position);
-        delete *position;
-	}
-}
-
-MenuEntry* MenuEntry::findMenu( std::string title, MenuEntry* start )
-{
-	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title.c_str(), start );
-	if( std::string(start->_title) == title ) {
-		ESP_LOGI(FNAME,"Menu entry found for start %s", title.c_str() );
-		return start;
-	}
-	for(MenuEntry* child : start->_childs) {
-		if( std::string(start->_title) == title )
-			return child;
-		MenuEntry* m = child->findMenu( title, child );
-		if( m != 0 ) {
-			ESP_LOGI(FNAME,"Menu entry found for %s", title.c_str() );
-			return m;
-		}
-	};
-	ESP_LOGW(FNAME,"Menu entry not found for %s", title.c_str() );
-	return 0;
 }
 
 void MenuEntry::showhelp( int y ){

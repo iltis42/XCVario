@@ -32,25 +32,21 @@ public:
 	};
 	virtual ~MenuEntry();
 	virtual void display( int mode=0 ) = 0;
-	virtual void release() { display(); };
-	virtual void longPress() {};
+	virtual bool isLeaf() const { return true; }
+	void release() override { display(); };
+	void longPress() override {};
 	virtual const char* value() = 0;
-    MenuEntry* getFirst() const;
-	MenuEntry* addEntry( MenuEntry * item );
-	MenuEntry* addEntry( MenuEntry * item, const MenuEntry* after );
-	void       delEntry( MenuEntry * item );
-	MenuEntry* findMenu( std::string title, MenuEntry* start=root  );
 	void togglePressed() { pressed = ! pressed; }
 	void setHelp( const char *txt, int y=180 ) { helptext = (char*)txt; hypos = y; };
 	void showhelp( int y );
 	void clear();
+	const MenuEntry* findMenu(const char *title) const;
 	void uprintf( int x, int y, const char* format, ...);
 	void uprint( int x, int y, const char* str );
     void restart();
     bool get_restart() { return _restart; };
     static void setRoot( MenuEntry *root ) { selected = root; };
 public:
-	std::vector<MenuEntry*>  _childs;
 	MenuEntry *_parent;
 	const char * _title;
 	int8_t    highlight;

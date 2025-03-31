@@ -124,11 +124,11 @@ TaskHandle_t dpid = NULL;
 
 e_wireless_type wireless;
 
-PressureSensor *baroSensor = 0;
-PressureSensor *teSensor = 0;
+PressureSensor *baroSensor = nullptr;
+PressureSensor *teSensor = nullptr;
 
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
-IpsDisplay *display = 0;
+IpsDisplay *Display = 0;
 CenterAid  *centeraid = 0;
 
 bool netif_initialized = false;
@@ -201,7 +201,9 @@ float mpu_target_temp=45.0;
 AdaptUGC *egl = 0;
 
 
-float getTAS() { return tas; };
+AnalogInput* getBattery() { return &Battery;}
+
+float getTAS() { return tas; }
 
 bool do_factory_reset() {
 	return( SetupCommon::factoryReset() );
@@ -234,14 +236,14 @@ void drawDisplay(void *pvParameters){
 					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
 						if( !gflags.stall_warning_active ){
 							Audio::alarm( true, max_volume.get() );
-							display->drawWarning( "! STALL !", true );
+							Display->drawWarning( "! STALL !", true );
 							gflags.stall_warning_active = true;
 						}
 					}
 					else{
 						if( gflags.stall_warning_active ){
 							Audio::alarm( false );
-							display->clear();
+							Display->clear();
 							gflags.stall_warning_active = false;
 						}
 					}
@@ -278,13 +280,13 @@ void drawDisplay(void *pvParameters){
 						if( Rotary->readSwitch() ){   // Acknowledge Warning -> Warning OFF
 							gear_warning_holdoff = 25000;  // ~500 sec
 							Audio::alarm( false );
-							display->clear();
+							Display->clear();
 							gflags.gear_warning_active = false;
 							SetupMenu::catchFocus( false );
 						}
 						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
 							Audio::alarm( true, max_volume.get() );
-							display->drawWarning( "! GEAR !", false );
+							Display->drawWarning( "! GEAR !", false );
 							gflags.gear_warning_active = true;
 							SetupMenu::catchFocus( true );
 						}
@@ -293,7 +295,7 @@ void drawDisplay(void *pvParameters){
 						if( gflags.gear_warning_active ){
 							SetupMenu::catchFocus( false );
 							Audio::alarm( false );
-							display->clear();
+							Display->clear();
 							gflags.gear_warning_active = false;
 						}
 					}
@@ -309,14 +311,14 @@ void drawDisplay(void *pvParameters){
 				if( !gflags.flarmWarning ) {
 					gflags.flarmWarning = true;
 					delay(100);
-					display->clear();
+					Display->clear();
 				}
 				flarm_alarm_holdtime = millis()+flarm_alarm_time.get()*1000;
 			}
 			else{
 				if( gflags.flarmWarning && (millis() > flarm_alarm_holdtime) ){
 					gflags.flarmWarning = false;
-					display->clear();
+					Display->clear();
 					Audio::alarm( false );
 				}
 			}
@@ -337,12 +339,12 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 			if( gflags.gLoadDisplay ) {
-				display->drawLoadDisplay( IMU::getGliderAccelZ() );
+				Display->drawLoadDisplay( IMU::getGliderAccelZ() );
 			}
 			if( active_screen == SCREEN_HORIZON ) {
 				float roll =  IMU::getRollRad();
 				float pitch = IMU::getPitchRad();
-				display->drawHorizon( pitch, roll, 0 );
+				Display->drawHorizon( pitch, roll, 0 );
 				gflags.horizon = true;
 			}
 			else{
@@ -366,7 +368,7 @@ void drawDisplay(void *pvParameters){
 			// Vario Screen
 			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
-				display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
+				Display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 			}
 			if( screen_centeraid.get() ){
 				if( centeraid ){
@@ -970,11 +972,11 @@ void system_startup(void *args){
 	ESP_LOGI( FNAME, "finish Draw" );
 
 	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
-	display = new IpsDisplay( MYUCG );
+	Display = new IpsDisplay( MYUCG );
 	Flarm::setDisplay( MYUCG );
 	DM.begin( MYUCG );
-	display->begin();
-	display->bootDisplay();
+	Display->begin();
+	Display->bootDisplay();
 
 	// int valid;
 	std::string logged_tests("\n\n\n");
@@ -985,7 +987,7 @@ void system_startup(void *args){
 	sprintf( hw,", XCV-%d", hardwareRevision.get()+18);  // plus 18, e.g. 2 = XCVario-20
 	std::string hwrev( hw );
 	ver += hwrev;
-	display->writeText(line++, ver.c_str() );
+	Display->writeText(line++, ver.c_str() );
 	Rotary->begin();
 	sleep(1);
 	if( software_update.get() || Rotary->readSwitch() ) {
@@ -1000,7 +1002,7 @@ void system_startup(void *args){
 		}
 		ota = new OTA();
 		ota->begin();
-		ota->doSoftwareUpdate( display );
+		ota->doSoftwareUpdate( Display );
 	}
 	if( hardwareRevision.get() >= XCVARIO_21 ){
 		gflags.haveMPU = true;
@@ -1043,7 +1045,7 @@ void system_startup(void *args){
 		accelG /= samples;
 		float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
 		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accel );
-		display->writeText( line++, ahrs );
+		Display->writeText( line++, ahrs );
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		if ( IMU::MPU6050Read() == ESP_OK) {
@@ -1055,7 +1057,7 @@ void system_startup(void *args){
 		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );
 		if( hardwareRevision.get() >= XCVARIO_21 ) {
 			ESP_LOGI( FNAME,"hardwareRevision detected = 3, XCVario-21+");
-			display->writeText( line++, "AHRS Sensor: NOT FOUND");
+			Display->writeText( line++, "AHRS Sensor: NOT FOUND");
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
@@ -1085,7 +1087,7 @@ void system_startup(void *args){
 		Wifi = new WifiAP();
 	}
 	wireless_id += SetupCommon::getID();
-	display->writeText(line++, wireless_id.c_str() );
+	Display->writeText(line++, wireless_id.c_str() );
 	Cipher::begin();
 	if( Cipher::checkKeyAHRS() ){
 		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
@@ -1205,7 +1207,7 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Aispeed sensor current speed=%f", ias.get() );
 		if( !offset_plausible && ( ias.get() < 50 ) ){
 			ESP_LOGE(FNAME,"Error: air speed presure sensor offset out of bounds, act value=%d", offset );
-			display->writeText( line++, "AS Sensor: NEED ZERO" );
+			Display->writeText( line++, "AS Sensor: NEED ZERO" );
 			logged_tests += "AS Sensor offset test: FAILED\n";
 			selftestPassed = false;
 		}
@@ -1214,16 +1216,16 @@ void system_startup(void *args){
 			char s[40];
 			if( ias.get() > 50 ) {
 				sprintf(s, "AS Sensor: %d km/h", (int)(ias.get()+0.5) );
-				display->writeText( line++, s );
+				Display->writeText( line++, s );
 			}
 			else
-				display->writeText( line++, "AS Sensor: OK" );
+				Display->writeText( line++, "AS Sensor: OK" );
 			logged_tests += "AS Sensor offset test: PASSED\n";
 		}
 	}
 	else{
 		ESP_LOGE(FNAME,"Error with air speed pressure sensor, no working sensor found!");
-		display->writeText( line++, "AS Sensor: NOT FOUND");
+		Display->writeText( line++, "AS Sensor: NOT FOUND");
 		logged_tests += "AS Sensor: NOT FOUND\n";
 		selftestPassed = false;
 		asSensor = 0;
@@ -1297,26 +1299,26 @@ void system_startup(void *args){
 
 	if( !baroSensor->selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
-		display->writeText( line++, "Baro Sensor: NOT FOUND");
+		Display->writeText( line++, "Baro Sensor: NOT FOUND");
 		selftestPassed = false;
 		batest=false;
 		logged_tests += "Baro Sensor Test: NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"Baro Sensor test OK, T=%f P=%f", ba_t, ba_p);
-		display->writeText( line++, "Baro Sensor: OK");
+		Display->writeText( line++, "Baro Sensor: OK");
 		logged_tests += "Baro Sensor Test: PASSED\n";
 	}
 	if( !teSensor->selfTest(te_t, te_p) ) {
 		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
-		display->writeText( line++, "TE Sensor: NOT FOUND");
+		Display->writeText( line++, "TE Sensor: NOT FOUND");
 		selftestPassed = false;
 		tetest=false;
 		logged_tests += "TE Sensor Test: NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"TE Sensor test OK,   T=%f P=%f", te_t, te_p);
-		display->writeText( line++, "TE Sensor: OK");
+		Display->writeText( line++, "TE Sensor: OK");
 		logged_tests += "TE Sensor Test: PASSED\n";
 	}
 	if( tetest && batest ) {
@@ -1324,7 +1326,7 @@ void system_startup(void *args){
 		if( (abs(ba_t - te_t) >4.0)  && ( ias.get() < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
 			selftestPassed = false;
 			ESP_LOGE(FNAME,"Severe T delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
-			display->writeText( line++, "TE/Baro Temp: Unequal");
+			Display->writeText( line++, "TE/Baro Temp: Unequal");
 			logged_tests += "TE/Baro Sensor T diff. <4°C: FAILED\n";
 		}
 		else{
@@ -1338,7 +1340,7 @@ void system_startup(void *args){
 		if( (abs(ba_p - te_p) >delta)  && ( ias.get() < 50 ) ) {
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Abs p sensors deviation delta > 2.5 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
-			display->writeText( line++, "TE/Baro P: Unequal");
+			Display->writeText( line++, "TE/Baro P: Unequal");
 			logged_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
 		}
 		else {
@@ -1359,14 +1361,14 @@ void system_startup(void *args){
 	ESP_LOGI(FNAME,"Poti and Audio test");
 	if( !Audio::selfTest() ) {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
-		display->writeText( line++, "Digital Poti: Failure");
+		Display->writeText( line++, "Digital Poti: Failure");
 		selftestPassed = false;
 		logged_tests += "Digital Audio Poti test: FAILED\n";
 	}
 	else{
 		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 		logged_tests += "Digital Audio Poti test: PASSED\n";
-		display->writeText( line++, "Digital Poti: OK");
+		Display->writeText( line++, "Digital Poti: OK");
 	}
 
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
@@ -1419,18 +1421,18 @@ void system_startup(void *args){
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
 		if( resultCAN.length() )
-			display->writeText( line++, "Bat Meter/CAN: ");
+			Display->writeText( line++, "Bat Meter/CAN: ");
 		else
-			display->writeText( line++, std::string("Bat Meter/CAN: Fail/" + resultCAN).c_str() );
+			Display->writeText( line++, std::string("Bat Meter/CAN: Fail/" + resultCAN).c_str() );
 		logged_tests += "Battery Voltage Sensor: FAILED\n";
 		selftestPassed = false;
 	}
 	else{
 		ESP_LOGI(FNAME,"Battery voltage metering test PASSED, act value=%f", bat );
 		if( resultCAN.length() )
-			display->writeText( line++, std::string("Bat Meter/CAN: OK/" + resultCAN).c_str() );
+			Display->writeText( line++, std::string("Bat Meter/CAN: OK/" + resultCAN).c_str() );
 		else
-			display->writeText( line++, "Bat Meter: OK");
+			Display->writeText( line++, "Bat Meter: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
 	
@@ -1459,7 +1461,7 @@ void system_startup(void *args){
 	// 	 	result += ",S2 FAIL";
 	// }
 	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
-		display->writeText( line++, result.c_str() );
+		Display->writeText( line++, result.c_str() );
 	}
 
 	if( wireless == WL_BLUETOOTH ) {
@@ -1468,11 +1470,11 @@ void system_startup(void *args){
 			dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, BT_SPP);
 			dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
 			dm->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, NO_PHY);
-			display->writeText( line++, "Bluetooth: OK");
+			Display->writeText( line++, "Bluetooth: OK");
 			logged_tests += "Bluetooth test: PASSED\n";
 		}
 		else{
-			display->writeText( line++, "Bluetooth: FAILED");
+			Display->writeText( line++, "Bluetooth: FAILED");
 			logged_tests += "Bluetooth test: FAILED\n";
 		}
 	}else if ( (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE)
@@ -1500,12 +1502,12 @@ void system_startup(void *args){
 		if( err == ESP_OK )		{
 			// Activate working of magnetic sensor
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
-			display->writeText( line++, "Compass: OK");
+			Display->writeText( line++, "Compass: OK");
 			logged_tests += "Compass test: OK\n";
 		}
 		else{
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
-			display->writeText( line++, "Compass: FAILED");
+			Display->writeText( line++, "Compass: FAILED");
 			logged_tests += "Compass test: FAILED\n";
 			selftestPassed = false;
 		}
@@ -1519,13 +1521,13 @@ void system_startup(void *args){
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
-		display->writeText( line++, "Selftest FAILED");
+		Display->writeText( line++, "Selftest FAILED");
 		if( !Rotary->readSwitch() )
 			sleep(4);
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
-		display->writeText( line++, "Selftest PASSED");
+		Display->writeText( line++, "Selftest PASSED");
 		if( !Rotary->readSwitch() )
 			sleep(2);
 	}
@@ -1533,7 +1535,7 @@ void system_startup(void *args){
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
-	Menu->begin( display, baroSensor, &Battery );
+	// Menu->begin(SetupMenu::createQNHMenu(), baroSensor);
 
 	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		ESP_LOGI(FNAME,"Client Mode");
@@ -1572,8 +1574,8 @@ void system_startup(void *args){
 			ESP_LOGI(FNAME,"Auto QNH=%4.2f\n", qnh_best);
 			QNH.set( qnh_best );
 		}
-		display->clear();
-		if( NEED_VOLTAGE_ADJUST ){
+		Display->clear();
+		if ( NEED_VOLTAGE_ADJUST ) {
 			ESP_LOGI(FNAME,"Do Factory Voltmeter adj");
 			SetupMenuValFloat::showMenu( 0.0, SetupMenuValFloat::meter_adj_menu );
 		}else{
@@ -1584,7 +1586,7 @@ void system_startup(void *args){
 	else
 	{
 		gflags.inSetup = false;
-		display->clear();
+		Display->clear();
 	}
 
 	if ( flap_enable.get() ) {
@@ -1603,47 +1605,47 @@ void system_startup(void *args){
 	delay( 100 );
 	if ( SetupCommon::isClient() ){
 		if( wireless == WL_WLAN_CLIENT ){
-			display->clear();
+			Display->clear();
 
 			int line=1;
-			display->writeText( line++, "Wait for WiFi Master" );
+			Display->writeText( line++, "Wait for WiFi Master" );
 			char mxcv[30] = "";
 			if( master_xcvario.get() != 0 ){
 				sprintf( mxcv+strlen(mxcv), "XCVario-%d", (int) master_xcvario.get() );
-				display->writeText( line++, mxcv );
+				Display->writeText( line++, mxcv );
 			}
 			line++;
 			std::string ssid = WifiClient::scan( master_xcvario.get() );
 			if( ssid.length() ){
-				display->writeText( line++, "Master XCVario found" );
+				Display->writeText( line++, "Master XCVario found" );
 				char id[30];
 				sprintf( id, "Wifi ID: %s", ssid.c_str() );
-				display->writeText( line++, id );
-				display->writeText( line++, "Now start, sync" );
+				Display->writeText( line++, id );
+				Display->writeText( line++, "Now start, sync" );
 				WifiClient::start();
 				delay( 5000 );
 				gflags.inSetup = false;
-				display->clear();
+				Display->clear();
 			}
 			else{
-				display->writeText( 3, "Abort Wifi Scan" );
+				Display->writeText( 3, "Abort Wifi Scan" );
 			}
 		}
 		else if( the_can_mode == CAN_MODE_CLIENT ){
-			display->clear();
-			display->writeText( 1, "Wait for CAN Master" );
+			Display->clear();
+			Display->writeText( 1, "Wait for CAN Master" );
 			while( 1 ) {
 				if( CAN && CAN->connectedXCV() ){
-					display->writeText( 3, "Master XCVario found" );
-					display->writeText( 4, "Now start, sync" );
+					Display->writeText( 3, "Master XCVario found" );
+					Display->writeText( 4, "Now start, sync" );
 					delay( 5000 );
 					gflags.inSetup = false;
-					display->clear();
+					Display->clear();
 					break;
 				}
 				delay( 100 );
 				if( Rotary->readSwitch() ){
-					display->writeText( 3, "Abort CAN bus wait" );
+					Display->writeText( 3, "Abort CAN bus wait" );
 					break;
 				}
 			}

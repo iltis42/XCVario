@@ -28,7 +28,6 @@ public:
     void up(int count) override;
 	void down(int count) override;
 	void press() override;
-	void release() override {};
 	void longPress() override;
 	void escape() override;
 

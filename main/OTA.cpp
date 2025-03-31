@@ -46,10 +46,6 @@ void OTA::longPress() {
 	}
 }
 
-void OTA::release() {
-	ESP_LOGI(FNAME,"OTA::release()");
-}
-
 const char* ssid = "ESP32 OTA";
 const char* pwd = "xcvario-21";
 

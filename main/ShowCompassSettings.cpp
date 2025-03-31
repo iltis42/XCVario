@@ -111,22 +111,13 @@ void ShowCompassSettings::display(int mode)
 	MYUCG->setPrintPos( 5, 290 );
 	MYUCG->printf( "Press button to exit" );
 
-	uint32_t counter = 0;
-
 	while( Rotary->readSwitch() == false )
 	{
-		counter++;
-
-		if( counter % 100 != 0 )
-		{
-			delay( 10 );
-			continue;
-		}
+		delay( 1000 );
 
 		// Ca. after a second make an update of the overflow flag display.
 		MYUCG->setPrintPos( sotw, y1 );
 		MYUCG->printf( "%s", (compass->overflowFlag() == false) ? "No  " : "Yes" );
-		continue;
 	}
 
 	press();

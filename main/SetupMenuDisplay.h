@@ -40,7 +40,6 @@ public:
 	void down( int count ) override {}
 	void press() override;
 	void longPress() override {};
-	void release() override {}
 
 private:
 	// User's callback function

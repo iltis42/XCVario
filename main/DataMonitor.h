@@ -28,7 +28,6 @@ public:
 	void display(int) override {}
 	const char* value() const override { return ""; }
 	void press() override;
-	void release() override {};
 	void up( int count ) override {};
 	void down( int count ) override {};
 	void longPress() override;

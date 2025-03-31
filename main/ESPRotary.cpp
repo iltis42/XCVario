@@ -3,17 +3,17 @@
 
 #include "SetupNG.h"
 #include "sensor.h"
-#include <logdef.h>
+#include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
+#include <driver/gpio.h>
 
 #include <cstdio>
 #include <cstring>
 #include <stack>
 #include <algorithm>
-#include <driver/gpio.h>
 
 #define ROTARY_SINGLE_INC 0
 #define ROTARY_DOUBLE_INC 1
@@ -24,45 +24,57 @@ ESPRotary *Rotary = nullptr;
 #define SHORT_PRESS 1
 #define LONG_PRESS  2
 #define BUTTON_RELEASED 3
-#define LONG_PRESS_THRESHOLD 400  // 400ms threshold
-#define DEBOUNCE_TIME 25          // 25 ms debounce threshold
+#define DEBOUNCE_TIME 700         // 700 us debounce threshold
 
 
 static QueueHandle_t buttonQueue;
-static uint32_t lastPressTime = 0;
+static uint64_t lastPressTime = 0;
 static TaskHandle_t pid = NULL;
 static std::stack<RotaryObserver *> observers;
 
-static void IRAM_ATTR button_isr_handler(void* arg) {
-	uint32_t currentTime = esp_log_timestamp();
+static void IRAM_ATTR button_isr_handler(void* arg)
+{
+	ESPRotary *knob = static_cast<ESPRotary*>(arg);
+	uint64_t currentTime = esp_timer_get_time();
 	// Ignore interrupts occurring within debounce time
-	if (lastPressTime && ((currentTime - lastPressTime) < DEBOUNCE_TIME)) {
+	if ((currentTime - lastPressTime) < DEBOUNCE_TIME) {
 		return;
 	}
 
-	int buttonState = gpio_get_level(Rotary->getSw());
+	// A valid edge detected
+	esp_timer_stop(knob->lp_timer);
+	lastPressTime = currentTime;
+	int buttonState = gpio_get_level(knob->getSw());
+	knob->state = buttonState == 0;
 
-	if (buttonState == 0 ) { // Button pressed (active LOW)
-		lastPressTime = currentTime;
+	if (buttonState == 0 ) {
+		// Button pressed (active LOW)
+		esp_timer_start_once(knob->lp_timer, knob->lp_duration);
 	}
 	else{ // Button released
-		if( lastPressTime ){
-			uint32_t pressDuration = currentTime - lastPressTime;
-			uint8_t pressType = (pressDuration > LONG_PRESS_THRESHOLD) ? LONG_PRESS : SHORT_PRESS;
-			xQueueSendFromISR(buttonQueue, &pressType, NULL);
-
+		if( knob->hold ) {
+			knob->hold = false;
 			uint8_t releaseEvent = BUTTON_RELEASED;
 			xQueueSendFromISR(buttonQueue, &releaseEvent, NULL);
-
-			lastPressTime = 0;
+		}
+		else {
+			uint8_t pressType = SHORT_PRESS;
+			xQueueSendFromISR(buttonQueue, &pressType, NULL);
 		}
 	}
 }
 
-// Observer task
-void ObserverTask( void *args )
+static void IRAM_ATTR longpress_timeout(void* arg)
 {
-	ESPRotary &knob = *static_cast<ESPRotary*>(args);
+	static_cast<ESPRotary*>(arg)->hold = true;
+	uint8_t pressType = LONG_PRESS;
+	xQueueSend(buttonQueue, &pressType, NULL); // task context
+}
+
+// Observer task
+static void ObserverTask( void *arg )
+{
+	ESPRotary &knob = *static_cast<ESPRotary*>(arg);
 	static int old_cnt = 0;
 	int enc_count;
 	while( true ) {
@@ -187,7 +199,17 @@ void ESPRotary::begin()
 	};
 	gpio_config(&io_conf);
 	gpio_install_isr_service(0);
-	gpio_isr_handler_add(sw, button_isr_handler, NULL);
+	gpio_isr_handler_add(sw, button_isr_handler, this);
+
+	// Create long press timer
+	esp_timer_create_args_t timer_args = {
+        .callback = (esp_timer_cb_t)longpress_timeout,
+        .arg = this,
+        .dispatch_method = ESP_TIMER_TASK,
+        .name = "long_press",
+        .skip_unhandled_events = true,
+    };
+    esp_timer_create(&timer_args, &lp_timer);
 }
 
 esp_err_t ESPRotary::updateRotDir()
@@ -249,10 +271,6 @@ void ESPRotary::sendEscape() const
 	if (!observers.empty()) {
 		observers.top()->escape();
 	}
-}
-
-bool ESPRotary::readSwitch() {
-	return gpio_get_level(sw) == 0; // Fixme, this need to be a vritual level after debouncing is done
 }
 
 

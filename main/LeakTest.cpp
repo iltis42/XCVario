@@ -6,8 +6,8 @@
 
 void LeakTest::start( PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSensor *asSensor ) {
 	ESP_LOGI(FNAME,"Starting Leak test");
-	display->clear();
-	display->writeText( 1, "** Leak Test **");
+	Display->clear();
+	Display->writeText( 1, "** Leak Test **");
 	float sba=0;   // Start values
 	float ste=0;
 	float sspeed = 0;
@@ -45,11 +45,11 @@ void LeakTest::start( PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSens
 			sspeed = speed;
 		}
 		sprintf(buf, "ST P: %3.2f hPa   ", ba);
-		display->writeText( 2, buf);
+		Display->writeText( 2, buf);
 		sprintf(buf, "TE P: %3.2f hPa   ", te);
-		display->writeText( 3, buf);
+		Display->writeText( 3, buf);
 		sprintf(buf, "PI P: %3.2f Pa    ", speed);
-		display->writeText( 4, buf);
+		Display->writeText( 4, buf);
 		if( i==0 ) {
 			ESP_LOGI(FNAME,"ST %3.2f  TE %3.2f  PI %3.2f", ba,te,speed);
 		}
@@ -58,17 +58,17 @@ void LeakTest::start( PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSens
 			ted = 100*(te-ste)/ste;
 			speedd = 100*(speed-sspeed)/sspeed;
 			sprintf(buf, "ST delta: %2.3f %%   ", bad );
-			display->writeText( 5, buf);
+			Display->writeText( 5, buf);
 			ESP_LOGI(FNAME,"%s", buf);
 			sprintf(buf, "TE delta: %2.3f %%   ", ted );
-			display->writeText( 6, buf);
+			Display->writeText( 6, buf);
 			ESP_LOGI(FNAME,"%s", buf);
 			sprintf(buf, "PI delta: %2.2f %%   ", speedd );
-			display->writeText( 7, buf);
+			Display->writeText( 7, buf);
 			ESP_LOGI(FNAME,"%s", buf);
 		}
 		sprintf(buf, "Seconds: %d", (i*5)+5 );
-		display->writeText( 8, buf );
+		Display->writeText( 8, buf );
 		// once we have exceeded, we can already stop here
 		if( (abs(bad) > 0.1) || (abs(ted) > 0.1) || ( (sspeed > 10.0) && (abs(speedd) > (1.0) ) ) ){
 			failed = true;
@@ -76,16 +76,16 @@ void LeakTest::start( PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSens
 		}
 	}
 	if( failed ) {
-		display->writeText( 9, "Test FAILED" );
+		Display->writeText( 9, "Test FAILED" );
 		ESP_LOGI(FNAME,"FAILED");
 	}
 	else {
-		display->writeText( 9, "Test PASSED" );
+		Display->writeText( 9, "Test PASSED" );
 		ESP_LOGI(FNAME,"PASSED");
 	}
 	while( !Rotary->readSwitch() ) {
 		delay(100);
 	}
-	display->clear();
+	Display->clear();
 }
 

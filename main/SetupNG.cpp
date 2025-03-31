@@ -7,6 +7,7 @@
 
 #include "SetupNG.h"
 
+#include "SetupMenuValCommon.h"
 #include "quaternion.h"
 #include "ESP32NVS.h"
 #include "ESPAudio.h"
@@ -25,7 +26,6 @@
 #include "protocol/NMEA.h"
 #include "logdef.h"
 
-// #include <sdkconfig.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 

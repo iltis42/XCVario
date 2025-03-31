@@ -7,8 +7,6 @@
 #include "MS4525DO.h"
 #include "IpsDisplay.h"
 #include "Compass.h" // 3-Axis Magnetic Sensor
-#include <hal/gpio_types.h>
-#include "SetupMenu.h"
 #include "S2F.h"
 #include "StraightWind.h"
 #include "DataMonitor.h"
@@ -17,6 +15,8 @@
 #include "vector_3d.h"
 #include "BMPVario.h"
 #include "AirspeedSensor.h"
+
+#include <hal/gpio_types.h>
 
 // Display 4 Wire SPI and Display CS
 #define RESET_Display  GPIO_NUM_5       // Reset pin for Display
@@ -49,7 +49,11 @@ class CANbus;
 class SerialLine;
 class Clock;
 class ESPRotary;
+class AnalogInput;
+class SetupRoot;
+class PressureSensor;
 
+AnalogInput* getBattery();
 
 extern t_global_flags gflags;
 extern BMPVario bmpVario;
@@ -58,11 +62,11 @@ extern SerialLine *S1,*S2;
 extern Clock *MY_CLOCK;
 extern StraightWind theWind;
 extern SemaphoreHandle_t xMutex;
-extern int active_screen;
 extern CenterAid *centeraid;
 extern AirspeedSensor *asSensor;
+extern PressureSensor *baroSensor;
 
-extern SetupMenu  *Menu;
+// extern SetupRoot Menu;
 extern SemaphoreHandle_t display_mutex;
 
 extern e_wireless_type wireless;
@@ -95,7 +99,7 @@ extern float dynamicP; // Pitot pressure
 
 extern long unsigned int _gps_millis;
 
-extern IpsDisplay *display;
+extern IpsDisplay *Display;
 
 extern ESPRotary *Rotary;
 

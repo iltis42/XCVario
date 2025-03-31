@@ -247,22 +247,22 @@ void Protocols::parseNMEA( const char *str ){
 			else{
 				if( func == 'p' ){
 					ESP_LOGI(FNAME,"Short Press");
-					Rotary->press();
-					Rotary->release();
+					Rotary->sendPress();
+					Rotary->sendRelease();
 				}else if( func == 'l' ){
 					ESP_LOGI(FNAME,"Long Press" );
-					Rotary->longPress();
-					Rotary->release();
+					Rotary->sendLongPress();
+					Rotary->sendRelease();
 				}else if( func == 'u' ){
 					ESP_LOGI(FNAME,"Up");
-					Rotary->up(1);
+					Rotary->sendUp(1);
 				}else if( func == 'd' ){
 					ESP_LOGI(FNAME,"Down");
-					Rotary->down(1);
+					Rotary->sendDown(1);
 				}
 				else if( func == 'x' ){
 					ESP_LOGI(FNAME,"Escape");
-					Rotary->escape();
+					Rotary->sendEscape();
 				}
 			}
 		}

@@ -16,7 +16,7 @@ public:
 	~OTA() {};
 	void begin();
 	void press() override;
-	void release() override;
+	void release() override {};
 	void up( int count ) override {};
 	void down( int count ) override {};
 	void longPress() override;

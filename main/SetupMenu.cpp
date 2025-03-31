@@ -6,6 +6,7 @@
  */
 
 #include "SetupMenu.h"
+#include "setup/SubMenuDevices.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"
@@ -19,11 +20,11 @@
 #include "SetupMenuSelect.h"
 #include "SetupMenuValFloat.h"
 #include "SetupMenuChar.h"
+#include "setup/SetupAction.h"
 #include "DisplayDeviations.h"
 #include "ShowCompassSettings.h"
 #include "ShowCirclingWind.h"
 #include "ShowStraightWind.h"
-#include "MenuEntry.h"
 #include "Compass.h"
 #include "CompassMenu.h"
 #include "esp_wifi.h"
@@ -36,21 +37,78 @@
 #include "sensor.h"
 #include "SetupNG.h"
 
-#include <logdef.h>
-#include <inttypes.h>
-#include <iterator>
-#include <algorithm>
-#include <cstring>
-#include <string>
 #include "comm/DeviceMgr.h"
 #include "protocol/NMEA.h"
 #include "comm/SerialLine.h"
 #include "coredump_to_server.h"
+#include "protocol/nmea/JumboCmdMsg.h"
+#include "logdef.h"
 
-SetupMenuSelect *audio_range_sm = 0;
-SetupMenuSelect *mpu = 0;
+#include <inttypes.h>
+#include <iterator>
+#include <algorithm>
+#include <cstring>
 
-SetupMenuValFloat *volume_menu = 0;
+static void setup_create_root(SetupMenu *top);
+
+static void wiper_menu_create(SetupMenu *top);
+static void bugs_item_create(SetupMenu *top);
+static void vario_menu_create(SetupMenu *top);
+static void vario_menu_create_damping(SetupMenu *top);
+static void vario_menu_create_meanclimb(SetupMenu *top);
+static void vario_menu_create_s2f(SetupMenu *top);
+static void vario_menu_create_ec(SetupMenu *top);
+
+static void audio_menu_create(SetupMenu *top);
+static void audio_menu_create_volume(SetupMenu *top);
+static void audio_menu_create_tonestyles(SetupMenu *top);
+static void audio_menu_create_deadbands(SetupMenu *top);
+static void audio_menu_create_equalizer(SetupMenu *top);
+static void audio_menu_create_mute(SetupMenu *top);
+
+static void glider_menu_create(SetupMenu *top);
+static void glider_menu_create_polarpoints(SetupMenu *top);
+
+static void options_menu_create(SetupMenu *top);
+static void options_menu_create_units(SetupMenu *top);
+static void options_menu_create_flarm(SetupMenu *top);
+static void options_menu_create_compasswind(SetupMenu *top);
+static void options_menu_create_compasswind_compass(SetupMenu *top);
+static void options_menu_create_compasswind_compass_dev(SetupMenu *top);
+static void options_menu_create_compasswind_compass_nmea(SetupMenu *top);
+static void options_menu_create_compasswind_straightwind(SetupMenu *top);
+static void options_menu_create_compasswind_straightwind_limits(SetupMenu *top);
+static void options_menu_create_compasswind_straightwind_filters(SetupMenu *top);
+static void options_menu_create_compasswind_circlingwind(SetupMenu *top);
+static void options_menu_create_wireless(SetupMenu *top);
+static void options_menu_create_wireless_custom_id(SetupMenu *top);
+static void options_menu_create_wireless_routing(SetupMenu *top);
+static void options_menu_create_gload(SetupMenu *top);
+
+static void system_menu_create(SetupMenu *top);
+static void system_menu_create_software(SetupMenu *top);
+static void system_menu_create_battery(SetupMenu *top);
+static void system_menu_create_hardware(SetupMenu *top);
+static void system_menu_create_altimeter_airspeed(SetupMenu *top);
+static void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top);
+static void system_menu_create_interfaceS1(SetupMenu *top);
+static void system_menu_create_interfaceS1_routing(SetupMenu *top);
+static void system_menu_create_interfaceS2(SetupMenu *top);
+static void system_menu_create_interfaceS2_routing(SetupMenu *top);
+static void system_menu_create_interfaceCAN(SetupMenu *top);
+static void system_menu_create_interfaceCAN_routing(SetupMenu *top);
+static void system_menu_create_hardware_type(SetupMenu *top);
+static void system_menu_create_hardware_rotary(SetupMenu *top);
+static void system_menu_create_hardware_rotary_screens(SetupMenu *top);
+static void system_menu_create_hardware_ahrs(SetupMenu *top);
+static void system_menu_create_ahrs_calib(SetupMenu *top);
+static void system_menu_create_hardware_ahrs_lc(SetupMenu *top);
+static void system_menu_create_hardware_ahrs_parameter(SetupMenu *top);
+
+SetupMenuSelect *audio_range_sm = nullptr;
+SetupMenuSelect *mpu = nullptr;
+
+SetupMenuValFloat *volume_menu = nullptr;
 void update_volume_menu_max() {
 	if (volume_menu)
 		volume_menu->setMax(max_volume.get());
@@ -59,7 +117,6 @@ void update_volume_menu_max() {
 // Menu for flap setup
 
 float elev_step = 1;
-static uint8_t screen_mask_len = 1;
 
 bool SetupMenu::focus = false;
 
@@ -74,48 +131,20 @@ int compass_ena(SetupMenuSelect *p) {
 	return 0;
 }
 
-void init_routing() {
-	uint32_t s1rt = (uint32_t) serial1_tx.get();
-	ESP_LOGI(FNAME,"init_routing S1: %x", (unsigned int)s1rt);
-	rt_s1_xcv.set((s1rt >> (RT_XCVARIO)) & 1);
-	rt_s1_wl.set((s1rt >> (RT_WIRELESS)) & 1);
-	rt_s1_s2.set((s1rt >> (RT_S1)) & 1);
-	rt_s1_can.set((s1rt >> (RT_CAN)) & 1);
-
-	uint32_t s2rt = (uint32_t) serial2_tx.get();
-	ESP_LOGI(FNAME,"init_routing S2: %x", (unsigned int)s2rt);
-	rt_s2_xcv.set((s2rt >> (RT_XCVARIO)) & 1);
-	rt_s2_wl.set((s2rt >> (RT_WIRELESS)) & 1);
-	rt_s1_s2.set((s2rt >> (RT_S1)) & 1);
-	rt_s2_can.set((s2rt >> (RT_CAN)) & 1);
-}
-
 int update_routing(SetupMenuSelect *p) {
-	uint32_t routing = ((uint32_t) rt_s1_xcv.get() << (RT_XCVARIO))
-			| ((uint32_t) rt_s1_wl.get() << (RT_WIRELESS))
-			| ((uint32_t) rt_s1_s2.get() << (RT_S1))
-			| ((uint32_t) rt_s1_can.get() << (RT_CAN));
-	ESP_LOGI(FNAME,"update_routing S1: %x", (unsigned int)routing);
-	serial1_tx.set(routing);
-	routing = (uint32_t) rt_s2_xcv.get() << (RT_XCVARIO)
-			| ((uint32_t) rt_s2_wl.get() << (RT_WIRELESS))
-			| ((uint32_t) rt_s1_s2.get() << (RT_S1))
-			| ((uint32_t) rt_s2_can.get() << (RT_CAN));
-	ESP_LOGI(FNAME,"update_routing S2: %x", (unsigned int)routing);
-	serial2_tx.set(routing);
+	// uint32_t routing = ((uint32_t) rt_s1_xcv.get() << (RT_XCVARIO))
+	// 		| ((uint32_t) rt_s1_wl.get() << (RT_WIRELESS))
+	// 		| ((uint32_t) rt_s1_s2.get() << (RT_S1))
+	// 		| ((uint32_t) rt_s1_can.get() << (RT_CAN));
+	// ESP_LOGI(FNAME,"update_routing S1: %x", (unsigned int)routing);
+	// serial1_tx.set(routing);
+	// routing = (uint32_t) rt_s2_xcv.get() << (RT_XCVARIO)
+	// 		| ((uint32_t) rt_s2_wl.get() << (RT_WIRELESS))
+	// 		| ((uint32_t) rt_s1_s2.get() << (RT_S1))
+	// 		| ((uint32_t) rt_s2_can.get() << (RT_CAN));
+	// ESP_LOGI(FNAME,"update_routing S2: %x", (unsigned int)routing);
+	// serial2_tx.set(routing);
 	return 0;
-}
-
-void init_screens() {
-	uint32_t scr = menu_screens.get();
-	screen_gmeter.set((scr >> SCREEN_GMETER) & 1);
-	// 	screen_centeraid.set( (scr >> SCREEN_THERMAL_ASSISTANT) & 1);
-	screen_horizon.set((scr >> SCREEN_HORIZON) & 1);
-	screen_mask_len = 1; // default vario
-	while (scr) {
-		scr = scr >> 1;
-		screen_mask_len++;
-	}ESP_LOGI(FNAME,"screens mask len: %d, screens: %d", screen_mask_len, menu_screens.get() );
 }
 
 int vario_setup(SetupMenuValFloat *p) {
@@ -258,14 +287,14 @@ int update_s1_protocol(SetupMenuSelect *p) {
 
 int do_display_test(SetupMenuSelect *p) {
 	if (display_test.get()) {
-		p->ucg->setColor(0, 0, 0);
-		p->ucg->drawBox(0, 0, 240, 320);
+		MYUCG->setColor(0, 0, 0);
+		MYUCG->drawBox(0, 0, 240, 320);
 		while (!Rotary->readSwitch()) {
 			delay(100);
 			ESP_LOGI(FNAME,"Wait for key press");
 		}
-		p->ucg->setColor(255, 255, 255);
-		p->ucg->drawBox(0, 0, 240, 320);
+		MYUCG->setColor(255, 255, 255);
+		MYUCG->drawBox(0, 0, 240, 320);
 		while (!Rotary->readSwitch()) {
 			delay(100);
 			ESP_LOGI(FNAME,"Wait for key press");
@@ -320,17 +349,28 @@ int data_mon(SetupMenuSelect *p) {
 	if (ch != ItfTarget()) {
 		ESP_LOGI(FNAME,"data_mon( %d ) ", (int)ch.raw );
 		DM.start(p, ch);
+		return 1;
 	}
 	return 0;
 }
 
-int data_monS1(SetupMenuSelect *p) {
-	DM.start(p, ItfTarget(S1_RS232));
+int data_monS1(SetupMenuSelect *p)
+{
+	ItfTarget tmp(S1_RS232);
+	if ( DEVMAN->isIntf(tmp) ) {
+		DM.start(p, tmp);
+		return 1;
+	}
 	return 0;
 }
 
-int data_monS2(SetupMenuSelect *p) {
-	DM.start(p, ItfTarget(S2_RS232));
+int data_monS2(SetupMenuSelect *p)
+{
+	ItfTarget tmp(S2_RS232);
+	if ( DEVMAN->isIntf(tmp) ) {
+		DM.start(p, tmp);
+		return 1;
+	}
 	return 0;
 }
 
@@ -394,7 +434,7 @@ int qnh_adj(SetupMenuValFloat *p) {
 		int samples = 0;
 		for (int i = 0; i < 6; i++) {
 			bool ok;
-			float a = p->_bmp->readAltitude(QNH.get(), ok);
+			float a = baroSensor->readAltitude(QNH.get(), ok);
 			if (ok) {  // only consider correct readouts
 				alt += a;
 				samples++;
@@ -403,7 +443,7 @@ int qnh_adj(SetupMenuValFloat *p) {
 		}
 		alt = alt / (float) samples;
 	}ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, QNH.get() );
-	p->ucg->setFont(ucg_font_fub25_hr, true);
+	MYUCG->setFont(ucg_font_fub25_hr, true);
 	float altp;
 	const char *u = "m";
 	if (alt_unit.get() == 0) { // m
@@ -412,28 +452,28 @@ int qnh_adj(SetupMenuValFloat *p) {
 		u = "ft";
 		altp = Units::meters2feet(alt);
 	}
-	p->ucg->setPrintPos(1, 120);
-	p->ucg->printf("%5d %s  ", (int) (altp + 0.5), u);
+	MYUCG->setPrintPos(1, 120);
+	MYUCG->printf("%5d %s  ", (int) (altp + 0.5), u);
 
-	p->ucg->setFont(ucg_font_ncenR14_hr);
+	MYUCG->setFont(ucg_font_ncenR14_hr);
 	return 0;
 }
 
 // Battery Voltage Meter Calibration
 int factv_adj(SetupMenuValFloat *p) {
 	ESP_LOGI(FNAME,"factv_adj");
-	p->_adc->redoAdjust();
-	float bat = p->_adc->get(true);
-	p->ucg->setPrintPos(1, 100);
-	p->ucg->printf("%0.2f Volt", bat);
+	getBattery()->redoAdjust();
+	float bat = getBattery()->get(true);
+	MYUCG->setPrintPos(1, 100);
+	MYUCG->printf("%0.2f Volt", bat);
 	return 0;
 }
 
 int master_xcv_lock(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"master_xcv_lock");
-	p->ucg->setPrintPos(1, 130);
+	MYUCG->setPrintPos(1, 130);
 	int mxcv = WifiClient::getScannedMasterXCV();
-	p->ucg->printf("Scanned: XCVario-%d", mxcv);
+	MYUCG->printf("Scanned: XCVario-%d", mxcv);
 	if (master_xcvario_lock.get() == 1)
 		master_xcvario.set(mxcv);
 	return 0;
@@ -447,10 +487,10 @@ int polar_select(SetupMenuSelect *p) {
 }
 
 void print_fb(SetupMenuValFloat *p, float wingload) {
-	p->ucg->setFont(ucg_font_fub25_hr, true);
-	p->ucg->setPrintPos(1, 110);
-	p->ucg->printf("%0.2f kg/m2  ", wingload);
-	p->ucg->setFont(ucg_font_ncenR14_hr);
+	MYUCG->setFont(ucg_font_fub25_hr, true);
+	MYUCG->setPrintPos(1, 110);
+	MYUCG->printf("%0.2f kg/m2  ", wingload);
+	MYUCG->setFont(ucg_font_ncenR14_hr);
 }
 
 int water_adj(SetupMenuValFloat *p) {
@@ -482,10 +522,11 @@ int crew_weight_adj(SetupMenuValFloat *p) {
 	return 0;
 }
 
-int wiper_button(SetupMenuSelect *p) {
+int wiper_button(SetupAction *p) {
 	NmeaPrtcl *jumbo = static_cast<NmeaPrtcl*>(DEVMAN->getProtocol(DeviceId::JUMBO_DEV, ProtocolType::JUMBOCMD_P));
 
-	jumbo->sendJPShortPress(p->getSelect());
+	ESP_LOGI(FNAME, "wipe %d", p->getCode());
+	jumbo->sendJPShortPress(p->getCode());
 	return 0;
 }
 
@@ -550,150 +591,141 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 	return 0;
 }
 
-SetupMenu::SetupMenu() :
-		MenuEntry() {
-	highlight = -1;
-	_parent = 0;
-	helptext = 0;
-}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// SetupMenu
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// SetupMenu::SetupMenu() :
+// 	MenuEntry(),
+// 	populateMenu(0)
+// {
+// 	highlight = -1;
+// 	_parent = 0;
+// 	helptext = 0;
+// }
 
-SetupMenu::SetupMenu(const char *title) :
-		MenuEntry() {
+SetupMenu::SetupMenu(const char *title, void (menu_create)(SetupMenu* ptr)) :
+	MenuEntry(),
+	populateMenu(menu_create),
+	highlight(-1)
+{
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
-	attach(this);
 	_title = title;
-	highlight = -1;
 }
 
 SetupMenu::~SetupMenu() {
-	// ESP_LOGI(FNAME,"del SetupMenu( %s ) ", _title );
-	detach(this);
+	ESP_LOGI(FNAME,"del SetupMenu( %s ) ", _title );
+	for (auto *c : _childs) {
+		delete c;
+	}
+	_childs.clear();
 }
 
-void SetupMenu::begin(IpsDisplay *display, PressureSensor *bmp,
-		AnalogInput *adc) {
-	ESP_LOGI(FNAME,"SetupMenu() begin");
-	_bmp = bmp;
-	_display = display;
-	ucg = display->getDisplay();
-	_adc = adc;
-	setup();
-	audio_volume.set(default_volume.get());
-	init_routing();
-	init_screens();
-	initGearWarning();
-}
-
+// fixme
 void SetupMenu::catchFocus(bool activate) {
 	focus = activate;
 }
 
-void SetupMenu::display(int mode) {
-	if ((selected != this) || !gflags.inSetup || focus)
-		return;
+void SetupMenu::enter()
+{
+	ESP_LOGI(FNAME,"enter inSet %d, mptr: %p", gflags.inSetup, populateMenu );
+	if (_childs.empty() && populateMenu) {
+		(populateMenu)(this);
+		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
+	}
+	MenuEntry::enter();
+}
+
+// void SetupMenu::exit(int levels)
+// {
+// 	// ESP_LOGI(FNAME,"delete_childs() %d", _childs.size() );
+// 	// if (!_childs.empty()) {
+// 	// 	for ( auto chld : _childs ) {
+// 	// 		delete chld;
+// 	// 	}
+// 	// 	_childs.clear();
+// 	// }
+// 	MenuEntry::exit(levels);
+// }
+
+void SetupMenu::display(int mode)
+{
 	xSemaphoreTake(display_mutex, portMAX_DELAY);
 	// ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
 	clear();
 	int y = 25;
 	// ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );
-	ucg->setFont(ucg_font_ncenR14_hr);
-	ucg->setPrintPos(1, y);
-	ucg->setFontPosBottom();
-	ucg->printf("<< %s", selected->_title);
-	ucg->drawFrame(1, (selected->highlight + 1) * 25 + 3, 238, 25);
+	MYUCG->setFont(ucg_font_ncenR14_hr);
+	MYUCG->setPrintPos(1, y);
+	MYUCG->setFontPosBottom();
+	MYUCG->printf("<< %s", _title);
+	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	for (int i = 0; i < _childs.size(); i++) {
 		MenuEntry *child = _childs[i];
-		ucg->setPrintPos(1, (i + 1) * 25 + 25);
-		ucg->setColor( COLOR_HEADER_LIGHT);
-		ucg->printf("%s", child->_title);
-		// ESP_LOGI(FNAME,"Child Title: %s", child->_title );
-		if (child->value()) {
-			int fl = ucg->getStrWidth(child->_title);
-			ucg->setPrintPos(1 + fl, (i + 1) * 25 + 25);
-			ucg->printf(": ");
-			ucg->setPrintPos(1 + fl + ucg->getStrWidth(":"), (i + 1) * 25 + 25);
-			ucg->setColor( COLOR_WHITE);
-			ucg->printf(" %s", child->value());
+		MYUCG->setPrintPos(1, (i + 1) * 25 + 25);
+		if (!child->isLeaf() || child->value()) {
+			MYUCG->setColor( COLOR_HEADER_LIGHT);
 		}
-		ucg->setColor( COLOR_WHITE);
-		// ESP_LOGI(FNAME,"Child: %s y=%d",child->_title ,y );
+		MYUCG->printf("%s", child->getTitle());
+		// ESP_LOGI(FNAME,"Child Title: %s", child->getTitle() );
+		if (child->value()) {
+			int fl = MYUCG->getStrWidth(child->getTitle());
+			MYUCG->setPrintPos(1 + fl, (i + 1) * 25 + 25);
+			MYUCG->printf(": ");
+			MYUCG->setPrintPos(1 + fl + MYUCG->getStrWidth(":"), (i + 1) * 25 + 25);
+			MYUCG->setColor( COLOR_WHITE);
+			MYUCG->printf(" %s", child->value());
+		}
+		MYUCG->setColor( COLOR_WHITE);
+		// ESP_LOGI(FNAME,"Child: %s y=%d",child->getTitle() ,y );
 	}
-	y += 170;
-	showhelp(y);
+	showhelp();
 	xSemaphoreGive(display_mutex);
 }
 
-void SetupMenu::down(int count) {
-	if (selected == this && !gflags.inSetup) {
-		// ESP_LOGI(FNAME,"root: down");
-		if (rot_default.get() == 1) {	 // MC Value
-			float mc = MC.get();
-			float step = Units::Vario2ms(0.1);
-			mc -= step * count;
-			if (mc < 0.0)
-				mc = 0.0;
-			MC.set(mc);
-		} else {  // Volume
-			float vol = audio_volume.get();
-			for (int i = 0; i < count; i++)
-				vol = vol * 0.77;
-			if (vol < 1.5) // allow smaller volumes to better support new 50% scale mode of ESP32 sine generator (default is 25%)
-				vol = 0;
-			audio_volume.set(vol);
-			// ESP_LOGI(FNAME,"NEW DN VOL: %f", vol );
-		}
-	}
-	if ((selected != this) || !gflags.inSetup)
-		return;
-	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
-	if (focus)
-		return;
-	ucg->setColor(COLOR_BLACK);
-	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	ucg->setColor(COLOR_WHITE);
-	count &= 7;     // limit to some maximum
-	while( /* (highlight  >= -1) && */ count > 0 ){
-		highlight--;
-		count--;
-	}
-	if (highlight < -1)
-		highlight = (int) (_childs.size() - 1);
-	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	pressed = true;
+MenuEntry* SetupMenu::addEntry( MenuEntry * item )
+{
+	ESP_LOGI(FNAME,"add to childs");
+	item->regParent(this);
+	_childs.push_back( item );
+	return item;
 }
 
-void SetupMenu::up(int count) {
-	if (selected == this && !gflags.inSetup) {
-		// ESP_LOGI(FNAME,"root: up");
-		if (rot_default.get() == 1) {	 // MC Value
-			float mc = MC.get();
-			// ESP_LOGI(FNAME,"MC up: %f count: %d", mc, count );
-			float step = Units::Vario2ms(0.1);
-			mc += step * count;
-			if (mc > 9.9)
-				mc = 9.9;
-			// ESP_LOGI(FNAME,"NEW MC: %f", mc );
-			MC.set(mc);
-		} else {  // Volume
-			float vol = audio_volume.get();
-			if (vol < 1.5)
-				vol = 1.5;
-			for (int i = 0; i < count; i++)
-				vol = vol * 1.33;
-			if (vol > max_volume.get())
-				vol = max_volume.get();
-			audio_volume.set(vol);
-			// ESP_LOGI(FNAME,"NEW UP VOL: %f", vol );
+void SetupMenu::delEntry( MenuEntry * item ) {
+	ESP_LOGI(FNAME,"SetupMenu delMenu() title %s", item->getTitle() );
+	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
+	if (position != _childs.end()) {
+		ESP_LOGI(FNAME,"found entry, now erase" );
+		_childs.erase(position);
+        delete *position;
+	}
+}
+
+const MenuEntry* SetupMenu::findMenu(const char *title) const
+{
+	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title, this );
+	if( std::strcmp(_title, title) == 0 ) {
+		ESP_LOGI(FNAME,"Menu entry found for start %s", title );
+		return this;
+	}
+	for (const MenuEntry* child : static_cast<const SetupMenu*>(this)->_childs) {
+		const MenuEntry* m = child->findMenu(title);
+		if( m != nullptr ) {
+			ESP_LOGI(FNAME,"Menu entry found for %s", title);
+			return m;
 		}
 	}
-	if ((selected != this) || !gflags.inSetup)
-		return;
+	ESP_LOGW(FNAME,"Menu entry not found for %s", title);
+	return nullptr;
+}
+
+void SetupMenu::up(int count)
+{
 	// ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
-	if (focus)
-		return;
-	ucg->setColor(COLOR_BLACK);
-	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	ucg->setColor(COLOR_WHITE);
+	// if (focus)
+	// 	return;
+	MYUCG->setColor(COLOR_BLACK);
+	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
+	MYUCG->setColor(COLOR_WHITE);
 	count &= 7;     // limit to some maximum
 	while( /* highlight <= (int)(_childs.size()-1) && */ count > 0 ){
 		highlight++;
@@ -702,129 +734,55 @@ void SetupMenu::up(int count) {
 	if (highlight > (int) (_childs.size() - 1)) {
 		highlight = -1;
 	}
-	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	pressed = true;
+	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 }
 
-void SetupMenu::showMenu() {
-	// ESP_LOGI(FNAME,"showMenu() p:%d h:%d parent:%x", pressed, highlight, (int)_parent );
-	// default is not pressed, so just display, but we toogle pressed state at the end
-	// so next time we either step up to parent,
-	if (pressed) {
-		if (highlight == -1) {
-			// ESP_LOGI(FNAME,"SetupMenu to parent");
-			if (_parent != 0) {
-				selected = _parent;
-				selected->highlight = -1;
-				selected->pressed = true;
-				delete_subtree();
-			}
-		} else {
-			// ESP_LOGI(FNAME,"SetupMenu to child");
-			if ((highlight >= 0) && (highlight < (int) (_childs.size()))) {
-				selected = _childs[highlight];
-				selected->pressed = false;
-			}
-		}
+void SetupMenu::down(int count)
+{
+	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
+	// if (focus)
+	// 	return;
+	MYUCG->setColor(COLOR_BLACK);
+	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
+	MYUCG->setColor(COLOR_WHITE);
+	count &= 7;     // limit to some maximum
+	while( /* (highlight  >= -1) && */ count > 0 ){
+		highlight--;
+		count--;
 	}
-	if ((_parent == 0) && (highlight == -1)) // entering setup menu root
-			{
-		if (!gflags.inSetup) {
-			gflags.inSetup = true;
-			// ESP_LOGI(FNAME,"Start Setup Menu");
-			_display->doMenu(true);
-			delay(200);  // fixme give display task time to finish drawing
-		} else {
-			// ESP_LOGI(FNAME,"End Setup Menu");
-			screens_init = INIT_DISPLAY_NULL;
-			_display->doMenu(false);
-			if (selected->get_restart())
-				selected->restart();
-			gflags.inSetup = false;
-		}
-	}
-	// ESP_LOGI(FNAME,"end showMenu()");
+	if (highlight < -1)
+		highlight = (int) (_childs.size() - 1);
+	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 }
 
-static int screen_index = 0;
-
-void SetupMenu::create_subtree() {
-	if (!subtree_created && menu_create_ptr) {
-		(menu_create_ptr)(this);
-		subtree_created = true;
-		// ESP_LOGI(FNAME,"create_subtree() %d", _childs.size() );
-	}
-}
-
-void SetupMenu::delete_subtree() {
-	// ESP_LOGI(FNAME,"delete_subtree() %d", _childs.size() );
-	if (subtree_created && menu_create_ptr) {
-		subtree_created = false;
-		for (int i = 0; i < _childs.size(); i++) {
-			delete _childs[i];
-		}
-		_childs.clear();
-	}
-}
 
 void SetupMenu::press()
 {
-	if ((selected != this) || focus) {
-		return;
-	}
-	ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d  subtree_created: %d mptr: %p", active_screen, pressed, gflags.inSetup, subtree_created, menu_create_ptr );
-	create_subtree();
-	if (!gflags.inSetup) {
-		active_screen = 0;
-		while (!active_screen && (screen_index <= screen_mask_len)) {
-			if (menu_screens.get() & (1 << screen_index)) {
-				active_screen = screen_index;
-				ESP_LOGI(FNAME,"New active_screen: %d", active_screen );
-			}
-			screen_index++;
-		}
-		if (screen_index > screen_mask_len) {
-			ESP_LOGI(FNAME,"select vario screen");
-			screen_index = 0;
-			active_screen = 0; // fall back into default vario screen after optional screens
-		}
-	}
-	if (!active_screen || gflags.inSetup) {
-		// ESP_LOGI(FNAME,"press() gflags.inSetup");
-		if (!menu_long_press.get() || gflags.inSetup)
-			showMenu();
-		if (pressed)
-			pressed = false;
-		else
-			pressed = true;
-	}
-}
-
-void SetupMenu::longPress() {
-	if ((selected != this))
-		return;
-	// ESP_LOGI(FNAME,"longPress()");
-	ESP_LOGI(FNAME,"longPress() active_srceen %d, pressed %d inSet %d", active_screen, pressed, gflags.inSetup );
-	if (menu_long_press.get() && !gflags.inSetup) {
-		showMenu();
-	}
-	if (pressed) {
-		pressed = false;
+	ESP_LOGI(FNAME,"press() inSet %d highl: %d", gflags.inSetup, highlight );
+	// enter/exit a level of setup menu
+	if (highlight == -1) {
+		_parent->menuSetTop();
+		exit();
 	} else {
-		pressed = true;
+		ESP_LOGI(FNAME,"SetupMenu to child");
+		if ((highlight >= 0) && (highlight < _childs.size())) {
+			_childs[highlight]->enter();
+		}
 	}
 }
 
-void SetupMenu::escape() {
+void SetupMenu::escape()
+{
 	if (gflags.inSetup) {
-		ESP_LOGI(FNAME,"escape now Setup Menu");
-		_display->clear();
-		_display->doMenu(false);
-		gflags.inSetup = false;
+		ESP_LOGI(FNAME,"escape now Setup Menu ++++++++++++++++++++++++");
+		// put this in root exit
+		// _display->clear();
+		// _display->doMenu(false);
+		// gflags.inSetup = false;
 	}
 }
 
-void SetupMenu::vario_menu_create_damping(MenuEntry *top) {
+void vario_menu_create_damping(SetupMenu *top) {
 	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", 2.0, 10.0,
 			0.1, vario_setup, false, &vario_delay);
 	vda->setHelp(
@@ -838,7 +796,7 @@ void SetupMenu::vario_menu_create_damping(MenuEntry *top) {
 	top->addEntry(vdav);
 }
 
-void SetupMenu::vario_menu_create_meanclimb(MenuEntry *top) {
+void vario_menu_create_meanclimb(SetupMenu *top) {
 	SetupMenuValFloat *vccm = new SetupMenuValFloat("Minimum climb", "", 0.0,
 			2.0, 0.1, 0, false, &core_climb_min);
 	vccm->setHelp(
@@ -864,7 +822,7 @@ void SetupMenu::vario_menu_create_meanclimb(MenuEntry *top) {
 	top->addEntry(vcmc);
 }
 
-void SetupMenu::vario_menu_create_s2f(MenuEntry *top) {
+void vario_menu_create_s2f(SetupMenu *top) {
 	SetupMenuValFloat *vds2 = new SetupMenuValFloat("Damping", "sec", 0.10001,
 			10.0, 0.1, 0, false, &s2f_delay);
 	vds2->setHelp("Time constant of S2F low pass filter");
@@ -935,7 +893,7 @@ void SetupMenu::vario_menu_create_s2f(MenuEntry *top) {
 	top->addEntry(s2fnc);
 }
 
-void SetupMenu::vario_menu_create_ec(MenuEntry *top) {
+void vario_menu_create_ec(SetupMenu *top) {
 	SetupMenuSelect *enac = new SetupMenuSelect("eCompensation", RST_NONE, 0,
 			false, &te_comp_enable);
 	enac->setHelp(
@@ -952,26 +910,25 @@ void SetupMenu::vario_menu_create_ec(MenuEntry *top) {
 	top->addEntry(elca);
 }
 
-void SetupMenu::wiper_menu_create(MenuEntry *top) {
-	SetupMenuSelect *wiper = new SetupMenuSelect("Start Wipe", RST_NONE,
-			wiper_button, false);
-	wiper->setHelp("Select a side and start the jumbo wiper run.");
-	wiper->addEntry("Left");
-	wiper->addEntry("Right");
-	top->addEntry(wiper);
+void wiper_menu_create(SetupMenu *top) {
+	SetupAction *wiperL = new SetupAction("Wipe left         ", wiper_button, 1);
+	JumboCmdMsg::LeftAction = wiperL;
+	SetupAction *wiperR = new SetupAction("Wipe       right", wiper_button, 0);
+	JumboCmdMsg::RightAction = wiperR;
+	top->addEntry(wiperL);
+	top->addEntry(wiperR);
 
 	bugs_item_create(top);
 }
 
-void SetupMenu::bugs_item_create(MenuEntry *top) {
+void bugs_item_create(SetupMenu *top) {
 	SetupMenuValFloat *bgs = new SetupMenuValFloat("Bugs", "%", 0.0, 50, 1,
 			bug_adj, true, &bugs);
-	bgs->setHelp(
-			"Percent degradation of gliding performance due to bugs contamination");
+	// bgs->setHelp("Percent degradation of gliding performance due to bugs contamination");
 	top->addEntry(bgs);
 }
 
-void SetupMenu::vario_menu_create(MenuEntry *vae) {
+void vario_menu_create(SetupMenu *vae) {
 	ESP_LOGI(FNAME,"SetupMenu::vario_menu_create( %p )", vae );
 
 	SetupMenuValFloat *vga = new SetupMenuValFloat("Range", "", 1.0, 30.0, 1,
@@ -985,7 +942,7 @@ void SetupMenu::vario_menu_create(MenuEntry *vae) {
 	vlogscale->setHelp("Use a logarithmic scale in the vario gauge");
 	vlogscale->addEntry("DISABLE");
 	vlogscale->addEntry("ENABLE");
-	vae->addEntry(vlogscale, vga);
+	vae->addEntry(vlogscale);
 
 	SetupMenuSelect *vamod = new SetupMenuSelect("Mode", RST_NONE, 0, true,
 			&vario_mode);
@@ -994,7 +951,7 @@ void SetupMenu::vario_menu_create(MenuEntry *vae) {
 	vamod->addEntry("Brutto");
 	vamod->addEntry("Netto");
 	vamod->addEntry("Cruise-Netto");
-	vae->addEntry(vamod, vlogscale);
+	vae->addEntry(vamod);
 
 	SetupMenuSelect *nemod = new SetupMenuSelect("Netto Mode", RST_NONE, 0,
 			true, &netto_mode);
@@ -1002,7 +959,7 @@ void SetupMenu::vario_menu_create(MenuEntry *vae) {
 			"In 'Relative' mode (also called 'Super-Netto') circling sink is considered,  to show climb rate as if you were circling there");
 	nemod->addEntry("Normal");
 	nemod->addEntry("Relative");
-	vae->addEntry(nemod, vamod);
+	vae->addEntry(nemod);
 
 	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, 0, true,
 			&ps_display);
@@ -1010,7 +967,7 @@ void SetupMenu::vario_menu_create(MenuEntry *vae) {
 			"Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
 	sink->addEntry("DISABLE");
 	sink->addEntry("ENABLE");
-	vae->addEntry(sink, nemod);
+	vae->addEntry(sink);
 
 	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, 0,
 			true, &needle_color);
@@ -1018,35 +975,31 @@ void SetupMenu::vario_menu_create(MenuEntry *vae) {
 	ncolor->addEntry("White");
 	ncolor->addEntry("Orange");
 	ncolor->addEntry("Red");
-	vae->addEntry(ncolor, sink);
+	vae->addEntry(ncolor);
 
 	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_ON_EXIT, 0,
 			true, &screen_centeraid);
 	scrcaid->setHelp("Enable/disable display of centering aid (reboots)");
 	scrcaid->addEntry("Disable");
 	scrcaid->addEntry("Enable");
-	vae->addEntry(scrcaid, ncolor);
+	vae->addEntry(scrcaid);
 
-	SetupMenu *vdamp = new SetupMenu("Vario Damping");
-	vae->addEntry(vdamp, scrcaid);
-	vdamp->addCreator(vario_menu_create_damping);
+	SetupMenu *vdamp = new SetupMenu("Vario Damping", vario_menu_create_damping);
+	vae->addEntry(vdamp);
 
-	SetupMenu *meanclimb = new SetupMenu("Mean Climb");
+	SetupMenu *meanclimb = new SetupMenu("Mean Climb", vario_menu_create_meanclimb);
 	meanclimb->setHelp(
 			"Options for calculation of Mean Climb (MC recommendation) displayed by green/red rhombus");
-	vae->addEntry(meanclimb, vdamp);
-	meanclimb->addCreator(vario_menu_create_meanclimb);
+	vae->addEntry(meanclimb);
 
-	SetupMenu *s2fs = new SetupMenu("S2F Settings");
-	vae->addEntry(s2fs, meanclimb);
-	s2fs->addCreator(vario_menu_create_s2f);
+	SetupMenu *s2fs = new SetupMenu("S2F Settings", vario_menu_create_s2f);
+	vae->addEntry(s2fs);
 
-	SetupMenu *elco = new SetupMenu("Electronic Compensation");
-	vae->addEntry(elco, s2fs);
-	elco->addCreator(vario_menu_create_ec);
+	SetupMenu *elco = new SetupMenu("Electronic Compensation", vario_menu_create_ec);
+	vae->addEntry(elco);
 }
 
-void SetupMenu::audio_menu_create_tonestyles(MenuEntry *top) {
+void audio_menu_create_tonestyles(SetupMenu *top) {
 	SetupMenuValFloat *cf = new SetupMenuValFloat("CenterFreq", "Hz", 200.0,
 			2000.0, 10.0, audio_setup_f, false, &center_freq);
 	cf->setHelp("Center frequency for Audio at zero Vario or zero S2F delta");
@@ -1098,7 +1051,7 @@ void SetupMenu::audio_menu_create_tonestyles(MenuEntry *top) {
 	top->addEntry(advarto);
 }
 
-void SetupMenu::audio_menu_create_deadbands(MenuEntry *top) {
+void audio_menu_create_deadbands(SetupMenu *top) {
 	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", -5.0,
 			0, 0.1, 0, false, &deadband_neg);
 	dbminlv->setHelp(
@@ -1124,7 +1077,7 @@ void SetupMenu::audio_menu_create_deadbands(MenuEntry *top) {
 	top->addEntry(dbmaxls2f);
 }
 
-void SetupMenu::audio_menu_create_equalizer(MenuEntry *top) {
+void audio_menu_create_equalizer(SetupMenu *top) {
 	SetupMenuSelect *audeqt = new SetupMenuSelect("Equalizer", RST_ON_EXIT, 0,
 			true, &audio_equalizer);
 	audeqt->setHelp(
@@ -1142,7 +1095,7 @@ void SetupMenu::audio_menu_create_equalizer(MenuEntry *top) {
 	top->addEntry(frqr);
 }
 
-void SetupMenu::audio_menu_create_volume(MenuEntry *top) {
+void audio_menu_create_volume(SetupMenu *top) {
 
 	SetupMenuValFloat *vol = new SetupMenuValFloat("Current Volume", "%", 0.0,
 			100.0, 2.0, vol_adj, false, &audio_volume);
@@ -1157,8 +1110,7 @@ void SetupMenu::audio_menu_create_volume(MenuEntry *top) {
 			cur_vol_dflt, true);
 	cdv->addEntry("Cancel");
 	cdv->addEntry("Set");
-	cdv->setHelp(
-			"Set current volume as default volume when device is switched on");
+	cdv->setHelp("Set current volume as default volume when device is switched on");
 	top->addEntry(cdv);
 
 	SetupMenuValFloat *dv = new SetupMenuValFloat("Default Volume", "%", 0, 100,
@@ -1171,12 +1123,9 @@ void SetupMenu::audio_menu_create_volume(MenuEntry *top) {
 	top->addEntry(mv);
 	mv->setHelp("Maximum audio volume setting allowed");
 
-	SetupMenu *audeq = new SetupMenu("Equalizer");
+	SetupMenu *audeq = new SetupMenu("Equalizer", audio_menu_create_equalizer);
 	top->addEntry(audeq);
-	audeq->setHelp(
-			"Equalization parameters for a constant perceived volume over a wide frequency range",
-			220);
-	audeq->addCreator(audio_menu_create_equalizer);
+	audeq->setHelp("Equalization parameters for a constant perceived volume over a wide frequency range", 220);
 
 	SetupMenuSelect *amspvol = new SetupMenuSelect("STF Volume", RST_NONE, 0,
 			true, &audio_split_vol);
@@ -1187,7 +1136,7 @@ void SetupMenu::audio_menu_create_volume(MenuEntry *top) {
 	top->addEntry(amspvol);
 }
 
-void SetupMenu::audio_menu_create_mute(MenuEntry *top) {
+void audio_menu_create_mute(SetupMenu *top) {
 	SetupMenuSelect *asida = new SetupMenuSelect("In Sink", RST_NONE, 0, true,
 			&audio_mute_sink);
 	asida->setHelp("Select whether vario audio will be muted while in sink");
@@ -1221,20 +1170,18 @@ void SetupMenu::audio_menu_create_mute(MenuEntry *top) {
 	top->addEntry(amps);
 }
 
-void SetupMenu::audio_menu_create(MenuEntry *audio) {
+void audio_menu_create(SetupMenu *audio) {
 
 	// volume menu has gone out of scope by now
 	// make sure update_volume_menu_max() does not try and dereference it
 	volume_menu = 0;
-	SetupMenu *volumes = new SetupMenu("Volume options");
+	SetupMenu *volumes = new SetupMenu("Volume options", audio_menu_create_volume);
 	audio->addEntry(volumes);
 	volumes->setHelp("Configure audio volume options", 240);
-	volumes->addCreator(audio_menu_create_volume);
 
-	SetupMenu *mutes = new SetupMenu("Mute Audio");
+	SetupMenu *mutes = new SetupMenu("Mute Audio", audio_menu_create_mute);
 	audio->addEntry(mutes);
 	mutes->setHelp("Configure audio muting options", 240);
-	mutes->addCreator(audio_menu_create_mute);
 
 	SetupMenuSelect *abnm = new SetupMenuSelect("Cruise Audio", RST_NONE, 0,
 			true, &cruise_audio_mode);
@@ -1244,12 +1191,9 @@ void SetupMenu::audio_menu_create(MenuEntry *audio) {
 	abnm->addEntry("Vario");           // 1
 	audio->addEntry(abnm);
 
-	SetupMenu *audios = new SetupMenu("Tone Styles");
+	SetupMenu *audios = new SetupMenu("Tone Styles", audio_menu_create_tonestyles);
 	audio->addEntry(audios);
-	audios->setHelp(
-			"Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping",
-			220);
-	audios->addCreator(audio_menu_create_tonestyles);
+	audios->setHelp("Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
 
 	update_rentry(0);
 	audio_range_sm = new SetupMenuSelect("Range", RST_NONE, audio_setup_s, true,
@@ -1261,11 +1205,9 @@ void SetupMenu::audio_menu_create(MenuEntry *audio) {
 			"Audio range: fixed, or variable according to current Vario display range setting");
 	audio->addEntry(audio_range_sm);
 
-	SetupMenu *db = new SetupMenu("Deadbands");
+	SetupMenu *db = new SetupMenu("Deadbands", audio_menu_create_deadbands);
 	audio->addEntry(db);
-	db->setHelp(
-			"Dead band limits within which audio remains silent.  1 m/s equals roughly 200 fpm or 2 knots");
-	db->addCreator(audio_menu_create_deadbands);
+	db->setHelp("Dead band limits within which audio remains silent.  1 m/s equals roughly 200 fpm or 2 knots");
 
 	SetupMenuValFloat *afac = new SetupMenuValFloat("Audio Exponent", "", 0.1,
 			2, 0.025, 0, false, &audio_factor);
@@ -1274,7 +1216,7 @@ void SetupMenu::audio_menu_create(MenuEntry *audio) {
 	audio->addEntry(afac);
 }
 
-void SetupMenu::glider_menu_create_polarpoints(MenuEntry *top) {
+void glider_menu_create_polarpoints(SetupMenu *top) {
 	SetupMenuValFloat *wil = new SetupMenuValFloat("Ref Wingload", "kg/m2",
 			10.0, 100.0, 0.1, 0, false, &polar_wingload);
 	wil->setHelp(
@@ -1306,7 +1248,7 @@ void SetupMenu::glider_menu_create_polarpoints(MenuEntry *top) {
 	top->addEntry(pos3);
 }
 
-void SetupMenu::glider_menu_create(MenuEntry *poe) {
+void glider_menu_create(SetupMenu *poe) {
 	SetupMenuSelect *glt = new SetupMenuSelect("Glider-Type", RST_NONE,
 			polar_select, true, &glider_type);
 	poe->addEntry(glt);
@@ -1318,12 +1260,9 @@ void SetupMenu::glider_menu_create(MenuEntry *poe) {
 			220);
 	ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
 
-	SetupMenu *pa = new SetupMenu("Polar Points");
-	pa->setHelp(
-			"Adjust the polar at 3 points, in the commonly used metric system",
-			230);
+	SetupMenu *pa = new SetupMenu("Polar Points", glider_menu_create_polarpoints);
+	pa->setHelp("Adjust the polar at 3 points, in the commonly used metric system",230);
 	poe->addEntry(pa);
-	pa->addCreator(glider_menu_create_polarpoints);
 
 	SetupMenuValFloat *maxbal = new SetupMenuValFloat("Max Ballast", "liters",
 			0, 500, 1, 0, false, &polar_max_ballast);
@@ -1345,7 +1284,7 @@ void SetupMenu::glider_menu_create(MenuEntry *poe) {
 	poe->addEntry(fixball);
 }
 
-void SetupMenu::options_menu_create_units(MenuEntry *top) {
+void options_menu_create_units(SetupMenu *top) {
 	SetupMenuSelect *alu = new SetupMenuSelect("Altimeter", RST_NONE, 0, true,
 			&alt_unit);
 	alu->addEntry("Meter (m)");
@@ -1382,7 +1321,7 @@ void SetupMenu::options_menu_create_units(MenuEntry *top) {
 	top->addEntry(dst);
 }
 
-void SetupMenu::options_menu_create_flarm(MenuEntry *top) {
+void options_menu_create_flarm(SetupMenu *top) {
 	SetupMenuSelect *flarml = new SetupMenuSelect("Alarm Level", RST_NONE, 0,
 			true, &flarm_warning);
 	flarml->setHelp(
@@ -1411,7 +1350,7 @@ void SetupMenu::options_menu_create_flarm(MenuEntry *top) {
 	top->addEntry(flarms);
 }
 
-void SetupMenu::options_menu_create_compasswind_compass_dev(MenuEntry *top) {
+void options_menu_create_compasswind_compass_dev(SetupMenu *top) {
 	const char *skydirs[8] = { "0°", "45°", "90°", "135°", "180°", "225°",
 			"270°", "315°" };
 	for (int i = 0; i < 8; i++) {
@@ -1423,7 +1362,7 @@ void SetupMenu::options_menu_create_compasswind_compass_dev(MenuEntry *top) {
 	}
 }
 
-void SetupMenu::options_menu_create_compasswind_compass_nmea(MenuEntry *top) {
+void options_menu_create_compasswind_compass_nmea(SetupMenu *top) {
 	SetupMenuSelect *nmeaHdm = new SetupMenuSelect("Magnetic Heading", RST_NONE,
 			0, true, &compass_nmea_hdm);
 	nmeaHdm->addEntry("Disable");
@@ -1441,7 +1380,7 @@ void SetupMenu::options_menu_create_compasswind_compass_nmea(MenuEntry *top) {
 	top->addEntry(nmeaHdt);
 }
 
-void SetupMenu::options_menu_create_compasswind_compass(MenuEntry *top) {
+void options_menu_create_compasswind_compass(SetupMenu *top) {
 	SetupMenuSelect *compSensor = new SetupMenuSelect("Sensor Option",
 			RST_ON_EXIT, compass_ena, true, &compass_enable);
 	compSensor->addEntry("Disable");
@@ -1476,10 +1415,9 @@ void SetupMenu::options_menu_create_compasswind_compass(MenuEntry *top) {
 	devMenuA->addEntry("Enable");
 	top->addEntry(devMenuA);
 
-	SetupMenu *devMenu = new SetupMenu("Setup Deviations");
+	SetupMenu *devMenu = new SetupMenu("Setup Deviations", options_menu_create_compasswind_compass_dev);
 	devMenu->setHelp("Compass Deviations", 280);
 	top->addEntry(devMenu);
-	devMenu->addCreator(options_menu_create_compasswind_compass_dev);
 
 	// Show comapss deviations
 	DisplayDeviations *smd = new DisplayDeviations("Show Deviations");
@@ -1492,9 +1430,8 @@ void SetupMenu::options_menu_create_compasswind_compass(MenuEntry *top) {
 	sms->addEntry("Reset");
 	top->addEntry(sms);
 
-	SetupMenu *nmeaMenu = new SetupMenu("Setup NMEA");
+	SetupMenu *nmeaMenu = new SetupMenu("Setup NMEA", options_menu_create_compasswind_compass_nmea);
 	top->addEntry(nmeaMenu);
-	nmeaMenu->addCreator(options_menu_create_compasswind_compass_nmea);
 
 	SetupMenuValFloat *compdamp = new SetupMenuValFloat("Damping", "sec", 0.1,
 			10.0, 0.1, 0, false, &compass_damping);
@@ -1512,8 +1449,7 @@ void SetupMenu::options_menu_create_compasswind_compass(MenuEntry *top) {
 	top->addEntry(scs);
 }
 
-void SetupMenu::options_menu_create_compasswind_straightwind_filters(
-		MenuEntry *top) {
+void options_menu_create_compasswind_straightwind_filters(SetupMenu *top) {
 	SetupMenuValFloat *smgsm = new SetupMenuValFloat("Airspeed Lowpass", "", 0,
 			0.05, 0.001, nullptr, false, &wind_as_filter);
 	smgsm->setPrecision(3);
@@ -1543,8 +1479,7 @@ void SetupMenu::options_menu_create_compasswind_straightwind_filters(
 			"Number of measurements (seconds) averaged in straight flight live wind estimation");
 }
 
-void SetupMenu::options_menu_create_compasswind_straightwind_limits(
-		MenuEntry *top) {
+void options_menu_create_compasswind_straightwind_limits(SetupMenu *top) {
 	SetupMenuValFloat *smdev = new SetupMenuValFloat("Deviation Limit", "°",
 			0.0, 180.0, 1.0, nullptr, false, &wind_max_deviation);
 	smdev->setHelp(
@@ -1573,18 +1508,16 @@ void SetupMenu::options_menu_create_compasswind_straightwind_limits(
 			"Maximum delta in airspeed estimation from wind and GPS during straight flight accepted for straight wind calculation");
 }
 
-void SetupMenu::options_menu_create_compasswind_straightwind(MenuEntry *top) {
-	SetupMenu *strWindFM = new SetupMenu("Filters");
+void options_menu_create_compasswind_straightwind(SetupMenu *top) {
+	SetupMenu *strWindFM = new SetupMenu("Filters", options_menu_create_compasswind_straightwind_filters);
 	top->addEntry(strWindFM);
-	strWindFM->addCreator(options_menu_create_compasswind_straightwind_filters);
-	SetupMenu *strWindLM = new SetupMenu("Limits");
+	SetupMenu *strWindLM = new SetupMenu("Limits", options_menu_create_compasswind_straightwind_limits);
 	top->addEntry(strWindLM);
-	strWindLM->addCreator(options_menu_create_compasswind_straightwind_limits);
 	ShowStraightWind *ssw = new ShowStraightWind("Straight Wind Status");
 	top->addEntry(ssw);
 }
 
-void SetupMenu::options_menu_create_compasswind_circlingwind(MenuEntry *top) {
+void options_menu_create_compasswind_circlingwind(SetupMenu *top) {
 	// Show Circling Wind Status
 	ShowCirclingWind *scw = new ShowCirclingWind("Circling Wind Status");
 	top->addEntry(scw);
@@ -1617,10 +1550,9 @@ void SetupMenu::options_menu_create_compasswind_circlingwind(MenuEntry *top) {
 			"Maximum wind direction delta from last measurement accepted for circling wind calculation");
 }
 
-void SetupMenu::options_menu_create_compasswind(MenuEntry *top) {
-	SetupMenu *compassMenu = new SetupMenu("Compass");
+void options_menu_create_compasswind(SetupMenu *top) {
+	SetupMenu *compassMenu = new SetupMenu("Compass", options_menu_create_compasswind_compass);
 	top->addEntry(compassMenu);
-	compassMenu->addCreator(options_menu_create_compasswind_compass);
 
 	// Wind speed observation window
 	SetupMenuSelect *windcal = new SetupMenuSelect("Wind Calculation", RST_NONE,
@@ -1655,16 +1587,12 @@ void SetupMenu::options_menu_create_compasswind(MenuEntry *top) {
 			"Choose wind arrow relative to geographic north or to true aircraft heading");
 	top->addEntry(windref);
 
-	SetupMenu *strWindM = new SetupMenu("Straight Wind");
+	SetupMenu *strWindM = new SetupMenu("Straight Wind", options_menu_create_compasswind_straightwind);
 	top->addEntry(strWindM);
-	strWindM->setHelp(
-			"Straight flight wind calculation needs compass module active",
-			250);
-	strWindM->addCreator(options_menu_create_compasswind_straightwind);
+	strWindM->setHelp("Straight flight wind calculation needs compass module active",250);
 
-	SetupMenu *cirWindM = new SetupMenu("Circling Wind");
+	SetupMenu *cirWindM = new SetupMenu("Circling Wind", options_menu_create_compasswind_circlingwind);
 	top->addEntry(cirWindM);
-	cirWindM->addCreator(options_menu_create_compasswind_circlingwind);
 
 	SetupMenuSelect *windlog = new SetupMenuSelect("Wind Logging", RST_NONE, 0,
 			true, &wind_logging);
@@ -1676,7 +1604,7 @@ void SetupMenu::options_menu_create_compasswind(MenuEntry *top) {
 	top->addEntry(windlog);
 }
 
-void SetupMenu::options_menu_create_wireless_routing(MenuEntry *top) {
+void options_menu_create_wireless_routing(SetupMenu *top) {
 	SetupMenuSelect *wloutxcv = new SetupMenuSelect("XCVario", RST_NONE, 0,
 			true, &rt_xcv_wl);
 	wloutxcv->addEntry("Disable");
@@ -1699,7 +1627,7 @@ void SetupMenu::options_menu_create_wireless_routing(MenuEntry *top) {
 	top->addEntry(wloutxcan);
 }
 
-void SetupMenu::options_menu_create_wireless_custom_id(MenuEntry *top) {
+void options_menu_create_wireless_custom_id(SetupMenu *top) {
 	SetupMenuChar *c1 = new SetupMenuChar("Letter 1", RST_NONE, update_id,
 			false, custom_wireless_id.get().id, 0);
 	SetupMenuChar *c2 = new SetupMenuChar("Letter 2", RST_NONE, update_id,
@@ -1730,7 +1658,7 @@ void SetupMenu::options_menu_create_wireless_custom_id(MenuEntry *top) {
 	c6->addEntryList(keys, sizeof(keys) / 4);
 }
 
-void SetupMenu::options_menu_create_wireless(MenuEntry *top) {
+void options_menu_create_wireless(SetupMenu *top) {
 	SetupMenuSelect *btm = new SetupMenuSelect("Wireless", RST_ON_EXIT, 0, true,
 			&wireless_type);
 	btm->setHelp(
@@ -1744,11 +1672,9 @@ void SetupMenu::options_menu_create_wireless(MenuEntry *top) {
 	btm->addEntry("Bluetooth LE");
 	top->addEntry(btm);
 
-	SetupMenu *wlrt = new SetupMenu("WL Routing");
+	SetupMenu *wlrt = new SetupMenu("WL Routing", options_menu_create_wireless_routing);
 	top->addEntry(wlrt);
-	wlrt->setHelp(
-			"Select data source that is routed from/to Wireless BT or WIFI interface");
-	wlrt->addCreator(options_menu_create_wireless_routing);
+	wlrt->setHelp("Select data source that is routed from/to Wireless BT or WIFI interface");
 
 	SetupMenuValFloat *wifip = new SetupMenuValFloat("WIFI Power", "%", 10.0,
 			100.0, 5.0, update_wifi_power, false, &wifi_max_power);
@@ -1787,19 +1713,16 @@ void SetupMenu::options_menu_create_wireless(MenuEntry *top) {
 	datamonmod->addEntry("Binary");
 	top->addEntry(datamonmod);
 
-	SetupMenu *cusid = new SetupMenu("Custom-ID");
+	SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
 	top->addEntry(cusid);
-	cusid->setHelp(
-			"Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate",
-			215);
-	cusid->addCreator(options_menu_create_wireless_custom_id);
+	cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate",215);
 
-	SetupMenuSelect *clearcore = new SetupMenuSelect("Clear coredump", RST_NONE, reinterpret_cast<int (*)(SetupMenuSelect*)>(clear_coredump), false, nullptr);
-	clearcore->addEntry("doit");
-	top->addEntry(clearcore);
+	// SetupMenuSelect *clearcore = new SetupMenuSelect("Clear coredump", RST_NONE, reinterpret_cast<int (*)(SetupMenuSelect*)>(clear_coredump), false, nullptr);
+	// clearcore->addEntry("doit");
+	// top->addEntry(clearcore);
 }
 
-void SetupMenu::options_menu_create_gload(MenuEntry *top) {
+void options_menu_create_gload(SetupMenu *top) {
 	SetupMenuSelect *glmod = new SetupMenuSelect("Activation Mode", RST_NONE, 0,
 			true, &gload_mode);
 	glmod->setHelp(
@@ -1875,7 +1798,7 @@ void SetupMenu::options_menu_create_gload(MenuEntry *top) {
 	top->addEntry(gloadres);
 }
 
-void SetupMenu::options_menu_create(MenuEntry *opt) {
+void options_menu_create(SetupMenu *opt) {
 	if (student_mode.get() == 0) {
 		SetupMenuSelect *stumo = new SetupMenuSelect("Student Mode",
 				RST_ON_EXIT, 0, true, &student_mode);
@@ -1887,12 +1810,9 @@ void SetupMenu::options_menu_create(MenuEntry *opt) {
 	}
 	Flap::setupMenue(opt);
 	// Units
-	SetupMenu *un = new SetupMenu("Units");
+	SetupMenu *un = new SetupMenu("Units", options_menu_create_units);
 	opt->addEntry(un);
-	un->setHelp(
-			"Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units",
-			205);
-	un->addCreator(options_menu_create_units);
+	un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
 
 	SetupMenuSelect *amode = new SetupMenuSelect("Airspeed Mode", RST_NONE, 0,
 			true, &airspeed_mode);
@@ -1927,27 +1847,23 @@ void SetupMenu::options_menu_create(MenuEntry *opt) {
 			100);
 	opt->addEntry(tral);
 
-	SetupMenu *flarm = new SetupMenu("FLARM");
+	SetupMenu *flarm = new SetupMenu("FLARM", options_menu_create_flarm);
 	opt->addEntry(flarm);
 	flarm->setHelp(
 			"Option to display FLARM Warnings depending on FLARM alarm level");
-	flarm->addCreator(options_menu_create_flarm);
 
-	SetupMenu *compassWindMenu = new SetupMenu("Compass/Wind");
+	SetupMenu *compassWindMenu = new SetupMenu("Compass/Wind", options_menu_create_compasswind);
 	opt->addEntry(compassWindMenu);
 	compassWindMenu->setHelp("Setup Compass and Wind", 280);
-	compassWindMenu->addCreator(options_menu_create_compasswind);
 
-	SetupMenu *wireless = new SetupMenu("Wireless");
+	SetupMenu *wireless = new SetupMenu("Wireless", options_menu_create_wireless);
 	opt->addEntry(wireless);
-	wireless->addCreator(options_menu_create_wireless);
 
-	SetupMenu *gload = new SetupMenu("G-Load Display");
+	SetupMenu *gload = new SetupMenu("G-Load Display", options_menu_create_gload);
 	opt->addEntry(gload);
-	gload->addCreator(options_menu_create_gload);
 }
 
-void SetupMenu::system_menu_create_software(MenuEntry *top) {
+void system_menu_create_software(SetupMenu *top) {
 	Version V;
 	SetupMenuSelect *ver = new SetupMenuSelect("Software Vers.", RST_NONE, 0,
 			false);
@@ -1963,7 +1879,7 @@ void SetupMenu::system_menu_create_software(MenuEntry *top) {
 	top->addEntry(upd);
 }
 
-void SetupMenu::system_menu_create_battery(MenuEntry *top) {
+void system_menu_create_battery(SetupMenu *top) {
 	SetupMenuValFloat *blow = new SetupMenuValFloat("Battery Low", "Volt ", 0.0,
 			28.0, 0.1, 0, false, &bat_low_volt);
 	SetupMenuValFloat *bred = new SetupMenuValFloat("Battery Red", "Volt ", 0.0,
@@ -1988,7 +1904,7 @@ void SetupMenu::system_menu_create_battery(MenuEntry *top) {
 	top->addEntry(batv);
 }
 
-void SetupMenu::system_menu_create_hardware_type(MenuEntry *top) {
+void system_menu_create_hardware_type(SetupMenu *top) {
 	// UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
 	SetupMenuSelect *dtype = new SetupMenuSelect("HW Type", RST_NONE, 0, true,
 			&display_type);
@@ -2049,7 +1965,7 @@ void SetupMenu::system_menu_create_hardware_type(MenuEntry *top) {
 
 }
 
-void SetupMenu::system_menu_create_hardware_rotary_screens(MenuEntry *top) {
+void system_menu_create_hardware_rotary_screens(SetupMenu *top) {
 	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE,
 			upd_screens, true, &screen_gmeter);
 	scrgmet->addEntry("Disable");
@@ -2064,12 +1980,10 @@ void SetupMenu::system_menu_create_hardware_rotary_screens(MenuEntry *top) {
 	}
 }
 
-void SetupMenu::system_menu_create_hardware_rotary(MenuEntry *top) {
-	SetupMenu *screens = new SetupMenu("Screens");
+void system_menu_create_hardware_rotary(SetupMenu *top) {
+	SetupMenu *screens = new SetupMenu("Screens", system_menu_create_hardware_rotary_screens);
 	top->addEntry(screens);
-	screens->setHelp(
-			"Select screens to be activated one after the other by short press");
-	screens->addCreator(system_menu_create_hardware_rotary_screens);
+	screens->setHelp("Select screens to be activated one after the other by short press");
 
 	SetupMenuSelect *rotype;
 	rotype = new SetupMenuSelect("Direction", RST_NONE, set_rotary_direction, false, &rotary_dir);
@@ -2107,7 +2021,7 @@ void SetupMenu::system_menu_create_hardware_rotary(MenuEntry *top) {
 	sact->addEntry("Long Press");
 }
 
-void SetupMenu::system_menu_create_ahrs_calib(MenuEntry *top) {
+void system_menu_create_ahrs_calib(SetupMenu *top) {
 	SetupMenuSelect *ahrs_calib_collect = new SetupMenuSelect(
 			"Axis calibration", RST_NONE, imu_calib, false);
 	ahrs_calib_collect->setHelp(
@@ -2131,7 +2045,7 @@ static const char  lkeys[][4] { "0", "1", "2", "3", "4", "5", "6", "7",
 		"F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
 		"T", "U", "V", "W", "X", "Y", "Z" };
 
-void SetupMenu::system_menu_create_hardware_ahrs_lc(MenuEntry *top) {
+void system_menu_create_hardware_ahrs_lc(SetupMenu *top) {
 	SetupMenuSelect *ahrslc1 = new SetupMenuSelect("First    Letter", RST_NONE,
 			add_key, false, &ahrs_licence_dig1);
 	SetupMenuSelect *ahrslc2 = new SetupMenuSelect("Second Letter", RST_NONE,
@@ -2150,7 +2064,7 @@ void SetupMenu::system_menu_create_hardware_ahrs_lc(MenuEntry *top) {
 	ahrslc4->addEntryList(lkeys, sizeof(lkeys) / 4);
 }
 
-void SetupMenu::system_menu_create_hardware_ahrs_parameter(MenuEntry *top) {
+void system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
 	SetupMenuValFloat *ahrsgf = new SetupMenuValFloat("Gyro Max Trust", "x", 0,
 			100, 1, 0, false, &ahrs_gyro_factor);
 	ahrsgf->setPrecision(0);
@@ -2198,7 +2112,7 @@ void SetupMenu::system_menu_create_hardware_ahrs_parameter(MenuEntry *top) {
 
 }
 
-void SetupMenu::system_menu_create_hardware_ahrs(MenuEntry *top) {
+void system_menu_create_hardware_ahrs(SetupMenu *top) {
 	SetupMenuSelect *ahrsid = new SetupMenuSelect("AHRS ID", RST_NONE, 0,
 			false);
 	ahrsid->addEntry(Cipher::id());
@@ -2213,22 +2127,19 @@ void SetupMenu::system_menu_create_hardware_ahrs(MenuEntry *top) {
 	if (gflags.ahrsKeyValid)
 		mpu->addEntry("Enable");
 
-	SetupMenu *ahrscalib = new SetupMenu("AHRS Calibration");
+	SetupMenu *ahrscalib = new SetupMenu("AHRS Calibration", system_menu_create_ahrs_calib);
 	ahrscalib->setHelp(
 			 "Bias & Reference of the AHRS Sensor: Place glider on horizontal underground, first the right wing down, then the left wing.");
 	top->addEntry(ahrscalib);
-	ahrscalib->addCreator(system_menu_create_ahrs_calib);
 
-	SetupMenu *ahrslc = new SetupMenu("AHRS License Key");
+	SetupMenu *ahrslc = new SetupMenu("AHRS License Key", system_menu_create_hardware_ahrs_lc);
 	ahrslc->setHelp(
 			"Enter valid AHRS License Key, then AHRS feature can be enabled under 'AHRS Option'");
 	top->addEntry(ahrslc);
-	ahrslc->addCreator(system_menu_create_hardware_ahrs_lc);
 
-	SetupMenu *ahrspa = new SetupMenu("AHRS Parameters");
+	SetupMenu *ahrspa = new SetupMenu("AHRS Parameters", system_menu_create_hardware_ahrs_parameter);
 	ahrspa->setHelp("AHRS constants such as gyro trust and filtering", 275);
 	top->addEntry(ahrspa);
-	ahrspa->addCreator(system_menu_create_hardware_ahrs_parameter);
 
 	SetupMenuSelect *rpyl = new SetupMenuSelect("AHRS RPYL", RST_NONE, 0, true,
 			&ahrs_rpyl_dataset);
@@ -2238,14 +2149,12 @@ void SetupMenu::system_menu_create_hardware_ahrs(MenuEntry *top) {
 	rpyl->addEntry("Enable");
 }
 
-void SetupMenu::system_menu_create_hardware(MenuEntry *top) {
-	SetupMenu *display = new SetupMenu("DISPLAY Setup");
+void system_menu_create_hardware(SetupMenu *top) {
+	SetupMenu *display = new SetupMenu("DISPLAY Setup", system_menu_create_hardware_type);
 	top->addEntry(display);
-	display->addCreator(system_menu_create_hardware_type);
 
-	SetupMenu *rotary = new SetupMenu("Rotary Setup");
+	SetupMenu *rotary = new SetupMenu("Rotary Setup", system_menu_create_hardware_rotary);
 	top->addEntry(rotary);
-	rotary->addCreator(system_menu_create_hardware_rotary);
 
 	SetupMenuSelect *gear = new SetupMenuSelect("Gear Warn", RST_NONE,
 			config_gear_warning, false, &gear_warning);
@@ -2261,9 +2170,8 @@ void SetupMenu::system_menu_create_hardware(MenuEntry *top) {
 	gear->addEntry("External");  // A $g,w<n>*CS command from an external device
 
 	if (hardwareRevision.get() >= XCVARIO_21) {
-		SetupMenu *ahrs = new SetupMenu("AHRS Setup");
+		SetupMenu *ahrs = new SetupMenu("AHRS Setup", system_menu_create_hardware_ahrs);
 		top->addEntry(ahrs);
-		ahrs->addCreator(system_menu_create_hardware_ahrs);
 	}
 
 	SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", RST_ON_EXIT, 0, false, &airspeed_sensor_type );
@@ -2275,14 +2183,11 @@ void SetupMenu::system_menu_create_hardware(MenuEntry *top) {
 	pstype->addEntry( "MCPH21");
 	pstype->addEntry( "Autodetect");
 
-	SetupMenuValFloat *met_adj = new SetupMenuValFloat("Voltmeter Adjust", "%",
-			-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust, RST_NONE,
-			false, true);
-	met_adj->setHelp("Option to factory fine-adjust voltmeter");
+	SetupMenuValFloat *met_adj = top->createVoltmeterAdjustMenu();
 	top->addEntry(met_adj);
 }
 
-void SetupMenu::system_menu_create_altimeter_airspeed_stallwa(MenuEntry *top) {
+void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
 	SetupMenuSelect *stawaen = new SetupMenuSelect("Stall Warning", RST_NONE, 0,
 			false, &stall_warning);
 	top->addEntry(stawaen);
@@ -2298,7 +2203,7 @@ void SetupMenu::system_menu_create_altimeter_airspeed_stallwa(MenuEntry *top) {
 	top->addEntry(staspe);
 }
 
-void SetupMenu::system_menu_create_altimeter_airspeed(MenuEntry *top) {
+void system_menu_create_altimeter_airspeed(SetupMenu *top) {
 	SetupMenuSelect *als = new SetupMenuSelect("Altimeter Source", RST_NONE, 0,
 			true, &alt_select);
 	top->addEntry(als);
@@ -2333,10 +2238,9 @@ void SetupMenu::system_menu_create_altimeter_airspeed(MenuEntry *top) {
 	alq->addEntry("20");
 	top->addEntry(alq);
 
-	SetupMenu *stallwa = new SetupMenu("Stall Warning");
+	SetupMenu *stallwa = new SetupMenu("Stall Warning", system_menu_create_altimeter_airspeed_stallwa);
 	top->addEntry(stallwa);
 	stallwa->setHelp("Configure stall warning parameters");
-	stallwa->addCreator(system_menu_create_altimeter_airspeed_stallwa);
 
 	SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", 70,
 			450, 1, 0, false, &v_max);
@@ -2344,7 +2248,7 @@ void SetupMenu::system_menu_create_altimeter_airspeed(MenuEntry *top) {
 	top->addEntry(vmax);
 }
 
-void SetupMenu::system_menu_create_interfaceS1_routing(MenuEntry *top) {
+void system_menu_create_interfaceS1_routing(SetupMenu *top) {
 	SetupMenuSelect *s1outxcv = new SetupMenuSelect("XCVario", RST_NONE,
 			update_routing, true, &rt_s1_xcv);
 	s1outxcv->addEntry("Disable");
@@ -2370,7 +2274,7 @@ void SetupMenu::system_menu_create_interfaceS1_routing(MenuEntry *top) {
 	top->addEntry(s1outcan);
 }
 
-void SetupMenu::system_menu_create_interfaceS1(MenuEntry *top) {
+void system_menu_create_interfaceS1(SetupMenu *top) {
 	SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT,
 			update_s1_baud, true, &serial1_speed);
 	top->addEntry(s1sp2);
@@ -2383,11 +2287,10 @@ void SetupMenu::system_menu_create_interfaceS1(MenuEntry *top) {
 	s1sp2->addEntry("57600 baud");
 	s1sp2->addEntry("115200 baud");
 
-	SetupMenu *s1out = new SetupMenu("S1 Routing");
+	SetupMenu *s1out = new SetupMenu("S1 Routing", system_menu_create_interfaceS1_routing);
 	s1out->setHelp(
 			"Select data source to be routed from/to serial interface S1");
 	top->addEntry(s1out);
-	s1out->addCreator(system_menu_create_interfaceS1_routing);
 
 	SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE,
 			update_s1_pol, true, &serial1_tx_inverted);
@@ -2435,7 +2338,7 @@ void SetupMenu::system_menu_create_interfaceS1(MenuEntry *top) {
 
 }
 
-void SetupMenu::system_menu_create_interfaceS2_routing(MenuEntry *top) {
+void system_menu_create_interfaceS2_routing(SetupMenu *top) {
 	SetupMenuSelect *s2outxcv = new SetupMenuSelect("XCVario", RST_NONE,
 			update_routing, true, &rt_s2_xcv);
 	s2outxcv->addEntry("Disable");
@@ -2458,7 +2361,7 @@ void SetupMenu::system_menu_create_interfaceS2_routing(MenuEntry *top) {
 	top->addEntry(s2outcan);
 }
 
-void SetupMenu::system_menu_create_interfaceS2(MenuEntry *top) {
+void system_menu_create_interfaceS2(SetupMenu *top) {
 	SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT,
 			update_s2_baud, true, &serial2_speed);
 	top->addEntry(s2sp2);
@@ -2471,11 +2374,10 @@ void SetupMenu::system_menu_create_interfaceS2(MenuEntry *top) {
 	s2sp2->addEntry("57600 baud");
 	s2sp2->addEntry("115200 baud");
 
-	SetupMenu *s2out = new SetupMenu("S2 Routing");
+	SetupMenu *s2out = new SetupMenu("S2 Routing", system_menu_create_interfaceS2_routing);
 	s2out->setHelp(
 			"Select data source to be routed from/to serial interface S2");
 	top->addEntry(s2out);
-	s2out->addCreator(system_menu_create_interfaceS2_routing);
 
 	SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE,
 			update_s2_pol, true, &serial2_tx_inverted);
@@ -2522,7 +2424,7 @@ void SetupMenu::system_menu_create_interfaceS2(MenuEntry *top) {
 	top->addEntry(datamon);
 }
 
-void SetupMenu::system_menu_create_interfaceCAN_routing(MenuEntry *top) {
+void system_menu_create_interfaceCAN_routing(SetupMenu *top) {
 	SetupMenuSelect *canoutxcv = new SetupMenuSelect("XCVario", RST_NONE, 0,
 			true, &rt_can_xcv);
 	canoutxcv->addEntry("Disable");
@@ -2548,7 +2450,7 @@ void SetupMenu::system_menu_create_interfaceCAN_routing(MenuEntry *top) {
 	top->addEntry(canouts2);
 }
 
-void SetupMenu::system_menu_create_interfaceCAN(MenuEntry *top) {
+void system_menu_create_interfaceCAN(SetupMenu *top) {
 	SetupMenuSelect *canmode = new SetupMenuSelect("Datarate", RST_ON_EXIT, 0,
 			true, &can_speed);
 	top->addEntry(canmode);
@@ -2559,10 +2461,9 @@ void SetupMenu::system_menu_create_interfaceCAN(MenuEntry *top) {
 	canmode->addEntry("500 kbit");
 	canmode->addEntry("1000 kbit");
 
-	SetupMenu *canrt = new SetupMenu("CAN Routing");
+	SetupMenu *canrt = new SetupMenu("CAN Routing", system_menu_create_interfaceCAN_routing);
 	top->addEntry(canrt);
 	canrt->setHelp("Select data source that is routed from/to CAN interface");
-	canrt->addCreator(system_menu_create_interfaceCAN_routing);
 
 	SetupMenuSelect *devmod = new SetupMenuSelect("Mode", RST_ON_EXIT, 0, false,
 			&can_mode);
@@ -2574,10 +2475,9 @@ void SetupMenu::system_menu_create_interfaceCAN(MenuEntry *top) {
 	devmod->addEntry("Standalone");
 }
 
-void SetupMenu::system_menu_create(MenuEntry *sye) {
-	SetupMenu *soft = new SetupMenu("Software Update");
+void system_menu_create(SetupMenu *sye) {
+	SetupMenu *soft = new SetupMenu("Software Update", system_menu_create_software);
 	sye->addEntry(soft);
-	soft->addCreator(system_menu_create_software);
 
 	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, 0,
 			false, &factory_reset);
@@ -2587,52 +2487,51 @@ void SetupMenu::system_menu_create(MenuEntry *sye) {
 	fa->addEntry("ResetAll");
 	sye->addEntry(fa);
 
-	SetupMenu *bat = new SetupMenu("Battery Setup");
+	SetupMenu *bat = new SetupMenu("Battery Setup", system_menu_create_battery);
 	bat->setHelp(
 			"Adjust corresponding voltage for battery symbol display low,red,yellow and full");
 	sye->addEntry(bat);
-	bat->addCreator(system_menu_create_battery);
 
-	SetupMenu *hardware = new SetupMenu("Hardware Setup");
-	hardware->setHelp(
-			"Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc",
-			240);
+	SetupMenu *hardware = new SetupMenu("Hardware Setup", system_menu_create_hardware);
+	hardware->setHelp("Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc", 240);
 	sye->addEntry(hardware);
-	hardware->addCreator(system_menu_create_hardware);
 
 	// Altimeter, IAS
-	SetupMenu *aia = new SetupMenu("Altimeter, Airspeed");
+	SetupMenu *aia = new SetupMenu("Altimeter, Airspeed", system_menu_create_altimeter_airspeed);
 	sye->addEntry(aia);
-	aia->addCreator(system_menu_create_altimeter_airspeed);
 
-	// _serial1_speed
-	SetupMenu *rs232 = new SetupMenu("RS232 Interface S1");
-	sye->addEntry(rs232);
-	rs232->addCreator(system_menu_create_interfaceS1);
+	// Devices menu
+	SetupMenu *devices = new SetupMenu("Connected Devices", system_menu_create_devices);
+	devices->setHelp("Devices, Interfaces, Protocols", 240);
+	sye->addEntry(devices);
 
-	if (hardwareRevision.get() >= XCVARIO_21) {
-		SetupMenu *rs232_2 = new SetupMenu("RS232 Interface S2");
-		sye->addEntry(rs232_2);
-		rs232_2->addCreator(system_menu_create_interfaceS2);
-	}
-	if (hardwareRevision.get() >= XCVARIO_22) {
-		// Can Interface C1
-		SetupMenu *can = new SetupMenu("CAN Interface");
-		sye->addEntry(can);
-		can->addCreator(system_menu_create_interfaceCAN);
-	}
+	// // _serial1_speed
+	// SetupMenu *rs232 = new SetupMenu("RS232 Interface S1", system_menu_create_interfaceS1);
+	// sye->addEntry(rs232);
 
-	// NMEA protocol of variometer
-	SetupMenuSelect *nmea = new SetupMenuSelect("NMEA Protocol", RST_NONE, 0,
-			true, &nmea_protocol);
-	sye->addEntry(nmea);
-	nmea->setHelp(
-			"Setup the protocol used for sending NMEA sentences. This needs to match the device driver chosen in XCSoar/LK8000");
-	nmea->addEntry("OpenVario");
-	nmea->addEntry("Borgelt");
-	nmea->addEntry("Cambridge");
-	nmea->addEntry("XCVario");
-	nmea->addEntry("Disable");
+	// SetupMenu *can = new SetupMenu("CAN Interface", system_menu_create_interfaceCAN);
+
+	// if (hardwareRevision.get() >= XCVARIO_21) {
+	// 	SetupMenu *rs232_2 = new SetupMenu("RS232 Interface S2", system_menu_create_interfaceS2);
+	// 	sye->addEntry(rs232_2);
+	// }
+	// if (hardwareRevision.get() >= XCVARIO_22) {
+	// 	// Can Interface C1
+	// 	SetupMenu *can = new SetupMenu("CAN Interface", system_menu_create_interfaceCAN);
+	// 	sye->addEntry(can);
+	// }
+
+	// // NMEA protocol of variometer
+	// SetupMenuSelect *nmea = new SetupMenuSelect("NMEA Protocol", RST_NONE, 0,
+	// 		true, &nmea_protocol);
+	// sye->addEntry(nmea);
+	// nmea->setHelp(
+	// 		"Setup the protocol used for sending NMEA sentences. This needs to match the device driver chosen in XCSoar/LK8000");
+	// nmea->addEntry("OpenVario");
+	// nmea->addEntry("Borgelt");
+	// nmea->addEntry("Cambridge");
+	// nmea->addEntry("XCVario");
+	// nmea->addEntry("Disable");
 
 	SetupMenuSelect *logg = new SetupMenuSelect("Logging", RST_NONE, 0, true,
 			&logging);
@@ -2644,7 +2543,7 @@ void SetupMenu::system_menu_create(MenuEntry *sye) {
 
 }
 
-void SetupMenu::setup_create_root(MenuEntry *top) {
+void setup_create_root(SetupMenu *top) {
 	ESP_LOGI(FNAME,"setup_create_root()");
 	if (rot_default.get() == 0) {
 		SetupMenuValFloat *mc = new SetupMenuValFloat("MC", "", 0.0, 9.9, 0.1,
@@ -2662,13 +2561,12 @@ void SetupMenu::setup_create_root(MenuEntry *top) {
 		top->addEntry(vol);
 	}
 
+	ESP_LOGI(FNAME, "Create bugs menu");
 	Device *jumbo = DEVMAN->getDevice(DeviceId::JUMBO_DEV);
 	if (jumbo) {
-		std::string title("Bugs at ");
-		title += std::to_string(int(bugs.get())) + "%";
-		SetupMenu *wiper = new SetupMenu(title.c_str());
+		sprintf(rentry0, "Bugs at %d%%", int(bugs.get()));
+		SetupMenu *wiper = new SetupMenu(rentry0, wiper_menu_create);
 		top->addEntry(wiper);
-		wiper->addCreator(wiper_menu_create);
 	} else {
 		bugs_item_create(top);
 	}
@@ -2711,51 +2609,43 @@ void SetupMenu::setup_create_root(MenuEntry *top) {
 		top->addEntry(passw);
 	} else {
 		// Vario
-		SetupMenu *va = new SetupMenu("Vario and Speed 2 Fly");
+		SetupMenu *va = new SetupMenu("Vario and Speed 2 Fly", vario_menu_create);
 		top->addEntry(va);
-		va->addCreator(vario_menu_create);
 
 		// Audio
-		SetupMenu *ad = new SetupMenu("Audio");
+		SetupMenu *ad = new SetupMenu("Audio", audio_menu_create);
 		top->addEntry(ad);
-		ad->addCreator(audio_menu_create);
 
 		// Glider Setup
-		SetupMenu *po = new SetupMenu("Glider Details");
+		SetupMenu *po = new SetupMenu("Glider Details", glider_menu_create);
 		top->addEntry(po);
-		po->addCreator(glider_menu_create);
 
 		// Options Setup
-		SetupMenu *opt = new SetupMenu("Options");
+		SetupMenu *opt = new SetupMenu("Options", options_menu_create);
 		top->addEntry(opt);
-		opt->addCreator(options_menu_create);
 
 		// System Setup
-		SetupMenu *sy = new SetupMenu("System");
+		SetupMenu *sy = new SetupMenu("System", system_menu_create);
 		top->addEntry(sy);
-		sy->addCreator(system_menu_create);
 	}
+}
+
+SetupMenu* SetupMenu::createTopSetup() {
+	SetupMenu *setup = new  SetupMenu("Setup", setup_create_root);
+	return setup;
 }
 
 SetupMenuValFloat* SetupMenu::createQNHMenu() {
-	SetupMenuValFloat *qnh = new SetupMenuValFloat("QNH", "", 900, 1100.0,
-			0.250, qnh_adj, true, &QNH);
+	SetupMenuValFloat *qnh = new SetupMenuValFloat("QNH", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH);
 	qnh->setHelp(
-			"QNH pressure value from ATC. On ground you may adjust to airfield altitude above MSL",
-			180);
+			"QNH pressure value from ATC. On ground you may adjust to airfield altitude above MSL", 180);
 	return qnh;
 }
 
-void SetupMenu::setup() {
-	ESP_LOGI(FNAME,"SetupMenu setup()");
-	SetupMenu *root = new SetupMenu("Setup");
-	root->setRoot(root);
-	root->addEntry(root);
-	// Create static menues
-	if ( NEED_VOLTAGE_ADJUST && !SetupMenuValFloat::meter_adj_menu) {
-		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat(
-				"Voltmeter Adjust", "%", -25.0, 25.0, 0.01, factv_adj, false,
-				&factory_volt_adjust, RST_IMMEDIATE, false, true);
-	}
-	setup_create_root(root);
+SetupMenuValFloat* SetupMenu::createVoltmeterAdjustMenu() {
+	SetupMenuValFloat *met_adj = new SetupMenuValFloat("Voltmeter Adjust", "%",
+		-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust, RST_NONE, false, true);
+	met_adj->setHelp("Option to factory fine-adjust voltmeter");
+	return met_adj;
 }
+

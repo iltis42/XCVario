@@ -8,7 +8,6 @@ class SetupMenuSelect;
 class SetupMenuValFloat;
 
 int select_flap_sens_pin(SetupMenuSelect *p);
-void showWk(SetupMenuSelect * p);
 int flap_speed_act(SetupMenuValFloat *p);
 int flap_lab_act(SetupMenuSelect *p);
 int flap_pos_act(SetupMenuValFloat *p);
@@ -39,7 +38,7 @@ public:
 	void drawLever( int16_t xpos, int16_t ypos, int16_t &oldypos, bool warn, bool good );
 	void drawWingSymbol(int16_t wk, float wksens);
 	void redraw() { sensorOldY = -1000; dirty=true; };
-	static void setupMenue( MenuEntry *parent );
+	static void setupMenue(SetupMenu *parent);
 	unsigned int getSensorRaw(int oversampling=1);
     static inline Flap* FLAP() { return _instance; }
     static const int MAX_NR_POS = 9;
@@ -47,16 +46,14 @@ public:
 
 private: // helper
     friend int select_flap_sens_pin(SetupMenuSelect *p);
-    friend void showWk(SetupMenuSelect *p);
     friend int flap_speed_act(SetupMenuValFloat *p);
     friend int flap_lab_act(SetupMenuSelect *p);
     friend int flap_pos_act(SetupMenuValFloat *p);
     friend int flap_cal_act(SetupMenuSelect *p);
-    friend int flap_enable_act( SetupMenuSelect *p );
-	static void setupSensorMenueEntries(MenuEntry *wkm);
-    static void setupIndicatorMenueEntries(MenuEntry *wkm);
-    static void position_labels_menu_create(MenuEntry* top);
-    static void speeds_setup_menu_create(MenuEntry* top);
+	static void setupSensorMenueEntries(SetupMenu *wkm);
+    static void setupIndicatorMenueEntries(SetupMenu *wkm);
+    static void position_labels_menu_create(SetupMenu* top);
+    static void speeds_setup_menu_create(SetupMenu* top);
 
 	bool sensorToLeverPosition( int sensorreading, float& lever);
 	void  initSpeeds();

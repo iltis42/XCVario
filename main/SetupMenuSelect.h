@@ -5,50 +5,42 @@
  *      Author: iltis
  */
 
-#ifndef _SetupMenuSelect_H_
-#define _SetupMenuSelect_H_
-#include "SetupNG.h"
+#pragma once
+
 #include "MenuEntry.h"
 #include "SetupMenuValCommon.h"
+#include "SetupNG.h"
 
-struct bitfield_select {
-   e_restart_mode_t _restart :2;
-   bool _ext_handler         :1;
-   bool _save                :1;
-   bool _end_menu            :1;
-};
-
-class SetupMenuSelect:  public MenuEntry
+class SetupMenuSelect : public MenuEntry
 {
 public:
-	SetupMenuSelect();
-	SetupMenuSelect( const char* title, e_restart_mode_t restart=RST_NONE, int (*action)(SetupMenuSelect *p) = 0, bool save=true, SetupNG<int> *anvs=0, bool ext_handler=false, bool end_menu=false );
-	virtual ~SetupMenuSelect();
-	void display( int mode=0 );
+	explicit SetupMenuSelect( const char* title, e_restart_mode_t restart=RST_NONE, int (*action)(SetupMenuSelect *p) = 0, 
+		bool save=true, SetupNG<int> *anvs=0, bool ext_handler=false, bool end_menu=false );
+	virtual ~SetupMenuSelect() = default;
+	void enter() override;
+	void display(int mode=0) override;
 	bool existsEntry( std::string ent );
     void addEntry( const char* ent );
 	void addEntryList( const char ent[][4], int size );
 	void delEntry( const char * ent );
 	void updateEntry( const char * ent, int num );
-	void up( int count );  // step up to parent
-	void down( int count );
-	void press();
-	void longPress();
-	void escape() {};
-	const char *value();
+	void up( int count ) override;
+	void down( int count ) override;
+	void press() override;
+	void longPress() override;
+	const char *value() const override;
 	int getSelect();
 	void setSelect( int sel );
 	const char * getEntry() const ;
 	int numEntries() { return _numval; };
 
 private:
-	uint8_t  _select;       // limit to maximum 255 entries, as of today there are e.g. 134 different polars
-	uint8_t  _select_save;
-	uint8_t  _numval;
+	mutable uint8_t  _select = 0;       // limit to maximum 255 entries, as of today there are e.g. 134 different polars
+	uint8_t  _select_save = 0;
+	uint8_t  _numval = 0;
 	bitfield_select bits;
 	std::vector<const char *> _values;
 	int (*_action)( SetupMenuSelect *p );
 	SetupNG<int> *_nvs;
 };
 
-#endif

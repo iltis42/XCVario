@@ -26,7 +26,7 @@
 #include "Messages.h"
 #include "DeviceMgr.h"
 #include "DataMonitor.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <array>
 
@@ -79,7 +79,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     }
     case JUMBOCMD_P:
     {
-        ESP_LOGI(FNAME, "New JumboCmdHost");
+        ESP_LOGI(FNAME, "New JumboCmd");
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
         nmea->addPlugin(new JumboCmdMsg(*nmea));
         tmp = nmea;

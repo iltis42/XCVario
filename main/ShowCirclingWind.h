@@ -28,7 +28,7 @@ public:
 
 	virtual ~ShowCirclingWind() {}
 
-	virtual void display( int mode=0 );
-	virtual void up( int count ) { display(5); };
-	virtual void down( int count ) { display(5); };
+	void display(int mode=0) override;
+	void up( int count ) override { display(5); };
+	void down( int count ) override { display(5); };
 };

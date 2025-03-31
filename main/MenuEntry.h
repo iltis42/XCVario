@@ -1,5 +1,5 @@
 /*
- * SetupMenu.h
+ * SetupEntry.h
  *
  *  Created on: Feb 4, 2018
  *      Author: iltis
@@ -10,61 +10,52 @@
 #include "ESPRotary.h"
 #include "SetupNG.h"
 
-#include <vector>
-#include <string>
-
-class IpsDisplay;
-class AnalogInput;
 class PressureSensor;
-class AdaptUGC;
+class SetupMenu;
+class SetupRoot;
 
-class MenuEntry: public RotaryObserver {
+constexpr const int DEFAULT_HELP_Y_POS = 180;
+
+class MenuEntry : public RotaryObserver
+{
+	friend class SetupRoot;
+
 public:
-	MenuEntry() : RotaryObserver() {
-		highlight = 0;
-		_parent = 0;
-		pressed = false;
-		helptext = 0;
-		hypos = 0;
-		_title = 0;
-		subtree_created = 0;
-		menu_create_ptr = 0;
-	};
-	virtual ~MenuEntry();
+	MenuEntry() : RotaryObserver() {}
+	virtual ~MenuEntry() = default;
+
+	// from rotary
+	void release() override {}
+	void escape() override {}
+
+	// own API
+	virtual void enter();
+	virtual void exit(int ups=1);
 	virtual void display( int mode=0 ) = 0;
-	virtual void release() { display(); };
-	virtual void longPress() {};
-	virtual const char* value() = 0;
-    MenuEntry* getFirst() const;
-	MenuEntry* addEntry( MenuEntry * item );
-	MenuEntry* addEntry( MenuEntry * item, const MenuEntry* after );
-	void       delEntry( MenuEntry * item );
-	MenuEntry* findMenu( std::string title, MenuEntry* start=root  );
-	void togglePressed() { pressed = ! pressed; }
-	void setHelp( const char *txt, int y=180 ) { helptext = (char*)txt; hypos = y; };
-	void showhelp( int y );
+	virtual bool isLeaf() const { return true; }
+	virtual const char* value() const = 0; // content as string
+	//
+	const char* getTitle() const { return _title; }
+	SetupMenu* getParent() const { return _parent; }
+	void regParent(SetupMenu* p);
+	bool isActive() const { return selected == this; }
+	void setHelp( const char *txt, int y=DEFAULT_HELP_Y_POS ) { helptext = (char*)txt; hypos = y; };
+	void showhelp();
 	void clear();
+	const MenuEntry* findMenu(const char *title) const;
 	void uprintf( int x, int y, const char* format, ...);
 	void uprint( int x, int y, const char* str );
-    void restart();
-    bool get_restart() { return _restart; };
-    void addCreator( void (menu_create)(MenuEntry*ptr) ){ menu_create_ptr=menu_create; }
-    static void setRoot( MenuEntry *root ) { selected = root; };
-public:
-	std::vector<MenuEntry*>  _childs;
-	MenuEntry *_parent;
-	const char * _title;
-	int8_t    highlight;
-	uint8_t   pressed;
-	char      *helptext;
-	int16_t    hypos;
-	void (*menu_create_ptr)(MenuEntry*);
-	uint8_t subtree_created;
-	static AdaptUGC *ucg;
-	static MenuEntry *root;
-	static MenuEntry *selected;
-	static IpsDisplay* _display;
-	static AnalogInput* _adc;
-	static PressureSensor *_bmp;
+	void SavedDelay(bool showit=true);
+	void reBoot();
+
+protected:
 	static bool _restart;
+private:
+	static MenuEntry *selected;
+
+protected:
+	SetupMenu  *_parent = nullptr;
+	const char *_title = nullptr;
+	const char *helptext = nullptr;
+	int16_t     hypos = DEFAULT_HELP_Y_POS;
 };

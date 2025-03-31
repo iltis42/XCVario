@@ -27,31 +27,19 @@ class SetupMenuDisplay: public MenuEntry
 public:
   SetupMenuDisplay( const char* title, int (*action)(SetupMenuDisplay *p) = nullptr );
 
-  virtual ~SetupMenuDisplay();
+  virtual ~SetupMenuDisplay() = default;
 
   /**
    * Make a class derive and overload this method with your own display method
    * or handle all display stuff in your callback function action.
    */
-	virtual void display( int mode=0 );
+	void display(int mode=0) override;
 
-	// No value support
-	virtual const char *value() { return nullptr; }
-
-	// Ignore up calls
-	virtual void up( int count ) {}
-
-	// Ignore down calls
-	virtual void down( int count ) {}
-
-	// Handle press calls
-	virtual void press();
-
-	// Ignore release calls
-	virtual void release() {}
-
-	// Ignore escape calls
-	void escape() {};
+	const char *value() const override { return nullptr; }
+	void up( int count ) override {}
+	void down( int count ) override {}
+	void press() override;
+	void longPress() override {};
 
 private:
 	// User's callback function

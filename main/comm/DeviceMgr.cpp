@@ -234,10 +234,11 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     }
     InterfaceCtrl *itf = &dummy_itf;
     if ( iid == CAN_BUS ) {
-        if (CAN && !CAN->isInitialized()) {
-            if (CAN->begin()) {
-                itf = CAN;
+        if ( CAN ) {
+            if(!CAN->isInitialized()) {
+                CAN->begin();
             }
+            itf = CAN;
         }
     }
     else if ( iid == WIFI) {
@@ -353,6 +354,17 @@ InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
     return nullptr;
 }
 
+bool DeviceManager::isIntf(ItfTarget Iid)
+{
+    for ( auto dev : _device_map ) {
+        // all devices
+        if ( dev.second->_itf->getId() == Iid.iid ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Result should be cashed for performance purpose.
 RoutingList DeviceManager::getRouting(RoutingTarget target)
 {
@@ -445,6 +457,19 @@ void DeviceManager::dumpMap() const
         }
     }
 }
+
+std::vector<const Device*> DeviceManager::allDevs() const
+{
+    std::vector<const Device*> ret;
+    for ( auto &it : _device_map ) {
+        ret.push_back(it.second);
+    }
+    return ret;
+}
+
+//
+// A Device
+//
 
 // Resolve the existance of a device
 Device::~Device()

@@ -5,11 +5,13 @@
  *      Author: iltis
  */
 
-#include <logdef.h>
-#include <sensor.h>
-#include "Units.h"
 #include "SetupMenuChar.h"
+#include "SetupMenu.h"
+
+#include "sensor.h"
+#include "Units.h"
 #include "ESPAudio.h"
+#include "logdef.h"
 
 const char * SetupMenuChar::getEntry() const
 {
@@ -17,7 +19,8 @@ const char * SetupMenuChar::getEntry() const
 	return _values[ _select ];
 }
 
-const char *SetupMenuChar::value() {
+const char *SetupMenuChar::value() const
+{
 	return getEntry();
 }
 
@@ -71,15 +74,16 @@ void SetupMenuChar::delEntry( const char* ent ) {
 		}
 }
 
-SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuChar *p), bool save, char *achar, uint32_t index, bool ext_handler, bool end_menu ) {
+SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuChar *p), 
+								bool save, char *achar, uint32_t index, bool ext_handler, bool end_menu ) :
+	MenuEntry()
+{
 	ESP_LOGI(FNAME,"SetupMenuChar( %s ), char: %c", title, *achar );
-	attach(this);
 	bits._ext_handler = ext_handler;
 	_title = title;
 	_select = 0;
 	_select_save = 0;
-	bits._end_menu = end_menu;
-	highlight = -1;
+	bits._end_setup = end_menu;
 	_mychar = 0;
 	_char_index = index;
 	if( achar ) {
@@ -92,76 +96,58 @@ SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (
 
 }
 
-SetupMenuChar::~SetupMenuChar()
-{
-	detach(this);
-}
-
 void SetupMenuChar::display( int mode ){
-	if( (selected != this) || !gflags.inSetup  )
-		return;
-	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x hl:%d", pressed, _title, (int)(_action), highlight );
+
+	ESP_LOGI(FNAME,"display() title:%s action: %x", _title, (int)(_action));
 	clear();
 	if( bits._ext_handler ){  // handling is done only in action method
 		ESP_LOGI(FNAME,"ext handler");
-		selected = _parent;
 	}else
 	{
-		ucg->setPrintPos(1,25);
+		MYUCG->setPrintPos(1,25);
 		ESP_LOGI(FNAME,"Title: %s ", _title );
-		ucg->printf("<< %s",_title);
+		MYUCG->printf("<< %s",_title);
 		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
 		if( _numval > 9 ){
-			ucg->setPrintPos( 1, 50 );
-			ucg->printf( "%s                ", _values[_select] );
+			MYUCG->setPrintPos( 1, 50 );
+			MYUCG->printf( "%s                ", _values[_select] );
 		}else
 		{
 			for( int i=0; i<_numval && i<+10; i++ )	{
-				ucg->setPrintPos( 1, 50+25*i );
-				ucg->print( _values[i] );
+				MYUCG->setPrintPos( 1, 50+25*i );
+				MYUCG->print( _values[i] );
 			}
-			ucg->drawFrame( 1,(_select+1)*25+3,238,25 );
+			MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );
 		}
 
-		int y=_numval*25+50;
-		showhelp( y );
-		if(mode == 1 && bits._save == true ){
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( 0,280,240,40 );
-			ucg->setPrintPos( 1, 300 );
-			ucg->print("Saved" );
-		}
-		if( mode == 1 )
-			delay(1000);
+		showhelp();
 	}
 }
 
-void SetupMenuChar::down(int count){
-	if( (selected != this) || !gflags.inSetup )
-		return;
+void SetupMenuChar::down(int count)
+{
 	if( _numval > 9 ){
 		while( count ) {
 			if( (_select) > 0 )
 				(_select)--;
 			count--;
 		}
-		ucg->setPrintPos( 1, 50 );
-		ucg->setFont(ucg_font_ncenR14_hr, true );
-		ucg->printf("%s                  ",_values[_select] );
+		MYUCG->setPrintPos( 1, 50 );
+		MYUCG->setFont(ucg_font_ncenR14_hr, true );
+		MYUCG->printf("%s                  ",_values[_select] );
 	}else {
-		ucg->setColor(COLOR_BLACK);
-		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
-		ucg->setColor(COLOR_WHITE);
+		MYUCG->setColor(COLOR_BLACK);
+		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
+		MYUCG->setColor(COLOR_WHITE);
 		if( (_select) >  0 )
 			(_select)--;
 		ESP_LOGI(FNAME,"val down %d", _select );
-		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
+		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
 	}
 }
 
-void SetupMenuChar::up(int count){
-	if( (selected != this) || !gflags.inSetup )
-		return;
+void SetupMenuChar::up(int count)
+{
 	if( _numval > 9 )
 	{
 		while( count ) {
@@ -169,17 +155,17 @@ void SetupMenuChar::up(int count){
 				(_select)++;
 			count--;
 		}
-		ucg->setPrintPos( 1, 50 );
-		ucg->setFont(ucg_font_ncenR14_hr, true );
-		ucg->printf("%s                   ", _values[_select] );
+		MYUCG->setPrintPos( 1, 50 );
+		MYUCG->setFont(ucg_font_ncenR14_hr, true );
+		MYUCG->printf("%s                   ", _values[_select] );
 	}else {
-		ucg->setColor(COLOR_BLACK);
-		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
-		ucg->setColor(COLOR_WHITE);
+		MYUCG->setColor(COLOR_BLACK);
+		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
+		MYUCG->setColor(COLOR_WHITE);
 		if ( (_select) < _numval-1 )
 			(_select)++;
 		ESP_LOGI(FNAME,"val up %d", _select );
-		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
+		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
 	}
 }
 
@@ -187,36 +173,22 @@ void SetupMenuChar::longPress(){
 	press();
 }
 
-void SetupMenuChar::press(){
-	if( selected != this )
+void SetupMenuChar::press()
+{
+	ESP_LOGI(FNAME,"press() ext handler: %d _select: %d", bits._ext_handler, _select );
+
+	SavedDelay(bits._save);
+	_parent->menuSetTop();
+	if( _action != 0 ){
+		ESP_LOGI(FNAME,"calling action in press %d", _select );
+		(*_action)( this );
+	}
+	if( _select_save != _select && bits._restart ) {
+		_restart = true;
+	}
+	if( bits._end_setup ) {
+		exit(-1);
 		return;
-	ESP_LOGI(FNAME,"press() ext handler: %d press: %d _select: %d", bits._ext_handler, pressed, _select );
-	if ( pressed ){
-		display( 1 );
-		if( bits._end_menu ){
-			ESP_LOGI(FNAME,"press() end_menu");
-			selected = root;
-		}
-		else if( _parent != 0) {
-			ESP_LOGI(FNAME,"go to parent");
-			selected = _parent;
-		}
-		selected->highlight = -1;
-		selected->pressed = true;
-		pressed = false;
-		if( _action != 0 ){
-			ESP_LOGI(FNAME,"calling action in press %d", _select );
-			(*_action)( this );
-		}
-		if( _select_save != _select )
-			if( bits._restart ) {
-				_restart = true;
-			}
-		if( bits._end_menu ){
-			selected->press();
-		}
 	}
-	else{
-		pressed = true;
-	}
+	exit();
 }

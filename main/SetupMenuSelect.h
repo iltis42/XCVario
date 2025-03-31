@@ -18,7 +18,7 @@ public:
 		bool save=true, SetupNG<int> *anvs=0, bool ext_handler=false, bool end_menu=false );
 	virtual ~SetupMenuSelect() = default;
 	void enter() override;
-	void display( int mode=0 ) override;
+	void display(int mode=0) override;
 	bool existsEntry( std::string ent );
     void addEntry( const char* ent );
 	void addEntryList( const char ent[][4], int size );

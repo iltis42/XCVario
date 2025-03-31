@@ -33,7 +33,7 @@ public:
    * Make a class derive and overload this method with your own display method
    * or handle all display stuff in your callback function action.
    */
-	void display( int mode=0 ) override;
+	void display(int mode=0) override;
 
 	const char *value() const override { return nullptr; }
 	void up( int count ) override {}

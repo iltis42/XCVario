@@ -20,7 +20,7 @@ public:
 	virtual ~SetupAction() = default;
 	void enter() override;
 	void exit(int ups=1);
-	void display( int mode=0 );
+	void display(int mode=0) override;
 	const char* value() const override { return ""; };
 	int getCode() const { return _code; }
 	// Rotoary API

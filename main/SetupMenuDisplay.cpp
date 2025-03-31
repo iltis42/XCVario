@@ -31,7 +31,7 @@ SetupMenuDisplay::SetupMenuDisplay( const char* title, int (*action)(SetupMenuDi
 	_action = action;
 }
 
-void SetupMenuDisplay::display( int mode )
+void SetupMenuDisplay::display(int mode)
 {
   if( _action != nullptr ) {
     // Call user's callback

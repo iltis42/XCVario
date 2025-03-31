@@ -29,5 +29,5 @@ class ShowCompassSettings: public SetupMenuDisplay
 
   virtual ~ShowCompassSettings() {}
 
-	virtual void display( int mode=0 );
+	void display(int mode=0) override;
 };

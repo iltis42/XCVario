@@ -17,7 +17,7 @@ class SetupRoot final : public SetupMenu
 public:
     SetupRoot(IpsDisplay *display); // defines root
     virtual ~SetupRoot();
-    void display(int) override {};
+    void display(int mode=0) override {};
     const char* value() const override { return nullptr; }
 
     // API

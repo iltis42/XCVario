@@ -29,5 +29,5 @@ class DisplayDeviations: public SetupMenuDisplay
 
   virtual ~DisplayDeviations() {}
 
-	virtual void display( int mode=0 );
+	virtual void display(int mode=0) override;
 };

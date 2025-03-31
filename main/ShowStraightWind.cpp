@@ -35,11 +35,12 @@ SetupMenuDisplay( title, nullptr )
 
 
 
-void ShowStraightWind::display( int mode )
+void ShowStraightWind::display(int mode)
 {
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
-	if( mode != 5 )
+	if( mode != 5 ) {
 		clear();
+	}
 	MYUCG->setFont( ucg_font_ncenR14_hr );
 	uprintf( 5, 25, _title );
 

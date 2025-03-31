@@ -68,7 +68,7 @@ void SetupMenuValFloat::setPrecision( int prec ){
 	bits._precision = prec;
 }
 
-void SetupMenuValFloat::display( int mode )
+void SetupMenuValFloat::display(int mode)
 {
 	ESP_LOGI(FNAME,"display %s", _title);
 	uprintf( 5,25, _title );

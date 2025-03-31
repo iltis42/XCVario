@@ -25,7 +25,7 @@ public:
 		bool end_menu=false, SetupNG<float> *anvs = 0, e_restart_mode_t restart=RST_NONE, bool sync=false, bool life_update=false );
 	virtual ~SetupMenuValFloat() = default;
 	void enter() override;
-	void display( int mode=0 );
+	void display(int mode=0) override;
 	void displayVal();
 	void setPrecision( int prec );
 	const char *value() const override;

@@ -32,7 +32,7 @@ SetupMenuDisplay( title, nullptr )
 	ESP_LOGI(FNAME, "ShowCompassSettings(): title='%s'", title );
 }
 
-void ShowCompassSettings::display( int mode )
+void ShowCompassSettings::display(int mode)
 {
 	if( !compass )
 	{
@@ -44,7 +44,7 @@ void ShowCompassSettings::display( int mode )
 		clear();
 		return;
 	}
-	ESP_LOGI(FNAME, "display() mode=%d", mode );
+	ESP_LOGI(FNAME, "display" );
 
 	clear();
 	MYUCG->setFont( ucg_font_ncenR14_hr );

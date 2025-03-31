@@ -21,56 +21,42 @@
 // the global access to the rotary knob
 ESPRotary *Rotary = nullptr;
 #define BUTTON_PIN GPIO_NUM_0  // Change to your actual button pin
-
-typedef enum {
-BUTTON_PRESSED = 0,
-BUTTON_RELEASED,
-}e_button_states;
-
-
-typedef enum {
-PRESSED = 0,
-RELEASED,
-RELEASE_SEND,
-IDLE
-}e_sm_states;
-
+#define SHORT_PRESS 1
+#define LONG_PRESS  2
+#define BUTTON_RELEASED 3
 #define LONG_PRESS_THRESHOLD 400  // 400ms threshold
 #define DEBOUNCE_TIME 25          // 25 ms debounce threshold
+
 
 static QueueHandle_t buttonQueue;
 static uint32_t lastPressTime = 0;
 static TaskHandle_t pid = NULL;
 static std::list<RotaryObserver *> observers;
-static bool isButtonPressed=false;
-static int state=BUTTON_RELEASED;
-static uint32_t pressDuration = 0;
 
 static void IRAM_ATTR button_isr_handler(void* arg) {
-    uint32_t currentTime = esp_log_timestamp();
+	uint32_t currentTime = esp_log_timestamp();
+	// Ignore interrupts occurring within debounce time
+	if (lastPressTime && ((currentTime - lastPressTime) < DEBOUNCE_TIME)) {
+		return;
+	}
 
-    // Ignore interrupts occurring within debounce time
-    if (lastPressTime && ((currentTime - lastPressTime) < DEBOUNCE_TIME)) {
-        return;
-    }
+	int buttonState = gpio_get_level(Rotary->getSw());
 
-    int buttonState = gpio_get_level(Rotary->getSw());
+	if (buttonState == 0 ) { // Button pressed (active LOW)
+		lastPressTime = currentTime;
+	}
+	else{ // Button released
+		if( lastPressTime ){
+			uint32_t pressDuration = currentTime - lastPressTime;
+			uint8_t pressType = (pressDuration > LONG_PRESS_THRESHOLD) ? LONG_PRESS : SHORT_PRESS;
+			xQueueSendFromISR(buttonQueue, &pressType, NULL);
 
-    if (buttonState == 0) { // Button pressed (active LOW)
-        if (!isButtonPressed) {
-            isButtonPressed = true;
-            lastPressTime = currentTime;  // Record the time when the button was first pressed
-            uint8_t pressEvent = BUTTON_PRESSED;  // Button pressed event
-            xQueueSendFromISR(buttonQueue, &pressEvent, NULL);  // Send press event
-        }
-    } else { // Button released
-        if (isButtonPressed) {
-            isButtonPressed = false;
-            uint8_t releaseEvent = BUTTON_RELEASED;  // Button released event
-            xQueueSendFromISR(buttonQueue, &releaseEvent, NULL); // Send release event
-        }
-    }
-    lastPressTime = currentTime;
+			uint8_t releaseEvent = BUTTON_RELEASED;
+			xQueueSendFromISR(buttonQueue, &releaseEvent, NULL);
+
+			lastPressTime = 0;
+		}
+	}
 }
 
 // Observer task
@@ -83,48 +69,17 @@ void ObserverTask( void *args )
 		// handle button events
 		uint8_t event;
 		if (xQueueReceive(buttonQueue, &event, 0) == pdTRUE) {
-			if (event == BUTTON_PRESSED) {
-				// ESP_LOGI(FNAME,"Button pressed event");
-				state = PRESSED;
-			} else if (event == BUTTON_RELEASED) {
-				// ESP_LOGI(FNAME,"Button released event");
-				state = RELEASED;
+			if (event == SHORT_PRESS) {
+				ESP_LOGI(FNAME,"Button short press detected");
+				knob.sendPress();
+			} else if (event == LONG_PRESS) {
+				ESP_LOGI(FNAME,"Button long press detected");
+				knob.sendLongPress();
+			}else if (event == BUTTON_RELEASED) {
+				ESP_LOGI(FNAME, "Button released");
+				knob.sendRelease();
 			}
 		}
-
-		switch( state ){
-			case PRESSED:
-				if( lastPressTime ){
-					pressDuration = esp_log_timestamp() - lastPressTime;
-				}
-				if (pressDuration >= LONG_PRESS_THRESHOLD) {
-					ESP_LOGI(FNAME, "send longPress() PD:%ld ", pressDuration );
-					knob.longPress();
-					state = RELEASE_SEND;
-				}
-			break;
-
-			case RELEASED:
-				if (pressDuration < LONG_PRESS_THRESHOLD) {
-					ESP_LOGI(FNAME, "send press() PD:%ld", pressDuration );
-					knob.press();
-				}
-				state = RELEASE_SEND;
-			break;
-
-			case RELEASE_SEND:
-				ESP_LOGI(FNAME, "send release()");
-				knob.release();
-				state = IDLE;
-			break;
-
-			case IDLE:
-			break;
-
-			default:
-			break;
-		}
-
 		// handle increment/decrement
 		if( pcnt_unit_get_count(knob.pcnt_unit, &enc_count) != ESP_OK ) {
 			ESP_LOGE(FNAME,"Error get counter");
@@ -139,17 +94,17 @@ void ObserverTask( void *args )
 			old_cnt = enc_count;
 			if( diff < 0 ) {
 				// ESP_LOGI(FNAME,"Rotary down %d times",abs(diff) );
-				knob.down( abs(diff) );
+				knob.sendDown( abs(diff) );
 			}
 			else {
 				// ESP_LOGI(FNAME,"Rotary up %d times", abs(diff) );
-				knob.up( abs(diff) );
+				knob.sendUp( abs(diff) );
 			}
 		}
 		if( uxTaskGetStackHighWaterMark( pid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning rotary task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
 		}
-		vTaskDelay(25 / portTICK_PERIOD_MS);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
 
@@ -247,19 +202,22 @@ esp_err_t ESPRotary::updateRotDir()
 	return pcnt_channel_set_edge_action(pcnt_chan, rot_action, PCNT_CHANNEL_EDGE_ACTION_HOLD);
 }
 
-void ESPRotary::up( int diff ){
+void ESPRotary::sendUp( int diff ) const
+{
 	// ESP_LOGI(FNAME,"Rotary down action");
 	for (auto &observer : observers)
 		observer->up( diff );   // tbd, dito
 }
 
-void ESPRotary::down( int diff ){
+void ESPRotary::sendDown( int diff ) const
+{
 	// ESP_LOGI(FNAME,"Rotary up action");
 	for (auto &observer : observers)
 		observer->down( diff );
 }
 
-void ESPRotary::press(){
+void ESPRotary::sendPress() const
+{
 	// ESP_LOGI(FNAME,"Pressed action");
 	for (auto &observer : observers)
 		observer->press();
@@ -267,28 +225,31 @@ void ESPRotary::press(){
 
 }
 
-void ESPRotary::release(){
+void ESPRotary::sendRelease() const
+{
 	// ESP_LOGI(FNAME,"Release action");
 	for (auto &observer : observers)
 		observer->release();
 	// ESP_LOGI(FNAME,"End switch release action");
 }
 
-void ESPRotary::longPress(){
+void ESPRotary::sendLongPress() const
+{
 	// ESP_LOGI(FNAME,"Long pressed action");
 	for (auto &observer : observers)
 		observer->longPress();
 	// ESP_LOGI(FNAME,"End long pressed action");
 }
 
-void ESPRotary::escape(){
+void ESPRotary::sendEscape() const
+{
 	// ESP_LOGI(FNAME,"Rotary up action");
 	for (auto &observer : observers)
 		observer->escape();
 }
 
 bool ESPRotary::readSwitch() {
-	return gpio_get_level(sw) == 0;
+	return gpio_get_level(sw) == 0; // Fixme, this need to be a vritual level after debouncing is done
 }
 
 

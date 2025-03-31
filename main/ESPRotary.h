@@ -33,14 +33,12 @@ public:
 	virtual void longPress() = 0;
 	virtual void escape() = 0;
 
-	// bool readSwitch() { return Rotary ? Rotary->readSwitch() : false; }
-	
 	void attach(RotaryObserver *obs);
 	void detach(RotaryObserver *obs);
 };
 
 
-class ESPRotary : public RotaryObserver
+class ESPRotary
 {
 	friend void ObserverTask(void *arg);
 
@@ -50,13 +48,13 @@ public:
 	void begin();
 	esp_err_t updateRotDir();
 
-	// observer API
-	void up(int diff) override;
-	void down(int diff) override;
-	void press() override;
-	void release() override;
-	void longPress() override;
-	void escape() override;
+	// observer feed
+	void sendUp(int diff) const;
+	void sendDown(int diff) const;
+	void sendPress() const;
+	void sendRelease() const;
+	void sendLongPress() const;
+	void sendEscape() const;
 	bool readSwitch(); // returns true if pressed
 	inline gpio_num_t getSw() { return sw; };
 

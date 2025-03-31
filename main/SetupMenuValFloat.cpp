@@ -49,8 +49,10 @@ void SetupMenuValFloat::enter()
 		}
 		_value_safe = _value;
 	}
+	if ( helptext ) {
+		clear();
+	}
 	MenuEntry::enter();
-	display();
 }
 
 const char *SetupMenuValFloat::value() const

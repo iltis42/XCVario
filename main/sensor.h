@@ -62,12 +62,11 @@ extern SerialLine *S1,*S2;
 extern Clock *MY_CLOCK;
 extern StraightWind theWind;
 extern SemaphoreHandle_t xMutex;
-extern int active_screen;
 extern CenterAid *centeraid;
 extern AirspeedSensor *asSensor;
 extern PressureSensor *baroSensor;
 
-extern SetupMenu  *Menu;
+// extern SetupRoot Menu;
 extern SemaphoreHandle_t display_mutex;
 
 extern e_wireless_type wireless;

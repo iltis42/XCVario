@@ -30,6 +30,7 @@
 #include "protocol/Clock.h"
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
+#include "setup/SetupRoot.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
@@ -134,7 +135,7 @@ CenterAid  *centeraid = 0;
 bool netif_initialized = false;
 OTA *ota = 0;
 
-SetupMenu  *Menu = 0;
+SetupRoot  *Menu = nullptr;
 DataMonitor DM;
 
 // Gyro and acceleration sensor
@@ -194,7 +195,6 @@ uint16_t   stall_alarm_off_holddown=0;
 int count=0;
 unsigned long int flarm_alarm_holdtime=0;
 int the_can_mode = CAN_MODE_MASTER;
-int active_screen = 0;  // 0 = Vario
 
 float mpu_target_temp=45.0;
 
@@ -327,7 +327,7 @@ void drawDisplay(void *pvParameters){
 			// G-Load Display
 			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
 			if( ((IMU::getGliderAccelZ() > gload_pos_thresh.get() || IMU::getGliderAccelZ() < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
-					( gload_mode.get() == GLOAD_ALWAYS_ON ) || (active_screen == SCREEN_GMETER)  )
+					( gload_mode.get() == GLOAD_ALWAYS_ON ) || (Menu->getActiveScreen() == SCREEN_GMETER)  )
 			{
 				if( !gflags.gLoadDisplay ){
 					gflags.gLoadDisplay = true;
@@ -341,7 +341,7 @@ void drawDisplay(void *pvParameters){
 			if( gflags.gLoadDisplay ) {
 				Display->drawLoadDisplay( IMU::getGliderAccelZ() );
 			}
-			if( active_screen == SCREEN_HORIZON ) {
+			if( Menu->getActiveScreen() == SCREEN_HORIZON ) {
 				float roll =  IMU::getRollRad();
 				float pitch = IMU::getPitchRad();
 				Display->drawHorizon( pitch, roll, 0 );
@@ -918,7 +918,6 @@ void system_startup(void *args){
 
 	esp_wifi_set_mode(WIFI_MODE_NULL);
 	spiMutex = xSemaphoreCreateMutex();
-	Menu = new SetupMenu(); // the root setup menu
 	ESP_LOGI( FNAME, "Log level set globally to INFO %d; Max Prio: %d Wifi: %d",  ESP_LOG_INFO, configMAX_PRIORITIES, ESP_TASKD_EVENT_PRIO-5 );
 	esp_chip_info_t chip_info;
 	esp_chip_info(&chip_info);
@@ -976,6 +975,7 @@ void system_startup(void *args){
 	Flarm::setDisplay( MYUCG );
 	Display->begin();
 	Display->bootDisplay();
+	Menu = new SetupRoot(Display); // the root setup menu
 
 	// int valid;
 	std::string logged_tests("\n\n\n");
@@ -1249,13 +1249,13 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"End T sensor test");
 		if( temperature == DEVICE_DISCONNECTED_C ) {
 			ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
-			display->writeText( line++, "Temp Sensor: NOT FOUND");
+			Display->writeText( line++, "Temp Sensor: NOT FOUND");
 			gflags.validTemperature = false;
 			logged_tests += "External Temperature Sensor: NOT FOUND\n";
 		}else
 		{
 			ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
-			display->writeText( line++, "Temp Sensor: OK");
+			Display->writeText( line++, "Temp Sensor: OK");
 			gflags.validTemperature = true;
 			logged_tests += "External Temperature Sensor:PASSED\n";
 
@@ -1534,7 +1534,6 @@ void system_startup(void *args){
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
-	// Menu->begin(SetupMenu::createQNHMenu(), baroSensor);
 
 	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		ESP_LOGI(FNAME,"Client Mode");
@@ -1576,10 +1575,10 @@ void system_startup(void *args){
 		Display->clear();
 		if ( NEED_VOLTAGE_ADJUST ) {
 			ESP_LOGI(FNAME,"Do Factory Voltmeter adj");
-			SetupMenuValFloat::showMenu( 0.0, SetupMenuValFloat::meter_adj_menu );
-		}else{
-			SetupMenuValFloat *qnh_menu = SetupMenu::createQNHMenu();
-			SetupMenuValFloat::showMenu( qnh_best, qnh_menu );
+			Menu->begin(SetupMenu::createVoltmeterAdjustMenu());
+		}
+		else {
+			Menu->begin(SetupMenu::createQNHMenu());
 		}
 	}
 	else
@@ -1677,6 +1676,7 @@ extern "C" void  app_main(void)
 	// Access to the non volatile setup
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");
+	DeviceManager::Instance(); // Create a blank DM, because on a cleard flash initSetup starts to access it.
 	bool setupPresent;
 	SetupCommon::initSetup( setupPresent );
 	Cipher::begin();

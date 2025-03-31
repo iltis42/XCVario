@@ -1,19 +1,19 @@
+
 #include "ESPRotary.h"
 
-#include "Setup.h"
+#include "SetupNG.h"
+#include "sensor.h"
+#include <logdef.h>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
-#include <logdef.h>
-
 
 #include <cstdio>
 #include <cstring>
-#include <list>
+#include <stack>
 #include <algorithm>
-#include "sensor.h"
-#include "driver/gpio.h"
+#include <driver/gpio.h>
 
 #define ROTARY_SINGLE_INC 0
 #define ROTARY_DOUBLE_INC 1
@@ -31,7 +31,7 @@ ESPRotary *Rotary = nullptr;
 static QueueHandle_t buttonQueue;
 static uint32_t lastPressTime = 0;
 static TaskHandle_t pid = NULL;
-static std::list<RotaryObserver *> observers;
+static std::stack<RotaryObserver *> observers;
 
 static void IRAM_ATTR button_isr_handler(void* arg) {
 	uint32_t currentTime = esp_log_timestamp();
@@ -109,16 +109,17 @@ void ObserverTask( void *args )
 }
 
 // Observer registration
-void RotaryObserver::attach(RotaryObserver *obs) {
+void RotaryObserver::attach() {
 	// ESP_LOGI(FNAME,"Attach obs: %p", obs );
-	observers.push_back(obs);
+	observers.push(this);
 }
-void RotaryObserver::detach(RotaryObserver *obs) {
+void RotaryObserver::detach() {
 	// ESP_LOGI(FNAME,"Detach obs: %p", obs );
-	auto it = std::find(observers.begin(), observers.end(), obs);
-	if ( it != observers.end() ) {
-		observers.erase(it);
+	if ( observers.empty() ) {
+		ESP_LOGW(FNAME,"Hoppla observer stack empty on detach");
+		return;
 	}
+	observers.pop();
 }
 
 // The rotary knob
@@ -205,47 +206,49 @@ esp_err_t ESPRotary::updateRotDir()
 void ESPRotary::sendUp( int diff ) const
 {
 	// ESP_LOGI(FNAME,"Rotary down action");
-	for (auto &observer : observers)
-		observer->up( diff );   // tbd, dito
+	if (!observers.empty()) {
+		observers.top()->up( diff );
+	}
 }
 
 void ESPRotary::sendDown( int diff ) const
 {
 	// ESP_LOGI(FNAME,"Rotary up action");
-	for (auto &observer : observers)
-		observer->down( diff );
+	if (!observers.empty()) {
+		observers.top()->down( diff );
+	}
 }
 
 void ESPRotary::sendPress() const
 {
 	// ESP_LOGI(FNAME,"Pressed action");
-	for (auto &observer : observers)
-		observer->press();
-	// ESP_LOGI(FNAME,"End pressed action");
-
+	if (!observers.empty()) {
+		observers.top()->press();
+	}
 }
 
 void ESPRotary::sendRelease() const
 {
 	// ESP_LOGI(FNAME,"Release action");
-	for (auto &observer : observers)
-		observer->release();
-	// ESP_LOGI(FNAME,"End switch release action");
+	if (!observers.empty()) {
+		observers.top()->release();
+	}
 }
 
 void ESPRotary::sendLongPress() const
 {
 	// ESP_LOGI(FNAME,"Long pressed action");
-	for (auto &observer : observers)
-		observer->longPress();
-	// ESP_LOGI(FNAME,"End long pressed action");
+	if (!observers.empty()) {
+		observers.top()->longPress();
+	}
 }
 
 void ESPRotary::sendEscape() const
 {
 	// ESP_LOGI(FNAME,"Rotary up action");
-	for (auto &observer : observers)
-		observer->escape();
+	if (!observers.empty()) {
+		observers.top()->escape();
+	}
 }
 
 bool ESPRotary::readSwitch() {

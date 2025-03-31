@@ -29,12 +29,12 @@ public:
 	virtual void up(int count) = 0;
 	virtual void down(int count) = 0;
 	virtual void press() = 0;
-	virtual void release() = 0;
 	virtual void longPress() = 0;
+	virtual void release() = 0;
 	virtual void escape() = 0;
 
-	void attach(RotaryObserver *obs);
-	void detach(RotaryObserver *obs);
+	void attach();
+	void detach();
 };
 
 

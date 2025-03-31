@@ -22,6 +22,7 @@ typedef enum
     NAVI_DEV,
     MAGSENS_DEV,
     RADIO_KRT2_DEV,
+	RADIO_ATR833_DEV,
     TEST_DEV,
     TEST_DEV2
 } DeviceId;
@@ -45,6 +46,7 @@ typedef enum
     CAMBRIDGE_P,
     NMEA_P,
     KRT2_REMOTE_P,
+	ATR833_REMOTE_P,
     TEST_P
 } ProtocolType;
 

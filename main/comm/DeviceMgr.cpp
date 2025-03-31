@@ -354,6 +354,17 @@ InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
     return nullptr;
 }
 
+bool DeviceManager::isIntf(ItfTarget Iid)
+{
+    for ( auto dev : _device_map ) {
+        // all devices
+        if ( dev.second->_itf->getId() == Iid.iid ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Result should be cashed for performance purpose.
 RoutingList DeviceManager::getRouting(RoutingTarget target)
 {

@@ -99,6 +99,7 @@ public:
     // Remove device of this type
     void removeDevice(DeviceId did);
     InterfaceCtrl* getIntf(DeviceId did);
+    bool isIntf(ItfTarget Iid);
     RoutingList getRouting(RoutingTarget t);
     void refreshRouteCache();
     DataLink *getFlarmHost();

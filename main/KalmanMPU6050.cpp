@@ -1,10 +1,11 @@
 #include "KalmanMPU6050.h"
 #include <MPU.hpp>
 #include <mpu/math.hpp>
-#include "logdef.h"
 #include "sensor.h"
 #include "quaternion.h"
 #include "vector.h"
+#include "logdef.h"
+
 #include <simplex.h>
 #include <vector>
 
@@ -520,61 +521,61 @@ void IMU::applyImuReference(const float gAA, const Quaternion& basic)
 }
 
 void IMU::doImuCalibration( SetupMenuSelect *p ){
-	p->ucg->setFont( ucg_font_ncenR14_hr, true );
+	MYUCG->setFont( ucg_font_ncenR14_hr, true );
 	p->clear();
-	p->ucg->setPrintPos( 1, 30 );
-	p->ucg->printf( "AHRS calibration" );
-	p->ucg->setPrintPos( 1, 60 );
-	p->ucg->printf( "Ensure ground is flat," );
-	p->ucg->setPrintPos( 1, 90 );
-	p->ucg->printf( "with zero inclination." );
-	p->ucg->setPrintPos( 1, 120 );
-	p->ucg->printf( "Press button to start" );
+	MYUCG->setPrintPos( 1, 30 );
+	MYUCG->printf( "AHRS calibration" );
+	MYUCG->setPrintPos( 1, 60 );
+	MYUCG->printf( "Ensure ground is flat," );
+	MYUCG->setPrintPos( 1, 90 );
+	MYUCG->printf( "with zero inclination." );
+	MYUCG->setPrintPos( 1, 120 );
+	MYUCG->printf( "Press button to start" );
 	while( !Rotary->readSwitch() ){ delay( 100 ); }
 	p->clear();
-	p->ucg->setPrintPos( 1, 30 );
-	p->ucg->printf( "Now put down RIGHT wing" );
-	p->ucg->setPrintPos( 1, 60 );
-	p->ucg->printf( "on the ground," );
-	p->ucg->setPrintPos( 1, 90 );
-	p->ucg->printf( "then press button.." );
+	MYUCG->setPrintPos( 1, 30 );
+	MYUCG->printf( "Now put down RIGHT wing" );
+	MYUCG->setPrintPos( 1, 60 );
+	MYUCG->printf( "on the ground," );
+	MYUCG->setPrintPos( 1, 90 );
+	MYUCG->printf( "then press button.." );
 	while( !Rotary->readSwitch() ){ delay( 100 ); }
 	float angle = 0.0;
 	int ret = IMU::getAccelSamplesAndCalib(IMU_RIGHT, angle);
 	if( ret<1 ){
 		p->clear();
-		p->ucg->setPrintPos( 1, 30 );
-		p->ucg->printf( "Error in sampling data," );
-		p->ucg->setPrintPos( 1, 60 );
-		p->ucg->printf( "Right wing: Error" );
+		MYUCG->setPrintPos( 1, 30 );
+		MYUCG->printf( "Error in sampling data," );
+		MYUCG->setPrintPos( 1, 60 );
+		MYUCG->printf( "Right wing: Error" );
 		delay(5000);
 		return;
 	}
 	p->clear();
-	p->ucg->setPrintPos( 1, 30 );
-	p->ucg->printf( "Now put down LEFT wing" );
-	p->ucg->setPrintPos( 1, 60 );
-	p->ucg->printf( "on the ground," );
-	p->ucg->setPrintPos( 1, 90 );
-	p->ucg->printf( "then press button.." );
+	MYUCG->setPrintPos( 1, 30 );
+	MYUCG->printf( "Now put down LEFT wing" );
+	MYUCG->setPrintPos( 1, 60 );
+	MYUCG->printf( "on the ground," );
+	MYUCG->setPrintPos( 1, 90 );
+	MYUCG->printf( "then press button.." );
 	while( !Rotary->readSwitch() ){ delay( 100 ); }
 	ret=IMU::getAccelSamplesAndCalib(IMU_LEFT, angle);
 	if( ret<2 ){
 			p->clear();
-			p->ucg->setPrintPos( 1, 30 );
-			p->ucg->printf( "Angle <8° too small," );
-			p->ucg->setPrintPos( 1, 60 );
-			p->ucg->printf( "Left wing: Error" );
+			MYUCG->setPrintPos( 1, 30 );
+			MYUCG->printf( "Angle <8° too small," );
+			MYUCG->setPrintPos( 1, 60 );
+			MYUCG->printf( "Left wing: Error" );
 			delay(5000);
 			return;
 	}else{
-		p->ucg->setPrintPos( 1, 130 );
-		p->ucg->printf( "Success, Finished!" );
-		p->ucg->setPrintPos( 1, 160 );
-		p->ucg->printf( "Wing Angle: %.2f°", R2D(angle) );
+		MYUCG->setPrintPos( 1, 130 );
+		MYUCG->printf( "Success, Finished!" );
+		MYUCG->setPrintPos( 1, 160 );
+		MYUCG->printf( "Wing Angle: %.2f°", R2D(angle) );
 		delay(1000);
-		p->ucg->setPrintPos( 1, 220 );
-		p->ucg->printf( "press button to return" );
+		MYUCG->setPrintPos( 1, 220 );
+		MYUCG->printf( "press button to return" );
 		while( !Rotary->readSwitch() ){ delay( 100 ); }
 	}
 

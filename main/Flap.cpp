@@ -1,7 +1,10 @@
+
+#include "Flap.h"
+
 #include "sensor.h"
 #include "Setup.h"
 #include "Units.h"
-#include "Flap.h"
+#include "SetupMenu.h"
 #include "SetupMenuSelect.h"
 #include "SetupMenuValFloat.h"
 #include "average.h"
@@ -34,21 +37,21 @@ int select_flap_sens_pin(SetupMenuSelect *p){
 		FLAP->configureADC( p->getSelect() );
 		if ( FLAP->haveSensor() ) {
 			// ESP_LOGI(FNAME,"select_flap_sens_pin, have sensor");
-			p->ucg->setPrintPos(5,50);
-			p->ucg->setFont(ucg_font_ncenR14_hr, true );
-			p->ucg->printf("Check Sensor Reading,");
-			p->ucg->setPrintPos(5,80);
-			p->ucg->printf("Press Button to exit");
+			MYUCG->setPrintPos(5,50);
+			MYUCG->setFont(ucg_font_ncenR14_hr, true );
+			MYUCG->printf("Check Sensor Reading,");
+			MYUCG->setPrintPos(5,80);
+			MYUCG->printf("Press Button to exit");
 			while( !Rotary->readSwitch() ){
 				// ESP_LOGI(FNAME,"SW wait loop");
-				p->ucg->setPrintPos(5,120);
-				p->ucg->printf("Sensor: %d       ", FLAP->getSensorRaw(256) );
+				MYUCG->setPrintPos(5,120);
+				MYUCG->printf("Sensor: %d       ", FLAP->getSensorRaw(256) );
 				delay(100);
 			}
 		}
 	}
-	p->ucg->setPrintPos(5,280);
-	p->ucg->printf("Saved");
+	MYUCG->setPrintPos(5,280);
+	MYUCG->printf("Saved");
 	delay( 2000 );
 	p->clear();
 	return 0;
@@ -59,8 +62,8 @@ unsigned int Flap::getSensorRaw(int oversampling) {
 }
 
 int wk_cal_show( SetupMenuSelect *p, int wk, Average<50> &filter){
-	p->ucg->setPrintPos(1,60);
-	p->ucg->printf("Set Flap %+d   ", wk );
+	MYUCG->setPrintPos(1,60);
+	MYUCG->printf("Set Flap %+d   ", wk );
 	delay(500);
 	int flap = 0;
 	int i=0;
@@ -68,8 +71,8 @@ int wk_cal_show( SetupMenuSelect *p, int wk, Average<50> &filter){
 		i++;
 		flap = filter( (int)(FLAP->getSensorRaw(64)) );
 		if( !(i%10) ){
-			p->ucg->setPrintPos(1,140);
-			p->ucg->printf("Sensor: %d      ", flap );
+			MYUCG->setPrintPos(1,140);
+			MYUCG->printf("Sensor: %d      ", flap );
 		}
 	}
 	return flap;
@@ -105,8 +108,8 @@ int flap_cal_act( SetupMenuSelect *p )
 		return 0;
 	if( !FLAP->haveSensor() ){
 		p->clear();
-		p->ucg->setPrintPos(1,60);
-		p->ucg->printf("No Sensor, Abort");
+		MYUCG->setPrintPos(1,60);
+		MYUCG->printf("No Sensor, Abort");
 		delay(2000);
 		ESP_LOGI(FNAME,"Abort calibration, no signal");
 		return 0;
@@ -114,10 +117,10 @@ int flap_cal_act( SetupMenuSelect *p )
 	Average<50> filter;
 	if( p->getSelect() ){
 		p->clear();
-		p->ucg->setPrintPos(1,200);
-		p->ucg->setFont(ucg_font_ncenR14_hr, true );
-		p->ucg->printf("Press for next");
-		p->ucg->setFont(ucg_font_fub25_hr, true );
+		MYUCG->setPrintPos(1,200);
+		MYUCG->setFont(ucg_font_ncenR14_hr, true );
+		MYUCG->printf("Press for next");
+		MYUCG->setFont(ucg_font_fub25_hr, true );
 		int flap;
 		if( flap_pos_max.get() > 2 ){
 			flap = wk_cal_show( p,3,filter );
@@ -147,9 +150,9 @@ int flap_cal_act( SetupMenuSelect *p )
 			wk_sens_pos_minus_3.set( flap );
 		}
 
-		p->ucg->setPrintPos(1,260);
-		p->ucg->setFont(ucg_font_ncenR14_hr, true );
-		p->ucg->printf("Saved");
+		MYUCG->setPrintPos(1,260);
+		MYUCG->setFont(ucg_font_ncenR14_hr, true );
+		MYUCG->printf("Saved");
 		FLAP->initSensPos();
 		ESP_LOGI(FNAME,"Push Button pressed");
 		delay(2000);

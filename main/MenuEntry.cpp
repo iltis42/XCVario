@@ -23,7 +23,6 @@
 #include "Flap.h"
 #include "MenuEntry.h"
 
-AdaptUGC *MenuEntry::ucg = 0;
 IpsDisplay* MenuEntry::_display = 0;
 MenuEntry* MenuEntry::root = 0;
 MenuEntry* MenuEntry::selected = 0;
@@ -48,37 +47,48 @@ const MenuEntry* MenuEntry::findMenu(const char *title) const
 }
 
 void MenuEntry::uprintf( int x, int y, const char* format, ...) {
-	if( ucg == 0 ) {
-		ESP_LOGE(FNAME,"Error UCG not initialized !");
-		return;
-	}
 	va_list argptr;
 	va_start(argptr, format);
-	ucg->setPrintPos(x,y);
-	ucg->printf( format, argptr );
+	MYUCG->setPrintPos(x,y);
+	MYUCG->printf( format, argptr );
 	va_end(argptr);
 }
 
 void MenuEntry::restart(){
 	Audio::shutdown();
 	clear();
-	ucg->setPrintPos( 10, 50 );
-	ucg->print("...rebooting now" );
+	MYUCG->setPrintPos( 10, 50 );
+	MYUCG->print("...rebooting now" );
 	delay(2000);
 	esp_restart();
 }
 
 void MenuEntry::uprint( int x, int y, const char* str ) {
-	if( ucg == 0 ) {
-		ESP_LOGE(FNAME,"Error UCG not initialized !");
+	MYUCG->setPrintPos(x,y);
+	MYUCG->print( str );
+}
+
+void MenuEntry::SavedDelay(bool showit)
+{
+	if ( showit ) {
+		MYUCG->setColor( COLOR_BLACK );
+		MYUCG->drawBox( 1,280,240,40 );
+		MYUCG->setPrintPos( 1, 300 );
+		MYUCG->setColor( COLOR_WHITE );
+		MYUCG->print("Saved");
+	}
+	vTaskDelay(1000 / portTICK_PERIOD_MS);
+}
+
 		return;
 	}
 	ucg->setPrintPos(x,y);
 	ucg->print( str );
 }
 
-void MenuEntry::showhelp(){
-	if( helptext != 0 ){
+void MenuEntry::showhelp()
+{
+    if( helptext != 0 ){
 		int w=0;
 		char *buf = (char *)malloc(512);
 		memset(buf, 0, 512);
@@ -93,17 +103,17 @@ void MenuEntry::showhelp(){
 		// ESP_LOGI(FNAME,"showhelp number of words: %d", w);
 		int x=1;
 		int y=hypos;
-		ucg->setFont(ucg_font_ncenR14_hr);
+		MYUCG->setFont(ucg_font_ncenR14_hr);
 		for( int p=0; p<w; p++ )
 		{
-			int len = ucg->getStrWidth( words[p] );
+			int len = MYUCG->getStrWidth( words[p] );
 			// ESP_LOGI(FNAME,"showhelp pix len word #%d = %d, %s ", p, len, words[p]);
 			if( x+len > 239 ) {   // does still fit on line
 				y+=25;
 				x=1;
 			}
-			ucg->setPrintPos(x, y);
-			ucg->print( words[p] );
+			MYUCG->setPrintPos(x, y);
+			MYUCG->print( words[p] );
 			x+=len+5;
 		}
 		free( buf );
@@ -112,12 +122,11 @@ void MenuEntry::showhelp(){
 
 void MenuEntry::clear()
 {
-	// ESP_LOGI(FNAME,"MenuEntry::clear");
-	ucg->setColor(COLOR_BLACK);
-	ucg->drawBox( 0,0,240,320 );
-	// ucg->begin(UCG_FONT_MODE_SOLID);
-	ucg->setFont(ucg_font_ncenR14_hr);
-	ucg->setPrintPos( 1, 30 );
-	ucg->setColor(COLOR_WHITE);
+	MYUCG->setColor(COLOR_BLACK);
+	MYUCG->drawBox( 0,0,240,320 );
+	// MYUCG->begin(UCG_FONT_MODE_SOLID);
+	MYUCG->setFont(ucg_font_ncenR14_hr);
+	MYUCG->setPrintPos( 1, 30 );
+	MYUCG->setColor(COLOR_WHITE);
 }
 

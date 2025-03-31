@@ -106,31 +106,23 @@ void SetupMenuChar::display( int mode ){
 		selected = _parent;
 	}else
 	{
-		ucg->setPrintPos(1,25);
+		MYUCG->setPrintPos(1,25);
 		ESP_LOGI(FNAME,"Title: %s ", _title );
-		ucg->printf("<< %s",_title);
+		MYUCG->printf("<< %s",_title);
 		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
 		if( _numval > 9 ){
-			ucg->setPrintPos( 1, 50 );
-			ucg->printf( "%s                ", _values[_select] );
+			MYUCG->setPrintPos( 1, 50 );
+			MYUCG->printf( "%s                ", _values[_select] );
 		}else
 		{
 			for( int i=0; i<_numval && i<+10; i++ )	{
-				ucg->setPrintPos( 1, 50+25*i );
-				ucg->print( _values[i] );
+				MYUCG->setPrintPos( 1, 50+25*i );
+				MYUCG->print( _values[i] );
 			}
-			ucg->drawFrame( 1,(_select+1)*25+3,238,25 );
+			MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );
 		}
 
 		showhelp();
-		if(mode == 1 && bits._save == true ){
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( 0,280,240,40 );
-			ucg->setPrintPos( 1, 300 );
-			ucg->print("Saved" );
-		}
-		if( mode == 1 )
-			delay(1000);
 	}
 }
 
@@ -143,17 +135,17 @@ void SetupMenuChar::down(int count){
 				(_select)--;
 			count--;
 		}
-		ucg->setPrintPos( 1, 50 );
-		ucg->setFont(ucg_font_ncenR14_hr, true );
-		ucg->printf("%s                  ",_values[_select] );
+		MYUCG->setPrintPos( 1, 50 );
+		MYUCG->setFont(ucg_font_ncenR14_hr, true );
+		MYUCG->printf("%s                  ",_values[_select] );
 	}else {
-		ucg->setColor(COLOR_BLACK);
-		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
-		ucg->setColor(COLOR_WHITE);
+		MYUCG->setColor(COLOR_BLACK);
+		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
+		MYUCG->setColor(COLOR_WHITE);
 		if( (_select) >  0 )
 			(_select)--;
 		ESP_LOGI(FNAME,"val down %d", _select );
-		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
+		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
 	}
 }
 
@@ -167,17 +159,17 @@ void SetupMenuChar::up(int count){
 				(_select)++;
 			count--;
 		}
-		ucg->setPrintPos( 1, 50 );
-		ucg->setFont(ucg_font_ncenR14_hr, true );
-		ucg->printf("%s                   ", _values[_select] );
+		MYUCG->setPrintPos( 1, 50 );
+		MYUCG->setFont(ucg_font_ncenR14_hr, true );
+		MYUCG->printf("%s                   ", _values[_select] );
 	}else {
-		ucg->setColor(COLOR_BLACK);
-		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
-		ucg->setColor(COLOR_WHITE);
+		MYUCG->setColor(COLOR_BLACK);
+		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
+		MYUCG->setColor(COLOR_WHITE);
 		if ( (_select) < _numval-1 )
 			(_select)++;
 		ESP_LOGI(FNAME,"val up %d", _select );
-		ucg->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
+		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
 	}
 }
 

@@ -43,49 +43,49 @@ void ShowStraightWind::display( int mode )
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
 	if( mode != 5 )
 		clear();
-	ucg->setFont( ucg_font_ncenR14_hr );
-	uprintf( 5, 25, selected->_title );
+	MYUCG->setFont( ucg_font_ncenR14_hr );
+	uprintf( 5, 25, _title );
 
 	uint16_t y = 70;
 	char buffer[32];
 
-	ucg->setPrintPos( 0, y );
+	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "Straight Wind enabled: %s", (wind_enable.get() & 1) ? "Yes" : "No  "  );
-	ucg->printf( "%s", buffer );
+	MYUCG->printf( "%s", buffer );
 	y += 25;
 
-	ucg->setPrintPos( 0, y );
+	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "Status: %s     ", theWind.getStatus() );
-	ucg->printf( "%s", buffer );
+	MYUCG->printf( "%s", buffer );
 	y += 25;
 
-	ucg->setPrintPos( 0, y );
+	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "GPS Status : %s", (theWind.getGpsStatus() == true ) ? "Good" : "Bad  "  );
-	ucg->printf( "%s", buffer );
+	MYUCG->printf( "%s", buffer );
 	y += 25;
 
-	ucg->setPrintPos( 0, y );
+	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "AS C/F: %+3.3f %%/%3.3f %%  ", (theWind.getAsCorrection()-1.0)*100, (wind_as_calibration.get()-1.0)*100 );
-	ucg->printf( "%s", buffer );
+	MYUCG->printf( "%s", buffer );
 	y += 25;
 
-	ucg->setPrintPos( 0, y );
+	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "Last Wind : %3.1f°/%2.1f   ", theWind.getAngle(), Units::Airspeed( theWind.getSpeed()) );
-	ucg->printf( "%s", buffer );
+	MYUCG->printf( "%s", buffer );
 	y += 25;
 
-	ucg->setPrintPos( 0, y );
+	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "MH/Dev: %3.2f/%+3.2f   ", theWind.getMH(), theWind.getDeviation() );
-	ucg->printf( "%s", buffer );
+	MYUCG->printf( "%s", buffer );
 	y += 25;
 
-	ucg->setPrintPos( 0, y );
+	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "Wind Age : %d sec   ", theWind.getAge() );
-	ucg->printf( "%s", buffer );
+	MYUCG->printf( "%s", buffer );
 	y += 25;
 
 
-	ucg->setPrintPos( 5, 310 );
-	ucg->printf( "Press button to exit" );
+	MYUCG->setPrintPos( 5, 310 );
+	MYUCG->printf( "Press button to exit" );
 
 }

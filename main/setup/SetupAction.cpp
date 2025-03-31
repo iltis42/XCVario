@@ -36,9 +36,9 @@ void SetupAction::display(int mode)
     }
     ESP_LOGI(FNAME, "display() pressed=%d instance=%p mode=%d", pressed, this, mode);
     int line = _parent->getMenuPos()+1;
-    int indent = ucg->getStrWidth(_title) + 12;
-    ucg->setPrintPos(indent, (line + 1) * 25);
-    ucg->printf( " %3d  ", mode );
+    int indent = MYUCG->getStrWidth(_title) + 12;
+    MYUCG->setPrintPos(indent, (line + 1) * 25);
+    MYUCG->printf( " %3d  ", mode );
 }
 
 void SetupAction::press()

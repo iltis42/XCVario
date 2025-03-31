@@ -16,7 +16,6 @@
 class IpsDisplay;
 class AnalogInput;
 class PressureSensor;
-class AdaptUGC;
 class SetupMenu;
 
 constexpr const int DEFAULT_HELP_Y_POS = 180;
@@ -51,7 +50,6 @@ public:
 	const char *_title;
 	bool      pressed;
 
-	static AdaptUGC *ucg;
 	static MenuEntry *root;
 	static MenuEntry *selected;
 	static IpsDisplay* _display;

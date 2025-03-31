@@ -103,11 +103,12 @@ void SetupMenuValFloat::display( int mode ){
 
 void SetupMenuValFloat::displayVal()
 {
-	// ESP_LOGI(FNAME,"displayVal %s", value() );
-	ucg->setPrintPos( 1, 70 );
-	ucg->setFont(ucg_font_fub25_hf, true);
-	ucg->print( value() );
-	ucg->setFont(ucg_font_ncenR14_hr);
+	ESP_LOGI(FNAME,"displayVal %s", value() );
+	MYUCG->setColor(COLOR_WHITE);
+	MYUCG->setPrintPos( 1, 70 );
+	MYUCG->setFont(ucg_font_fub25_hf, true);
+	MYUCG->print( value() );
+	MYUCG->setFont(ucg_font_ncenR14_hr);
 }
 
 float SetupMenuValFloat::step( float instep ){

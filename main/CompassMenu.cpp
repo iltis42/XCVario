@@ -17,19 +17,20 @@ Last update: 2021-12-30
 
  **************************************************************************/
 
-#include <cstring>
-#include <cstdlib>
-#include <cmath>
-#include "esp_log.h"
-#include "esp_system.h"
-
 #include "CompassMenu.h"
-#include "MenuEntry.h"
+ 
+#include "SetupMenu.h"
 #include "sensor.h"  // we need spiMutex
 #include "vector.h"
 #include "Colors.h"
-#include "logdef.h"
 #include "MagnetSensor.h"
+#include "logdef.h"
+
+#include <cstring>
+#include <cstdlib>
+#include <cmath>
+#include <esp_system.h>
+
 
 SetupMenuSelect* CompassMenu::menuPtr = nullptr;
 
@@ -62,20 +63,20 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	if( !compass || !(compass->haveSensor()) )
 	{
 		p->clear();
-		p->ucg->setFont( ucg_font_ncenR14_hr );
-		p->ucg->setPrintPos( 1, 30 );
-		p->ucg->printf( "No magnetic Sensor, Abort" );
+		MYUCG->setFont( ucg_font_ncenR14_hr );
+		MYUCG->setPrintPos( 1, 30 );
+		MYUCG->printf( "No magnetic Sensor, Abort" );
 		ESP_LOGI( FNAME, "Abort calibration, no sensor signal" );
 		return 0;
 	}
 	short direction = strtol( p->getEntry(), nullptr, 10 );
 	// Calibration menu is requested
 	p->clear();
-	p->ucg->setFont( ucg_font_ncenR14_hr );
-	p->ucg->setPrintPos( 1, 60 );
-	p->ucg->printf( "Turn airplane to %s  ", p->getEntry() );
-	p->ucg->setPrintPos( 1, 90 );
-	p->ucg->printf( "and push button when done" );
+	MYUCG->setFont( ucg_font_ncenR14_hr );
+	MYUCG->setPrintPos( 1, 60 );
+	MYUCG->printf( "Turn airplane to %s  ", p->getEntry() );
+	MYUCG->setPrintPos( 1, 90 );
+	MYUCG->printf( "and push button when done" );
 	delay( 500 );
 
 	static float heading = 0.0;
@@ -92,32 +93,32 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		{
 			continue;
 		}
-		p->ucg->setPrintPos( 1, 150 );
-		p->ucg->setFont( ucg_font_fub25_hf );
-		p->ucg->printf( "Heading: %.1f°  ", heading );
-		p->ucg->setPrintPos( 1, 200 );
+		MYUCG->setPrintPos( 1, 150 );
+		MYUCG->setFont( ucg_font_fub25_hf );
+		MYUCG->printf( "Heading: %.1f°  ", heading );
+		MYUCG->setPrintPos( 1, 200 );
 		deviation = Vector::angleDiffDeg( direction, heading );
-		p->ucg->printf( "Deviation: %.1f°  ", deviation );
+		MYUCG->printf( "Deviation: %.1f°  ", deviation );
 		delay( 50 );
 	}
 	while( Rotary->readSwitch() )
 	{
-		// wait so long while rotary is pressed to avoid unwanted actions
+		// wait so long while rotary is active to avoid unwanted actions
 		delay( 50 );
 		continue;
 	}
 
 	// Save and update deviation value
 	compass->newDeviation( heading, direction, true );
-	p->ucg->setPrintPos( 1, 270 );
-	p->ucg->setFont( ucg_font_ncenR14_hr );
-	p->ucg->printf( "Saved" );
+	MYUCG->setPrintPos( 1, 270 );
+	MYUCG->setFont( ucg_font_ncenR14_hr );
+	MYUCG->printf( "Saved" );
 	delay(500);
-	p->ucg->setPrintPos( 1, 300 );
-	p->_parent->menuPosInc();
-	if(p->_parent->getMenuPos() > 7 )
-		p->_parent->menuSetTop();
-	p->ucg->printf( "Press key for next" );
+	MYUCG->setPrintPos( 1, 300 );
+	p->getParent()->menuPosInc();
+	if(p->getParent()->getMenuPos() > 7 )
+		p->getParent()->menuSetTop();
+	MYUCG->printf( "Press key for next" );
 	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",	p->getEntry() );
 	return 0;
 }
@@ -133,11 +134,11 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 	else if( p->getSelect() == 1 )
 	{
 		p->clear();
-		p->ucg->setFont( ucg_font_ncenR14_hr );
-		p->ucg->setPrintPos( 1, 60 );
-		p->ucg->printf( "Reset all compass" );
-		p->ucg->setPrintPos( 1, 90 );
-		p->ucg->printf( "deviation data" );
+		MYUCG->setFont( ucg_font_ncenR14_hr );
+		MYUCG->setPrintPos( 1, 60 );
+		MYUCG->printf( "Reset all compass" );
+		MYUCG->setPrintPos( 1, 90 );
+		MYUCG->printf( "deviation data" );
 		// Reset deviation
 		for( int i = 0; i < 8; i++ )
 		{
@@ -150,14 +151,14 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 
 
 	p->clear();
-	p->ucg->setFont( ucg_font_ncenR14_hr );
-	p->ucg->setPrintPos( 1, 300 );
+	MYUCG->setFont( ucg_font_ncenR14_hr );
+	MYUCG->setPrintPos( 1, 300 );
 	if( compass ){
 		compass->resetDeviation();
-		p->ucg->printf( "Saved        " );
+		MYUCG->printf( "Saved        " );
 	}
 	else
-		p->ucg->printf( "Compass not configured" );
+		MYUCG->printf( "Compass not configured" );
 	delay( 2000 );
 
 	return 0;
@@ -167,7 +168,7 @@ int CompassMenu::declinationAction( SetupMenuValFloat *p )
 {
 	ESP_LOGI( FNAME, "declinationAction()" );
 
-	if( p->pressed )
+	if( p->isActive() )
 	{
 		ESP_LOGI( FNAME, "Compass declination set to valid" );
 	}
@@ -186,14 +187,14 @@ bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
 	}
 	t_magn_axes raw = compass->getRawAxes();
 	// ESP_LOGI( FNAME, "showSensorRawData() %d %d %d", raw.x, raw.y, raw.z );
-	p->ucg->setColor( COLOR_WHITE );
-	p->ucg->setPrintPos( 1, 60 );
-	p->ucg->printf( "X = %d  ", raw.x );
-	p->ucg->setPrintPos( 1, 90 );
-	p->ucg->printf( "Y = %d  ", raw.y );
-	p->ucg->setPrintPos( 1, 120 );
-	p->ucg->printf( "Z = %d  ", raw.z );
-	p->ucg->setPrintPos( 1, 150 );
+	MYUCG->setColor( COLOR_WHITE );
+	MYUCG->setPrintPos( 1, 60 );
+	MYUCG->printf( "X = %d  ", raw.x );
+	MYUCG->setPrintPos( 1, 90 );
+	MYUCG->printf( "Y = %d  ", raw.y );
+	MYUCG->setPrintPos( 1, 120 );
+	MYUCG->printf( "Z = %d  ", raw.z );
+	MYUCG->setPrintPos( 1, 150 );
 	float t = sqrt( compass->curX()*compass->curX() + compass->curY()*compass->curY() + compass->curZ()*compass->curZ() )/150.0;
 	if( abs(t-tesla) > 5 )
 		tesla += (t-tesla)*0.2;
@@ -201,9 +202,9 @@ bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
 		tesla += (t-tesla)*0.07;
 	else
 		tesla += (t-tesla)*0.01;
-	p->ucg->printf( "Raw magn H= %.1f uT", tesla );
+	MYUCG->printf( "Raw magn H= %.1f uT", tesla );
 	if( compass_calibrated.get() ){
-		p->ucg->setPrintPos( 1, 180 );
+		MYUCG->setPrintPos( 1, 180 );
 		float t= sqrt( compass->calX()*compass->calX() + compass->calY()*compass->calY() + compass->calZ()*compass->calZ() )/150.0;
 		if( abs(t-tesla_cal) > 5 )
 			tesla_cal += (t-tesla_cal)*0.2;
@@ -211,7 +212,7 @@ bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
 			tesla_cal += (t-tesla_cal)*0.07;
 		else
 			tesla_cal += (t-tesla_cal)*0.01;
-		p->ucg->printf( "Cal magn H= %.1f uT", tesla_cal );
+		MYUCG->printf( "Cal magn H= %.1f uT", tesla_cal );
 	}
 	return true;
 }
@@ -221,7 +222,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	ESP_LOGI( FNAME, "sensorCalibrationAction() selected: %d", p->getSelect());
 	bool only_show = (p->getSelect() == 2);  // Show
 	bool show_raw_data = (p->getSelect() == 3);  // Show X,Y,Z
-	p->ucg->setFont( ucg_font_ncenR14_hr, true );
+	MYUCG->setFont( ucg_font_ncenR14_hr, true );
 	if( show_raw_data ){
 		p->clear();
 		while( !Rotary->readSwitch() ){
@@ -239,9 +240,9 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	}
 	if( !compass ){
 		p->clear();
-		p->ucg->setFont( ucg_font_ncenR14_hr, true );
-		p->ucg->setPrintPos( 1, 30 );
-		p->ucg->printf( "Compass not configured" );
+		MYUCG->setFont( ucg_font_ncenR14_hr, true );
+		MYUCG->setPrintPos( 1, 30 );
+		MYUCG->printf( "Compass not configured" );
 		delay(2000);
 		return 0;
 	}
@@ -256,17 +257,17 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 		while( !Rotary->readSwitch() )
 			delay( 100 );
 	}else{
-		p->ucg->setFont( ucg_font_ncenR14_hr, true );
-		p->ucg->setPrintPos( 1, 30 );
-		p->ucg->printf( "Calibration is started" );
-		p->ucg->setPrintPos( 1, 220 );
-		p->ucg->printf( "Now rotate sensor until" );
-		p->ucg->setPrintPos( 1, 245 );
-		p->ucg->printf( "all numbers are green" );
-		p->ucg->setPrintPos( 1, 270 );
-		p->ucg->printf( "Press button to finish" );
+		MYUCG->setFont( ucg_font_ncenR14_hr, true );
+		MYUCG->setPrintPos( 1, 30 );
+		MYUCG->printf( "Calibration is started" );
+		MYUCG->setPrintPos( 1, 220 );
+		MYUCG->printf( "Now rotate sensor until" );
+		MYUCG->setPrintPos( 1, 245 );
+		MYUCG->printf( "all numbers are green" );
+		MYUCG->setPrintPos( 1, 270 );
+		MYUCG->printf( "Press button to finish" );
 		compass->calibrate( calibrationReport, false);
-		p->ucg->setPrintPos( 1, 250 );
+		MYUCG->setPrintPos( 1, 250 );
 		delay( 1000 );
 		p->clear();
 	}
@@ -292,62 +293,62 @@ bool CompassMenu::calibrationReport( t_magn_axes raw, t_float_axes scale, t_floa
 
 	// X := -y
 	if( b.ymax_green && b.ymin_green )
-		menuPtr->ucg->setColor( COLOR_GREEN );
+		MYUCG->setColor( COLOR_GREEN );
 	else
-		menuPtr->ucg->setColor( COLOR_WHITE );
+		MYUCG->setColor( COLOR_WHITE );
 	if(scale.y != scale_back.y || print || !(bits_old == b) ){
-		menuPtr->ucg->setPrintPos( 1, 60 );
-		menuPtr->ucg->printf( "X-Scale=%3.1f  ", -scale.y * 100);
+		MYUCG->setPrintPos( 1, 60 );
+		MYUCG->printf( "X-Scale=%3.1f  ", -scale.y * 100);
 		scale_back.y = scale.y;
 	}
 	if( (raw_back.y != raw.y || !(bits_old == b) ) && !print  ){
-		menuPtr->ucg->setPrintPos( 160, 60 );
-		menuPtr->ucg->printf( "(%.1f)  ", (float)(-raw.y)/32768 *100 );
+		MYUCG->setPrintPos( 160, 60 );
+		MYUCG->printf( "(%.1f)  ", (float)(-raw.y)/32768 *100 );
 		raw_back.y = raw.y;
 	}
 	if( bias.y != bias_back.y || print || !(bits_old == b) ){
-		menuPtr->ucg->setPrintPos( 1, 135 );
-		menuPtr->ucg->printf( "X-Bias=%3.1f  ", -bias.y/32768 *100 );
+		MYUCG->setPrintPos( 1, 135 );
+		MYUCG->printf( "X-Bias=%3.1f  ", -bias.y/32768 *100 );
 		bias_back.y = bias.y;
 	}
 	// Y := -x
 	if( b.xmax_green && b.xmin_green )
-		menuPtr->ucg->setColor( COLOR_GREEN );
+		MYUCG->setColor( COLOR_GREEN );
 	else
-		menuPtr->ucg->setColor( COLOR_WHITE );
+		MYUCG->setColor( COLOR_WHITE );
 	if( scale.x != scale_back.x || print || !(bits_old == b) ){
-		menuPtr->ucg->setPrintPos( 1, 85 );
-		menuPtr->ucg->printf( "Y-Scale=%3.1f  ", -scale.x * 100 );
+		MYUCG->setPrintPos( 1, 85 );
+		MYUCG->printf( "Y-Scale=%3.1f  ", -scale.x * 100 );
 		scale_back.x = scale.x;
 	}
 	if( (raw_back.x != raw.x || !(bits_old == b)) && !print ){
-		menuPtr->ucg->setPrintPos( 160, 85 );
-		menuPtr->ucg->printf( "(%.1f)  ", (float)(-raw.x)/32768 *100 );
+		MYUCG->setPrintPos( 160, 85 );
+		MYUCG->printf( "(%.1f)  ", (float)(-raw.x)/32768 *100 );
 		raw_back.x = raw.x;
 	}
 	if( bias.x != bias_back.x || print || !(bits_old == b) ){
-		menuPtr->ucg->setPrintPos( 1, 160 );
-		menuPtr->ucg->printf( "Y-Bias=%3.1f  ", -bias.x/32768 *100 );
+		MYUCG->setPrintPos( 1, 160 );
+		MYUCG->printf( "Y-Bias=%3.1f  ", -bias.x/32768 *100 );
 		bias_back.x = bias.x;
 	}
 	// Z := -z
 	if( b.zmax_green && b.zmin_green )
-		menuPtr->ucg->setColor( COLOR_GREEN );
+		MYUCG->setColor( COLOR_GREEN );
 	else
-		menuPtr->ucg->setColor( COLOR_WHITE );
+		MYUCG->setColor( COLOR_WHITE );
 	if( scale.z != scale_back.z || print || !(bits_old == b) ){
-		menuPtr->ucg->setPrintPos( 1, 110 );
-		menuPtr->ucg->printf( "Z-Scale=%3.1f  ", -scale.z * 100 );
+		MYUCG->setPrintPos( 1, 110 );
+		MYUCG->printf( "Z-Scale=%3.1f  ", -scale.z * 100 );
 		scale_back.z = scale.z;
 	}
 	if( (raw_back.z != raw.z || !(bits_old == b)) && !print ){
-		menuPtr->ucg->setPrintPos( 160, 110 );
-		menuPtr->ucg->printf( "(%.1f)  ", (float)(-raw.z)/32768 *100 );
+		MYUCG->setPrintPos( 160, 110 );
+		MYUCG->printf( "(%.1f)  ", (float)(-raw.z)/32768 *100 );
 		raw_back.z = raw.z;
 	}
 	if( bias.z != bias_back.z || print || !(bits_old == b) ){
-		menuPtr->ucg->setPrintPos( 1, 185 );
-		menuPtr->ucg->printf( "Z-Bias=%3.1f  ", -bias.z/32768 *100 );
+		MYUCG->setPrintPos( 1, 185 );
+		MYUCG->printf( "Z-Bias=%3.1f  ", -bias.z/32768 *100 );
 		bias_back.z = bias.z;
 	}
 	// ESP_LOGI(FNAME,"Max X: %d Y: %d Z: %d  Min P: %d %d %d", xm, ym, zm, xi, yi, mins.z  );
@@ -370,52 +371,52 @@ bool CompassMenu::calibrationReport( t_magn_axes raw, t_float_axes scale, t_floa
 
 		// draw mag X alias -Y 45° as the glider axes -y/y
 		if( b.ymax_green )
-			menuPtr->ucg->setColor( COLOR_GREEN );
+			MYUCG->setColor( COLOR_GREEN );
 		else
-			menuPtr->ucg->setColor( COLOR_RED );
-		menuPtr->ucg->drawLine( X, Y, X-maxs.y, Y+maxs.y);    // 45 degree
+			MYUCG->setColor( COLOR_RED );
+		MYUCG->drawLine( X, Y, X-maxs.y, Y+maxs.y);    // 45 degree
 
 		if( b.ymin_green )
-			menuPtr->ucg->setColor( COLOR_GREEN );
+			MYUCG->setColor( COLOR_GREEN );
 		else
-			menuPtr->ucg->setColor( COLOR_RED );
-		menuPtr->ucg->drawLine( X, Y, X-mins.y, Y+mins.y  );    // 45 degree
+			MYUCG->setColor( COLOR_RED );
+		MYUCG->drawLine( X, Y, X-mins.y, Y+mins.y  );    // 45 degree
 
 		// draw mag Y alias -X along -x screen axes
 		if( b.xmax_green )
-			menuPtr->ucg->setColor( COLOR_GREEN );
+			MYUCG->setColor( COLOR_GREEN );
 		else
-			menuPtr->ucg->setColor( COLOR_RED );
-		menuPtr->ucg->drawLine( X, Y, X-maxs.x, Y );
+			MYUCG->setColor( COLOR_RED );
+		MYUCG->drawLine( X, Y, X-maxs.x, Y );
 
 		if( b.xmin_green )
-			menuPtr->ucg->setColor( COLOR_GREEN );
+			MYUCG->setColor( COLOR_GREEN );
 		else
-			menuPtr->ucg->setColor( COLOR_RED );
-		menuPtr->ucg->drawLine( X, Y, X-mins.x, Y );
+			MYUCG->setColor( COLOR_RED );
+		MYUCG->drawLine( X, Y, X-mins.x, Y );
 
 		// draw mag Z alias -Z along -y screen axes
 		if( b.zmax_green )
-			menuPtr->ucg->setColor( COLOR_GREEN );
+			MYUCG->setColor( COLOR_GREEN );
 		else
-			menuPtr->ucg->setColor( COLOR_RED );
-		menuPtr->ucg->drawLine( X, Y, X, Y+maxs.z);
+			MYUCG->setColor( COLOR_RED );
+		MYUCG->drawLine( X, Y, X, Y+maxs.z);
 
 		if( b.zmin_green )
-			menuPtr->ucg->setColor( COLOR_GREEN );
+			MYUCG->setColor( COLOR_GREEN );
 		else
-			menuPtr->ucg->setColor( COLOR_RED );
-		menuPtr->ucg->drawLine( X, Y, X, Y+mins.z  );
+			MYUCG->setColor( COLOR_RED );
+		MYUCG->drawLine( X, Y, X, Y+mins.z  );
 
 		static t_magn_axes old = { 0,0,0 };
-		menuPtr->ucg->setColor( COLOR_BLACK );
-		menuPtr->ucg->drawCircle( X-old.y, Y+old.y, 2 );
-		menuPtr->ucg->drawCircle( X-old.x, Y, 2 );
-		menuPtr->ucg->drawCircle( X, Y+old.z,2 );
-		menuPtr->ucg->setColor( COLOR_WHITE );
-		menuPtr->ucg->drawCircle( X-peak.y, Y+peak.y, 2 );
-		menuPtr->ucg->drawCircle( X-peak.x, Y, 2);
-		menuPtr->ucg->drawCircle( X, Y+peak.z, 2 );
+		MYUCG->setColor( COLOR_BLACK );
+		MYUCG->drawCircle( X-old.y, Y+old.y, 2 );
+		MYUCG->drawCircle( X-old.x, Y, 2 );
+		MYUCG->drawCircle( X, Y+old.z,2 );
+		MYUCG->setColor( COLOR_WHITE );
+		MYUCG->drawCircle( X-peak.y, Y+peak.y, 2 );
+		MYUCG->drawCircle( X-peak.x, Y, 2);
+		MYUCG->drawCircle( X, Y+peak.z, 2 );
 		old = peak;
 		bits_old = b;
 	}

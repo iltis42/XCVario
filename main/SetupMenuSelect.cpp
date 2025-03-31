@@ -5,11 +5,13 @@
  *      Author: iltis
  */
 
-#include <logdef.h>
-#include <sensor.h>
-#include "Units.h"
 #include "SetupMenuSelect.h"
+#include "SetupMenu.h"
+
+#include "sensor.h"
+#include "Units.h"
 #include "ESPAudio.h"
+#include "logdef.h"
 
 const char * SetupMenuSelect::getEntry() const
 {
@@ -17,7 +19,8 @@ const char * SetupMenuSelect::getEntry() const
 	return _values[ _select ];
 }
 
-const char *SetupMenuSelect::value() {
+const char *SetupMenuSelect::value() const 
+{
 	if( _nvs ){
 		_select = _nvs->get() > _numval-1 ? _numval-1 : _nvs->get();
 	}
@@ -88,44 +91,39 @@ void SetupMenuSelect::delEntry( const char* ent ) {
 		}
 }
 
-SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuSelect *p), bool save, SetupNG<int> *anvs, bool ext_handler, bool end_menu ) {
+SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuSelect *p), 
+									bool save, SetupNG<int> *anvs, bool ext_handler, bool end_menu ) :
+	MenuEntry(),
+	_action(action),
+	_nvs(anvs)
+{
 	// ESP_LOGI(FNAME,"SetupMenuSelect( %s ) action: %x", title, (int)action );
-	attach(this);
 	bits._ext_handler = ext_handler;
 	_title = title;
-	_nvs = 0;
-	_select = 0;
-	_select_save = 0;
-	bits._end_menu = end_menu;
-	if( !anvs ) {
-		_select_save = _select;
-	}
-	_numval = 0;
+	bits._end_setup = end_menu;
 	bits._restart = restart;
-	_action = action;
 	bits._save = save;
-	if( anvs ) {
-		_nvs = anvs;
+}
+
+void SetupMenuSelect::enter()
+{
+	if( _nvs ) {
 		// ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
 		_select = (int16_t)(*(int *)(_nvs->getPtr()));
 		_select_save = (int16_t)_nvs->get();
 	}
-
+	MenuEntry::enter();
 }
-SetupMenuSelect::~SetupMenuSelect()
+
+void SetupMenuSelect::display(int mode)
 {
-	detach(this);
-}
 
-void SetupMenuSelect::display( int mode ){
-	if( (selected != this) || !gflags.inSetup  )
-		return;
-	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x", pressed, _title, (int)(_action));
+	ESP_LOGI(FNAME,"display() title:%s action: %x", _title, (int)(_action));
 	clear();
 	if( bits._ext_handler ){  // handling is done only in action method
 		ESP_LOGI(FNAME,"ext handler");
-		selected = _parent;
-	}else
+	}
+	else
 	{
 		MYUCG->setPrintPos(1,25);
 		ESP_LOGI(FNAME,"Title: %s ", _title );
@@ -150,9 +148,8 @@ void SetupMenuSelect::display( int mode ){
 	}
 }
 
-void SetupMenuSelect::down(int count){
-	if( (selected != this) || !gflags.inSetup )
-		return;
+void SetupMenuSelect::down(int count)
+{
 	if( _numval > 9 ){
 		while( count ) {
 			if( (_select) > 0 )
@@ -175,9 +172,8 @@ void SetupMenuSelect::down(int count){
 	}
 }
 
-void SetupMenuSelect::up(int count){
-	if( (selected != this) || !gflags.inSetup )
-		return;
+void SetupMenuSelect::up(int count)
+{
 	if( _numval > 9 )
 	{
 		while( count ) {
@@ -205,48 +201,36 @@ void SetupMenuSelect::longPress(){
 	press();
 }
 
-void SetupMenuSelect::press(){
-	if( selected != this )
-		return;
-	ESP_LOGI(FNAME,"press() ext handler: %d press: %d _select: %d selected %p", bits._ext_handler, pressed, _select, selected );
-	if ( pressed ){
-		if( _select_save != _select )
-			display( 1 );
-		//else
-		//	display();
-		if( bits._end_menu ){
-			ESP_LOGI(FNAME,"press() end_menu");
-			selected = root;
+void SetupMenuSelect::press()
+{
+	ESP_LOGI(FNAME,"press() ext handler: %d _select: %d", bits._ext_handler, _select );
+
+	if( _nvs ) {
+		_nvs->set((int)_select, false ); // do sync in next step
+		_nvs->commit();
+	}
+	SavedDelay();
+	if( _action ){
+		ESP_LOGI(FNAME,"calling action in press %d", _select );
+		if ( (*_action)( this ) != 0 ) {
+			return; // Menu got hijacked
 		}
-		else if( _parent != 0) {
-			ESP_LOGI(FNAME,"go to parent");
-			selected = _parent;
-			_parent->menuSetTop();
-		}
-		selected->pressed = true;
-		if( _nvs ){
-			_nvs->set((int)_select, false ); // do sync in next step
-			_nvs->commit();
-		}
-		pressed = false;
-		if( _action != 0 ){
-			ESP_LOGI(FNAME,"calling action in press %d", _select );
-			(*_action)( this );
-		}
-		if( _select_save != _select ){
-			if( bits._restart == RST_ON_EXIT ) {
-				_restart = true;
-			}else if( bits._restart == RST_IMMEDIATE ){
+	}
+	if( _select_save != _select ){
+		if( bits._restart == RST_ON_EXIT ) {
+			_restart = true;
+		}else if( bits._restart == RST_IMMEDIATE ){
+			if( _nvs ) {
 				_nvs->commit();
-				MenuEntry::restart();
 			}
-			_select_save = _select;
+			MenuEntry::reBoot();
 		}
-		if( bits._end_menu ){
-			selected->press();
-		}
+		_select_save = _select;
 	}
-	else{
-		pressed = true;
+	_parent->menuSetTop();
+	if( bits._end_setup ){
+		ESP_LOGI(FNAME,"press() end_menu");
+		exit(-1);
 	}
+	exit();
 }

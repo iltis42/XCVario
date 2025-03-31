@@ -7,6 +7,7 @@
  ***********************************************************/
 
 #include "SetupAction.h"
+#include "SetupMenu.h"
 #include "sensor.h"
 
 #include "logdef.h"
@@ -14,6 +15,7 @@
 constexpr const char action_help[] = "Long Press to exit action control.";
 
 SetupAction::SetupAction(const char *title, int (*action)(SetupAction *), int code, bool end_menu) :
+    MenuEntry(),
     _action(action),
     _code(code),
     _end_menu(end_menu)
@@ -21,47 +23,42 @@ SetupAction::SetupAction(const char *title, int (*action)(SetupAction *), int co
     ESP_LOGI(FNAME, "SetupAction( %s ) ", title);
     _title = title;
     helptext = action_help;
-    attach(this);
 }
 
-SetupAction::~SetupAction()
+void SetupAction::enter()
 {
-    detach(this);
+    (*_action)(this);
+    if ( !helptext ) {
+        return; // do not enter at all, just one action
+    }
+    MenuEntry::enter();
+}
+
+void SetupAction::exit(int ups)
+{
+    MenuEntry::exit(ups+_extra_ups);
 }
 
 void SetupAction::display(int mode)
 {
-    if ((selected != this) || !gflags.inSetup) {
-        return;
-    }
-    ESP_LOGI(FNAME, "display() pressed=%d instance=%p mode=%d", pressed, this, mode);
+    ESP_LOGI(FNAME, "display() instance=%p mode=%d", this, mode);
     int line = _parent->getMenuPos()+1;
     int indent = MYUCG->getStrWidth(_title) + 12;
     MYUCG->setPrintPos(indent, (line + 1) * 25);
     MYUCG->printf( " %3d  ", mode );
+    showhelp();
 }
 
 void SetupAction::press()
 {
-    if( selected != this ) {
-        return;
-    }
-    ESP_LOGI(FNAME, "press() pressed=%d instance=%p", pressed, this);
+    ESP_LOGI(FNAME, "press() instance=%p", this);
     (*_action)(this);
-
-    if (!pressed)
-    {
-        // trap until long press
-        pressed = true;
-        showhelp();
-    }
 }
 
 void SetupAction::longPress()
 {
-    pressed = false;
-    selected = _parent;
     if ( _end_menu ) {
         _parent->menuSetTop();
     }
+    exit();
 }

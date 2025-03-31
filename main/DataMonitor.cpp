@@ -1,22 +1,21 @@
 #include "DataMonitor.h"
+#include "SetupMenu.h"
+#include "SetupMenuSelect.h"
 #include "sensor.h"
 #include "SetupNG.h"
-#include "logdef.h"
 #include "Flarm.h"
+#include "logdefnone.h"
 
 #define SCROLL_TOP      20
 #define SCROLL_BOTTOM  320
 
-SemaphoreHandle_t DataMonitor::mutex = 0;
-
 DataMonitor::DataMonitor(){
 	mon_started = false;
-	ucg = 0;
+	MYUCG = 0;
 	scrollpos = SCROLL_BOTTOM;
 	paused = true;
 	setup = 0;
 	channel = 0;
-	mutex = xSemaphoreCreateMutex();
 	first=true;
 	rx_total = 0;
 	tx_total = 0;
@@ -33,7 +32,7 @@ int DataMonitor::maxChar( const char *str, int pos, int len, bool binary ){
 		else{
 			s[0] = str[i+pos];
 		}
-		N += ucg->getStrWidth( s );
+		N += MYUCG->getStrWidth( s );
 		if( N<220 && (i+pos)<len ){
 			i++;
 		}else{
@@ -67,30 +66,29 @@ void DataMonitor::header( ItfTarget ch, bool binary, int len, e_dir_t dir ){
 		b = "B-";
 	else
 		b = "";
-	ucg->setColor( COLOR_WHITE );
-	ucg->setFont(ucg_font_fub11_tr, true );
-	ucg->setPrintPos( 0, SCROLL_TOP );
+	MYUCG->setColor( COLOR_WHITE );
+	MYUCG->setFont(ucg_font_fub11_tr, true );
+	MYUCG->setPrintPos( 0, SCROLL_TOP );
 
 	if( paused )
-		ucg->printf( "%s%s: RX:%d TX:%d hold  ", b, what, rx_total, tx_total );
+		MYUCG->printf( "%s%s: RX:%d TX:%d hold  ", b, what, rx_total, tx_total );
 	else
-		ucg->printf( "%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
+		MYUCG->printf( "%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
 }
 
-void DataMonitor::monitorString( ItfTarget ch, e_dir_t dir, const char *str, int len ){
-	if( xSemaphoreTake(mutex,portMAX_DELAY ) ){
-		// ESP_LOGI(FNAME,"ch %x, channel %x", (unsigned)ch.raw, (unsigned)channel.raw );
-		bool binary = data_monitor_mode.get() == MON_MOD_BINARY;
-		if( !mon_started || paused || (ch != channel) ){
-			// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );
-			if( ch == channel )
-				header( ch, binary, len, dir );
-			xSemaphoreGive(mutex);
-			return;
-		}
-		printString( ch, dir, str, binary, len );
-		xSemaphoreGive(mutex);
+void DataMonitor::monitorString( ItfTarget ch, e_dir_t dir, const char *str, int len )
+{
+	if( !mon_started ) { return; }
+
+	// ESP_LOGI(FNAME,"ch %x, channel %x", (unsigned)ch.raw, (unsigned)channel.raw );
+	bool binary = data_monitor_mode.get() == MON_MOD_BINARY;
+	if( paused || (ch != channel) ){
+		// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );
+		if( ch == channel )
+			header( ch, binary, len, dir );
+		return;
 	}
+	printString( ch, dir, str, binary, len );
 }
 
 void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool binary, int len ){
@@ -106,10 +104,10 @@ void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool 
 	}
 	if( first ){
 		first = false;
-		ucg->setColor( COLOR_BLACK );
-		ucg->drawBox( 0,SCROLL_TOP,240,320 );
+		MYUCG->setColor( COLOR_BLACK );
+		MYUCG->drawBox( 0,SCROLL_TOP,240,320 );
 	}
-	ucg->setColor( COLOR_WHITE );
+	MYUCG->setColor( COLOR_WHITE );
     header( ch, binary, len, dir );
 	//if( !binary )
 	// 	len = len-1;  // ignore the \n in ASCII mode
@@ -122,11 +120,11 @@ void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool 
 			char hunk[64] = { 0 };
 			memcpy( (void*)hunk, (void*)(str+pos), hunklen );
 			// ESP_LOGI(FNAME,"DM 2 hunklen: %d pos: %d  h:%s", hunklen, pos, hunk );
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( 0, scrollpos, 240,scroll_lines );
-			ucg->setColor( COLOR_WHITE );
-			ucg->setPrintPos( 0, scrollpos+scroll_lines );
-			ucg->setFont(ucg_font_fub11_tr, true );
+			MYUCG->setColor( COLOR_BLACK );
+			MYUCG->drawBox( 0, scrollpos, 240,scroll_lines );
+			MYUCG->setColor( COLOR_WHITE );
+			MYUCG->setPrintPos( 0, scrollpos+scroll_lines );
+			MYUCG->setFont(ucg_font_fub11_tr, true );
 			char txt[256];
 			int hpos = 0;
 			if( binary ){   // format data as readable text
@@ -135,14 +133,14 @@ void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool 
 					hpos += sprintf( txt+hpos, "%02x ", hunk[i] );
 				}
 				txt[hpos] = 0; // zero terminate string
-				ucg->print( txt );
+				MYUCG->print( txt );
 				ESP_LOGI(FNAME,"DM binary ch:%d dir:%d string:%s", (int)ch.raw, dir, txt );
 			}
 			else{
 				hpos += sprintf( txt, "%c ", dirsym );
 				hpos += sprintf( txt+hpos, "%s", hunk );
 				txt[hpos] = 0;
-				ucg->print( txt );
+				MYUCG->print( txt );
 				//ESP_LOGI(FNAME,"DM ascii ch:%d dir:%d data:%s", ch, dir, txt );
 			}
 			pos+=hunklen;
@@ -156,13 +154,11 @@ void DataMonitor::scroll(int scroll){
 	scrollpos+=scroll;
 	if( scrollpos >= SCROLL_BOTTOM )
 		scrollpos = scroll;
-	ucg->scrollLines( scrollpos );  // set frame origin
+	MYUCG->scrollLines( scrollpos );  // set frame origin
 }
 
 void DataMonitor::press(){
 	ESP_LOGI(FNAME,"press paused: %d", paused );
-	delay( 100 );
-	// if( !Rotary->readSwitch() ){ // only process press here
 	if( paused )
 		paused = false;
 	else
@@ -172,50 +168,47 @@ void DataMonitor::press(){
 
 void DataMonitor::longPress(){
 	ESP_LOGI(FNAME,"longPress" );
-	delay( 100 );
 	if( !mon_started ){
 		ESP_LOGI(FNAME,"longPress, but not started, return" );
-		SetupMenu::catchFocus( false );
 		return;
 	}
-	stop();
-
+	exit();
 }
 
-void DataMonitor::start(SetupMenuSelect * p, ItfTarget ch){
+void DataMonitor::start(SetupMenuSelect *p, ItfTarget ch)
+{
 	ESP_LOGI(FNAME,"start");
-	if( !setup )
-		attach( this );
-	setup = p;
+	// forced replacement of the Select Menu on the observer stack
+	p->detach();
+	attach();
+	_parent = p->getParent();
+	mon_started = false; // important to avoid context race
 	tx_total = 0;
 	rx_total = 0;
 	channel = ch;
-	SetupMenu::catchFocus( true );
-	xSemaphoreTake(mutex,portMAX_DELAY );
-	ucg->setColor( COLOR_BLACK );
-	ucg->drawBox( 0,0,240,320 );
-	ucg->setColor( COLOR_WHITE );
-	ucg->setFont(ucg_font_fub11_tr, true );
+	MYUCG->setColor( COLOR_BLACK );
+	MYUCG->drawBox( 0,0,240,320 );
+	MYUCG->setColor( COLOR_WHITE );
+	MYUCG->setFont(ucg_font_fub11_tr, true );
 	paused = false;
 	header( channel, data_monitor_mode.get() == MON_MOD_BINARY );
 	if( display_orientation.get() == DISPLAY_TOPDOWN )
-		ucg->scrollSetMargins( 0, SCROLL_TOP );
+		MYUCG->scrollSetMargins( 0, SCROLL_TOP );
 	else
-		ucg->scrollSetMargins( SCROLL_TOP, 0 );
+		MYUCG->scrollSetMargins( SCROLL_TOP, 0 );
 	mon_started = true;
-	paused = true; // will resume with press()
-	xSemaphoreGive(mutex);
+	paused = false; // will resume with press()
 	ESP_LOGI(FNAME,"started");
 }
 
-void DataMonitor::stop(){
+void DataMonitor::exit(int ups)
+{
 	ESP_LOGI(FNAME,"stop");
 	channel = 0;
 	mon_started = false;
 	paused = false;
 	delay(1000);
-	ucg->scrollLines( 0 );
-	setup->setSelect( 0 );  // works only because MON_OFF=0 and is the first choice in all 3 monitor menus
-	SetupMenu::catchFocus( false );
+	MYUCG->scrollLines( 0 );
+	_parent->menuSetTop();
+	MenuEntry::exit(1);
 }
-

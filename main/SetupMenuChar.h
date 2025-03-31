@@ -5,8 +5,8 @@
  *      Author: iltis
  */
 
-#ifndef _SetupMenuChar_H_
-#define _SetupMenuChar_H_
+#pragma once
+
 #include "SetupNG.h"
 #include "MenuEntry.h"
 #include "SetupMenuValCommon.h"
@@ -14,21 +14,22 @@
 class SetupMenuChar:  public MenuEntry
 {
 public:
-	SetupMenuChar();
-	SetupMenuChar( const char* title, e_restart_mode_t restart=RST_NONE, int (*action)(SetupMenuChar *p) = 0, bool save=true, char *achar=0, uint32_t index=0, bool ext_handler=false, bool end_menu=false );
-	virtual ~SetupMenuChar();
+	SetupMenuChar() = delete;
+	SetupMenuChar( const char* title, e_restart_mode_t restart=RST_NONE, int (*action)(SetupMenuChar *p) = 0, bool save=true, 
+		char *achar=0, uint32_t index=0, bool ext_handler=false, bool end_menu=false );
+	virtual ~SetupMenuChar() = default;
 	void display( int mode=0 );
 	bool existsEntry( std::string ent );
     void addEntry( const char* ent );
 	void addEntryList( const char ent[][4], int size );
 	void delEntry( const char * ent );
 	inline void updateEntry( const char * ent, int num ) { _values[ num ] = ent; }
-	void up( int count );  // step up to parent
-	void down( int count );
-	void press();
-	void longPress();
-	void escape() {};
-	const char *value();
+	void up( int count ) override;
+	void down( int count ) override;
+	void press() override;
+	void longPress() override;
+	void escape() override {};
+	const char *value() const override;
 	int getSelect();
 	void setSelect( int sel );
 	const char * getEntry() const ;
@@ -46,4 +47,3 @@ private:
 	char *_mychar;
 };
 
-#endif

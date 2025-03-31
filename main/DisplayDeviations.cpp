@@ -33,8 +33,6 @@ DisplayDeviations::DisplayDeviations( const char * title ) :
 
 void DisplayDeviations::display( int mode )
 {
-  if( (selected != this) || !gflags.inSetup )
-	  return;
   if( !compass )
   {
 	  clear();

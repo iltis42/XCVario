@@ -16,10 +16,12 @@
 class SetupAction final : public MenuEntry
 {
 public:
-	explicit SetupAction(const char *title, int (*action)(SetupAction *p), int code, bool _end_menu=false);
-	virtual ~SetupAction();
+	explicit SetupAction(const char *title, int (*action)(SetupAction *), int code, bool _end_menu=false);
+	virtual ~SetupAction() = default;
+	void enter() override;
+	void exit(int ups=1);
 	void display( int mode=0 );
-	const char* value() override { return ""; };
+	const char* value() const override { return ""; };
 	int getCode() const { return _code; }
 	// Rotoary API
 	void up(int count) override {};
@@ -27,10 +29,10 @@ public:
 	void press() override;
 	void release() override {};
 	void longPress() override;
-	void escape() override {};
 
 private:
 	int (*_action)( SetupAction *p );
 	int _code;
 	bool _end_menu;
+	int  _extra_ups = 0;
 };

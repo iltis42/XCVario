@@ -18,27 +18,21 @@ Last update: 2021-02-25
  ****************************************************************************/
 #include "IpsDisplay.h"
 #include "SetupMenuDisplay.h"
+#include "SetupMenu.h"
 #include "sensor.h"
 #include "logdef.h"
 
 #include <esp_system.h>
 
-SetupMenuDisplay::SetupMenuDisplay( const char* title, int (*action)(SetupMenuDisplay *p) ) : MenuEntry()
+SetupMenuDisplay::SetupMenuDisplay( const char* title, int (*action)(SetupMenuDisplay *p) ) :
+	MenuEntry()
 {
-	attach( this );
 	_title = title;
 	_action = action;
-}
-SetupMenuDisplay::~SetupMenuDisplay()
-{
-    detach(this);
 }
 
 void SetupMenuDisplay::display( int mode )
 {
-  if( (selected != this) || !gflags.inSetup )
-    return;
-
   if( _action != nullptr ) {
     // Call user's callback
     (*_action)( this );
@@ -47,25 +41,6 @@ void SetupMenuDisplay::display( int mode )
 
 void SetupMenuDisplay::press()
 {
-	if( selected != this )
-		return;
-
-  ESP_LOGI(FNAME,"press(): pressed=%d", pressed);
-
-	if( pressed )
-    {
-	    // called during menu exit press
-      if( _parent != 0 ) {
-        selected = _parent;
-        _parent->menuSetTop();  // to topmost selection when back
-      }
-      selected->pressed = true;
-      pressed = false;
-    }
-  else
-    {
-      // called during menu entry press
-      pressed = true;
-      display();
-    }
+	_parent->menuSetTop();
+	exit();
 }

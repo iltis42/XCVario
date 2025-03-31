@@ -13,8 +13,8 @@
 #include <nvs.h>
 
 #include <freertos/FreeRTOS.h>
-#include <esp_timer.h>
 #include <freertos/queue.h>
+#include <esp_timer.h>
 #include <esp_system.h>
 #include <esp_log.h>
 

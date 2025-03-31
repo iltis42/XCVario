@@ -28,8 +28,8 @@ static const char flap_labels[][4] = { "-9", "-8", "-7", "-6", "-5", "-4", "-3",
 
 // Action Routines
 int select_flap_sens_pin(SetupMenuSelect *p){
-	//ESP_LOGI(FNAME,"select_flap_sens_pin, pressed:%d",(int)(p->pressed) );
-	if( (p->pressed ) ) // invoke when released
+	//ESP_LOGI(FNAME,"select_flap_sens_pin");
+	if( (p->isActive() ) ) // invoke when released
 		return 0;
 	p->clear();
 	if( FLAP ) {
@@ -102,7 +102,7 @@ int flap_pos_act( SetupMenuValFloat *p ){
 int flap_cal_act( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"WK calibration ( %d ) ", p->getSelect() );
-	if( (p->pressed ) ) // invoke when released
+	if( (p->isActive() ) ) // invoke when released
 		return 0;
 	if( ! FLAP )
 		return 0;

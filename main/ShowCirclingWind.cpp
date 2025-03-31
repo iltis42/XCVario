@@ -37,9 +37,6 @@ SetupMenuDisplay( title, nullptr )
 
 void ShowCirclingWind::display( int mode )
 {
-	if( (selected != this) || !gflags.inSetup )
-		return;
-
 	ESP_LOGI(FNAME, "display() mode=%d", mode );
 	if( mode != 5 )
 		clear();

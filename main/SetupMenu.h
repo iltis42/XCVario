@@ -8,28 +8,25 @@
 #pragma once
 
 #include "MenuEntry.h"
-#include "SetupMenuValFloat.h"
 
-class IpsDisplay;
-class ESPRotary;
-class PressureSensor;
-class AnalogInput;
+class SetupMenuValFloat;
 
-class SetupMenu:  public MenuEntry {
+class SetupMenu : public MenuEntry
+{
 public:
-	SetupMenu();
-	explicit SetupMenu( const char* title, void (menu_create)(SetupMenu* ptr)  );
+	SetupMenu() = delete;
+	explicit SetupMenu(const char* title, void (menu_create)(SetupMenu* ptr));
 	virtual ~SetupMenu();
-	void begin( IpsDisplay* display, PressureSensor * bmp, AnalogInput *adc );
+	void enter() override;
+	// void exit(int levels=0) override;
 	void display( int mode=0 ) override;
 	bool isLeaf() const override { return false; }
-	const char *value() { return 0; };
+	const char *value() const override { return nullptr; };
 	int getMenuPos() const { return highlight; }
 	int menuPosInc() { return ++highlight; }
 	void menuSetTop() { highlight = -1; }
 	
 	// the submenu structure
-    MenuEntry* getFirst() const;
 	MenuEntry* addEntry(MenuEntry* item);
 	void       delEntry(MenuEntry* item);
 	const MenuEntry* findMenu(const char *title) const;
@@ -37,22 +34,20 @@ public:
 	void up( int count ) override;
 	void down( int count ) override;
 	void press() override;
-	void longPress() override;
+	void longPress() override {};
 	void escape() override;
-	void showMenu();
-	void create_subtree();
-	void delete_subtree();
 
 	static void catchFocus( bool activate );
 	static bool focus;
 	static gpio_num_t getGearWarningIO();
 
-	static SetupMenuValFloat * createQNHMenu();
+	static SetupMenu* createTopSetup();
+	static SetupMenuValFloat *createQNHMenu();
+	static SetupMenuValFloat *createVoltmeterAdjustMenu();
 
-private:
-	void (*menu_create_ptr)(SetupMenu*);
+protected:
+	void (*populateMenu)(SetupMenu*);
 	std::vector<MenuEntry*>  _childs;
-	uint8_t subtree_created;
-	int8_t    highlight;
+	int8_t  highlight = -1;
 };
 

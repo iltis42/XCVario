@@ -29,7 +29,7 @@ OTA::OTA(){
 }
 
 void OTA::begin(){
-	attach(this);
+	attach();
 }
 
 void OTA::press() {

@@ -5,11 +5,13 @@
  *      Author: iltis
  */
 
-#include <logdef.h>
-#include <sensor.h>
-#include "Units.h"
 #include "SetupMenuChar.h"
+#include "SetupMenu.h"
+
+#include "sensor.h"
+#include "Units.h"
 #include "ESPAudio.h"
+#include "logdef.h"
 
 const char * SetupMenuChar::getEntry() const
 {
@@ -17,7 +19,8 @@ const char * SetupMenuChar::getEntry() const
 	return _values[ _select ];
 }
 
-const char *SetupMenuChar::value() {
+const char *SetupMenuChar::value() const
+{
 	return getEntry();
 }
 
@@ -71,14 +74,16 @@ void SetupMenuChar::delEntry( const char* ent ) {
 		}
 }
 
-SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuChar *p), bool save, char *achar, uint32_t index, bool ext_handler, bool end_menu ) {
+SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuChar *p), 
+								bool save, char *achar, uint32_t index, bool ext_handler, bool end_menu ) :
+	MenuEntry()
+{
 	ESP_LOGI(FNAME,"SetupMenuChar( %s ), char: %c", title, *achar );
-	attach(this);
 	bits._ext_handler = ext_handler;
 	_title = title;
 	_select = 0;
 	_select_save = 0;
-	bits._end_menu = end_menu;
+	bits._end_setup = end_menu;
 	_mychar = 0;
 	_char_index = index;
 	if( achar ) {
@@ -91,19 +96,12 @@ SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (
 
 }
 
-SetupMenuChar::~SetupMenuChar()
-{
-	detach(this);
-}
-
 void SetupMenuChar::display( int mode ){
-	if( (selected != this) || !gflags.inSetup  )
-		return;
-	ESP_LOGI(FNAME,"display() pressed:%d title:%s action: %x", pressed, _title, (int)(_action));
+
+	ESP_LOGI(FNAME,"display() title:%s action: %x", _title, (int)(_action));
 	clear();
 	if( bits._ext_handler ){  // handling is done only in action method
 		ESP_LOGI(FNAME,"ext handler");
-		selected = _parent;
 	}else
 	{
 		MYUCG->setPrintPos(1,25);
@@ -126,9 +124,8 @@ void SetupMenuChar::display( int mode ){
 	}
 }
 
-void SetupMenuChar::down(int count){
-	if( (selected != this) || !gflags.inSetup )
-		return;
+void SetupMenuChar::down(int count)
+{
 	if( _numval > 9 ){
 		while( count ) {
 			if( (_select) > 0 )
@@ -149,9 +146,8 @@ void SetupMenuChar::down(int count){
 	}
 }
 
-void SetupMenuChar::up(int count){
-	if( (selected != this) || !gflags.inSetup )
-		return;
+void SetupMenuChar::up(int count)
+{
 	if( _numval > 9 )
 	{
 		while( count ) {
@@ -177,36 +173,22 @@ void SetupMenuChar::longPress(){
 	press();
 }
 
-void SetupMenuChar::press(){
-	if( selected != this )
+void SetupMenuChar::press()
+{
+	ESP_LOGI(FNAME,"press() ext handler: %d _select: %d", bits._ext_handler, _select );
+
+	SavedDelay(bits._save);
+	_parent->menuSetTop();
+	if( _action != 0 ){
+		ESP_LOGI(FNAME,"calling action in press %d", _select );
+		(*_action)( this );
+	}
+	if( _select_save != _select && bits._restart ) {
+		_restart = true;
+	}
+	if( bits._end_setup ) {
+		exit(-1);
 		return;
-	ESP_LOGI(FNAME,"press() ext handler: %d press: %d _select: %d", bits._ext_handler, pressed, _select );
-	if ( pressed ){
-		display( 1 );
-		if( bits._end_menu ){
-			ESP_LOGI(FNAME,"press() end_menu");
-			selected = root;
-		}
-		else if( _parent != 0) {
-			ESP_LOGI(FNAME,"go to parent");
-			selected = _parent;
-			_parent->menuSetTop();
-		}
-		selected->pressed = true;
-		pressed = false;
-		if( _action != 0 ){
-			ESP_LOGI(FNAME,"calling action in press %d", _select );
-			(*_action)( this );
-		}
-		if( _select_save != _select )
-			if( bits._restart ) {
-				_restart = true;
-			}
-		if( bits._end_menu ){
-			selected->press();
-		}
 	}
-	else{
-		pressed = true;
-	}
+	exit();
 }

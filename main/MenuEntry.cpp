@@ -4,37 +4,28 @@
  *  Created on: Feb 4, 2018
  *      Author: iltis
  */
+#include "MenuEntry.h"
 
 #include "SetupMenu.h"
 #include "IpsDisplay.h"
-#include <inttypes.h>
-#include <iterator>
-#include <algorithm>
 #include "ESPAudio.h"
 #include "BMPVario.h"
 #include "S2F.h"
 #include "Version.h"
 #include "Polars.h"
-#include <logdef.h>
-#include <sensor.h>
+#include "sensor.h"
 #include "Cipher.h"
 #include "Units.h"
 #include "Switch.h"
 #include "Flap.h"
-#include "MenuEntry.h"
+#include "logdef.h"
 
-IpsDisplay* MenuEntry::_display = 0;
-MenuEntry* MenuEntry::root = 0;
-MenuEntry* MenuEntry::selected = 0;
-AnalogInput* MenuEntry::_adc = 0;
-PressureSensor *MenuEntry::_bmp = 0;
+#include <inttypes.h>
+#include <iterator>
+#include <algorithm>
+
+MenuEntry* MenuEntry::selected = nullptr;
 bool MenuEntry::_restart = false;
-
-MenuEntry::~MenuEntry()
-{
-    // ESP_LOGI(FNAME,"del menu %s",_title );
-    detach(this);
-}
 
 const MenuEntry* MenuEntry::findMenu(const char *title) const
 {
@@ -54,7 +45,7 @@ void MenuEntry::uprintf( int x, int y, const char* format, ...) {
 	va_end(argptr);
 }
 
-void MenuEntry::restart(){
+void MenuEntry::reBoot(){
 	Audio::shutdown();
 	clear();
 	MYUCG->setPrintPos( 10, 50 );
@@ -80,10 +71,29 @@ void MenuEntry::SavedDelay(bool showit)
 	vTaskDelay(1000 / portTICK_PERIOD_MS);
 }
 
+void MenuEntry::enter()
+{
+	attach();
+	selected = this;
+	display();
+}
+
+void MenuEntry::exit(int ups)
+{
+	if ( ups != 0 && _parent != 0 ) {
+		detach();
+		selected = _parent;
+		selected->exit(--ups);
 		return;
 	}
-	ucg->setPrintPos(x,y);
-	ucg->print( str );
+	display();
+}
+
+void MenuEntry::regParent(SetupMenu *p)
+{
+	if ( _parent == nullptr ) {
+		_parent = p;
+	}
 }
 
 void MenuEntry::showhelp()

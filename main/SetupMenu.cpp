@@ -25,7 +25,6 @@
 #include "ShowCompassSettings.h"
 #include "ShowCirclingWind.h"
 #include "ShowStraightWind.h"
-#include "MenuEntry.h"
 #include "Compass.h"
 #include "CompassMenu.h"
 #include "esp_wifi.h"
@@ -38,17 +37,17 @@
 #include "sensor.h"
 #include "SetupNG.h"
 
-#include <logdef.h>
-#include <inttypes.h>
-#include <iterator>
-#include <algorithm>
-#include <cstring>
 #include "comm/DeviceMgr.h"
 #include "protocol/NMEA.h"
 #include "comm/SerialLine.h"
 #include "coredump_to_server.h"
 #include "protocol/nmea/JumboCmdMsg.h"
+#include "logdef.h"
 
+#include <inttypes.h>
+#include <iterator>
+#include <algorithm>
+#include <cstring>
 
 static void setup_create_root(SetupMenu *top);
 
@@ -106,10 +105,10 @@ static void system_menu_create_ahrs_calib(SetupMenu *top);
 static void system_menu_create_hardware_ahrs_lc(SetupMenu *top);
 static void system_menu_create_hardware_ahrs_parameter(SetupMenu *top);
 
-SetupMenuSelect *audio_range_sm = 0;
-SetupMenuSelect *mpu = 0;
+SetupMenuSelect *audio_range_sm = nullptr;
+SetupMenuSelect *mpu = nullptr;
 
-SetupMenuValFloat *volume_menu = 0;
+SetupMenuValFloat *volume_menu = nullptr;
 void update_volume_menu_max() {
 	if (volume_menu)
 		volume_menu->setMax(max_volume.get());
@@ -118,7 +117,6 @@ void update_volume_menu_max() {
 // Menu for flap setup
 
 float elev_step = 1;
-static uint8_t screen_mask_len = 1;
 
 bool SetupMenu::focus = false;
 
@@ -133,48 +131,20 @@ int compass_ena(SetupMenuSelect *p) {
 	return 0;
 }
 
-void init_routing() {
-	uint32_t s1rt = (uint32_t) serial1_tx.get();
-	ESP_LOGI(FNAME,"init_routing S1: %x", (unsigned int)s1rt);
-	rt_s1_xcv.set((s1rt >> (RT_XCVARIO)) & 1);
-	rt_s1_wl.set((s1rt >> (RT_WIRELESS)) & 1);
-	rt_s1_s2.set((s1rt >> (RT_S1)) & 1);
-	rt_s1_can.set((s1rt >> (RT_CAN)) & 1);
-
-	uint32_t s2rt = (uint32_t) serial2_tx.get();
-	ESP_LOGI(FNAME,"init_routing S2: %x", (unsigned int)s2rt);
-	rt_s2_xcv.set((s2rt >> (RT_XCVARIO)) & 1);
-	rt_s2_wl.set((s2rt >> (RT_WIRELESS)) & 1);
-	rt_s1_s2.set((s2rt >> (RT_S1)) & 1);
-	rt_s2_can.set((s2rt >> (RT_CAN)) & 1);
-}
-
 int update_routing(SetupMenuSelect *p) {
-	uint32_t routing = ((uint32_t) rt_s1_xcv.get() << (RT_XCVARIO))
-			| ((uint32_t) rt_s1_wl.get() << (RT_WIRELESS))
-			| ((uint32_t) rt_s1_s2.get() << (RT_S1))
-			| ((uint32_t) rt_s1_can.get() << (RT_CAN));
-	ESP_LOGI(FNAME,"update_routing S1: %x", (unsigned int)routing);
-	serial1_tx.set(routing);
-	routing = (uint32_t) rt_s2_xcv.get() << (RT_XCVARIO)
-			| ((uint32_t) rt_s2_wl.get() << (RT_WIRELESS))
-			| ((uint32_t) rt_s1_s2.get() << (RT_S1))
-			| ((uint32_t) rt_s2_can.get() << (RT_CAN));
-	ESP_LOGI(FNAME,"update_routing S2: %x", (unsigned int)routing);
-	serial2_tx.set(routing);
+	// uint32_t routing = ((uint32_t) rt_s1_xcv.get() << (RT_XCVARIO))
+	// 		| ((uint32_t) rt_s1_wl.get() << (RT_WIRELESS))
+	// 		| ((uint32_t) rt_s1_s2.get() << (RT_S1))
+	// 		| ((uint32_t) rt_s1_can.get() << (RT_CAN));
+	// ESP_LOGI(FNAME,"update_routing S1: %x", (unsigned int)routing);
+	// serial1_tx.set(routing);
+	// routing = (uint32_t) rt_s2_xcv.get() << (RT_XCVARIO)
+	// 		| ((uint32_t) rt_s2_wl.get() << (RT_WIRELESS))
+	// 		| ((uint32_t) rt_s1_s2.get() << (RT_S1))
+	// 		| ((uint32_t) rt_s2_can.get() << (RT_CAN));
+	// ESP_LOGI(FNAME,"update_routing S2: %x", (unsigned int)routing);
+	// serial2_tx.set(routing);
 	return 0;
-}
-
-void init_screens() {
-	uint32_t scr = menu_screens.get();
-	screen_gmeter.set((scr >> SCREEN_GMETER) & 1);
-	// 	screen_centeraid.set( (scr >> SCREEN_THERMAL_ASSISTANT) & 1);
-	screen_horizon.set((scr >> SCREEN_HORIZON) & 1);
-	screen_mask_len = 1; // default vario
-	while (scr) {
-		scr = scr >> 1;
-		screen_mask_len++;
-	}ESP_LOGI(FNAME,"screens mask len: %d, screens: %d", screen_mask_len, menu_screens.get() );
 }
 
 int vario_setup(SetupMenuValFloat *p) {
@@ -317,14 +287,14 @@ int update_s1_protocol(SetupMenuSelect *p) {
 
 int do_display_test(SetupMenuSelect *p) {
 	if (display_test.get()) {
-		p->ucg->setColor(0, 0, 0);
-		p->ucg->drawBox(0, 0, 240, 320);
+		MYUCG->setColor(0, 0, 0);
+		MYUCG->drawBox(0, 0, 240, 320);
 		while (!Rotary->readSwitch()) {
 			delay(100);
 			ESP_LOGI(FNAME,"Wait for key press");
 		}
-		p->ucg->setColor(255, 255, 255);
-		p->ucg->drawBox(0, 0, 240, 320);
+		MYUCG->setColor(255, 255, 255);
+		MYUCG->drawBox(0, 0, 240, 320);
 		while (!Rotary->readSwitch()) {
 			delay(100);
 			ESP_LOGI(FNAME,"Wait for key press");
@@ -379,17 +349,28 @@ int data_mon(SetupMenuSelect *p) {
 	if (ch != ItfTarget()) {
 		ESP_LOGI(FNAME,"data_mon( %d ) ", (int)ch.raw );
 		DM.start(p, ch);
+		return 1;
 	}
 	return 0;
 }
 
-int data_monS1(SetupMenuSelect *p) {
-	DM.start(p, ItfTarget(S1_RS232));
+int data_monS1(SetupMenuSelect *p)
+{
+	ItfTarget tmp(S1_RS232);
+	if ( DEVMAN->isIntf(tmp) ) {
+		DM.start(p, tmp);
+		return 1;
+	}
 	return 0;
 }
 
-int data_monS2(SetupMenuSelect *p) {
-	DM.start(p, ItfTarget(S2_RS232));
+int data_monS2(SetupMenuSelect *p)
+{
+	ItfTarget tmp(S2_RS232);
+	if ( DEVMAN->isIntf(tmp) ) {
+		DM.start(p, tmp);
+		return 1;
+	}
 	return 0;
 }
 
@@ -453,7 +434,7 @@ int qnh_adj(SetupMenuValFloat *p) {
 		int samples = 0;
 		for (int i = 0; i < 6; i++) {
 			bool ok;
-			float a = p->_bmp->readAltitude(QNH.get(), ok);
+			float a = baroSensor->readAltitude(QNH.get(), ok);
 			if (ok) {  // only consider correct readouts
 				alt += a;
 				samples++;
@@ -462,7 +443,7 @@ int qnh_adj(SetupMenuValFloat *p) {
 		}
 		alt = alt / (float) samples;
 	}ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, QNH.get() );
-	p->ucg->setFont(ucg_font_fub25_hr, true);
+	MYUCG->setFont(ucg_font_fub25_hr, true);
 	float altp;
 	const char *u = "m";
 	if (alt_unit.get() == 0) { // m
@@ -471,28 +452,28 @@ int qnh_adj(SetupMenuValFloat *p) {
 		u = "ft";
 		altp = Units::meters2feet(alt);
 	}
-	p->ucg->setPrintPos(1, 120);
-	p->ucg->printf("%5d %s  ", (int) (altp + 0.5), u);
+	MYUCG->setPrintPos(1, 120);
+	MYUCG->printf("%5d %s  ", (int) (altp + 0.5), u);
 
-	p->ucg->setFont(ucg_font_ncenR14_hr);
+	MYUCG->setFont(ucg_font_ncenR14_hr);
 	return 0;
 }
 
 // Battery Voltage Meter Calibration
 int factv_adj(SetupMenuValFloat *p) {
 	ESP_LOGI(FNAME,"factv_adj");
-	p->_adc->redoAdjust();
-	float bat = p->_adc->get(true);
-	p->ucg->setPrintPos(1, 100);
-	p->ucg->printf("%0.2f Volt", bat);
+	getBattery()->redoAdjust();
+	float bat = getBattery()->get(true);
+	MYUCG->setPrintPos(1, 100);
+	MYUCG->printf("%0.2f Volt", bat);
 	return 0;
 }
 
 int master_xcv_lock(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"master_xcv_lock");
-	p->ucg->setPrintPos(1, 130);
+	MYUCG->setPrintPos(1, 130);
 	int mxcv = WifiClient::getScannedMasterXCV();
-	p->ucg->printf("Scanned: XCVario-%d", mxcv);
+	MYUCG->printf("Scanned: XCVario-%d", mxcv);
 	if (master_xcvario_lock.get() == 1)
 		master_xcvario.set(mxcv);
 	return 0;
@@ -506,10 +487,10 @@ int polar_select(SetupMenuSelect *p) {
 }
 
 void print_fb(SetupMenuValFloat *p, float wingload) {
-	p->ucg->setFont(ucg_font_fub25_hr, true);
-	p->ucg->setPrintPos(1, 110);
-	p->ucg->printf("%0.2f kg/m2  ", wingload);
-	p->ucg->setFont(ucg_font_ncenR14_hr);
+	MYUCG->setFont(ucg_font_fub25_hr, true);
+	MYUCG->setPrintPos(1, 110);
+	MYUCG->printf("%0.2f kg/m2  ", wingload);
+	MYUCG->setFont(ucg_font_ncenR14_hr);
 }
 
 int water_adj(SetupMenuValFloat *p) {
@@ -610,125 +591,109 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 	return 0;
 }
 
-//
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 // SetupMenu
-//
-SetupMenu::SetupMenu() :
-	MenuEntry(),
-	menu_create_ptr(0),
-	subtree_created(0)
-{
-	highlight = -1;
-	_parent = 0;
-	helptext = 0;
-}
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+// SetupMenu::SetupMenu() :
+// 	MenuEntry(),
+// 	populateMenu(0)
+// {
+// 	highlight = -1;
+// 	_parent = 0;
+// 	helptext = 0;
+// }
 
 SetupMenu::SetupMenu(const char *title, void (menu_create)(SetupMenu* ptr)) :
 	MenuEntry(),
-	menu_create_ptr(menu_create),
-	subtree_created(0),
+	populateMenu(menu_create),
 	highlight(-1)
 {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
-	attach(this);
 	_title = title;
 }
 
 SetupMenu::~SetupMenu() {
-	// ESP_LOGI(FNAME,"del SetupMenu( %s ) ", _title );
-	for (MenuEntry *c : _childs) {
+	ESP_LOGI(FNAME,"del SetupMenu( %s ) ", _title );
+	for (auto *c : _childs) {
 		delete c;
 	}
+	_childs.clear();
 }
 
-void SetupMenu::begin(IpsDisplay *display, PressureSensor *bmp,
-		AnalogInput *adc) {
-	ESP_LOGI(FNAME,"SetupMenu() begin");
-	_bmp = bmp;
-	_display = display;
-	ucg = display->getDisplay();
-	_adc = adc;
-	SetupMenu *root = new SetupMenu("Setup", setup_create_root);
-	root->setRoot(root);
-	root->addEntry(root);
-	// Create static menues
-	if ( NEED_VOLTAGE_ADJUST && !SetupMenuValFloat::meter_adj_menu) {
-		SetupMenuValFloat::meter_adj_menu = new SetupMenuValFloat(
-				"Voltmeter Adjust", "%", -25.0, 25.0, 0.01, factv_adj, false,
-				&factory_volt_adjust, RST_IMMEDIATE, false, true);
-	}
-	audio_volume.set(default_volume.get());
-	init_routing();
-	init_screens();
-	initGearWarning();
-}
-
+// fixme
 void SetupMenu::catchFocus(bool activate) {
 	focus = activate;
 }
 
-void SetupMenu::display(int mode) {
-	if ((selected != this) || !gflags.inSetup || focus)
-		return;
+void SetupMenu::enter()
+{
+	ESP_LOGI(FNAME,"enter inSet %d, mptr: %p", gflags.inSetup, populateMenu );
+	if (_childs.empty() && populateMenu) {
+		(populateMenu)(this);
+		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
+	}
+	MenuEntry::enter();
+}
+
+// void SetupMenu::exit(int levels)
+// {
+// 	// ESP_LOGI(FNAME,"delete_childs() %d", _childs.size() );
+// 	// if (!_childs.empty()) {
+// 	// 	for ( auto chld : _childs ) {
+// 	// 		delete chld;
+// 	// 	}
+// 	// 	_childs.clear();
+// 	// }
+// 	MenuEntry::exit(levels);
+// }
+
+void SetupMenu::display(int mode)
+{
 	xSemaphoreTake(display_mutex, portMAX_DELAY);
 	// ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
 	clear();
 	int y = 25;
 	// ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );
-	ucg->setFont(ucg_font_ncenR14_hr);
-	ucg->setPrintPos(1, y);
-	ucg->setFontPosBottom();
-	ucg->printf("<< %s", _title);
-	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
+	MYUCG->setFont(ucg_font_ncenR14_hr);
+	MYUCG->setPrintPos(1, y);
+	MYUCG->setFontPosBottom();
+	MYUCG->printf("<< %s", _title);
+	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	for (int i = 0; i < _childs.size(); i++) {
 		MenuEntry *child = _childs[i];
-		ucg->setPrintPos(1, (i + 1) * 25 + 25);
+		MYUCG->setPrintPos(1, (i + 1) * 25 + 25);
 		if (!child->isLeaf() || child->value()) {
-			ucg->setColor( COLOR_HEADER_LIGHT);
+			MYUCG->setColor( COLOR_HEADER_LIGHT);
 		}
-		ucg->printf("%s", child->_title);
-		// ESP_LOGI(FNAME,"Child Title: %s", child->_title );
+		MYUCG->printf("%s", child->getTitle());
+		// ESP_LOGI(FNAME,"Child Title: %s", child->getTitle() );
 		if (child->value()) {
-			int fl = ucg->getStrWidth(child->_title);
-			ucg->setPrintPos(1 + fl, (i + 1) * 25 + 25);
-			ucg->printf(": ");
-			ucg->setPrintPos(1 + fl + ucg->getStrWidth(":"), (i + 1) * 25 + 25);
-			ucg->setColor( COLOR_WHITE);
-			ucg->printf(" %s", child->value());
+			int fl = MYUCG->getStrWidth(child->getTitle());
+			MYUCG->setPrintPos(1 + fl, (i + 1) * 25 + 25);
+			MYUCG->printf(": ");
+			MYUCG->setPrintPos(1 + fl + MYUCG->getStrWidth(":"), (i + 1) * 25 + 25);
+			MYUCG->setColor( COLOR_WHITE);
+			MYUCG->printf(" %s", child->value());
 		}
-		ucg->setColor( COLOR_WHITE);
-		// ESP_LOGI(FNAME,"Child: %s y=%d",child->_title ,y );
+		MYUCG->setColor( COLOR_WHITE);
+		// ESP_LOGI(FNAME,"Child: %s y=%d",child->getTitle() ,y );
 	}
 	showhelp();
 	xSemaphoreGive(display_mutex);
 }
 
-MenuEntry* SetupMenu::getFirst() const {
-	// ESP_LOGI(FNAME,"SetupMenu::getFirst()");
-	return _childs.front();
-}
-
-MenuEntry* SetupMenu::addEntry( MenuEntry * item ) {
-	// ESP_LOGI(FNAME,"SetupMenu addMenu() title %s", item->_title );
-	if( root == 0 ){
-		ESP_LOGI(FNAME,"Init root menu");
-		root = item;
-		item->_parent = 0;
-		selected = item;
-		return item;
-	}
-	else{
-		// ESP_LOGI(FNAME,"add to childs");
-		item->_parent = this;
-		_childs.push_back( item );
-		return item;
-	}
+MenuEntry* SetupMenu::addEntry( MenuEntry * item )
+{
+	ESP_LOGI(FNAME,"add to childs");
+	item->regParent(this);
+	_childs.push_back( item );
+	return item;
 }
 
 void SetupMenu::delEntry( MenuEntry * item ) {
-	ESP_LOGI(FNAME,"SetupMenu delMenu() title %s", item->_title );
+	ESP_LOGI(FNAME,"SetupMenu delMenu() title %s", item->getTitle() );
 	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
-	if (position != _childs.end()) { // == myVector.end() means the element was not found
+	if (position != _childs.end()) {
 		ESP_LOGI(FNAME,"found entry, now erase" );
 		_childs.erase(position);
         delete *position;
@@ -753,38 +718,14 @@ const MenuEntry* SetupMenu::findMenu(const char *title) const
 	return nullptr;
 }
 
-void SetupMenu::up(int count) {
-	if (selected == this && !gflags.inSetup) {
-		// ESP_LOGI(FNAME,"root: up");
-		if (rot_default.get() == 1) {	 // MC Value
-			float mc = MC.get();
-			// ESP_LOGI(FNAME,"MC up: %f count: %d", mc, count );
-			float step = Units::Vario2ms(0.1);
-			mc += step * count;
-			if (mc > 9.9)
-				mc = 9.9;
-			// ESP_LOGI(FNAME,"NEW MC: %f", mc );
-			MC.set(mc);
-		} else {  // Volume
-			float vol = audio_volume.get();
-			if (vol < 1.5)
-				vol = 1.5;
-			for (int i = 0; i < count; i++)
-				vol = vol * 1.33;
-			if (vol > max_volume.get())
-				vol = max_volume.get();
-			audio_volume.set(vol);
-			// ESP_LOGI(FNAME,"NEW UP VOL: %f", vol );
-		}
-	}
-	if ((selected != this) || !gflags.inSetup)
-		return;
+void SetupMenu::up(int count)
+{
 	// ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
-	if (focus)
-		return;
-	ucg->setColor(COLOR_BLACK);
-	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	ucg->setColor(COLOR_WHITE);
+	// if (focus)
+	// 	return;
+	MYUCG->setColor(COLOR_BLACK);
+	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
+	MYUCG->setColor(COLOR_WHITE);
 	count &= 7;     // limit to some maximum
 	while( /* highlight <= (int)(_childs.size()-1) && */ count > 0 ){
 		highlight++;
@@ -793,38 +734,17 @@ void SetupMenu::up(int count) {
 	if (highlight > (int) (_childs.size() - 1)) {
 		highlight = -1;
 	}
-	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	pressed = true;
+	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 }
 
-void SetupMenu::down(int count) {
-	if (selected == this && !gflags.inSetup) {
-		// ESP_LOGI(FNAME,"root: down");
-		if (rot_default.get() == 1) {	 // MC Value
-			float mc = MC.get();
-			float step = Units::Vario2ms(0.1);
-			mc -= step * count;
-			if (mc < 0.0)
-				mc = 0.0;
-			MC.set(mc);
-		} else {  // Volume
-			float vol = audio_volume.get();
-			for (int i = 0; i < count; i++)
-				vol = vol * 0.77;
-			if (vol < 1.5) // allow smaller volumes to better support new 50% scale mode of ESP32 sine generator (default is 25%)
-				vol = 0;
-			audio_volume.set(vol);
-			// ESP_LOGI(FNAME,"NEW DN VOL: %f", vol );
-		}
-	}
-	if ((selected != this) || !gflags.inSetup)
-		return;
+void SetupMenu::down(int count)
+{
 	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
-	if (focus)
-		return;
-	ucg->setColor(COLOR_BLACK);
-	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	ucg->setColor(COLOR_WHITE);
+	// if (focus)
+	// 	return;
+	MYUCG->setColor(COLOR_BLACK);
+	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
+	MYUCG->setColor(COLOR_WHITE);
 	count &= 7;     // limit to some maximum
 	while( /* (highlight  >= -1) && */ count > 0 ){
 		highlight--;
@@ -832,126 +752,33 @@ void SetupMenu::down(int count) {
 	}
 	if (highlight < -1)
 		highlight = (int) (_childs.size() - 1);
-	ucg->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	pressed = true;
+	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 }
 
-
-void SetupMenu::showMenu() {
-	ESP_LOGI(FNAME,"showMenu() p:%d h:%d parent:%p", pressed, highlight, _parent );
-	// default is not pressed, so just display, but we toogle pressed state at the end
-	// so next time we either step up to parent,
-	if (pressed) {
-		if (highlight == -1) {
-			// ESP_LOGI(FNAME,"SetupMenu to parent");
-			if (_parent != 0) {
-				selected = _parent;
-				_parent->menuSetTop();
-				selected->pressed = true;
-				delete_subtree();
-			}
-		} else {
-			// ESP_LOGI(FNAME,"SetupMenu to child");
-			if ((highlight >= 0) && (highlight < (int) (_childs.size()))) {
-				selected = _childs[highlight];
-				selected->pressed = false;
-			}
-		}
-	}
-	if ((_parent == 0) && (highlight == -1)) // entering setup menu root
-	{
-		if (!gflags.inSetup) {
-			gflags.inSetup = true;
-			// ESP_LOGI(FNAME,"Start Setup Menu");
-			_display->doMenu(true);
-			delay(200);  // fixme give display task time to finish drawing
-		} else {
-			// ESP_LOGI(FNAME,"End Setup Menu");
-			screens_init = INIT_DISPLAY_NULL;
-			_display->doMenu(false);
-			if (selected->get_restart())
-				selected->restart();
-			gflags.inSetup = false;
-		}
-	}
-	// ESP_LOGI(FNAME,"end showMenu()");
-}
-
-static int screen_index = 0;
-
-void SetupMenu::create_subtree() {
-	if (!subtree_created && menu_create_ptr) {
-		(menu_create_ptr)(this);
-		subtree_created = true;
-		// ESP_LOGI(FNAME,"create_subtree() %d", _childs.size() );
-	}
-}
-
-void SetupMenu::delete_subtree() {
-	// ESP_LOGI(FNAME,"delete_subtree() %d", _childs.size() );
-	if (subtree_created && menu_create_ptr) {
-		subtree_created = false;
-		for (int i = 0; i < _childs.size(); i++) {
-			delete _childs[i];
-		}
-		_childs.clear();
-	}
-}
 
 void SetupMenu::press()
 {
-	if ((selected != this) || focus) {
-		return;
-	}
-	ESP_LOGI(FNAME,"press() active_srceen %d, pressed %d inSet %d  subtree_created: %d mptr: %p", active_screen, pressed, gflags.inSetup, subtree_created, menu_create_ptr );
-	create_subtree();
-	if (!gflags.inSetup) {
-		active_screen = 0;
-		while (!active_screen && (screen_index <= screen_mask_len)) {
-			if (menu_screens.get() & (1 << screen_index)) {
-				active_screen = screen_index;
-				ESP_LOGI(FNAME,"New active_screen: %d", active_screen );
-			}
-			screen_index++;
-		}
-		if (screen_index > screen_mask_len) {
-			ESP_LOGI(FNAME,"select vario screen");
-			screen_index = 0;
-			active_screen = 0; // fall back into default vario screen after optional screens
-		}
-	}
-	if (!active_screen || gflags.inSetup) {
-		// ESP_LOGI(FNAME,"press() gflags.inSetup");
-		if (!menu_long_press.get() || gflags.inSetup)
-			showMenu();
-		if (pressed)
-			pressed = false;
-		else
-			pressed = true;
-	}
-}
-
-void SetupMenu::longPress() {
-	if ((selected != this))
-		return;
-	// ESP_LOGI(FNAME,"longPress()");
-	ESP_LOGI(FNAME,"longPress() active_srceen %d, pressed %d inSet %d", active_screen, pressed, gflags.inSetup );
-	if (menu_long_press.get() && !gflags.inSetup) {
-		showMenu();
-	}
-	if (pressed) {
-		pressed = false;
+	ESP_LOGI(FNAME,"press() inSet %d highl: %d", gflags.inSetup, highlight );
+	// enter/exit a level of setup menu
+	if (highlight == -1) {
+		_parent->menuSetTop();
+		exit();
 	} else {
-		pressed = true;
+		ESP_LOGI(FNAME,"SetupMenu to child");
+		if ((highlight >= 0) && (highlight < _childs.size())) {
+			_childs[highlight]->enter();
+		}
 	}
 }
 
-void SetupMenu::escape() {
+void SetupMenu::escape()
+{
 	if (gflags.inSetup) {
-		ESP_LOGI(FNAME,"escape now Setup Menu");
-		_display->clear();
-		_display->doMenu(false);
-		gflags.inSetup = false;
+		ESP_LOGI(FNAME,"escape now Setup Menu ++++++++++++++++++++++++");
+		// put this in root exit
+		// _display->clear();
+		// _display->doMenu(false);
+		// gflags.inSetup = false;
 	}
 }
 
@@ -1097,8 +924,7 @@ void wiper_menu_create(SetupMenu *top) {
 void bugs_item_create(SetupMenu *top) {
 	SetupMenuValFloat *bgs = new SetupMenuValFloat("Bugs", "%", 0.0, 50, 1,
 			bug_adj, true, &bugs);
-	bgs->setHelp(
-			"Percent degradation of gliding performance due to bugs contamination");
+	// bgs->setHelp("Percent degradation of gliding performance due to bugs contamination");
 	top->addEntry(bgs);
 }
 
@@ -2357,10 +2183,7 @@ void system_menu_create_hardware(SetupMenu *top) {
 	pstype->addEntry( "MCPH21");
 	pstype->addEntry( "Autodetect");
 
-	SetupMenuValFloat *met_adj = new SetupMenuValFloat("Voltmeter Adjust", "%",
-			-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust, RST_NONE,
-			false, true);
-	met_adj->setHelp("Option to factory fine-adjust voltmeter");
+	SetupMenuValFloat *met_adj = top->createVoltmeterAdjustMenu();
 	top->addEntry(met_adj);
 }
 
@@ -2686,7 +2509,7 @@ void system_menu_create(SetupMenu *sye) {
 	// SetupMenu *rs232 = new SetupMenu("RS232 Interface S1", system_menu_create_interfaceS1);
 	// sye->addEntry(rs232);
 
-		SetupMenu *can = new SetupMenu("CAN Interface", system_menu_create_interfaceCAN);
+	// SetupMenu *can = new SetupMenu("CAN Interface", system_menu_create_interfaceCAN);
 
 	// if (hardwareRevision.get() >= XCVARIO_21) {
 	// 	SetupMenu *rs232_2 = new SetupMenu("RS232 Interface S2", system_menu_create_interfaceS2);
@@ -2741,9 +2564,8 @@ void setup_create_root(SetupMenu *top) {
 	ESP_LOGI(FNAME, "Create bugs menu");
 	Device *jumbo = DEVMAN->getDevice(DeviceId::JUMBO_DEV);
 	if (jumbo) {
-		static char wiper_title[20];
-		sprintf(wiper_title, "Bugs at %d%%", int(bugs.get()));
-		SetupMenu *wiper = new SetupMenu(wiper_title, wiper_menu_create);
+		sprintf(rentry0, "Bugs at %d%%", int(bugs.get()));
+		SetupMenu *wiper = new SetupMenu(rentry0, wiper_menu_create);
 		top->addEntry(wiper);
 	} else {
 		bugs_item_create(top);
@@ -2808,11 +2630,22 @@ void setup_create_root(SetupMenu *top) {
 	}
 }
 
+SetupMenu* SetupMenu::createTopSetup() {
+	SetupMenu *setup = new  SetupMenu("Setup", setup_create_root);
+	return setup;
+}
+
 SetupMenuValFloat* SetupMenu::createQNHMenu() {
-	SetupMenuValFloat *qnh = new SetupMenuValFloat("QNH", "", 900, 1100.0,
-			0.250, qnh_adj, true, &QNH);
+	SetupMenuValFloat *qnh = new SetupMenuValFloat("QNH", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH);
 	qnh->setHelp(
-			"QNH pressure value from ATC. On ground you may adjust to airfield altitude above MSL",
-			180);
+			"QNH pressure value from ATC. On ground you may adjust to airfield altitude above MSL", 180);
 	return qnh;
 }
+
+SetupMenuValFloat* SetupMenu::createVoltmeterAdjustMenu() {
+	SetupMenuValFloat *met_adj = new SetupMenuValFloat("Voltmeter Adjust", "%",
+		-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust, RST_NONE, false, true);
+	met_adj->setHelp("Option to factory fine-adjust voltmeter");
+	return met_adj;
+}
+

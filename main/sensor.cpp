@@ -282,18 +282,18 @@ void drawDisplay(void *pvParameters){
 							Audio::alarm( false );
 							Display->clear();
 							gflags.gear_warning_active = false;
-							SetupMenu::catchFocus( false );
+							// SetupMenu::catchFocus( false );
 						}
 						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
 							Audio::alarm( true, max_volume.get() );
 							Display->drawWarning( "! GEAR !", false );
 							gflags.gear_warning_active = true;
-							SetupMenu::catchFocus( true );
+							// SetupMenu::catchFocus( true );
 						}
 					}
 					else{
 						if( gflags.gear_warning_active ){
-							SetupMenu::catchFocus( false );
+							// SetupMenu::catchFocus( false );
 							Audio::alarm( false );
 							Display->clear();
 							gflags.gear_warning_active = false;
@@ -974,7 +974,6 @@ void system_startup(void *args){
 	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
 	Display = new IpsDisplay( MYUCG );
 	Flarm::setDisplay( MYUCG );
-	DM.begin( MYUCG );
 	Display->begin();
 	Display->bootDisplay();
 

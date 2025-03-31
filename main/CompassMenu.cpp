@@ -168,10 +168,7 @@ int CompassMenu::declinationAction( SetupMenuValFloat *p )
 {
 	ESP_LOGI( FNAME, "declinationAction()" );
 
-	if( p->isActive() )
-	{
-		ESP_LOGI( FNAME, "Compass declination set to valid" );
-	}
+	ESP_LOGI( FNAME, "Compass declination set to valid" );
 
 	return 0;
 }

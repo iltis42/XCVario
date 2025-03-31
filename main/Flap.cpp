@@ -29,8 +29,6 @@ static const char flap_labels[][4] = { "-9", "-8", "-7", "-6", "-5", "-4", "-3",
 // Action Routines
 int select_flap_sens_pin(SetupMenuSelect *p){
 	//ESP_LOGI(FNAME,"select_flap_sens_pin");
-	if( (p->isActive() ) ) // invoke when released
-		return 0;
 	p->clear();
 	if( FLAP ) {
 		// ESP_LOGI(FNAME,"select_flap_sens_pin, have flap");
@@ -61,7 +59,7 @@ unsigned int Flap::getSensorRaw(int oversampling) {
 	return haveSensor() ? sensorAdc->getRaw(oversampling) : 0;
 }
 
-int wk_cal_show( SetupMenuSelect *p, int wk, Average<50> &filter){
+int wk_cal_show( SetupMenuSelect *p, int wk, Average<25> &filter){
 	MYUCG->setPrintPos(1,60);
 	MYUCG->printf("Set Flap %+d   ", wk );
 	delay(500);
@@ -102,10 +100,9 @@ int flap_pos_act( SetupMenuValFloat *p ){
 int flap_cal_act( SetupMenuSelect *p )
 {
 	ESP_LOGI(FNAME,"WK calibration ( %d ) ", p->getSelect() );
-	if( (p->isActive() ) ) // invoke when released
+	if( ! FLAP ) {
 		return 0;
-	if( ! FLAP )
-		return 0;
+	}
 	if( !FLAP->haveSensor() ){
 		p->clear();
 		MYUCG->setPrintPos(1,60);
@@ -114,7 +111,7 @@ int flap_cal_act( SetupMenuSelect *p )
 		ESP_LOGI(FNAME,"Abort calibration, no signal");
 		return 0;
 	}
-	Average<50> filter;
+	Average<25> filter;
 	if( p->getSelect() ){
 		p->clear();
 		MYUCG->setPrintPos(1,200);

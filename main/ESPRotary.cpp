@@ -80,7 +80,7 @@ static void ObserverTask( void *arg )
 	while( true ) {
 		// handle button events
 		uint8_t event;
-		if (xQueueReceive(buttonQueue, &event, 0) == pdTRUE) {
+		if (xQueueReceive(buttonQueue, &event, pdMS_TO_TICKS(100)) == pdTRUE) {
 			if (event == SHORT_PRESS) {
 				ESP_LOGI(FNAME,"Button short press detected");
 				knob.sendPress();
@@ -116,7 +116,6 @@ static void ObserverTask( void *arg )
 		if( uxTaskGetStackHighWaterMark( pid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning rotary task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
 		}
-		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
 
@@ -230,6 +229,7 @@ void ESPRotary::sendUp( int diff ) const
 	// ESP_LOGI(FNAME,"Rotary down action");
 	if (!observers.empty()) {
 		observers.top()->up( diff );
+		xQueueReset(buttonQueue); // rince queueed up events due to intermediate polling
 	}
 }
 
@@ -238,6 +238,7 @@ void ESPRotary::sendDown( int diff ) const
 	// ESP_LOGI(FNAME,"Rotary up action");
 	if (!observers.empty()) {
 		observers.top()->down( diff );
+		xQueueReset(buttonQueue);
 	}
 }
 
@@ -246,6 +247,7 @@ void ESPRotary::sendPress() const
 	// ESP_LOGI(FNAME,"Pressed action");
 	if (!observers.empty()) {
 		observers.top()->press();
+		xQueueReset(buttonQueue);
 	}
 }
 
@@ -254,6 +256,7 @@ void ESPRotary::sendRelease() const
 	// ESP_LOGI(FNAME,"Release action");
 	if (!observers.empty()) {
 		observers.top()->release();
+		xQueueReset(buttonQueue);
 	}
 }
 
@@ -262,6 +265,7 @@ void ESPRotary::sendLongPress() const
 	// ESP_LOGI(FNAME,"Long pressed action");
 	if (!observers.empty()) {
 		observers.top()->longPress();
+		xQueueReset(buttonQueue);
 	}
 }
 
@@ -270,6 +274,7 @@ void ESPRotary::sendEscape() const
 	// ESP_LOGI(FNAME,"Rotary up action");
 	if (!observers.empty()) {
 		observers.top()->escape();
+		xQueueReset(buttonQueue);
 	}
 }
 

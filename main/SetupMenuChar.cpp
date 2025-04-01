@@ -13,15 +13,137 @@
 #include "ESPAudio.h"
 #include "logdef.h"
 
-const char * SetupMenuChar::getEntry() const
+
+SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuChar *p), 
+								bool save, char *achar, uint32_t index, bool ext_handler, bool end_menu ) :
+	MenuEntry()
 {
-	// ESP_LOGI(FNAME,"getEntry() select:%d", _select );
-	return _values[ _select ];
+	ESP_LOGI(FNAME,"SetupMenuChar( %s ), char: %c", title, *achar );
+	bits._ext_handler = ext_handler;
+	_title = title;
+	_select = 0;
+	_select_save = 0;
+	bits._end_setup = end_menu;
+	_mychar = 0;
+	_char_index = index;
+	if( achar ) {
+		_mychar = achar+_char_index;
+	}
+	_numval = 0;
+	bits._restart = restart;
+	_action = action;
+	bits._save = save;
+
+}
+
+void SetupMenuChar::enter()
+{
+	if ( helptext ) {
+		clear();
+	}
+	MenuEntry::enter();
+}
+
+void SetupMenuChar::display(int mode)
+{
+	_col = 1;
+	_row = 50;
+    ESP_LOGI(FNAME,"display title:%s action: %x", _title, (int)(_action));
+	if ( !helptext ) {
+		_row = (_parent->getMenuPos() + 1) * 25;
+		MYUCG->setColor(COLOR_BLACK);
+		MYUCG->drawFrame(1, _row + 3, 238, 25);
+		MYUCG->setColor(COLOR_WHITE);
+		_col = MYUCG->getStrWidth(_title) + 4;
+		MYUCG->drawFrame(_col, _row + 3, 238, 25);
+		_col += 7;
+		_row += 25;
+	}
+	else if( bits._ext_handler ){  // handling is done only in action method
+		ESP_LOGI(FNAME,"ext handler");
+	}
+	else
+	{
+		MYUCG->setPrintPos(1,25);
+		ESP_LOGI(FNAME,"Title: %s ", _title );
+		MYUCG->printf("<< %s",_title);
+		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
+		if( _numval > 9 ){
+			MYUCG->setPrintPos( _col, _row );
+			MYUCG->printf( "%s                ", _values[_select] );
+		}else
+		{
+			for( int i=0; i<_numval && i<+10; i++ )	{
+				MYUCG->setPrintPos( _col, _row+25*i );
+				MYUCG->print( _values[i] );
+			}
+			MYUCG->drawFrame( _col,(_select+1)*25+3,238,25 );
+		}
+
+		showhelp();
+	}
+}
+
+void SetupMenuChar::rot(int count)
+{
+	if ( _numval <= 9 ) {
+		count = sign(count);
+	}
+	_select += count;
+	if ( _select < 0 ) { _select = 0; }
+	else if ( _select > _numval ) { _select = _numval; }
+
+	if( _numval > 9 )
+	{
+		MYUCG->setPrintPos(_col, _row);
+		MYUCG->setFont(ucg_font_ncenR14_hr, true );
+		MYUCG->printf("%s                   ", _values[_select] );
+	}else {
+		MYUCG->setColor(COLOR_BLACK);
+		MYUCG->drawFrame( _col,(_select+1)*25+3,238,25 );  // blank old frame
+		MYUCG->setColor(COLOR_WHITE);
+		ESP_LOGI(FNAME,"rot %d", _select );
+		MYUCG->drawFrame( _col,(_select+1)*25+3,238,25 );  // draw new frame
+	}
+}
+
+void SetupMenuChar::up(int count) {
+	rot(count);
+}
+void SetupMenuChar::down(int count) {
+	rot(-count);
+}
+
+void SetupMenuChar::longPress(){
+	press();
+}
+
+void SetupMenuChar::press()
+{
+	ESP_LOGI(FNAME,"press() ext handler: %d _select: %d", bits._ext_handler, _select );
+
+	SavedDelay(bits._save);
+	if ( helptext ) {
+		_parent->menuSetTop();
+	}
+	if( _action != 0 ){
+		ESP_LOGI(FNAME,"calling action in press %d", _select );
+		(*_action)( this );
+	}
+	if( _select_save != _select && bits._restart ) {
+		_restart = true;
+	}
+	if( bits._end_setup ) {
+		exit(-1);
+		return;
+	}
+	exit();
 }
 
 const char *SetupMenuChar::value() const
 {
-	return getEntry();
+	// ESP_LOGI(FNAME,"getEntry() select:%d", _select );
+	return _values[ _select ];
 }
 
 bool SetupMenuChar::existsEntry( std::string ent ){
@@ -34,14 +156,6 @@ bool SetupMenuChar::existsEntry( std::string ent ){
 void SetupMenuChar::addEntry( const char* ent ) {
 	_values.push_back( ent ); _numval++;
 
-}
-
-void SetupMenuChar::setSelect( int sel ) {
-	_select = (int16_t)sel;
-}
-
-int SetupMenuChar::getSelect() {
-	return (int)_select;
 }
 
 void SetupMenuChar::addEntryList( const char ent[][4], int size )
@@ -74,121 +188,11 @@ void SetupMenuChar::delEntry( const char* ent ) {
 		}
 }
 
-SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuChar *p), 
-								bool save, char *achar, uint32_t index, bool ext_handler, bool end_menu ) :
-	MenuEntry()
-{
-	ESP_LOGI(FNAME,"SetupMenuChar( %s ), char: %c", title, *achar );
-	bits._ext_handler = ext_handler;
-	_title = title;
-	_select = 0;
-	_select_save = 0;
-	bits._end_setup = end_menu;
-	_mychar = 0;
-	_char_index = index;
-	if( achar ) {
-		_mychar = achar+_char_index;
-	}
-	_numval = 0;
-	bits._restart = restart;
-	_action = action;
-	bits._save = save;
-
+int SetupMenuChar::getSelect() {
+	return (int)_select;
 }
 
-void SetupMenuChar::display( int mode ){
-
-	ESP_LOGI(FNAME,"display() title:%s action: %x", _title, (int)(_action));
-	clear();
-	if( bits._ext_handler ){  // handling is done only in action method
-		ESP_LOGI(FNAME,"ext handler");
-	}else
-	{
-		MYUCG->setPrintPos(1,25);
-		ESP_LOGI(FNAME,"Title: %s ", _title );
-		MYUCG->printf("<< %s",_title);
-		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
-		if( _numval > 9 ){
-			MYUCG->setPrintPos( 1, 50 );
-			MYUCG->printf( "%s                ", _values[_select] );
-		}else
-		{
-			for( int i=0; i<_numval && i<+10; i++ )	{
-				MYUCG->setPrintPos( 1, 50+25*i );
-				MYUCG->print( _values[i] );
-			}
-			MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );
-		}
-
-		showhelp();
-	}
+void SetupMenuChar::setSelect( int sel ) {
+	_select = (int16_t)sel;
 }
 
-void SetupMenuChar::down(int count)
-{
-	if( _numval > 9 ){
-		while( count ) {
-			if( (_select) > 0 )
-				(_select)--;
-			count--;
-		}
-		MYUCG->setPrintPos( 1, 50 );
-		MYUCG->setFont(ucg_font_ncenR14_hr, true );
-		MYUCG->printf("%s                  ",_values[_select] );
-	}else {
-		MYUCG->setColor(COLOR_BLACK);
-		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
-		MYUCG->setColor(COLOR_WHITE);
-		if( (_select) >  0 )
-			(_select)--;
-		ESP_LOGI(FNAME,"val down %d", _select );
-		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
-	}
-}
-
-void SetupMenuChar::up(int count)
-{
-	if( _numval > 9 )
-	{
-		while( count ) {
-			if( (_select) <  _numval-1 )
-				(_select)++;
-			count--;
-		}
-		MYUCG->setPrintPos( 1, 50 );
-		MYUCG->setFont(ucg_font_ncenR14_hr, true );
-		MYUCG->printf("%s                   ", _values[_select] );
-	}else {
-		MYUCG->setColor(COLOR_BLACK);
-		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
-		MYUCG->setColor(COLOR_WHITE);
-		if ( (_select) < _numval-1 )
-			(_select)++;
-		ESP_LOGI(FNAME,"val up %d", _select );
-		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
-	}
-}
-
-void SetupMenuChar::longPress(){
-	press();
-}
-
-void SetupMenuChar::press()
-{
-	ESP_LOGI(FNAME,"press() ext handler: %d _select: %d", bits._ext_handler, _select );
-
-	SavedDelay(bits._save);
-	_parent->menuSetTop();
-	if( _action != 0 ){
-		ESP_LOGI(FNAME,"calling action in press %d", _select );
-		(*_action)( this );
-	}
-	if( _select_save != _select && bits._restart ) {
-		_restart = true;
-	}
-	if( bits._end_setup ) {
-		exit(-1);
-		return;
-	}
-	exit();
-}

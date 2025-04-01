@@ -375,7 +375,7 @@ int data_monS2(SetupMenuSelect *p)
 }
 
 int update_id(SetupMenuChar *p) {
-	const char *c = p->getEntry();
+	const char *c = p->value();
 	ESP_LOGI(FNAME,"New Letter %c Index: %d", *c, (int)p->getCharIndex() );
 	char id[10] = { 0 };
 	strcpy(id, custom_wireless_id.get().id);
@@ -1618,7 +1618,7 @@ void options_menu_create_wireless_custom_id(SetupMenu *top) {
 	top->addEntry(c4);
 	top->addEntry(c5);
 	top->addEntry(c6);
-	static const char keys[][4] { "\0", "0", "1", "2", "3", "4", "5", "6", "7",
+	static const char keys[][4] { "", "0", "1", "2", "3", "4", "5", "6", "7",
 			"8", "9", "-", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
 			"K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
 			"X", "Y", "Z" };

@@ -635,18 +635,6 @@ void SetupMenu::enter()
 	MenuEntry::enter();
 }
 
-// void SetupMenu::exit(int levels)
-// {
-// 	// ESP_LOGI(FNAME,"delete_childs() %d", _childs.size() );
-// 	// if (!_childs.empty()) {
-// 	// 	for ( auto chld : _childs ) {
-// 	// 		delete chld;
-// 	// 	}
-// 	// 	_childs.clear();
-// 	// }
-// 	MenuEntry::exit(levels);
-// }
-
 void SetupMenu::display(int mode)
 {
 	xSemaphoreTake(display_mutex, portMAX_DELAY);
@@ -721,8 +709,6 @@ const MenuEntry* SetupMenu::findMenu(const char *title) const
 void SetupMenu::up(int count)
 {
 	// ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
-	// if (focus)
-	// 	return;
 	MYUCG->setColor(COLOR_BLACK);
 	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	MYUCG->setColor(COLOR_WHITE);
@@ -740,8 +726,6 @@ void SetupMenu::up(int count)
 void SetupMenu::down(int count)
 {
 	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
-	// if (focus)
-	// 	return;
 	MYUCG->setColor(COLOR_BLACK);
 	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	MYUCG->setColor(COLOR_WHITE);
@@ -755,7 +739,6 @@ void SetupMenu::down(int count)
 	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 }
 
-
 void SetupMenu::press()
 {
 	ESP_LOGI(FNAME,"press() inSet %d highl: %d", gflags.inSetup, highlight );
@@ -768,17 +751,6 @@ void SetupMenu::press()
 		if ((highlight >= 0) && (highlight < _childs.size())) {
 			_childs[highlight]->enter();
 		}
-	}
-}
-
-void SetupMenu::escape()
-{
-	if (gflags.inSetup) {
-		ESP_LOGI(FNAME,"escape now Setup Menu ++++++++++++++++++++++++");
-		// put this in root exit
-		// _display->clear();
-		// _display->doMenu(false);
-		// gflags.inSetup = false;
 	}
 }
 

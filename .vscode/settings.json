@@ -86,7 +86,8 @@
         "shared_mutex": "cpp",
         "graphicscontext": "cpp",
         "state": "cpp",
-        "timer": "cpp"
+        "timer": "cpp",
+        "*.inc": "cpp"
     },
     "idf.espIdfPath": "/home/hjr//opt/esp-idf_5",
     "idf.toolsPath": "/home/hjr/.espressif",

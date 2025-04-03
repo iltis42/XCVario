@@ -3,7 +3,7 @@
 
 #include "SetupNG.h"
 #include "sensor.h"
-#include "logdefnone.h"
+#include "logdef.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>

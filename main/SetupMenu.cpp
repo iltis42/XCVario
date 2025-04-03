@@ -712,6 +712,7 @@ static int modulo(int a, int b) {
 
 void SetupMenu::rot(int count)
 {
+	count = count/abs(count); // no progression for the menu (count is never 0)
 	ESP_LOGI(FNAME,"SetupMenu::rot %d %d", highlight, _childs.size() );
 	MYUCG->setColor(COLOR_BLACK);
 	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);

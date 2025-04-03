@@ -14,12 +14,13 @@
  **
  ***********************************************************************/
 
-#include <cmath>
-#include <math.h>
 #include "CircleWind.h"
-#include "logdef.h"
 #include "sensor.h"
 #include "SetupNG.h"
+#include "logdefnone.h"
+
+#include <cmath>
+#include <math.h>
 
 
 /*

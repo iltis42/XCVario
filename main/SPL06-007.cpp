@@ -197,13 +197,13 @@ double SPL06_007::get_pcomp(bool &ok)
 			break;
 		}
 	}
-	if( !ok ){
-		ESP_LOGE(FNAME,"Sensor temp and pressure ready bits not set %02x", status );
-		return last_p;
-	}
-	if( i>0 ){
-		ESP_LOGW(FNAME,"Sensor temp and pressure ready bits took %d attempts", i );
-	}
+	// if( !ok ){
+	// 	ESP_LOGE(FNAME,"Sensor temp and pressure ready bits not set %02x", status );
+	// 	return last_p;
+	// }
+	// if( i>0 ){
+	// 	ESP_LOGW(FNAME,"Sensor temp and pressure ready bits took %d attempts", i );
+	// }
 	double traw_sc = get_traw_sc( ok_t );
 	double praw_sc = get_praw_sc( ok_p );
 	if( !ok_t || !ok_p ){

@@ -14,7 +14,7 @@
 #include "KalmanMPU6050.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/NMEA.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <cmath>
 

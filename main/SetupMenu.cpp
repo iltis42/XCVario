@@ -748,22 +748,19 @@ void SetupMenu::longPress()
 void vario_menu_create_damping(SetupMenu *top) {
 	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", 2.0, 10.0,
 			0.1, vario_setup, false, &vario_delay);
-	vda->setHelp(
-			"Response time, time constant of Vario low pass kalman filter");
+	vda->setHelp("Response time, time constant of Vario low pass filter");
 	top->addEntry(vda);
 
 	SetupMenuValFloat *vdav = new SetupMenuValFloat("Averager", "sec", 2.0,
 			60.0, 1, 0, false, &vario_av_delay);
-	vdav->setHelp(
-			"Response time, time constant of digital Average Vario Display");
+	vdav->setHelp("Response time, time constant of digital Average Vario Display");
 	top->addEntry(vdav);
 }
 
 void vario_menu_create_meanclimb(SetupMenu *top) {
 	SetupMenuValFloat *vccm = new SetupMenuValFloat("Minimum climb", "", 0.0,
 			2.0, 0.1, 0, false, &core_climb_min);
-	vccm->setHelp(
-			"Minimum climb rate that counts for arithmetic mean climb value");
+	vccm->setHelp("Minimum climb rate that counts for arithmetic mean climb value");
 	top->addEntry(vccm);
 
 	SetupMenuValFloat *vcch = new SetupMenuValFloat("Duration", "min", 1, 300,
@@ -900,11 +897,8 @@ void vario_menu_create(SetupMenu *vae) {
 	vga->setPrecision(0);
 	vae->addEntry(vga);
 
-	SetupMenuSelect *vlogscale = new SetupMenuSelect("Log. Scale", RST_NONE, 0,
-			true, &log_scale);
-	vlogscale->setHelp("Use a logarithmic scale in the vario gauge");
-	vlogscale->addEntry("DISABLE");
-	vlogscale->addEntry("ENABLE");
+	SetupMenuSelect *vlogscale = new SetupMenuSelect("Log. Scale", RST_NONE, 0, true, &log_scale);
+	vlogscale->mkBinary();
 	vae->addEntry(vlogscale);
 
 	SetupMenuSelect *vamod = new SetupMenuSelect("Mode", RST_NONE, 0, true,
@@ -924,12 +918,9 @@ void vario_menu_create(SetupMenu *vae) {
 	nemod->addEntry("Relative");
 	vae->addEntry(nemod);
 
-	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, 0, true,
-			&ps_display);
-	sink->setHelp(
-			"Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
-	sink->addEntry("DISABLE");
-	sink->addEntry("ENABLE");
+	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, 0, true, &ps_display);
+	sink->setHelp("Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
+	sink->mkBinary();
 	vae->addEntry(sink);
 
 	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, 0,
@@ -940,11 +931,9 @@ void vario_menu_create(SetupMenu *vae) {
 	ncolor->addEntry("Red");
 	vae->addEntry(ncolor);
 
-	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_ON_EXIT, 0,
-			true, &screen_centeraid);
+	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_ON_EXIT, 0, true, &screen_centeraid);
 	scrcaid->setHelp("Enable/disable display of centering aid (reboots)");
-	scrcaid->addEntry("Disable");
-	scrcaid->addEntry("Enable");
+	scrcaid->mkBinary();
 	vae->addEntry(scrcaid);
 
 	SetupMenu *vdamp = new SetupMenu("Vario Damping", vario_menu_create_damping);
@@ -973,12 +962,10 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	oc->setHelp("Maximum tone frequency variation");
 	top->addEntry(oc);
 
-	SetupMenuSelect *dt = new SetupMenuSelect("Dual Tone", RST_NONE,
-			audio_setup_s, true, &dual_tone);
+	SetupMenuSelect *dt = new SetupMenuSelect("Dual Tone", RST_NONE, audio_setup_s, true, &dual_tone);
 	dt->setHelp(
 			"Select dual tone modue aka ilec sound (di/da/di), or single tone (di/di/di) mode");
-	dt->addEntry("Disable");       // 0
-	dt->addEntry("Enable");        // 1
+	dt->mkBinary();
 	top->addEntry(dt);
 
 	SetupMenuValFloat *htv = new SetupMenuValFloat("Dual Tone Pitch", "%", 0,
@@ -1009,34 +996,21 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 			true, &audio_variable_frequency);
 	advarto->setHelp(
 			"Enable audio frequency updates within climbing tone intervals, disable keeps frequency constant");
-	advarto->addEntry("Disable");       // 0
-	advarto->addEntry("Enable");        // 1
+	advarto->mkBinary();
 	top->addEntry(advarto);
 }
 
 void audio_menu_create_deadbands(SetupMenu *top) {
-	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", -5.0,
-			0, 0.1, 0, false, &deadband_neg);
-	dbminlv->setHelp(
-			"Lower (sink) limit of deadband for Audio mute function when in Vario mode");
+	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", -5.0, .0, 0.1, nullptr, false, &deadband_neg);
 	top->addEntry(dbminlv);
 
-	SetupMenuValFloat *dbmaxlv = new SetupMenuValFloat("Upper Vario", "", 0,
-			5.0, 0.1, 0, false, &deadband);
-	dbmaxlv->setHelp(
-			"Upper (climb) limit of deadband for Audio mute function when in Vario mode");
+	SetupMenuValFloat *dbmaxlv = new SetupMenuValFloat("Upper Vario", "", .0, 5.0, 0.1, nullptr, false, &deadband);
 	top->addEntry(dbmaxlv);
 
-	SetupMenuValFloat *dbmaxls2fn = new SetupMenuValFloat("Lower S2F", "",
-			-25.0, 0, 1, 0, false, &s2f_deadband_neg);
-	dbmaxls2fn->setHelp(
-			"Negative (too slow) speed deviation limit of deadband in S2F mode");
+	SetupMenuValFloat *dbmaxls2fn = new SetupMenuValFloat("Lower S2F", "", -25.0, .0, 1, nullptr, false, &s2f_deadband_neg);
 	top->addEntry(dbmaxls2fn);
 
-	SetupMenuValFloat *dbmaxls2f = new SetupMenuValFloat("Upper S2F", "", 0,
-			25.0, 1, 0, false, &s2f_deadband);
-	dbmaxls2f->setHelp(
-			"Positive (too fast) speed deviation limit of deadband in S2F mode");
+	SetupMenuValFloat *dbmaxls2f = new SetupMenuValFloat("Upper S2F", "", .0, 25.0, 1, nullptr, false, &s2f_deadband);
 	top->addEntry(dbmaxls2f);
 }
 
@@ -1094,8 +1068,7 @@ void audio_menu_create_volume(SetupMenu *top) {
 			true, &audio_split_vol);
 	amspvol->setHelp(
 			"Enable independent audio volume in SpeedToFly and Vario modes, disable for one volume for both");
-	amspvol->addEntry("Disable");      // 0
-	amspvol->addEntry("Enable");       // 1
+	amspvol->mkBinary();
 	top->addEntry(amspvol);
 }
 
@@ -1185,29 +1158,20 @@ void glider_menu_create_polarpoints(SetupMenu *top) {
 	wil->setHelp(
 			"Wingloading that corresponds to the 3 value pairs for speed/sink of polar");
 	top->addEntry(wil);
-	SetupMenuValFloat *pov1 = new SetupMenuValFloat("Speed 1", "km/h", 50.0,
-			120.0, 1, 0, false, &polar_speed1);
+	SetupMenuValFloat *pov1 = new SetupMenuValFloat("Speed 1", "km/h", 50.0, 120.0, 1, nullptr, false, &polar_speed1);
 	pov1->setHelp("Speed 1, near minimum sink from polar e.g. 80 km/h");
 	top->addEntry(pov1);
-	SetupMenuValFloat *pos1 = new SetupMenuValFloat("Sink  1", "m/s", -3.0, 0.0,
-			0.01, 0, false, &polar_sink1);
-	pos1->setHelp("Sink at Speed 1 from polar");
+	SetupMenuValFloat *pos1 = new SetupMenuValFloat("Sink  1", "m/s", -3.0, 0.0, 0.01, nullptr, false, &polar_sink1);
 	top->addEntry(pos1);
-	SetupMenuValFloat *pov2 = new SetupMenuValFloat("Speed 2", "km/h", 70.0,
-			180.0, 1, 0, false, &polar_speed2);
+	SetupMenuValFloat *pov2 = new SetupMenuValFloat("Speed 2", "km/h", 70.0, 180.0, 1, nullptr, false, &polar_speed2);
 	pov2->setHelp("Speed 2 for a moderate cruise from polar e.g. 120 km/h");
 	top->addEntry(pov2);
-	SetupMenuValFloat *pos2 = new SetupMenuValFloat("Sink  2", "m/s", -5.0, 0.0,
-			0.01, 0, false, &polar_sink2);
-	pos2->setHelp("Sink at Speed 2 from polar");
+	SetupMenuValFloat *pos2 = new SetupMenuValFloat("Sink  2", "m/s", -5.0, 0.0, 0.01, nullptr, false, &polar_sink2);
 	top->addEntry(pos2);
-	SetupMenuValFloat *pov3 = new SetupMenuValFloat("Speed 3", "km/h", 100.0,
-			250.0, 1, 0, false, &polar_speed3);
+	SetupMenuValFloat *pov3 = new SetupMenuValFloat("Speed 3", "km/h", 100.0, 250.0, 1, nullptr, false, &polar_speed3);
 	pov3->setHelp("Speed 3 for a fast cruise from polar e.g. 170 km/h");
 	top->addEntry(pov3);
-	SetupMenuValFloat *pos3 = new SetupMenuValFloat("Sink  3", "m/s", -6.0, 0.0,
-			0.01, 0, false, &polar_sink3);
-	pos3->setHelp("Sink at Speed 3 from polar");
+	SetupMenuValFloat *pos3 = new SetupMenuValFloat("Sink  3", "m/s", -6.0, 0.0, 0.01, nullptr, false, &polar_sink3);
 	top->addEntry(pos3);
 }
 
@@ -1227,23 +1191,15 @@ void glider_menu_create(SetupMenu *poe) {
 	pa->setHelp("Adjust the polar at 3 points, in the commonly used metric system",230);
 	poe->addEntry(pa);
 
-	SetupMenuValFloat *maxbal = new SetupMenuValFloat("Max Ballast", "liters",
-			0, 500, 1, 0, false, &polar_max_ballast);
-	maxbal->setHelp(
-			"Maximum water ballast for selected glider, to sync with XCSoar using fraction of max ballast");
+	SetupMenuValFloat *maxbal = new SetupMenuValFloat("Max Ballast", "liters", 0, 500, 1, nullptr, false, &polar_max_ballast);
 	poe->addEntry(maxbal);
 
-	SetupMenuValFloat *wingarea = new SetupMenuValFloat("Wing Area", "m2", 0,
-			50, 0.1, 0, false, &polar_wingarea);
-	wingarea->setHelp(
-			"Wing area for the selected glider - adjustment to support wing extensions or new types, in square meters");
+	SetupMenuValFloat *wingarea = new SetupMenuValFloat("Wing Area", "m2", 0, 50, 0.1, nullptr, false, &polar_wingarea);
 	poe->addEntry(wingarea);
 
-	SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", 0,
-			1000, 1, empty_weight_adj, false, &empty_weight);
+	SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", 0, 1000, 1, empty_weight_adj, false, &empty_weight);
 	fixball->setPrecision(0);
-	fixball->setHelp(
-			"Net rigged weight of the glider, according to the weight and balance plan");
+	fixball->setHelp("Net rigged weight of the glider, according to the weight and balance plan");
 	poe->addEntry(fixball);
 }
 
@@ -1343,15 +1299,12 @@ void options_menu_create_compasswind_compass_nmea(SetupMenu *top) {
 	top->addEntry(nmeaHdt);
 }
 
+// Fixme goes to devices
 void options_menu_create_compasswind_compass(SetupMenu *top) {
-	SetupMenuSelect *compSensor = new SetupMenuSelect("Sensor Option",
-			RST_ON_EXIT, compass_ena, true, &compass_enable);
+	SetupMenuSelect *compSensor = new SetupMenuSelect("Sensor Option", RST_NONE, compass_ena, true, &compass_enable);
 	compSensor->addEntry("Disable");
-	compSensor->addEntry("Enable I2C sensor");
-	compSensor->addEntry("Disable");
-	compSensor->addEntry("Enable CAN sensor");
-	compSensor->setHelp(
-			"Option to enable/disable the Compass Sensor (reboots)");
+	compSensor->addEntry("I2C sensor");
+	compSensor->addEntry("CAN sensor");
 	top->addEntry(compSensor);
 
 	SetupMenuSelect *compSensorCal = new SetupMenuSelect("Sensor Calibration",
@@ -1975,11 +1928,9 @@ void system_menu_create_hardware_rotary(SetupMenu *top) {
 	rd->addEntry("Volume");
 	rd->addEntry("MC Value");
 
-	SetupMenuSelect *sact = new SetupMenuSelect("Setup Menu by", RST_NONE, 0,
-			true, &menu_long_press);
+	SetupMenuSelect *sact = new SetupMenuSelect("Enter Setup by", RST_NONE, nullptr, true, &menu_long_press);
 	top->addEntry(sact);
-	sact->setHelp(
-			"Select Mode to activate setup menu either by short press or long press > 0.4 seconds");
+	sact->setHelp("Activate setup menu either by short or long button press");
 	sact->addEntry("Short Press");
 	sact->addEntry("Long Press");
 }
@@ -2153,16 +2104,13 @@ void system_menu_create_hardware(SetupMenu *top) {
 void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
 	SetupMenuSelect *stawaen = new SetupMenuSelect("Stall Warning", RST_NONE, 0,
 			false, &stall_warning);
-	top->addEntry(stawaen);
 	stawaen->setHelp(
 			"Enable alarm sound when speed goes below configured stall speed (until 30% less)");
-	stawaen->addEntry("Disable");
-	stawaen->addEntry("Enable");
+	stawaen->mkBinary();
+	top->addEntry(stawaen);
 
-	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", 20,
-			200, 1, 0, true, &stall_speed, RST_ON_EXIT);
-	staspe->setHelp(
-			"Configure stalling speed for corresponding aircraft type and reboot (reboots)");
+	// Fixme no need to reboot
+	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", 20, 200, 0, nullptr, true, &stall_speed);
 	top->addEntry(staspe);
 }
 

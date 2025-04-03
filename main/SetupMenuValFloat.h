@@ -30,8 +30,7 @@ public:
 	void setPrecision( int prec );
 	const char *value() const override;
 	float getFloat() const { return _nvs->get(); }
-	void up( int count );  // step up to parent
-	void down( int count );
+	void rot( int count );
 	void press();
 	void longPress();
 	void setStep( float val ) { _step = val; };

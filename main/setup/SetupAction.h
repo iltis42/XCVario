@@ -24,8 +24,7 @@ public:
 	const char* value() const override { return ""; };
 	int getCode() const { return _code; }
 	// Rotoary API
-	void up(int count) override {};
-	void down(int count) override {};
+	void rot(int count) override {};
 	void press() override;
 	void longPress() override;
 

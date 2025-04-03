@@ -31,8 +31,7 @@ public:
 	void       delEntry(MenuEntry* item);
 	const MenuEntry* findMenu(const char *title) const;
 
-	void up( int count ) override;
-	void down( int count ) override;
+	void rot( int count ) override;
 	void press() override;
 	void longPress() override {};
 
@@ -47,6 +46,6 @@ public:
 protected:
 	void (*populateMenu)(SetupMenu*);
 	std::vector<MenuEntry*>  _childs;
-	int8_t  highlight = -1;
+	int highlight = -1;
 };
 

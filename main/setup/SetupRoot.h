@@ -25,8 +25,7 @@ public:
     void exit(int levels=0) override;
     int getActiveScreen() const  { return active_screen; }
     // interaction
-    void up(int count) override;
-	void down(int count) override;
+    void rot(int count) override;
 	void press() override;
 	void longPress() override;
 	void escape() override;

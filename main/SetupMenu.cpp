@@ -706,43 +706,24 @@ const MenuEntry* SetupMenu::findMenu(const char *title) const
 	return nullptr;
 }
 
-void SetupMenu::up(int count)
-{
-	// ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
-	MYUCG->setColor(COLOR_BLACK);
-	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	MYUCG->setColor(COLOR_WHITE);
-	count &= 7;     // limit to some maximum
-	while( /* highlight <= (int)(_childs.size()-1) && */ count > 0 ){
-		highlight++;
-		count--;
-	}
-	if (highlight > (int) (_childs.size() - 1)) {
-		highlight = -1;
-	}
-	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
+static int modulo(int a, int b) {
+	return (a % b + b) % b;
 }
 
-void SetupMenu::down(int count)
+void SetupMenu::rot(int count)
 {
-	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
+	ESP_LOGI(FNAME,"SetupMenu::rot %d %d", highlight, _childs.size() );
 	MYUCG->setColor(COLOR_BLACK);
 	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	MYUCG->setColor(COLOR_WHITE);
-	count &= 7;     // limit to some maximum
-	while( /* (highlight  >= -1) && */ count > 0 ){
-		highlight--;
-		count--;
-	}
-	if (highlight < -1)
-		highlight = (int) (_childs.size() - 1);
+
+	highlight = modulo(highlight+1+count, _childs.size()+1) - 1;
 	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 }
 
 void SetupMenu::press()
 {
 	ESP_LOGI(FNAME,"press() inSet %d highl: %d", gflags.inSetup, highlight );
-	// enter/exit a level of setup menu
 	if (highlight == -1) {
 		_parent->menuSetTop();
 		exit();

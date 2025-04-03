@@ -117,13 +117,8 @@ void ObserverTask( void *arg )
 				knob.sendRelease();
 			} else {
 				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
-				ESP_LOGI(FNAME, "Rotation raw %x, %d, step pt %dus", event, step, pulse_time);
-				if( step < 0 ) {
-					knob.sendDown(abs(step));
-				}
-				else {
-					knob.sendUp(step);
-				}
+				ESP_LOGI(FNAME, "Rotation step %d, time %dus", step, pulse_time);
+				knob.sendRot(step);
 			}
 		}
 
@@ -251,21 +246,12 @@ esp_err_t ESPRotary::updateRotDir()
 	return pcnt_channel_set_edge_action(pcnt_chan, rot_action, PCNT_CHANNEL_EDGE_ACTION_HOLD);
 }
 
-void ESPRotary::sendUp( int diff ) const
+void ESPRotary::sendRot( int diff ) const
 {
 	// ESP_LOGI(FNAME,"Rotary down action");
 	if (!observers.empty()) {
-		observers.top()->up( diff );
+		observers.top()->rot( diff );
 		xQueueReset(buttonQueue); // rince queueed up events due to intermediate polling
-	}
-}
-
-void ESPRotary::sendDown( int diff ) const
-{
-	// ESP_LOGI(FNAME,"Rotary up action");
-	if (!observers.empty()) {
-		observers.top()->down( diff );
-		xQueueReset(buttonQueue);
 	}
 }
 

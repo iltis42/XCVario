@@ -102,45 +102,18 @@ float SetupMenuValFloat::step( float instep ){
 	return step;
 }
 
-void SetupMenuValFloat::up( int count )
+void SetupMenuValFloat::rot( int count )
 {
-	// ESP_LOGI(FNAME,"val up %d times ", count );
+	// ESP_LOGI(FNAME,"val rot %d times ", count );
 	_value = _nvs->get();
-	// float start = _value;
-	int _count = std::pow( count, _dynamic );
-	while( (_value < _max) && _count ) {
-		_value += step( _step );
-		_count--;
-	}
-
-	if( _value > _max )
-		_value = _max;
-
-	// ESP_LOGI(FNAME,"val up diff=%f", _value-start );
-	_nvs->set(_value );
-	displayVal();
-	if( _action != 0 ) {
-		(*_action)( this );
-	}
-}
-
-void SetupMenuValFloat::down( int count )
-{
-	// ESP_LOGI(FNAME,"val down %d times ", count );
-	_value = _nvs->get();
-	// float start = _value;
-	int _count = std::pow( count, _dynamic );
-	while( (_value > _min) && _count ) {
-		_value -= step( _step );
-		_count --;
-	}
+	_value += std::pow( abs(count), _dynamic ) * step(_step) * sign(count);
 
 	if( _value < _min )
 		_value = _min;
-	_nvs->set( _value );
+	else if( _value > _max )
+		_value = _max;
 
-	// ESP_LOGI(FNAME,"val down diff=%f", start-_value );
-
+	_nvs->set(_value );
 	displayVal();
 	if( _action != 0 ) {
 		(*_action)( this );

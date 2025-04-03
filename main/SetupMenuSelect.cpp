@@ -148,52 +148,24 @@ void SetupMenuSelect::display(int mode)
 	}
 }
 
-void SetupMenuSelect::down(int count)
+void SetupMenuSelect::rot(int count)
 {
-	if( _numval > 9 ){
-		while( count ) {
-			if( (_select) > 0 )
-				(_select)--;
-			count--;
-		}
-		MYUCG->setPrintPos( 1, 50 );
-		MYUCG->setFont(ucg_font_ncenR14_hr, true );
-		MYUCG->printf("%s                  ",_values[_select] );
-	}else {
-		MYUCG->setColor(COLOR_BLACK);
-		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
-		MYUCG->setColor(COLOR_WHITE);
-		while( (_select) >  0 && count){
-			(_select)--;
-			count--;
-		}
-		ESP_LOGI(FNAME,"val down %d", _select );
-		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
-	}
-}
+	int prev_select = _select;
+	_select += count;
+	if ( _select < 0 ) { _select = 0; }
+	else if ( _select >= _values.size() ) { _select = _values.size()-1; }
 
-void SetupMenuSelect::up(int count)
-{
-	if( _numval > 9 )
+	if( _show_inline )
 	{
-		while( count ) {
-			if( (_select) <  _numval-1 )
-				(_select)++;
-			count--;
-		}
-		MYUCG->setPrintPos( 1, 50 );
+		MYUCG->setPrintPos(_col, _row);
 		MYUCG->setFont(ucg_font_ncenR14_hr, true );
-		MYUCG->printf("%s                   ", _values[_select] );
+		MYUCG->printf(FORMATSTRING_AND_SPACE,_values[_select] );
 	}else {
 		MYUCG->setColor(COLOR_BLACK);
-		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // blank old frame
+		MYUCG->drawFrame( _col,(prev_select+1)*25+3,238,25 );  // blank old frame
 		MYUCG->setColor(COLOR_WHITE);
-		while ( (_select) < _numval-1 && count ){
-			(_select)++;
-			count--;
-		}
-		ESP_LOGI(FNAME,"val up %d", _select );
-		MYUCG->drawFrame( 1,(_select+1)*25+3,238,25 );  // draw new frame
+		ESP_LOGI(FNAME,"rot %d", _select );
+		MYUCG->drawFrame( _col,(_select+1)*25+3,238,25 );  // draw new frame
 	}
 }
 

@@ -32,8 +32,7 @@ class RotaryObserver
 public:
 	RotaryObserver() {};
 	virtual ~RotaryObserver() {};
-	virtual void up(int count) = 0;
-	virtual void down(int count) = 0;
+	virtual void rot(int count) = 0;
 	virtual void press() = 0;
 	virtual void longPress() = 0;
 	virtual void release() = 0;
@@ -63,8 +62,7 @@ public:
 	void setLongPressTimeout(int lptime_ms) { lp_duration = (uint64_t)1000 * lptime_ms; }
 
 	// observer feed
-	void sendUp(int diff) const;
-	void sendDown(int diff) const;
+	void sendRot(int diff) const;
 	void sendPress() const;
 	void sendRelease() const;
 	void sendLongPress() const;

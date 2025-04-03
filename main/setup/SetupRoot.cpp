@@ -99,9 +99,9 @@ void SetupRoot::exit(int levels)
     _display->doMenu(false);
 }
 
-void SetupRoot::up(int count)
+void SetupRoot::rot(int count)
 {
-    ESP_LOGI(FNAME,"root: up");
+    ESP_LOGI(FNAME,"root: rot");
     if (rot_default.get() == 1) {
         // MC Value
         float mc = MC.get();
@@ -109,6 +109,9 @@ void SetupRoot::up(int count)
         mc += step * count;
         if (mc > 9.9) {
             mc = 9.9;
+        }
+        else if (mc < 0.0) {
+            mc = 0.0;
         }
         MC.set(mc);
     }
@@ -118,37 +121,12 @@ void SetupRoot::up(int count)
         if (vol < 1.5) {
             vol = 1.5;
         }
-        for (int i = 0; i < count; i++) {
-            vol = vol * 1.33;
-        }
+        vol = vol * std::powf(1.33f, count);
         if (vol > max_volume.get()) {
             vol = max_volume.get();
         }
-        audio_volume.set(vol);
-    }
-}
-
-void SetupRoot::down(int count)
-{
-    ESP_LOGI(FNAME,"root: down");
-    if (rot_default.get() == 1) {
-        // MC Value
-        float mc = MC.get();
-        float step = Units::Vario2ms(0.1);
-        mc -= step * count;
-        if (mc < 0.0) {
-            mc = 0.0;
-        }
-        MC.set(mc);
-    } else {
-        // Volume
-        float vol = audio_volume.get();
-        for (int i = 0; i < count; i++) {
-            vol = vol * 0.77;
-        }
-        // allow smaller volumes to better support new 50% scale mode of ESP32 sine generator (default is 25%)
-        if (vol < 1.5) {
-            vol = 0;
+        else if (vol < 1.5) {
+            vol = 1.5;
         }
         audio_volume.set(vol);
     }

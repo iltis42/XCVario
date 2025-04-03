@@ -21,8 +21,6 @@ public:
 	void enter() override;
 	void display(int mode=0) override;
 	void rot(int count);
-	void up( int count ) override;
-	void down( int count ) override;
 	void press() override;
 	void longPress() override;
 	void escape() override {};

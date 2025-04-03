@@ -28,8 +28,7 @@ public:
 	void display(int) override {}
 	const char* value() const override { return ""; }
 	void press() override;
-	void up( int count ) override {};
-	void down( int count ) override {};
+	void rot( int count ) override {};
 	void longPress() override;
 	void escape() override {};
 	int maxChar( const char *s, int pos, int len, bool binary );

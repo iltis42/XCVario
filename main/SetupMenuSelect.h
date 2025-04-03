@@ -19,13 +19,12 @@ public:
 	virtual ~SetupMenuSelect() = default;
 	void enter() override;
 	void display(int mode=0) override;
+	void rot(int count);
 	bool existsEntry( std::string ent );
     void addEntry( const char* ent );
 	void addEntryList( const char ent[][4], int size );
 	void delEntry( const char * ent );
 	void updateEntry( const char * ent, int num );
-	void up( int count ) override;
-	void down( int count ) override;
 	void press() override;
 	void longPress() override;
 	const char *value() const override;

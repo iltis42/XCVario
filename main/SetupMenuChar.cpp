@@ -86,32 +86,23 @@ void SetupMenuChar::display(int mode)
 
 void SetupMenuChar::rot(int count)
 {
-	if ( _numval <= 9 ) {
-		count = sign(count);
-	}
+	int prev_select = _select;
 	_select += count;
 	if ( _select < 0 ) { _select = 0; }
-	else if ( _select > _numval ) { _select = _numval; }
+	else if ( _select > _values.size() ) { _select = _values.size(); }
 
-	if( _numval > 9 )
+	if( _values.size() > 9 )
 	{
 		MYUCG->setPrintPos(_col, _row);
 		MYUCG->setFont(ucg_font_ncenR14_hr, true );
-		MYUCG->printf("%s                   ", _values[_select] );
+		MYUCG->printf(FORMATSTRING_AND_SPACE, _values[_select] );
 	}else {
 		MYUCG->setColor(COLOR_BLACK);
-		MYUCG->drawFrame( _col,(_select+1)*25+3,238,25 );  // blank old frame
+		MYUCG->drawFrame( _col,(prev_select+1)*25+3,238,25 );  // blank old frame
 		MYUCG->setColor(COLOR_WHITE);
 		ESP_LOGI(FNAME,"rot %d", _select );
 		MYUCG->drawFrame( _col,(_select+1)*25+3,238,25 );  // draw new frame
 	}
-}
-
-void SetupMenuChar::up(int count) {
-	rot(count);
-}
-void SetupMenuChar::down(int count) {
-	rot(-count);
 }
 
 void SetupMenuChar::longPress(){

@@ -42,12 +42,10 @@ public:
 	void detach();
 };
 
-static void button_isr_handler(void* arg);
-static void longpress_timeout(void *arg);
-static void ObserverTask(void *arg);
 
 class ESPRotary
 {
+private:
 	friend void button_isr_handler(void* arg);
 	friend void longpress_timeout(void *arg);
 	friend void ObserverTask(void *arg);

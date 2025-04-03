@@ -15,9 +15,6 @@
 #include <stack>
 #include <algorithm>
 
-#define ROTARY_SINGLE_INC 0
-#define ROTARY_DOUBLE_INC 1
-
 // the global access to the rotary knob
 ESPRotary *Rotary = nullptr;
 
@@ -100,8 +97,6 @@ static bool IRAM_ATTR pcnt_event_handler(pcnt_unit_handle_t unit, const pcnt_wat
 void ObserverTask( void *arg )
 {
 	ESPRotary &knob = *static_cast<ESPRotary*>(arg);
-	static int old_cnt = 0;
-	int enc_count;
 	while( true ) {
 		// handle button events
 		int event;

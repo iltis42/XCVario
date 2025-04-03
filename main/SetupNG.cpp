@@ -389,7 +389,7 @@ SetupNG<int> 			rt_wl_can( "WLTX_CAN", 0 );
 SetupNG<int> 			can_mode( "CANMOD", CAN_MODE_STANDALONE );
 SetupNG<float> 			master_xcvario( "MSXCV", 0 );
 SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
-SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
+SetupNG<int> 			menu_long_press("MENU_LONG", 1 );
 SetupNG<int> 			menu_screens("MENU_SCR", 0 );
 SetupNG<int> 			screen_gmeter("SCR_GMET", 0, RST_NONE, SYNC_NONE, VOLATILE );
 SetupNG<int> 			screen_horizon("SCR_HORIZ", 0, RST_NONE, SYNC_NONE, VOLATILE );

@@ -736,6 +736,15 @@ void SetupMenu::press()
 	}
 }
 
+void SetupMenu::longPress()
+{
+	if (highlight == -1) {
+		exit(-1); // fast exit
+	} else {
+		press();
+	}
+}
+
 void vario_menu_create_damping(SetupMenu *top) {
 	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", 2.0, 10.0,
 			0.1, vario_setup, false, &vario_delay);

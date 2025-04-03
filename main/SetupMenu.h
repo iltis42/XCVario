@@ -34,7 +34,7 @@ public:
 
 	void rot( int count ) override;
 	void press() override;
-	void longPress() override {};
+	void longPress() override;
 
 	static void catchFocus( bool activate );
 	static bool focus;

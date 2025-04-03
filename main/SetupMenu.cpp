@@ -80,9 +80,9 @@ static void options_menu_create_compasswind_straightwind(SetupMenu *top);
 static void options_menu_create_compasswind_straightwind_limits(SetupMenu *top);
 static void options_menu_create_compasswind_straightwind_filters(SetupMenu *top);
 static void options_menu_create_compasswind_circlingwind(SetupMenu *top);
-static void options_menu_create_wireless(SetupMenu *top);
+// static void options_menu_create_wireless(SetupMenu *top);
 static void options_menu_create_wireless_custom_id(SetupMenu *top);
-static void options_menu_create_wireless_routing(SetupMenu *top);
+// static void options_menu_create_wireless_routing(SetupMenu *top);
 static void options_menu_create_gload(SetupMenu *top);
 
 static void system_menu_create(SetupMenu *top);
@@ -96,7 +96,7 @@ static void system_menu_create_interfaceS1_routing(SetupMenu *top);
 static void system_menu_create_interfaceS2(SetupMenu *top);
 static void system_menu_create_interfaceS2_routing(SetupMenu *top);
 static void system_menu_create_interfaceCAN(SetupMenu *top);
-static void system_menu_create_interfaceCAN_routing(SetupMenu *top);
+// static void system_menu_create_interfaceCAN_routing(SetupMenu *top);
 static void system_menu_create_hardware_type(SetupMenu *top);
 static void system_menu_create_hardware_rotary(SetupMenu *top);
 static void system_menu_create_hardware_rotary_screens(SetupMenu *top);
@@ -334,23 +334,25 @@ int update_wifi_power(SetupMenuValFloat *p) {
 	return 0;
 }
 
-int data_mon(SetupMenuSelect *p) {
-	ItfTarget ch;
-	switch (p->getSelect()) {
-		case 1: ch = ItfTarget(BT_SPP); break;
-		case 2: ch = ItfTarget(WIFI,8880); break;
-		case 3: ch = ItfTarget(WIFI,8881); break;
-		case 4: ch = ItfTarget(WIFI,8882); break;
-		case 5: ch = ItfTarget(S1_RS232); break;
-		case 6: ch = ItfTarget(S2_RS232); break;
-		case 7: ch = ItfTarget(CAN_BUS); break;
-		default: break;
-	}
-	if (ch != ItfTarget()) {
-		ESP_LOGI(FNAME,"data_mon( %d ) ", (int)ch.raw );
-		DM.start(p, ch);
-		return 1;
-	}
+int data_mon(SetupMenuSelect *p)
+{
+	// Fixme rewrite
+	// ItfTarget ch;
+	// switch (p->getSelect()) {
+	// 	case 1: ch = ItfTarget(BT_SPP); break;
+	// 	case 2: ch = ItfTarget(WIFI,8880); break;
+	// 	case 3: ch = ItfTarget(WIFI,8881); break;
+	// 	case 4: ch = ItfTarget(WIFI,8882); break;
+	// 	case 5: ch = ItfTarget(S1_RS232); break;
+	// 	case 6: ch = ItfTarget(S2_RS232); break;
+	// 	case 7: ch = ItfTarget(CAN_BUS); break;
+	// 	default: break;
+	// }
+	// if (ch != ItfTarget()) {
+	// 	ESP_LOGI(FNAME,"data_mon( %d ) ", (int)ch.raw );
+	// 	DM.start(p, ch);
+	// 	return 1;
+	// }
 	return 0;
 }
 
@@ -1317,6 +1319,7 @@ void options_menu_create_compasswind_compass(SetupMenu *top) {
 			"Calibrate Magnetic Sensor, mandatory for operation");
 	top->addEntry(compSensorCal);
 
+	// Fixme replace by WMM
 	SetupMenuValFloat *cd = new SetupMenuValFloat("Setup Declination", "°",
 			-180, 180, 1.0, compassDeclinationAction, false,
 			&compass_declination);
@@ -1520,28 +1523,28 @@ void options_menu_create_compasswind(SetupMenu *top) {
 	top->addEntry(windlog);
 }
 
-void options_menu_create_wireless_routing(SetupMenu *top) {
-	SetupMenuSelect *wloutxcv = new SetupMenuSelect("XCVario", RST_NONE, 0,
-			true, &rt_xcv_wl);
-	wloutxcv->addEntry("Disable");
-	wloutxcv->addEntry("Enable");
-	top->addEntry(wloutxcv);
-	SetupMenuSelect *wloutxs1 = new SetupMenuSelect("S1-RS232", RST_NONE,
-			update_routing, true, &rt_s1_wl);
-	wloutxs1->addEntry("Disable");
-	wloutxs1->addEntry("Enable");
-	top->addEntry(wloutxs1);
-	SetupMenuSelect *wloutxs2 = new SetupMenuSelect("S2-RS232", RST_NONE,
-			update_routing, true, &rt_s2_wl);
-	wloutxs2->addEntry("Disable");
-	wloutxs2->addEntry("Enable");
-	top->addEntry(wloutxs2);
-	SetupMenuSelect *wloutxcan = new SetupMenuSelect("CAN-bus", RST_NONE, 0,
-			true, &rt_wl_can);
-	wloutxcan->addEntry("Disable");
-	wloutxcan->addEntry("Enable");
-	top->addEntry(wloutxcan);
-}
+// void options_menu_create_wireless_routing(SetupMenu *top) {
+// 	SetupMenuSelect *wloutxcv = new SetupMenuSelect("XCVario", RST_NONE, 0,
+// 			true, &rt_xcv_wl);
+// 	wloutxcv->addEntry("Disable");
+// 	wloutxcv->addEntry("Enable");
+// 	top->addEntry(wloutxcv);
+// 	SetupMenuSelect *wloutxs1 = new SetupMenuSelect("S1-RS232", RST_NONE,
+// 			update_routing, true, &rt_s1_wl);
+// 	wloutxs1->addEntry("Disable");
+// 	wloutxs1->addEntry("Enable");
+// 	top->addEntry(wloutxs1);
+// 	SetupMenuSelect *wloutxs2 = new SetupMenuSelect("S2-RS232", RST_NONE,
+// 			update_routing, true, &rt_s2_wl);
+// 	wloutxs2->addEntry("Disable");
+// 	wloutxs2->addEntry("Enable");
+// 	top->addEntry(wloutxs2);
+// 	SetupMenuSelect *wloutxcan = new SetupMenuSelect("CAN-bus", RST_NONE, 0,
+// 			true, &rt_wl_can);
+// 	wloutxcan->addEntry("Disable");
+// 	wloutxcan->addEntry("Enable");
+// 	top->addEntry(wloutxcan);
+// }
 
 void options_menu_create_wireless_custom_id(SetupMenu *top) {
 	SetupMenuChar *c1 = new SetupMenuChar("Letter 1", RST_NONE, update_id,
@@ -1574,69 +1577,70 @@ void options_menu_create_wireless_custom_id(SetupMenu *top) {
 	c6->addEntryList(keys, sizeof(keys) / 4);
 }
 
-void options_menu_create_wireless(SetupMenu *top) {
-	SetupMenuSelect *btm = new SetupMenuSelect("Wireless", RST_ON_EXIT, 0, true,
-			&wireless_type);
-	btm->setHelp(
-			"Activate wireless interface type to connect navigation devices, or to another XCVario as client (reboots)",
-			220);
-	btm->addEntry("Disable");
-	btm->addEntry("Bluetooth");
-	btm->addEntry("Wireless Master");
-	btm->addEntry("Wireless Client");
-	btm->addEntry("Wireless Standalone");
-	btm->addEntry("Bluetooth LE");
-	top->addEntry(btm);
+// Fixme move to devices
+// void options_menu_create_wireless(SetupMenu *top) {
+// 	SetupMenuSelect *btm = new SetupMenuSelect("Wireless", RST_ON_EXIT, 0, true,
+// 			&wireless_type);
+// 	btm->setHelp(
+// 			"Activate wireless interface type to connect navigation devices, or to another XCVario as client (reboots)",
+// 			220);
+// 	btm->addEntry("Disable");
+// 	btm->addEntry("Bluetooth");
+// 	btm->addEntry("Wireless Master");
+// 	btm->addEntry("Wireless Client");
+// 	btm->addEntry("Wireless Standalone");
+// 	btm->addEntry("Bluetooth LE");
+// 	top->addEntry(btm);
 
-	SetupMenu *wlrt = new SetupMenu("WL Routing", options_menu_create_wireless_routing);
-	top->addEntry(wlrt);
-	wlrt->setHelp("Select data source that is routed from/to Wireless BT or WIFI interface");
+// 	SetupMenu *wlrt = new SetupMenu("WL Routing", options_menu_create_wireless_routing);
+// 	top->addEntry(wlrt);
+// 	wlrt->setHelp("Select data source that is routed from/to Wireless BT or WIFI interface");
 
-	SetupMenuValFloat *wifip = new SetupMenuValFloat("WIFI Power", "%", 10.0,
-			100.0, 5.0, update_wifi_power, false, &wifi_max_power);
-	wifip->setPrecision(0);
-	top->addEntry(wifip);
-	wifip->setHelp("Maximum Wifi Power to be used 10..100% or 2..20dBm");
+// 	SetupMenuValFloat *wifip = new SetupMenuValFloat("WIFI Power", "%", 10.0,
+// 			100.0, 5.0, update_wifi_power, false, &wifi_max_power);
+// 	wifip->setPrecision(0);
+// 	top->addEntry(wifip);
+// 	wifip->setHelp("Maximum Wifi Power to be used 10..100% or 2..20dBm");
 
-	SetupMenuSelect *wifimal = new SetupMenuSelect("Lock Master", RST_NONE,
-			master_xcv_lock, true, &master_xcvario_lock);
-	wifimal->setHelp(
-			"In wireless client role, lock this client to the scanned master XCVario ID above");
-	wifimal->addEntry("Unlock");
-	wifimal->addEntry("Lock");
-	top->addEntry(wifimal);
+// 	SetupMenuSelect *wifimal = new SetupMenuSelect("Lock Master", RST_NONE,
+// 			master_xcv_lock, true, &master_xcvario_lock);
+// 	wifimal->setHelp(
+// 			"In wireless client role, lock this client to the scanned master XCVario ID above");
+// 	wifimal->addEntry("Unlock");
+// 	wifimal->addEntry("Lock");
+// 	top->addEntry(wifimal);
 
-	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-			data_mon, true, nullptr);
-	datamon->setHelp(
-			"Short press button to start/pause, long press to terminate data monitor",
-			260);
-	datamon->addEntry("Disable");
-	datamon->addEntry("Bluetooth");
-	datamon->addEntry("Wifi 8880");
-	datamon->addEntry("Wifi 8881");
-	datamon->addEntry("Wifi 8882");
-	datamon->addEntry("RS232 S1");
-	datamon->addEntry("RS232 S2");
-	datamon->addEntry("CAN Bus");
-	top->addEntry(datamon);
+// 	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
+// 			data_mon, true, nullptr);
+// 	datamon->setHelp(
+// 			"Short press button to start/pause, long press to terminate data monitor",
+// 			260);
+// 	datamon->addEntry("Disable");
+// 	datamon->addEntry("Bluetooth");
+// 	datamon->addEntry("Wifi 8880");
+// 	datamon->addEntry("Wifi 8881");
+// 	datamon->addEntry("Wifi 8882");
+// 	datamon->addEntry("RS232 S1");
+// 	datamon->addEntry("RS232 S2");
+// 	datamon->addEntry("CAN Bus");
+// 	top->addEntry(datamon);
 
-	SetupMenuSelect *datamonmod = new SetupMenuSelect("Monitor Mode", RST_NONE,
-			0, true, &data_monitor_mode);
-	datamonmod->setHelp(
-			"Select data display as ASCII text or as binary hexdump");
-	datamonmod->addEntry("ASCII");
-	datamonmod->addEntry("Binary");
-	top->addEntry(datamonmod);
+// 	SetupMenuSelect *datamonmod = new SetupMenuSelect("Monitor Mode", RST_NONE,
+// 			0, true, &data_monitor_mode);
+// 	datamonmod->setHelp(
+// 			"Select data display as ASCII text or as binary hexdump");
+// 	datamonmod->addEntry("ASCII");
+// 	datamonmod->addEntry("Binary");
+// 	top->addEntry(datamonmod);
 
-	SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
-	top->addEntry(cusid);
-	cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate",215);
+// 	SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
+// 	top->addEntry(cusid);
+// 	cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate",215);
 
-	// SetupMenuSelect *clearcore = new SetupMenuSelect("Clear coredump", RST_NONE, reinterpret_cast<int (*)(SetupMenuSelect*)>(clear_coredump), false, nullptr);
-	// clearcore->addEntry("doit");
-	// top->addEntry(clearcore);
-}
+// 	// SetupMenuSelect *clearcore = new SetupMenuSelect("Clear coredump", RST_NONE, reinterpret_cast<int (*)(SetupMenuSelect*)>(clear_coredump), false, nullptr);
+// 	// clearcore->addEntry("doit");
+// 	// top->addEntry(clearcore);
+// }
 
 void options_menu_create_gload(SetupMenu *top) {
 	SetupMenuSelect *glmod = new SetupMenuSelect("Activation Mode", RST_NONE, 0,
@@ -1744,10 +1748,8 @@ void options_menu_create(SetupMenu *opt) {
 	SetupMenuSelect *atl = new SetupMenuSelect("Auto Transition", RST_NONE, 0,
 			true, &fl_auto_transition);
 	opt->addEntry(atl);
-	atl->setHelp(
-			"Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
-	atl->addEntry("Disable");
-	atl->addEntry("Enable");
+	atl->setHelp("Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
+	atl->mkBinary();
 
 	SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode",
 			RST_NONE, 0, true, &alt_display_mode);
@@ -1772,8 +1774,8 @@ void options_menu_create(SetupMenu *opt) {
 	opt->addEntry(compassWindMenu);
 	compassWindMenu->setHelp("Setup Compass and Wind", 280);
 
-	SetupMenu *wireless = new SetupMenu("Wireless", options_menu_create_wireless);
-	opt->addEntry(wireless);
+	// SetupMenu *wireless = new SetupMenu("Wireless", options_menu_create_wireless);
+	// opt->addEntry(wireless);
 
 	SetupMenu *gload = new SetupMenu("G-Load Display", options_menu_create_gload);
 	opt->addEntry(gload);
@@ -2159,38 +2161,38 @@ void system_menu_create_altimeter_airspeed(SetupMenu *top) {
 	top->addEntry(vmax);
 }
 
-void system_menu_create_interfaceS1_routing(SetupMenu *top) {
-	SetupMenuSelect *s1outxcv = new SetupMenuSelect("XCVario", RST_NONE,
-			update_routing, true, &rt_s1_xcv);
-	s1outxcv->addEntry("Disable");
-	s1outxcv->addEntry("Enable");
-	top->addEntry(s1outxcv);
+// void system_menu_create_interfaceS1_routing(SetupMenu *top) {
+	// SetupMenuSelect *s1outxcv = new SetupMenuSelect("XCVario", RST_NONE,
+	// 		update_routing, true, &rt_s1_xcv);
+	// s1outxcv->addEntry("Disable");
+	// s1outxcv->addEntry("Enable");
+	// top->addEntry(s1outxcv);
 
-	SetupMenuSelect *s1outwl = new SetupMenuSelect("Wireless", RST_NONE,
-			update_routing, true, &rt_s1_wl);
-	s1outwl->addEntry("Disable");
-	s1outwl->addEntry("Enable");
-	top->addEntry(s1outwl);
+	// SetupMenuSelect *s1outwl = new SetupMenuSelect("Wireless", RST_NONE,
+	// 		update_routing, true, &rt_s1_wl);
+	// s1outwl->addEntry("Disable");
+	// s1outwl->addEntry("Enable");
+	// top->addEntry(s1outwl);
 
-	SetupMenuSelect *s1outs1 = new SetupMenuSelect("S2-RS232", RST_NONE,
-			update_routing, true, &rt_s1_s2);
-	s1outs1->addEntry("Disable");
-	s1outs1->addEntry("Enable");
-	top->addEntry(s1outs1);
+	// SetupMenuSelect *s1outs1 = new SetupMenuSelect("S2-RS232", RST_NONE,
+	// 		update_routing, true, &rt_s1_s2);
+	// s1outs1->addEntry("Disable");
+	// s1outs1->addEntry("Enable");
+	// top->addEntry(s1outs1);
 
-	SetupMenuSelect *s1outcan = new SetupMenuSelect("CAN-bus", RST_NONE,
-			update_routing, true, &rt_s1_can);
-	s1outcan->addEntry("Disable");
-	s1outcan->addEntry("Enable");
-	top->addEntry(s1outcan);
-}
+	// SetupMenuSelect *s1outcan = new SetupMenuSelect("CAN-bus", RST_NONE,
+	// 		update_routing, true, &rt_s1_can);
+	// s1outcan->addEntry("Disable");
+	// s1outcan->addEntry("Enable");
+	// top->addEntry(s1outcan);
+// }
 
 void system_menu_create_interfaceS1(SetupMenu *top) {
 	SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT,
 			update_s1_baud, true, &serial1_speed);
 	top->addEntry(s1sp2);
 	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
-	s1sp2->addEntry("OFF");
+	// s1sp2->addEntry("OFF");
 	s1sp2->addEntry("4800 baud");
 	s1sp2->addEntry("9600 baud");
 	s1sp2->addEntry("19200 baud");
@@ -2198,10 +2200,10 @@ void system_menu_create_interfaceS1(SetupMenu *top) {
 	s1sp2->addEntry("57600 baud");
 	s1sp2->addEntry("115200 baud");
 
-	SetupMenu *s1out = new SetupMenu("S1 Routing", system_menu_create_interfaceS1_routing);
-	s1out->setHelp(
-			"Select data source to be routed from/to serial interface S1");
-	top->addEntry(s1out);
+	// SetupMenu *s1out = new SetupMenu("S1 Routing", system_menu_create_interfaceS1_routing);
+	// s1out->setHelp(
+	// 		"Select data source to be routed from/to serial interface S1");
+	// top->addEntry(s1out);
 
 	SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE,
 			update_s1_pol, true, &serial1_tx_inverted);
@@ -2249,28 +2251,28 @@ void system_menu_create_interfaceS1(SetupMenu *top) {
 
 }
 
-void system_menu_create_interfaceS2_routing(SetupMenu *top) {
-	SetupMenuSelect *s2outxcv = new SetupMenuSelect("XCVario", RST_NONE,
-			update_routing, true, &rt_s2_xcv);
-	s2outxcv->addEntry("Disable");
-	s2outxcv->addEntry("Enable");
-	top->addEntry(s2outxcv);
-	SetupMenuSelect *s2outwl = new SetupMenuSelect("Wireless", RST_NONE,
-			update_routing, true, &rt_s2_wl);
-	s2outwl->addEntry("Disable");
-	s2outwl->addEntry("Enable");
-	top->addEntry(s2outwl);
-	SetupMenuSelect *s2outs2 = new SetupMenuSelect("S1-RS232", RST_NONE,
-			update_routing, true, &rt_s1_s2);
-	s2outs2->addEntry("Disable");
-	s2outs2->addEntry("Enable");
-	top->addEntry(s2outs2);
-	SetupMenuSelect *s2outcan = new SetupMenuSelect("CAN-bus", RST_NONE,
-			update_routing, true, &rt_s2_can);
-	s2outcan->addEntry("Disable");
-	s2outcan->addEntry("Enable");
-	top->addEntry(s2outcan);
-}
+// void system_menu_create_interfaceS2_routing(SetupMenu *top) {
+// 	SetupMenuSelect *s2outxcv = new SetupMenuSelect("XCVario", RST_NONE,
+// 			update_routing, true, &rt_s2_xcv);
+// 	s2outxcv->addEntry("Disable");
+// 	s2outxcv->addEntry("Enable");
+// 	top->addEntry(s2outxcv);
+// 	SetupMenuSelect *s2outwl = new SetupMenuSelect("Wireless", RST_NONE,
+// 			update_routing, true, &rt_s2_wl);
+// 	s2outwl->addEntry("Disable");
+// 	s2outwl->addEntry("Enable");
+// 	top->addEntry(s2outwl);
+// 	SetupMenuSelect *s2outs2 = new SetupMenuSelect("S1-RS232", RST_NONE,
+// 			update_routing, true, &rt_s1_s2);
+// 	s2outs2->addEntry("Disable");
+// 	s2outs2->addEntry("Enable");
+// 	top->addEntry(s2outs2);
+// 	SetupMenuSelect *s2outcan = new SetupMenuSelect("CAN-bus", RST_NONE,
+// 			update_routing, true, &rt_s2_can);
+// 	s2outcan->addEntry("Disable");
+// 	s2outcan->addEntry("Enable");
+// 	top->addEntry(s2outcan);
+// }
 
 void system_menu_create_interfaceS2(SetupMenu *top) {
 	SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT,
@@ -2285,10 +2287,10 @@ void system_menu_create_interfaceS2(SetupMenu *top) {
 	s2sp2->addEntry("57600 baud");
 	s2sp2->addEntry("115200 baud");
 
-	SetupMenu *s2out = new SetupMenu("S2 Routing", system_menu_create_interfaceS2_routing);
-	s2out->setHelp(
-			"Select data source to be routed from/to serial interface S2");
-	top->addEntry(s2out);
+	// SetupMenu *s2out = new SetupMenu("S2 Routing", system_menu_create_interfaceS2_routing);
+	// s2out->setHelp(
+	// 		"Select data source to be routed from/to serial interface S2");
+	// top->addEntry(s2out);
 
 	SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE,
 			update_s2_pol, true, &serial2_tx_inverted);
@@ -2312,18 +2314,19 @@ void system_menu_create_interfaceS2(SetupMenu *top) {
 	stxdis2->addEntry("Client (RX)");
 	stxdis2->addEntry("Master (RX&TX)");
 
-	SetupMenuSelect *sprots1 = new SetupMenuSelect( "Protocol", RST_NONE,
-			update_s2_protocol, true, &serial2_protocol);
-	top->addEntry(sprots1);
-	sprots1->setHelp(
-			"Specify the protocol driver for the external device connected to S2",
-			240);
-	sprots1->addEntry( "Disable");
-	sprots1->addEntry( "Flarm");
-	sprots1->addEntry( "Radio");
-	sprots1->addEntry( "XCTNAV S3");
-	sprots1->addEntry( "OPENVARIO");
-	sprots1->addEntry( "XCFLARMVIEW");
+	// Fixme move to devices
+	// SetupMenuSelect *sprots1 = new SetupMenuSelect( "Protocol", RST_NONE,
+	// 		update_s2_protocol, true, &serial2_protocol);
+	// top->addEntry(sprots1);
+	// sprots1->setHelp(
+	// 		"Specify the protocol driver for the external device connected to S2",
+	// 		240);
+	// sprots1->addEntry( "Disable");
+	// sprots1->addEntry( "Flarm");
+	// sprots1->addEntry( "Radio");
+	// sprots1->addEntry( "XCTNAV S3");
+	// sprots1->addEntry( "OPENVARIO");
+	// sprots1->addEntry( "XCFLARMVIEW");
 
 	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
 			data_monS2, true, nullptr);
@@ -2333,28 +2336,6 @@ void system_menu_create_interfaceS2(SetupMenu *top) {
 	datamon->addEntry("Start S2 RS232");
 
 	top->addEntry(datamon);
-}
-
-void system_menu_create_interfaceCAN_routing(SetupMenu *top) {
-	SetupMenuSelect *canoutxcv = new SetupMenuSelect("XCVario", RST_NONE, 0,
-			true, &rt_can_xcv);
-	canoutxcv->mkBinary();
-	top->addEntry(canoutxcv);
-
-	SetupMenuSelect *canoutwl = new SetupMenuSelect("Wireless", RST_NONE, 0,
-			true, &rt_wl_can);
-	canoutwl->mkBinary();
-	top->addEntry(canoutwl);
-
-	SetupMenuSelect *canouts1 = new SetupMenuSelect("S1-RS232", RST_NONE,
-			update_routing, true, &rt_s1_can);
-	canouts1->mkBinary();
-	top->addEntry(canouts1);
-
-	SetupMenuSelect *canouts2 = new SetupMenuSelect("S2-RS232", RST_NONE,
-			update_routing, true, &rt_s2_can);
-	canouts2->mkBinary();
-	top->addEntry(canouts2);
 }
 
 void system_menu_create_interfaceCAN(SetupMenu *top) {
@@ -2367,10 +2348,6 @@ void system_menu_create_interfaceCAN(SetupMenu *top) {
 	canmode->addEntry("250 kbit");
 	canmode->addEntry("500 kbit");
 	canmode->addEntry("1000 kbit");
-
-	SetupMenu *canrt = new SetupMenu("CAN Routing", system_menu_create_interfaceCAN_routing);
-	top->addEntry(canrt);
-	canrt->setHelp("Select data source that is routed from/to CAN interface");
 
 	SetupMenuSelect *devmod = new SetupMenuSelect("Mode", RST_ON_EXIT, 0, false,
 			&can_mode);

@@ -200,7 +200,7 @@ float mpu_target_temp=45.0;
 
 AdaptUGC *egl = 0;
 
-int sign(int num) {
+int IRAM_ATTR sign(int num) {
     return (num > 0) - (num < 0);
 }
 

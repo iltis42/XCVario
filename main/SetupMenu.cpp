@@ -877,7 +877,7 @@ void wiper_menu_create(SetupMenu *top) {
 void bugs_item_create(SetupMenu *top) {
 	SetupMenuValFloat *bgs = new SetupMenuValFloat("Bugs", "%", 0.0, 50, 1,
 			bug_adj, true, &bugs);
-	// bgs->setHelp("Percent degradation of gliding performance due to bugs contamination");
+	bgs->setHelp("Percent degradation of gliding performance due to bugs contamination");
 	top->addEntry(bgs);
 }
 
@@ -2380,26 +2380,22 @@ void system_menu_create_interfaceS2(SetupMenu *top) {
 void system_menu_create_interfaceCAN_routing(SetupMenu *top) {
 	SetupMenuSelect *canoutxcv = new SetupMenuSelect("XCVario", RST_NONE, 0,
 			true, &rt_can_xcv);
-	canoutxcv->addEntry("Disable");
-	canoutxcv->addEntry("Enable");
+	canoutxcv->mkBinary();
 	top->addEntry(canoutxcv);
 
 	SetupMenuSelect *canoutwl = new SetupMenuSelect("Wireless", RST_NONE, 0,
 			true, &rt_wl_can);
-	canoutwl->addEntry("Disable");
-	canoutwl->addEntry("Enable");
+	canoutwl->mkBinary();
 	top->addEntry(canoutwl);
 
 	SetupMenuSelect *canouts1 = new SetupMenuSelect("S1-RS232", RST_NONE,
 			update_routing, true, &rt_s1_can);
-	canouts1->addEntry("Disable");
-	canouts1->addEntry("Enable");
+	canouts1->mkBinary();
 	top->addEntry(canouts1);
 
 	SetupMenuSelect *canouts2 = new SetupMenuSelect("S2-RS232", RST_NONE,
 			update_routing, true, &rt_s2_can);
-	canouts2->addEntry("Disable");
-	canouts2->addEntry("Enable");
+	canouts2->mkBinary();
 	top->addEntry(canouts2);
 }
 
@@ -2490,8 +2486,7 @@ void system_menu_create(SetupMenu *sye) {
 			&logging);
 	logg->setHelp(
 			"Option to log e.g. raw sensor data in NMEA logger in XCSoar");
-	logg->addEntry("Disable");
-	logg->addEntry("Sensor RAW Data");
+	logg->mkBinary("Sensor RAW Data");
 	sye->addEntry(logg);
 
 }

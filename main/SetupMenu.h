@@ -9,6 +9,8 @@
 
 #include "MenuEntry.h"
 
+constexpr const char* FORMATSTRING_AND_SPACE = "%s                ";
+
 class SetupMenuValFloat;
 
 class SetupMenu : public MenuEntry
@@ -18,7 +20,6 @@ public:
 	explicit SetupMenu(const char* title, void (menu_create)(SetupMenu* ptr));
 	virtual ~SetupMenu();
 	void enter() override;
-	// void exit(int levels=0) override;
 	void display( int mode=0 ) override;
 	bool isLeaf() const override { return false; }
 	const char *value() const override { return nullptr; };

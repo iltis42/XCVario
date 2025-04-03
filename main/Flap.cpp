@@ -186,27 +186,21 @@ static SetupMenu *flapls = 0;
 
 void Flap::speeds_setup_menu_create(SetupMenu* top){
 	SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "",  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
-	plus3->setHelp("Speed for transition from +3 to +3 flap setting");
 	top->addEntry( plus3 );
 
-	SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "",  20, 150, 1, flap_speed_act, false, &flap_plus_1  );
-	plus2->setHelp("Speed for transition from +2 to +1 flap setting");
+	SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "",  20, 170, 1, flap_speed_act, false, &flap_plus_1  );
 	top->addEntry( plus2 );
 
-	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to 0", "",  20, v_max.get(), 1, flap_speed_act, false, &flap_0  );
-	plus1->setHelp("Speed for transition from +1 to 0 flap setting");
+	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to  0", "",  20, v_max.get(), 1, flap_speed_act, false, &flap_0  );
 	top->addEntry( plus1 );
 
-	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed 0 to -1", "",   20, v_max.get(), 1, flap_speed_act, false, &flap_minus_1  );
-	min1->setHelp("Speed for transition from 0 to -1 flap setting");
+	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed  0 to -1", "",   20, v_max.get(), 1, flap_speed_act, false, &flap_minus_1  );
 	top->addEntry( min1 );
 
 	SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "",  50, v_max.get(), 1, flap_speed_act, false, &flap_minus_2  );
-	min2->setHelp("Speed for transition from -1 to -2 flap setting");
 	top->addEntry( min2 );
 
 	SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "",  50, v_max.get(), 1, flap_speed_act, false, &flap_minus_3  );
-	min3->setHelp("Speed for transition from -2 to -3 flap setting");
 	top->addEntry( min3 );
 }
 
@@ -257,6 +251,7 @@ void Flap::setupIndicatorMenueEntries(SetupMenu *wkm)
 	wkm->addEntry( flgnd );
 
 	flapss = new SetupMenu("Flap Speeds Setup", speeds_setup_menu_create);
+	flapss->setHelp("Speed for transition to the next flap setting", 220);
 	wkm->addEntry( flapss );
 
 	flapls = new SetupMenu("Flap Position Labels", position_labels_menu_create);

@@ -16,32 +16,19 @@
 
 SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuChar *p), 
 								bool save, char *achar, uint32_t index, bool ext_handler, bool end_menu ) :
-	MenuEntry()
+	MenuEntry(),
+	_char_index(index),
+	_action(action)
 {
 	ESP_LOGI(FNAME,"SetupMenuChar( %s ), char: %c", title, *achar );
-	bits._ext_handler = ext_handler;
 	_title = title;
-	_select = 0;
-	_select_save = 0;
-	bits._end_setup = end_menu;
-	_mychar = 0;
-	_char_index = index;
 	if( achar ) {
 		_mychar = achar+_char_index;
 	}
-	_numval = 0;
+	bits._ext_handler = ext_handler;
+	bits._end_setup = end_menu;
 	bits._restart = restart;
-	_action = action;
 	bits._save = save;
-
-}
-
-void SetupMenuChar::enter()
-{
-	if ( helptext ) {
-		clear();
-	}
-	MenuEntry::enter();
 }
 
 void SetupMenuChar::display(int mode)
@@ -67,20 +54,18 @@ void SetupMenuChar::display(int mode)
 		MYUCG->setPrintPos(1,25);
 		ESP_LOGI(FNAME,"Title: %s ", _title );
 		MYUCG->printf("<< %s",_title);
-		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _numval, _values.size(), _values[_select] );
-		if( _numval > 9 ){
+		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _values.size(), _values.size(), _values[_select] );
+		if( _values.size() > 9 ){
 			MYUCG->setPrintPos( _col, _row );
-			MYUCG->printf( "%s                ", _values[_select] );
+			MYUCG->printf( FORMATSTRING_AND_SPACE, _values[_select] );
 		}else
 		{
-			for( int i=0; i<_numval && i<+10; i++ )	{
+			for( int i=0; i<_values.size() && i<+10; i++ )	{
 				MYUCG->setPrintPos( _col, _row+25*i );
 				MYUCG->print( _values[i] );
 			}
 			MYUCG->drawFrame( _col,(_select+1)*25+3,238,25 );
 		}
-
-		showhelp();
 	}
 }
 
@@ -105,19 +90,14 @@ void SetupMenuChar::rot(int count)
 	}
 }
 
-void SetupMenuChar::longPress(){
-	press();
-}
-
 void SetupMenuChar::press()
 {
 	ESP_LOGI(FNAME,"press() ext handler: %d _select: %d", bits._ext_handler, _select );
 
-	SavedDelay(bits._save);
 	if ( helptext ) {
-		_parent->menuSetTop();
+		SavedDelay(bits._save);
 	}
-	if( _action != 0 ){
+	if( _action ){
 		ESP_LOGI(FNAME,"calling action in press %d", _select );
 		(*_action)( this );
 	}
@@ -129,6 +109,10 @@ void SetupMenuChar::press()
 		return;
 	}
 	exit();
+}
+
+void SetupMenuChar::longPress(){
+	press();
 }
 
 const char *SetupMenuChar::value() const
@@ -145,7 +129,7 @@ bool SetupMenuChar::existsEntry( std::string ent ){
 }
 
 void SetupMenuChar::addEntry( const char* ent ) {
-	_values.push_back( ent ); _numval++;
+	_values.push_back( ent );
 
 }
 
@@ -153,8 +137,7 @@ void SetupMenuChar::addEntryList( const char ent[][4], int size )
 {
 	// ESP_LOGI(FNAME,"addEntryList() char ent[][4]");
 	for( int i=0; i<size; i++ ) {
-		_values.push_back( (char *)ent[i] ); _numval++;
-
+		_values.push_back( (char *)ent[i] );
 	}
 	if( _mychar ) {
 		for( int i=0; i<_values.size(); i++ ){
@@ -168,15 +151,16 @@ void SetupMenuChar::addEntryList( const char ent[][4], int size )
 }
 
 void SetupMenuChar::delEntry( const char* ent ) {
-	for( std::vector<const char *>::iterator iter = _values.begin(); iter != _values.end(); ++iter )
+	for( std::vector<const char *>::iterator iter = _values.begin(); iter != _values.end(); ++iter ) {
 		if( std::string(*iter) == std::string(ent) )
 		{
 			_values.erase( iter );
-			_numval--;
-			if( _select >= _numval )
-				_select = _numval-1;
 			break;
 		}
+	}
+	if( _select >= _values.size() ) {
+		_select = _values.size()-1;
+	}
 }
 
 int SetupMenuChar::getSelect() {

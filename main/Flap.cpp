@@ -576,9 +576,12 @@ bool Flap::sensorToLeverPosition( int wks, float&lever ){
 		}
 	}
 	if( wk != -1000 ){
-		float delta=senspos[wk]-senspos[wk+1];
-		float moved=senspos[wk]-wks;
-		float relative=moved/delta;
+		float relative=0.0;
+		if( senspos[wk] != senspos[wk+1] ){  // its an integer
+			float delta=senspos[wk]-senspos[wk+1];
+			float moved=senspos[wk]-wks;
+			relative=moved/delta;
+		}
 		float wkf =(wk-ZERO_INDEX) + relative;
 		// ESP_LOGI(FNAME,"getLeverPos(%d): lever: %1.2f wk: %d relative: %1.1f  N:%d X%d ", wks, wkf, wk, relative, min, max  );
 		lever = wkf;

@@ -7,37 +7,15 @@
  ***********************************************************/
 
 #include "SetupMenu.h"
+#include "SetupMenuSelect.h"
 #include "SetupAction.h"
 #include "comm/DeviceMgr.h"
+#include "logdef.h"
 
-#include <logdef.h>
-#include <inttypes.h>
-#include <array>
+#include <cinttypes>
 #include <string_view>
-#include <algorithm>
 
 
-// Define device names for the menu, only if they have a real a state (skip the virtual ones)
-constexpr std::pair<DeviceId, std::string_view> DeviceNames[] = {
-    {DeviceId::JUMBO_DEV, "jumbo putzi"},
-    {DeviceId::ANEMOI_DEV, "Anemoi"},
-    {DeviceId::XCVARIO_DEV, "Master XCVario"},
-    {DeviceId::XCVARIOCLIENT_DEV, "Second XCVario"},
-    {DeviceId::FLARM_DEV, "Flarm"},
-    {DeviceId::NAVI_DEV, "Navi"},
-    {DeviceId::MAGSENS_DEV, "Magnetic Sensor"},
-    {DeviceId::RADIO_KRT2_DEV, "KRT 2"}
-};
-
-// Lookup function
-constexpr std::string_view getDevName(DeviceId did) {
-    for (const auto& entry : DeviceNames) {
-        if (entry.first == did) {
-            return entry.second;
-        }
-    }
-    return "";
-}
 
 static int remove_device(SetupAction *p)
 {
@@ -45,15 +23,27 @@ static int remove_device(SetupAction *p)
     return 0;
 }
 
-// static int callback2(SetupMenuSelect *p)
-// {
-//     return 0;
-// }
+static int new_device_action(SetupMenuSelect *p)
+{
+    ESP_LOGI(FNAME,"action did %d", p->getValue());
+    return 0;
+}
 
 static void system_menu_create_new_devices(SetupMenu *top)
-
 {
-
+    SetupMenuSelect *ndev = new SetupMenuSelect("Device", RST_NONE, new_device_action, true);
+    DeviceManager *dm = DeviceManager::Instance();
+    for ( auto did : DeviceManager::allKnownDevs() ) {
+        if ( ! dm->getDevice(did) ) {
+        ndev->addEntry(DeviceManager::getDevName(did).data(), did);
+        // std::string_view dnam = getDevName(dev->_id);
+        // if ( ! dnam.empty() ) {
+        //     SetupMenu *devmenu = new SetupMenu(dnam.data(), system_menu_create_dev);
+        //     devmenu->setHelp("Device details.");
+        //     top->addEntry(devmenu);
+        }
+    }
+    top->addEntry(ndev);
 }
 
 static void system_menu_create_dev(SetupMenu *top)
@@ -70,7 +60,7 @@ void system_menu_create_devices(SetupMenu *top)
 
     DeviceManager *dm = DeviceManager::Instance();
     for ( auto dev : dm->allDevs() ) {
-        std::string_view dnam = getDevName(dev->_id);
+        std::string_view dnam = DeviceManager::getDevName(dev->_id);
         if ( ! dnam.empty() ) {
             SetupMenu *devmenu = new SetupMenu(dnam.data(), system_menu_create_dev);
             devmenu->setHelp("Device details.");

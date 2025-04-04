@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "RoutingTargets.h"
+#include "comm/Configuration.h"
 #include "protocol/ProtocolItf.h"
 #include "InterfaceCtrl.h"
 

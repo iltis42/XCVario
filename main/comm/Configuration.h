@@ -13,6 +13,8 @@
 
 #include <cinttypes>
 #include <vector>
+#include <array>
+#include <string_view>
 
 
 // Routing targets
@@ -51,3 +53,55 @@ union RoutingTarget {
 using RoutingList = std::vector<RoutingTarget>;
 
 
+// This stores:
+//   up to 5 interface id's that can the device connect to
+//   up to 6 protocol id's that match to the devices
+//   other attributes in a bitfield
+union PackedAttributeList {
+    struct{
+        int  interfaces  : 20;
+        int  protocols   : 30;
+        bool isReal      : 1; // A device with a physical realastate vs. a virtual
+        bool hasProfile  : 1; // Protocols are organized through a profile, instead of a list
+        // bool reserved    : 5; // fill to 7 bits
+    };
+    uint64_t data = 0; // 64-bit storage
+
+    // constexpr function to pack values at compile time
+    static constexpr uint64_t stuff(std::array<InterfaceId, 5> vals) {
+        uint64_t stuffed = 0;
+        for (int i = 0; i < 5; ++i) {
+            stuffed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
+        }
+        return stuffed;
+    }
+
+    static constexpr uint64_t pack(std::array<ProtocolType, 6> vals) {
+        uint64_t packed = 0;
+        for (int i = 0; i < 6; ++i) {
+            packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5 + 20);
+        }
+        return packed;
+    }
+
+    constexpr PackedAttributeList(std::array<InterfaceId, 5> itf, std::array<ProtocolType, 6> val, bool ir) {
+        data = stuff(itf);
+        data |= pack(val);
+        data |= ir ? (uint64_t)1<<51 : 0;
+    }
+
+    // Get value at runtime
+    constexpr ProtocolType get(int index) const {
+        return static_cast<ProtocolType>((data >> (index * 5)) & 0x1f);
+    }
+};
+
+
+// Flash stored device invariant attributes
+struct DeviceAttributes
+{
+    std::string_view    name; // a readable name
+    PackedAttributeList attr; // protocol dependencies, and other info
+
+    constexpr DeviceAttributes(std::string_view n, PackedAttributeList a) : name(n), attr(a) {}
+};

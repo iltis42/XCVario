@@ -32,7 +32,8 @@ typedef enum
 typedef enum
 {
     NO_ONE = 0, // Disable
-    REGISTRATION_P, // CAN id registration 
+    REGISTRATION_P, // CAN id registration
+    XCVSYNC_P,
     JUMBOCMD_P,
     ANEMOI_P,
     FLARM_P,

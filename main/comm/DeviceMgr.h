@@ -110,8 +110,11 @@ public:
     // debugging
     void dumpMap() const;
     // Setup access
-    // DevMap::const_iterator startIterate() const { return _device_map.begin(); }
-    std::vector<const Device*> allDevs() const; //  { return _device_map.end(); }
+    static DeviceAttributes getDevAttr(DeviceId did);
+    static std::string_view getDevName(DeviceId did);
+    static std::vector<DeviceId> allKnownDevs();
+    std::vector<const Device*> allDevs() const;
+    
 
 private:
     // Complete list of all devices known at runtime

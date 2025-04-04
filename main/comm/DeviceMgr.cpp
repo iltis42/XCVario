@@ -8,7 +8,7 @@
 
 #include "DeviceMgr.h"
 
-#include "RoutingTargets.h"
+#include "comm/Configuration.h"
 #include "comm/Messages.h"
 #include "comm/CanBus.h"
 #include "comm/WifiAP.h"
@@ -56,6 +56,52 @@ static constexpr const RoutingTarget* findRoute(const RoutingTarget& target) {
     return nullptr;
 }
 
+
+// known device attributes
+//
+// constexpr PackedAttributeList flarm_attr{ PackedAttributeList::pack({ ProtocolType::FLARM_P, ProtocolType::FLARMBIN_P}) };
+
+
+// Define device names for the menu, only if they have a real a state (skip the virtual ones)
+constexpr std::pair<DeviceId, DeviceAttributes> DAVATTR[] = {
+    {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}, {JUMBOCMD_P}, true }}},
+    {DeviceId::ANEMOI_DEV, {"Anemoi", {{S1_RS232, S2_RS232, CAN_BUS}, {ANEMOI_P}, true}}},
+    {DeviceId::XCVARIO_DEV, {"Master XCV", {{CAN_BUS, WIFI, BT_SPP, S2_RS232}, {XCVSYNC_P}, true}}},
+    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{CAN_BUS, WIFI, BT_SPP, S2_RS232}, {XCVSYNC_P}, true}}},
+    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, CAN_BUS}, {FLARM_P, FLARMBIN_P}, true}}},
+    {DeviceId::NAVI_DEV,   {"Navi", {{S2_RS232, WIFI, BT_SPP, BT_LE}, {XCVARIO_P, OPENVARIO_P, BORGELT_P, CAMBRIDGE_P}, true}}},
+    {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C, CAN_BUS}, {MAGSENS_P, MAGSENSBIN_P}, true}}},
+    {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}, {KRT2_REMOTE_P}, true}}},
+    {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}, {ATR833_REMOTE_P}, true}}}
+};
+
+// Lookup functions
+DeviceAttributes DeviceManager::getDevAttr(DeviceId did) {
+    for (const auto& entry : DAVATTR) {
+        if (entry.first == did) {
+            return entry.second;
+        }
+    }
+    return DeviceAttributes("no devices", {{}, {}, true});
+}
+
+std::string_view DeviceManager::getDevName(DeviceId did) {
+    for (const auto& entry : DAVATTR) {
+        if (entry.first == did) {
+            return entry.second.name;
+        }
+    }
+    return "";
+}
+
+std::vector<DeviceId> DeviceManager::allKnownDevs()
+{
+    std::vector<DeviceId> ret;
+    for (const auto& entry : DAVATTR) {
+        ret.push_back(entry.first);
+    }
+    return ret;
+}
 
 // a dummy interface
 class DmyItf final : public InterfaceCtrl

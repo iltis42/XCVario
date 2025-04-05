@@ -794,14 +794,14 @@ static int ttick = 0;
 static float temp_prev = -3000;
 
 void readTemp(void *pvParameters){
-
+	float t=15.0;
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		float t=15.0;
 		battery = Battery.get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
 		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
-			t = ds18b20.getTemp();
+			if( !gflags.inSetup )
+				t = ds18b20.getTemp();
 			// ESP_LOGI(FNAME,"Temp %f", t );
 			if( t ==  DEVICE_DISCONNECTED_C ) {
 				if( gflags.validTemperature == true ) {
@@ -1209,7 +1209,8 @@ void system_startup(void *args){
 	if( !SetupCommon::isClient()  ) {
 		ESP_LOGI(FNAME,"Now start T sensor test");
 		ds18b20.begin();
-		temperature = ds18b20.getTemp();
+		if( !gflags.inSetup )
+			temperature = ds18b20.getTemp();
 		ESP_LOGI(FNAME,"End T sensor test");
 		if( temperature == DEVICE_DISCONNECTED_C ) {
 			ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );

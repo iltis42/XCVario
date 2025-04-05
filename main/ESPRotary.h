@@ -37,9 +37,14 @@ public:
 	virtual void longPress() = 0;
 	virtual void release() = 0;
 	virtual void escape() = 0;
+	void setRotDynamic(float d) { _rot_dynamic = d; }
+	float getRotDynamic() const { return _rot_dynamic; }
 
 	void attach();
 	void detach();
+
+private:
+	float _rot_dynamic = 2.f; // optional rotary accelerator.
 };
 
 
@@ -66,7 +71,7 @@ public:
 	void sendLongPress() const;
 	void sendEscape() const;
 	bool readSwitch() const { return state; } // fixme, polling does create a pile on the event queue
-	inline gpio_num_t getSw() { return sw; };
+	gpio_num_t getSw() { return sw; };
 
 private:
 	gpio_num_t clk, dt, sw; // actually used pins

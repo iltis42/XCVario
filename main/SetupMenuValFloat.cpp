@@ -120,7 +120,7 @@ void SetupMenuValFloat::rot( int count )
 {
 	// ESP_LOGI(FNAME,"val rot %d times ", count );
 	_value = _nvs->get();
-	_value += std::pow( abs(count), _dynamic ) * step(_step) * sign(count);
+	_value += step(_step) * count;
 
 	if( _value < _min )
 		_value = _min;

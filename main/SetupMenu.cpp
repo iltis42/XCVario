@@ -612,6 +612,7 @@ SetupMenu::SetupMenu(const char *title, void (menu_create)(SetupMenu* ptr)) :
 {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
 	_title = title;
+	setRotDynamic(1.f);
 }
 
 SetupMenu::~SetupMenu() {
@@ -714,7 +715,6 @@ static int modulo(int a, int b) {
 
 void SetupMenu::rot(int count)
 {
-	count = count/abs(count); // no progression for the menu (count is never 0)
 	ESP_LOGI(FNAME,"SetupMenu::rot %d %d", highlight, _childs.size() );
 	MYUCG->setColor(COLOR_BLACK);
 	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
@@ -2474,7 +2474,7 @@ void setup_create_root(SetupMenu *top) {
 			3000, 1, 0, true, &elevation);
 	afe->setHelp(
 			"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
-	afe->setDynamic(3.0);
+	afe->setRotDynamic(3.0);
 	top->addEntry(afe);
 
 	// Clear student mode, password correct

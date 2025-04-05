@@ -35,8 +35,7 @@ public:
 	void longPress();
 	void setStep( float val ) { _step = val; };
 	void setMax( float max ) { _max = max; };
-	void setDynamic( float value ) { _dynamic = value; }
-    float _value = .0;
+	float _value = .0;
 
 private:
     float step( float instep );
@@ -47,5 +46,4 @@ private:
 	const char *_unit = "";
 	int (*_action)( SetupMenuValFloat *p );
 	SetupNG<float> * _nvs;
-    float _dynamic = 1.0;
 };

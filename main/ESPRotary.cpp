@@ -18,10 +18,9 @@
 // the global access to the rotary knob
 ESPRotary *Rotary = nullptr;
 
-constexpr uint64_t DEBOUNCE_TIME = 500;         // us debounce threshold
+constexpr uint64_t DEBOUNCE_TIME = 100;         // us debounce threshold
 
 static QueueHandle_t buttonQueue;
-static uint64_t lastPressTime = 0;
 static TaskHandle_t pid = NULL;
 static std::stack<RotaryObserver *> observers;
 
@@ -29,6 +28,7 @@ static std::stack<RotaryObserver *> observers;
 void IRAM_ATTR button_isr_handler(void* arg)
 {
 	ESPRotary *knob = static_cast<ESPRotary*>(arg);
+	static uint64_t lastPressTime = 0;
 	uint64_t currentTime = esp_timer_get_time();
 	// Ignore interrupts occurring within debounce time
 	if ((currentTime - lastPressTime) < DEBOUNCE_TIME) {
@@ -37,7 +37,6 @@ void IRAM_ATTR button_isr_handler(void* arg)
 
 	// We have not woken a task at the start of the ISR.
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	xHigherPriorityTaskWoken = pdFALSE;
 
 	// A valid edge detected
 	esp_timer_stop(knob->lp_timer);
@@ -112,7 +111,7 @@ void ObserverTask( void *arg )
 				knob.sendRelease();
 			} else {
 				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
-				ESP_LOGI(FNAME, "Rotation step %d, time %dus", step, pulse_time);
+				ESP_LOGD(FNAME, "Rotation step %d, time %dus", step, pulse_time);
 				knob.sendRot(step);
 			}
 		}
@@ -135,6 +134,7 @@ void RotaryObserver::detach() {
 		return;
 	}
 	observers.pop();
+	_rot_dynamic = 2.0;
 }
 
 // The rotary knob
@@ -160,7 +160,7 @@ void ESPRotary::begin()
 		.low_limit = -1, // enforce an event trigger on every tick and an auto reset of the pulse counter
 		.high_limit = 1,
 		.intr_priority = 0,
-		.flags = {0}
+		.flags = {}
 	};
 	ESP_ERROR_CHECK(pcnt_new_unit(&unit_config, &pcnt_unit));
 
@@ -179,11 +179,12 @@ void ESPRotary::begin()
 
 	// Decide on pulse counter hardware revision 
 	ESP_ERROR_CHECK(updateRotDir());
+
 	// Init direction sense channel
 	ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_chan, PCNT_CHANNEL_LEVEL_ACTION_INVERSE, PCNT_CHANNEL_LEVEL_ACTION_KEEP));
 
 	pcnt_glitch_filter_config_t filter_config = {
-		.max_glitch_ns = 2000 // Ignore pulses shorter than 2000 ns
+		.max_glitch_ns = 2000 // Ignore pulses shorter than
 	};
 	ESP_ERROR_CHECK(pcnt_unit_set_glitch_filter(pcnt_unit, &filter_config));
 
@@ -243,9 +244,12 @@ esp_err_t ESPRotary::updateRotDir()
 
 void ESPRotary::sendRot( int diff ) const
 {
-	// ESP_LOGI(FNAME,"Rotary down action");
+	// ESP_LOGI(FNAME,"Rotary action");
 	if (!observers.empty()) {
-		observers.top()->rot( diff );
+		auto obs = observers.top();
+		float step = pow(obs->getRotDynamic(), abs(diff)-1) * sign(diff);
+		ESP_LOGI(FNAME, "Rotation step %.2f, time %d us", step, pulse_time);
+		obs->rot( int(step) );
 		xQueueReset(buttonQueue); // rince queueed up events due to intermediate polling
 	}
 }

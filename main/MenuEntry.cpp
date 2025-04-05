@@ -71,15 +71,22 @@ void MenuEntry::SavedDelay(bool showit)
 	vTaskDelay(1000 / portTICK_PERIOD_MS);
 }
 
+// Handle the basics to jump in- and out of setup menu levels
 void MenuEntry::enter()
 {
-	attach();
+	// enter a level of setup menu
+	attach(); // set rotary focus
 	selected = this;
+	if ( isLeaf() && helptext ) {
+		clear();
+		showhelp();
+	}
 	display();
 }
 
 void MenuEntry::exit(int ups)
 {
+	// exit a level of setup menu
 	if ( ups != 0 && _parent != 0 ) {
 		detach();
 		selected = _parent;

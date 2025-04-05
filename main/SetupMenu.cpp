@@ -375,7 +375,7 @@ int data_monS2(SetupMenuSelect *p)
 }
 
 int update_id(SetupMenuChar *p) {
-	const char *c = p->getEntry();
+	const char *c = p->value();
 	ESP_LOGI(FNAME,"New Letter %c Index: %d", *c, (int)p->getCharIndex() );
 	char id[10] = { 0 };
 	strcpy(id, custom_wireless_id.get().id);
@@ -635,18 +635,6 @@ void SetupMenu::enter()
 	MenuEntry::enter();
 }
 
-// void SetupMenu::exit(int levels)
-// {
-// 	// ESP_LOGI(FNAME,"delete_childs() %d", _childs.size() );
-// 	// if (!_childs.empty()) {
-// 	// 	for ( auto chld : _childs ) {
-// 	// 		delete chld;
-// 	// 	}
-// 	// 	_childs.clear();
-// 	// }
-// 	MenuEntry::exit(levels);
-// }
-
 void SetupMenu::display(int mode)
 {
 	xSemaphoreTake(display_mutex, portMAX_DELAY);
@@ -718,48 +706,25 @@ const MenuEntry* SetupMenu::findMenu(const char *title) const
 	return nullptr;
 }
 
-void SetupMenu::up(int count)
+static int modulo(int a, int b) {
+	return (a % b + b) % b;
+}
+
+void SetupMenu::rot(int count)
 {
-	// ESP_LOGI(FNAME,"SetupMenu::up %d %d", highlight, _childs.size() );
-	// if (focus)
-	// 	return;
+	count = count/abs(count); // no progression for the menu (count is never 0)
+	ESP_LOGI(FNAME,"SetupMenu::rot %d %d", highlight, _childs.size() );
 	MYUCG->setColor(COLOR_BLACK);
 	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	MYUCG->setColor(COLOR_WHITE);
-	count &= 7;     // limit to some maximum
-	while( /* highlight <= (int)(_childs.size()-1) && */ count > 0 ){
-		highlight++;
-		count--;
-	}
-	if (highlight > (int) (_childs.size() - 1)) {
-		highlight = -1;
-	}
+
+	highlight = modulo(highlight+1+count, _childs.size()+1) - 1;
 	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 }
-
-void SetupMenu::down(int count)
-{
-	// ESP_LOGI(FNAME,"down %d %d", highlight, _childs.size() );
-	// if (focus)
-	// 	return;
-	MYUCG->setColor(COLOR_BLACK);
-	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	MYUCG->setColor(COLOR_WHITE);
-	count &= 7;     // limit to some maximum
-	while( /* (highlight  >= -1) && */ count > 0 ){
-		highlight--;
-		count--;
-	}
-	if (highlight < -1)
-		highlight = (int) (_childs.size() - 1);
-	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-}
-
 
 void SetupMenu::press()
 {
 	ESP_LOGI(FNAME,"press() inSet %d highl: %d", gflags.inSetup, highlight );
-	// enter/exit a level of setup menu
 	if (highlight == -1) {
 		_parent->menuSetTop();
 		exit();
@@ -768,17 +733,6 @@ void SetupMenu::press()
 		if ((highlight >= 0) && (highlight < _childs.size())) {
 			_childs[highlight]->enter();
 		}
-	}
-}
-
-void SetupMenu::escape()
-{
-	if (gflags.inSetup) {
-		ESP_LOGI(FNAME,"escape now Setup Menu ++++++++++++++++++++++++");
-		// put this in root exit
-		// _display->clear();
-		// _display->doMenu(false);
-		// gflags.inSetup = false;
 	}
 }
 
@@ -924,7 +878,7 @@ void wiper_menu_create(SetupMenu *top) {
 void bugs_item_create(SetupMenu *top) {
 	SetupMenuValFloat *bgs = new SetupMenuValFloat("Bugs", "%", 0.0, 50, 1,
 			bug_adj, true, &bugs);
-	// bgs->setHelp("Percent degradation of gliding performance due to bugs contamination");
+	bgs->setHelp("Percent degradation of gliding performance due to bugs contamination");
 	top->addEntry(bgs);
 }
 
@@ -1646,7 +1600,7 @@ void options_menu_create_wireless_custom_id(SetupMenu *top) {
 	top->addEntry(c4);
 	top->addEntry(c5);
 	top->addEntry(c6);
-	static const char keys[][4] { "\0", "0", "1", "2", "3", "4", "5", "6", "7",
+	static const char keys[][4] { "", "0", "1", "2", "3", "4", "5", "6", "7",
 			"8", "9", "-", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
 			"K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
 			"X", "Y", "Z" };
@@ -2427,26 +2381,22 @@ void system_menu_create_interfaceS2(SetupMenu *top) {
 void system_menu_create_interfaceCAN_routing(SetupMenu *top) {
 	SetupMenuSelect *canoutxcv = new SetupMenuSelect("XCVario", RST_NONE, 0,
 			true, &rt_can_xcv);
-	canoutxcv->addEntry("Disable");
-	canoutxcv->addEntry("Enable");
+	canoutxcv->mkBinary();
 	top->addEntry(canoutxcv);
 
 	SetupMenuSelect *canoutwl = new SetupMenuSelect("Wireless", RST_NONE, 0,
 			true, &rt_wl_can);
-	canoutwl->addEntry("Disable");
-	canoutwl->addEntry("Enable");
+	canoutwl->mkBinary();
 	top->addEntry(canoutwl);
 
 	SetupMenuSelect *canouts1 = new SetupMenuSelect("S1-RS232", RST_NONE,
 			update_routing, true, &rt_s1_can);
-	canouts1->addEntry("Disable");
-	canouts1->addEntry("Enable");
+	canouts1->mkBinary();
 	top->addEntry(canouts1);
 
 	SetupMenuSelect *canouts2 = new SetupMenuSelect("S2-RS232", RST_NONE,
 			update_routing, true, &rt_s2_can);
-	canouts2->addEntry("Disable");
-	canouts2->addEntry("Enable");
+	canouts2->mkBinary();
 	top->addEntry(canouts2);
 }
 
@@ -2537,8 +2487,7 @@ void system_menu_create(SetupMenu *sye) {
 			&logging);
 	logg->setHelp(
 			"Option to log e.g. raw sensor data in NMEA logger in XCSoar");
-	logg->addEntry("Disable");
-	logg->addEntry("Sensor RAW Data");
+	logg->mkBinary("Sensor RAW Data");
 	sye->addEntry(logg);
 
 }

@@ -17,8 +17,7 @@ public:
 	void begin();
 	void press() override;
 	void release() override {};
-	void up( int count ) override {};
-	void down( int count ) override {};
+	void rot( int count ) override {};
 	void longPress() override;
 	void escape() override {};
 	void doSoftwareUpdate( IpsDisplay *p );

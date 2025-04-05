@@ -200,6 +200,9 @@ float mpu_target_temp=45.0;
 
 AdaptUGC *egl = 0;
 
+int IRAM_ATTR sign(int num) {
+    return (num > 0) - (num < 0);
+}
 
 AnalogInput* getBattery() { return &Battery;}
 

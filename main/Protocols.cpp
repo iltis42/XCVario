@@ -255,10 +255,10 @@ void Protocols::parseNMEA( const char *str ){
 					Rotary->sendRelease();
 				}else if( func == 'u' ){
 					ESP_LOGI(FNAME,"Up");
-					Rotary->sendUp(1);
+					Rotary->sendRot(1);
 				}else if( func == 'd' ){
 					ESP_LOGI(FNAME,"Down");
-					Rotary->sendDown(1);
+					Rotary->sendRot(-1);
 				}
 				else if( func == 'x' ){
 					ESP_LOGI(FNAME,"Escape");

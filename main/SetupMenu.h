@@ -9,6 +9,8 @@
 
 #include "MenuEntry.h"
 
+constexpr const char* FORMATSTRING_AND_SPACE = "%s                ";
+
 class SetupMenuValFloat;
 
 class SetupMenu : public MenuEntry
@@ -18,7 +20,6 @@ public:
 	explicit SetupMenu(const char* title, void (menu_create)(SetupMenu* ptr));
 	virtual ~SetupMenu();
 	void enter() override;
-	// void exit(int levels=0) override;
 	void display( int mode=0 ) override;
 	bool isLeaf() const override { return false; }
 	const char *value() const override { return nullptr; };
@@ -31,11 +32,9 @@ public:
 	void       delEntry(MenuEntry* item);
 	const MenuEntry* findMenu(const char *title) const;
 
-	void up( int count ) override;
-	void down( int count ) override;
+	void rot( int count ) override;
 	void press() override;
 	void longPress() override {};
-	void escape() override;
 
 	static void catchFocus( bool activate );
 	static bool focus;
@@ -48,6 +47,6 @@ public:
 protected:
 	void (*populateMenu)(SetupMenu*);
 	std::vector<MenuEntry*>  _childs;
-	int8_t  highlight = -1;
+	int highlight = -1;
 };
 

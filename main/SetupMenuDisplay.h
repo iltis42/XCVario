@@ -36,8 +36,7 @@ public:
 	void display(int mode=0) override;
 
 	const char *value() const override { return nullptr; }
-	void up( int count ) override {}
-	void down( int count ) override {}
+	void rot( int count ) override {}
 	void press() override;
 	void longPress() override {};
 

@@ -58,7 +58,7 @@ CompassMenu::~CompassMenu()
 // Compass Menu Action Routine
 int CompassMenu::deviationAction( SetupMenuSelect *p )
 {
-	ESP_LOGI( FNAME, "Compass deviation setup for direction '%s'",	p->getEntry() );
+	ESP_LOGI( FNAME, "Compass deviation setup for direction '%s'",	p->value() );
 
 	if( !compass || !(compass->haveSensor()) )
 	{
@@ -69,12 +69,12 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		ESP_LOGI( FNAME, "Abort calibration, no sensor signal" );
 		return 0;
 	}
-	short direction = strtol( p->getEntry(), nullptr, 10 );
+	short direction = strtol( p->value(), nullptr, 10 );
 	// Calibration menu is requested
 	p->clear();
 	MYUCG->setFont( ucg_font_ncenR14_hr );
 	MYUCG->setPrintPos( 1, 60 );
-	MYUCG->printf( "Turn airplane to %s  ", p->getEntry() );
+	MYUCG->printf( "Turn airplane to %s  ", p->value() );
 	MYUCG->setPrintPos( 1, 90 );
 	MYUCG->printf( "and push button when done" );
 	delay( 500 );
@@ -119,7 +119,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	if(p->getParent()->getMenuPos() > 7 )
 		p->getParent()->menuSetTop();
 	MYUCG->printf( "Press key for next" );
-	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",	p->getEntry() );
+	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",	p->value() );
 	return 0;
 }
 

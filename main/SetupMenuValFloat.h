@@ -22,7 +22,7 @@ class SetupMenuValFloat:  public MenuEntry {
 public:
 	SetupMenuValFloat() { _unit = ""; };
 	SetupMenuValFloat(  const char *title, const char *unit, float min, float max, float step, int (*action)(SetupMenuValFloat *p) = nullptr, 
-		bool end_menu=false, SetupNG<float> *anvs = 0, e_restart_mode_t restart=RST_NONE, bool sync=false, bool life_update=false );
+		bool end_menu=false, SetupNG<float> *anvs=nullptr, e_restart_mode_t restart=RST_NONE, bool sync=false, bool life_update=false );
 	virtual ~SetupMenuValFloat() = default;
 	void enter() override;
 	void display(int mode=0) override;
@@ -30,14 +30,13 @@ public:
 	void setPrecision( int prec );
 	const char *value() const override;
 	float getFloat() const { return _nvs->get(); }
-	void up( int count );  // step up to parent
-	void down( int count );
+	void rot( int count );
 	void press();
 	void longPress();
 	void setStep( float val ) { _step = val; };
 	void setMax( float max ) { _max = max; };
 	void setDynamic( float value ) { _dynamic = value; }
-    float _value;
+    float _value = .0;
 
 private:
     float step( float instep );

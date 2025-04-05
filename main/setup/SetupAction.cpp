@@ -57,8 +57,5 @@ void SetupAction::press()
 
 void SetupAction::longPress()
 {
-    if ( _end_menu ) {
-        _parent->menuSetTop();
-    }
     exit();
 }

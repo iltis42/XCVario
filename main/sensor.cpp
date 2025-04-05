@@ -820,7 +820,7 @@ void readTemp(void *pvParameters)
 				t_devices = ds18b20.search(t_addr, 1);
 				// ESP_LOGI(FNAME,"Temperatur Sensors found N=%d Addr: %llx", t_devices, t_addr[0] );
 			}
-			if( t_devices ){
+			if( t_devices && !gflags.inSetup ){
 				// ESP_LOGI(FNAME,"Temp devices %d", t_devices);
 				float temp;
 				uint8_t err = ds18b20.getTemp(t_addr[0], temp );

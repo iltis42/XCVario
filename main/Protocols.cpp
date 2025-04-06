@@ -108,17 +108,17 @@ void Protocols::sendItem( const char *key, char type, void *value, int len, bool
 		int i = strlen(str);
 		sprintf( &str[i], "*%02X\r\n", cs );
 		// ESP_LOGI(FNAME,"sendNMEAString: %s", str );
-		SString nmea( str );
-		if( !Router::forwardMsg( nmea, can_tx_q ) ){
-			if( !_can_send_error ){
-				_can_send_error = true;
-				ESP_LOGW(FNAME,"Permanent send msg to XCV client XCV (%d bytes) failure", nmea.length() );
-			}
-		}
-		else if( _can_send_error ){
-			_can_send_error = false;
-			ESP_LOGI(FNAME,"Okay again send msg to XCV client (%d bytes)", nmea.length() );
-		}
+		// SString nmea( str );
+		// if( !Router::forwardMsg( nmea, can_tx_q ) ){
+		// 	if( !_can_send_error ){
+		// 		_can_send_error = true;
+		// 		ESP_LOGW(FNAME,"Permanent send msg to XCV client XCV (%d bytes) failure", nmea.length() );
+		// 	}
+		// }
+		// else if( _can_send_error ){
+		// 	_can_send_error = false;
+		// 	ESP_LOGI(FNAME,"Okay again send msg to XCV client (%d bytes)", nmea.length() );
+		// }
 	}
 }
 

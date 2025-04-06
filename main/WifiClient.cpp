@@ -203,23 +203,23 @@ void WifiClient::tcp_client(void *setup){
         		ESP_LOGI(FNAME, "socket %d connected successfully!", config->sock);
         	}
         }
-        SString send;
-    	Router::pullMsg( *(config->txbuf), send);
-        if( send.length() ){
-        	// ESP_LOGI(FNAME, "have data to send, port: %d len: %d", config->port, send.length() );
-        	if( write(config->sock , send.c_str() , send.length() ) < 0)
-        	{
-        		ESP_LOGE(FNAME, "Send failed, socket %d", config->sock );
-        		close(config->sock);
-        		config->sock = -1;
-        		config->connected = false;
-        		vTaskDelay(4000 / portTICK_PERIOD_MS);
-        		continue;
-        	}else {
-        		// ESP_LOGI(FNAME, "socket send success");
-        		timeout = 0;
-        	}
-        }
+        // SString send;
+    	// Router::pullMsg( *(config->txbuf), send);
+        // if( send.length() ){
+        // 	// ESP_LOGI(FNAME, "have data to send, port: %d len: %d", config->port, send.length() );
+        // 	if( write(config->sock , send.c_str() , send.length() ) < 0)
+        // 	{
+        // 		ESP_LOGE(FNAME, "Send failed, socket %d", config->sock );
+        // 		close(config->sock);
+        // 		config->sock = -1;
+        // 		config->connected = false;
+        // 		vTaskDelay(4000 / portTICK_PERIOD_MS);
+        // 		continue;
+        // 	}else {
+        // 		// ESP_LOGI(FNAME, "socket send success");
+        // 		timeout = 0;
+        // 	}
+        // }
         int end=100;
         SString rec;
         while( 1 ){
@@ -229,7 +229,7 @@ void WifiClient::tcp_client(void *setup){
         		if( c == '\n' || rec.full() ){
         			// ESP_LOGI(FNAME, "Port %d read %d bytes: %s", config->port, rec.length(), rec.c_str() );
         			// ESP_LOG_BUFFER_HEXDUMP(FNAME, rec.c_str(), rec.length(), ESP_LOG_INFO);
-        			Router::forwardMsg( rec, *(config->rxbuf) );
+        			// Router::forwardMsg( rec, *(config->rxbuf) );
         			timeout = 0;
         			rec.clear();
         			config->connected = true;

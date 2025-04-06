@@ -605,10 +605,11 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 // 	helptext = 0;
 // }
 
-SetupMenu::SetupMenu(const char *title, void (menu_create)(SetupMenu* ptr)) :
+SetupMenu::SetupMenu(const char *title, void (menu_create)(SetupMenu* ptr), int cont_id) :
 	MenuEntry(),
 	populateMenu(menu_create),
-	highlight(-1)
+	highlight(-1),
+	content_id(cont_id)
 {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
 	_title = title;
@@ -631,11 +632,25 @@ void SetupMenu::catchFocus(bool activate) {
 void SetupMenu::enter()
 {
 	ESP_LOGI(FNAME,"enter inSet %d, mptr: %p", gflags.inSetup, populateMenu );
-	if (_childs.empty() && populateMenu) {
+	if ((_childs.empty() || dyn_content) && populateMenu) {
 		(populateMenu)(this);
 		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
 	}
 	MenuEntry::enter();
+}
+
+void SetupMenu::exit(int ups)
+{
+	for (std::vector<MenuEntry *>::iterator it = _childs.begin(); it != _childs.end();) {
+		if ((*it)->isOneTime()) {
+			it = _childs.erase(it);
+			delete *it;
+		}
+		else{
+			++it;
+		}
+	}
+	MenuEntry::exit(ups);
 }
 
 void SetupMenu::display(int mode)
@@ -653,7 +668,7 @@ void SetupMenu::display(int mode)
 	for (int i = 0; i < _childs.size(); i++) {
 		MenuEntry *child = _childs[i];
 		MYUCG->setPrintPos(1, (i + 1) * 25 + 25);
-		if (!child->isLeaf() || child->value()) {
+		if (!child->isLeaf() || (child->value() && *child->value() != '\0')) {
 			MYUCG->setColor( COLOR_HEADER_LIGHT);
 		}
 		MYUCG->printf("%s", child->getTitle());
@@ -687,7 +702,7 @@ void SetupMenu::delEntry( MenuEntry * item ) {
 	if (position != _childs.end()) {
 		ESP_LOGI(FNAME,"found entry, now erase" );
 		_childs.erase(position);
-        delete *position;
+		delete *position;
 	}
 }
 
@@ -706,6 +721,14 @@ const MenuEntry* SetupMenu::findMenu(const char *title) const
 		}
 	}
 	ESP_LOGW(FNAME,"Menu entry not found for %s", title);
+	return nullptr;
+}
+
+MenuEntry *SetupMenu::getEntry(int n) const
+{
+	if ( n < _childs.size() ) {
+		return _childs[n];
+	}
 	return nullptr;
 }
 
@@ -900,7 +923,7 @@ void vario_menu_create(SetupMenu *vae) {
 	vae->addEntry(vga);
 
 	SetupMenuSelect *vlogscale = new SetupMenuSelect("Log. Scale", RST_NONE, 0, true, &log_scale);
-	vlogscale->mkBinary();
+	vlogscale->mkEnable();
 	vae->addEntry(vlogscale);
 
 	SetupMenuSelect *vamod = new SetupMenuSelect("Mode", RST_NONE, 0, true,
@@ -922,7 +945,7 @@ void vario_menu_create(SetupMenu *vae) {
 
 	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, 0, true, &ps_display);
 	sink->setHelp("Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
-	sink->mkBinary();
+	sink->mkEnable();
 	vae->addEntry(sink);
 
 	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, 0,
@@ -935,7 +958,7 @@ void vario_menu_create(SetupMenu *vae) {
 
 	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_ON_EXIT, 0, true, &screen_centeraid);
 	scrcaid->setHelp("Enable/disable display of centering aid (reboots)");
-	scrcaid->mkBinary();
+	scrcaid->mkEnable();
 	vae->addEntry(scrcaid);
 
 	SetupMenu *vdamp = new SetupMenu("Vario Damping", vario_menu_create_damping);
@@ -967,7 +990,7 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	SetupMenuSelect *dt = new SetupMenuSelect("Dual Tone", RST_NONE, audio_setup_s, true, &dual_tone);
 	dt->setHelp(
 			"Select dual tone modue aka ilec sound (di/da/di), or single tone (di/di/di) mode");
-	dt->mkBinary();
+	dt->mkEnable();
 	top->addEntry(dt);
 
 	SetupMenuValFloat *htv = new SetupMenuValFloat("Dual Tone Pitch", "%", 0,
@@ -998,7 +1021,7 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 			true, &audio_variable_frequency);
 	advarto->setHelp(
 			"Enable audio frequency updates within climbing tone intervals, disable keeps frequency constant");
-	advarto->mkBinary();
+	advarto->mkEnable();
 	top->addEntry(advarto);
 }
 
@@ -1070,7 +1093,7 @@ void audio_menu_create_volume(SetupMenu *top) {
 			true, &audio_split_vol);
 	amspvol->setHelp(
 			"Enable independent audio volume in SpeedToFly and Vario modes, disable for one volume for both");
-	amspvol->mkBinary();
+	amspvol->mkEnable();
 	top->addEntry(amspvol);
 }
 
@@ -1749,7 +1772,7 @@ void options_menu_create(SetupMenu *opt) {
 			true, &fl_auto_transition);
 	opt->addEntry(atl);
 	atl->setHelp("Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
-	atl->mkBinary();
+	atl->mkEnable();
 
 	SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode",
 			RST_NONE, 0, true, &alt_display_mode);
@@ -2108,7 +2131,7 @@ void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
 			false, &stall_warning);
 	stawaen->setHelp(
 			"Enable alarm sound when speed goes below configured stall speed (until 30% less)");
-	stawaen->mkBinary();
+	stawaen->mkEnable();
 	top->addEntry(stawaen);
 
 	// Fixme no need to reboot
@@ -2385,8 +2408,9 @@ void system_menu_create(SetupMenu *sye) {
 	sye->addEntry(aia);
 
 	// Devices menu
-	SetupMenu *devices = new SetupMenu("Connected Devices", system_menu_create_devices);
+	SetupMenu *devices = new SetupMenu("Connected Devices", system_menu_connected_devices);
 	devices->setHelp("Devices, Interfaces, Protocols", 240);
+	devices->setDynContent();
 	sye->addEntry(devices);
 
 	// // _serial1_speed
@@ -2421,7 +2445,7 @@ void system_menu_create(SetupMenu *sye) {
 			&logging);
 	logg->setHelp(
 			"Option to log e.g. raw sensor data in NMEA logger in XCSoar");
-	logg->mkBinary("Sensor RAW Data");
+	logg->mkEnable("Sensor RAW Data");
 	sye->addEntry(logg);
 
 }

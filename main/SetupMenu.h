@@ -17,20 +17,25 @@ class SetupMenu : public MenuEntry
 {
 public:
 	SetupMenu() = delete;
-	explicit SetupMenu(const char* title, void (menu_create)(SetupMenu* ptr));
+	explicit SetupMenu(const char* title, void (menu_create)(SetupMenu* ptr), int cont_id=0);
 	virtual ~SetupMenu();
 	void enter() override;
+	void exit(int ups=1) override;
 	void display( int mode=0 ) override;
 	bool isLeaf() const override { return false; }
 	const char *value() const override { return nullptr; };
+	int getNrChilds() const { return _childs.size(); }
 	int getMenuPos() const { return highlight; }
 	int menuPosInc() { return ++highlight; }
 	void menuSetTop() { highlight = -1; }
+	void setDynContent() { dyn_content = true; }
+	int getContId() const { return content_id; }
 	
 	// the submenu structure
 	MenuEntry* addEntry(MenuEntry* item);
 	void       delEntry(MenuEntry* item);
 	const MenuEntry* findMenu(const char *title) const;
+	MenuEntry* getEntry(int n) const;
 
 	void rot( int count ) override;
 	void press() override;
@@ -48,5 +53,7 @@ protected:
 	void (*populateMenu)(SetupMenu*);
 	std::vector<MenuEntry*>  _childs;
 	int highlight = -1;
+	bool dyn_content = false; // reentrant create callback, call it on every enter
+	int content_id;
 };
 

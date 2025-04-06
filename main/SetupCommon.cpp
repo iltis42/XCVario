@@ -219,15 +219,9 @@ bool SetupCommon::initSetup( bool& present ) {
 };
 
 
-char * SetupCommon::getID() {
-	char id[7] = { 0 };
-	strcpy( id, custom_wireless_id.get().id );
-	if( hardwareRevision.get() >= XCVARIO_21 ){
-		sprintf( _ID, "%s%s", getFixedID(), id );
-	}
-	else{
-		sprintf( _ID, "%s%s", getFixedID(), id );
-	}
+char * SetupCommon::getID()
+{
+	sprintf( _ID, "%s%s", getFixedID(), custom_wireless_id.get().id );
 	return _ID;
 }
 

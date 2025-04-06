@@ -99,7 +99,8 @@ public:
     // Remove device of this type
     void removeDevice(DeviceId did);
     InterfaceCtrl* getIntf(DeviceId did);
-    bool isIntf(ItfTarget Iid);
+    bool isIntf(ItfTarget iid) const;
+    bool isAvail(InterfaceId iid) const;
     RoutingList getRouting(RoutingTarget t);
     void refreshRouteCache();
     DataLink *getFlarmHost();
@@ -113,8 +114,9 @@ public:
     static DeviceAttributes getDevAttr(DeviceId did);
     static std::string_view getDevName(DeviceId did);
     static std::vector<DeviceId> allKnownDevs();
-    std::vector<const Device*> allDevs() const;
-    
+    static std::string_view getItfName(InterfaceId iid);
+    static std::vector<InterfaceId> allKnownIntfs();
+    std::vector<const Device *> allDevs() const;
 
 private:
     // Complete list of all devices known at runtime

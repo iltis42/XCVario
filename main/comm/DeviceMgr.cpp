@@ -103,6 +103,34 @@ std::vector<DeviceId> DeviceManager::allKnownDevs()
     return ret;
 }
 
+constexpr std::pair<InterfaceId, std::string_view> INTFCS[] = {
+    {CAN_BUS, "CAN bus"},
+    {I2C, "I2C bus"},
+    {S1_RS232, "S1 serial"},
+    {S2_RS232, "S2 serial"},
+    {WIFI, "Wifi"},
+    {BT_SPP, "BT serial"},
+    {BT_LE, "BT low energy"},
+};
+
+std::string_view DeviceManager::getItfName(InterfaceId iid) {
+    for (const auto& entry : INTFCS) {
+        if (entry.first == iid) {
+            return entry.second;
+        }
+    }
+    return "";
+}
+
+std::vector<InterfaceId> DeviceManager::allKnownIntfs()
+{
+    std::vector<InterfaceId> ret;
+    for (const auto& entry : INTFCS) {
+        ret.push_back(entry.first);
+    }
+    return ret;
+}
+
 // a dummy interface
 class DmyItf final : public InterfaceCtrl
 {
@@ -400,16 +428,37 @@ InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
     return nullptr;
 }
 
-bool DeviceManager::isIntf(ItfTarget Iid)
+bool DeviceManager::isIntf(ItfTarget iid) const
 {
     for ( auto dev : _device_map ) {
         // all devices
-        if ( dev.second->_itf->getId() == Iid.iid ) {
+        if ( dev.second->_itf->getId() == iid.iid ) {
             return true;
         }
     }
     return false;
 }
+
+bool DeviceManager::isAvail(InterfaceId iid) const
+{
+    if ( iid == CAN_BUS && (isIntf(I2C) || hardwareRevision.get() < XCVARIO_22) ) {
+        return false;
+    }
+    else if ( iid == I2C && isIntf(CAN_BUS) ) {
+        return false;
+    }
+    else if ( (iid == BT_SPP || iid == BT_LE) && isIntf(WIFI) ) {
+        return false;
+    }
+    else if ( iid == WIFI && (isIntf(BT_SPP) || isIntf(BT_LE)) ) {
+        return false;
+    }
+    else if ( iid == S2_RS232 && hardwareRevision.get() < XCVARIO_21 ) {
+        return false;
+    }
+    return true;
+}
+
 
 // Result should be cashed for performance purpose.
 RoutingList DeviceManager::getRouting(RoutingTarget target)

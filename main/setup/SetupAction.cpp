@@ -54,5 +54,5 @@ void SetupAction::press()
 
 void SetupAction::longPress()
 {
-    exit();
+    exit(1+(_end_menu?1:0));
 }

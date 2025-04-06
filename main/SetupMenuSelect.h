@@ -26,6 +26,7 @@ public:
 	void press() override;
 	void longPress() override;
 	const char *value() const override;
+	void setTerminateMenu() { bits._end_menu = true; }
 	void lock() { bits._locked = true; }
 	void unlock() { bits._locked = false; }
 	bool isLocked() const { return bits._locked; }

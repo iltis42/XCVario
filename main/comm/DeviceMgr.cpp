@@ -569,7 +569,7 @@ std::vector<const Device*> DeviceManager::allDevs() const
 // Resolve the existance of a device
 Device::~Device()
 {
-    ESP_LOGI(FNAME, "Delete device %d.", _id);
+    ESP_LOGI(FNAME, "Dtor device %d.", _id);
     // Detach data links from interface
     for (DataLink* dl : _dlink) {
         _itf->DeleteDataLink(dl->getPort());

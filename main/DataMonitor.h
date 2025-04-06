@@ -23,8 +23,6 @@ public:
 	DataMonitor();
 	void monitorString( ItfTarget ch, e_dir_t dir, const char *s, int len );
 	void start(SetupMenuSelect * p, ItfTarget ch);
-	// void enter() override;
-	void exit(int ups=1) override;
 	void display(int) override {}
 	const char* value() const override { return ""; }
 	void press() override;

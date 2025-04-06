@@ -166,12 +166,18 @@ void DataMonitor::press(){
 	// }
 }
 
-void DataMonitor::longPress(){
-	ESP_LOGI(FNAME,"longPress" );
+void DataMonitor::longPress()
+{
+	ESP_LOGI(FNAME,"stop");
 	if( !mon_started ){
 		ESP_LOGI(FNAME,"longPress, but not started, return" );
 		return;
 	}
+	channel = 0;
+	mon_started = false;
+	paused = false;
+	delay(1000);
+	MYUCG->scrollLines( 0 );
 	exit();
 }
 
@@ -201,14 +207,3 @@ void DataMonitor::start(SetupMenuSelect *p, ItfTarget ch)
 	ESP_LOGI(FNAME,"started");
 }
 
-void DataMonitor::exit(int ups)
-{
-	ESP_LOGI(FNAME,"stop");
-	channel = 0;
-	mon_started = false;
-	paused = false;
-	delay(1000);
-	MYUCG->scrollLines( 0 );
-	_parent->menuSetTop();
-	MenuEntry::exit(1);
-}

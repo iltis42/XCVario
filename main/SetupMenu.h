@@ -30,6 +30,7 @@ public:
 	void highlightLast() { highlight = _childs.size()-1; }
 	int getNrChilds() const { return _childs.size(); }
 	void setDynContent() { dyn_content = true; }
+	void setDirty() { dirty = true; }
 	int getContId() const { return content_id; }
 	
 	// the submenu structure
@@ -54,7 +55,8 @@ protected:
 	void (*populateMenu)(SetupMenu*);
 	std::vector<MenuEntry*>  _childs;
 	int highlight = -1;
-	bool dyn_content = false; // reentrant create callback, call it on every enter
+	bool dyn_content = false; // reentrant create routine required, call it when dirty
+	bool dirty = false; // need to refresh content/child list
 	int content_id;
 };
 

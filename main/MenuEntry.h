@@ -24,7 +24,7 @@ public:
 	MenuEntry() : RotaryObserver() {}
 	virtual ~MenuEntry() = default;
 
-	// from rotary
+	// from Observer
 	void release() override {}
 	void escape() override {}
 

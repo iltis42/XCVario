@@ -19,7 +19,6 @@ public:
 	explicit SetupAction(const char *title, int (*action)(SetupAction *), int code, bool _end_menu=false);
 	virtual ~SetupAction() = default;
 	void enter() override;
-	void exit(int ups=1);
 	void display(int mode=0) override;
 	const char* value() const override { return ""; };
 	int getCode() const { return _code; }

@@ -134,6 +134,10 @@ void SetupMenuSelect::press()
 		exit(-1);
 		return;
 	}
+	else if ( bits._end_menu ) {
+		exit(2);
+		return;
+	}
 	exit();
 }
 

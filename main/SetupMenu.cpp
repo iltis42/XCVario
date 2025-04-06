@@ -628,6 +628,7 @@ void SetupMenu::display(int mode)
 {
 	xSemaphoreTake(display_mutex, portMAX_DELAY);
 	// ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
+	if ( dirty ) { populateMenu(this); }
 	clear();
 	int y = 25;
 	// ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );

@@ -672,8 +672,8 @@ void SetupMenu::delEntry( MenuEntry * item ) {
 	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
 	if (position != _childs.end()) {
 		ESP_LOGI(FNAME,"found entry, now erase" );
-		_childs.erase(position);
 		delete *position;
+		_childs.erase(position);
 	}
 }
 

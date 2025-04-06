@@ -24,10 +24,11 @@ public:
 	void display( int mode=0 ) override;
 	bool isLeaf() const override { return false; }
 	const char *value() const override { return nullptr; };
+	int getHighlight() const { return highlight; }
+	int incHighlight() { return ++highlight; }
+	void highlightTop() { highlight = -1; }
+	void highlightLast() { highlight = _childs.size()-1; }
 	int getNrChilds() const { return _childs.size(); }
-	int getMenuPos() const { return highlight; }
-	int menuPosInc() { return ++highlight; }
-	void menuSetTop() { highlight = -1; }
 	void setDynContent() { dyn_content = true; }
 	int getContId() const { return content_id; }
 	

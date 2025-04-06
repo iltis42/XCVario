@@ -41,6 +41,6 @@ void SetupMenuDisplay::display(int mode)
 
 void SetupMenuDisplay::press()
 {
-	_parent->menuSetTop();
+	_parent->highlightTop();
 	exit();
 }

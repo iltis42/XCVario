@@ -22,27 +22,24 @@ SetupAction::SetupAction(const char *title, int (*action)(SetupAction *), int co
 {
     ESP_LOGI(FNAME, "SetupAction( %s ) ", title);
     _title = title;
-    helptext = action_help;
+    // helptext = action_help;
 }
 
 void SetupAction::enter()
 {
-    (*_action)(this);
+    if ( (*_action)(this) ) {
+        // hijacked
+    };
     if ( !helptext ) {
         return; // do not enter at all, just one action
     }
     MenuEntry::enter();
 }
 
-void SetupAction::exit(int ups)
-{
-    MenuEntry::exit(ups+_extra_ups);
-}
-
 void SetupAction::display(int mode)
 {
     ESP_LOGI(FNAME, "display() instance=%p mode=%d", this, mode);
-    int line = _parent->getMenuPos()+1;
+    int line = _parent->getHighlight()+1;
     int indent = MYUCG->getStrWidth(_title) + 12;
     MYUCG->setPrintPos(indent, (line + 1) * 25);
     MYUCG->printf( " %3d  ", mode );

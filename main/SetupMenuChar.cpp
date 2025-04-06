@@ -37,7 +37,7 @@ void SetupMenuChar::display(int mode)
 	_row = 50;
     ESP_LOGI(FNAME,"display title:%s action: %x", _title, (int)(_action));
 	if ( !helptext ) {
-		_row = (_parent->getMenuPos() + 1) * 25;
+		_row = (_parent->getHighlight() + 1) * 25;
 		MYUCG->setColor(COLOR_BLACK);
 		MYUCG->drawFrame(1, _row + 3, 238, 25);
 		MYUCG->setColor(COLOR_WHITE);

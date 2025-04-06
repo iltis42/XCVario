@@ -751,7 +751,7 @@ void SetupMenu::press()
 {
 	ESP_LOGI(FNAME,"press() inSet %d highl: %d", gflags.inSetup, highlight );
 	if (highlight == -1) {
-		_parent->menuSetTop();
+		_parent->highlightTop();
 		exit();
 	} else {
 		ESP_LOGI(FNAME,"SetupMenu to child");

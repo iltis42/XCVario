@@ -42,7 +42,7 @@ public:
 
 private:
     // helpers
-    void forwardMsg(DeviceId src_dev);
+    void doForward(DeviceId src_dev);
     NmeaPrtcl *enforceNmea(DeviceId did, int sendport, ProtocolType ptyp);
 
 private:

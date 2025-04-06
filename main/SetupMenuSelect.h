@@ -26,13 +26,18 @@ public:
 	void press() override;
 	void longPress() override;
 	const char *value() const override;
+	void lock() { bits._locked = true; }
+	void unlock() { bits._locked = false; }
+	bool isLocked() const { return bits._locked; }
 
 	bool existsEntry( std::string ent );
     void addEntry(const char* ent, int val);
     void addEntry(const char* ent);
 	void addEntryList( const char ent[][4], int size );
 	void delEntry( const char * ent );
-	void mkBinary(const char *what=nullptr);
+	void delAllEntries();
+	void mkEnable(const char *what=nullptr);
+	void mkConfirm();
 	inline void updateEntry( const char *ent, int num ) { _values[num].first = ent; }
 	int getSelect() const { return _select; }
 	int getValue() const { return _values[_select].second; };

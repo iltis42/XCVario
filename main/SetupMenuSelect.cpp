@@ -34,6 +34,8 @@ SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, i
 
 void SetupMenuSelect::enter()
 {
+	if ( bits._locked ) { return; }
+
 	_select_save = _select;
 	_select = (_select > _values.size()-1) ? _values.size()-1 : _select;
 	_show_inline = _values.size() > 9 || !helptext;
@@ -139,11 +141,12 @@ void SetupMenuSelect::longPress(){
 	press();
 }
 
-
-
 const char *SetupMenuSelect::value() const 
 {
-	return _values[_select].first;
+	if ( _values.size() > 0 ) {
+		return _values[_select].first;
+	}
+	return "";
 }
 
 bool SetupMenuSelect::existsEntry( std::string ent ){
@@ -194,11 +197,24 @@ void SetupMenuSelect::delEntry( const char* ent )
 	}
 }
 
-void SetupMenuSelect::mkBinary(const char *what)
+void SetupMenuSelect::delAllEntries()
+{
+	_values.clear();
+	_select = 0;
+}
+
+void SetupMenuSelect::mkEnable(const char *what)
 {
 	// precondition: _values is empty
-	addEntry("Disable");
-	addEntry(what? what : "Enable");
+	addEntry("disable");
+	addEntry(what? what : "enable");
+}
+
+void SetupMenuSelect::mkConfirm()
+{
+	// precondition: _values is empty
+	addEntry("cancel");
+	addEntry("yes");
 }
 
 void SetupMenuSelect::setSelect( int sel ) {

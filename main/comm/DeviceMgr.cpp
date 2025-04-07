@@ -37,8 +37,8 @@ static TaskHandle_t SendTask = nullptr;
 // static routing table on device level
 //
 // entries with zero termination, entirely as ro flash data, no RAM usage
-static constexpr RoutingTarget flarm_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
-static constexpr RoutingTarget krt2_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI, 8882}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
+static constexpr RoutingTarget flarm_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
+static constexpr RoutingTarget krt2_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8882}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
 static constexpr RoutingTarget navi_routes[] = { {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {RADIO_KRT2_DEV, S2_RS232, 0}, {FLARM_DEV, CAN_BUS, 20}, {} };
 static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(FLARM_DEV, NO_PHY, 0), flarm_routes },
@@ -62,17 +62,19 @@ static constexpr const RoutingTarget* findRoute(const RoutingTarget& target) {
 // constexpr PackedAttributeList flarm_attr{ PackedAttributeList::pack({ ProtocolType::FLARM_P, ProtocolType::FLARMBIN_P}) };
 
 
-// Define device names for the menu, only if they have a real a state (skip the virtual ones)
+// Define device names for the configuration menu
 constexpr std::pair<DeviceId, DeviceAttributes> DAVATTR[] = {
     {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}, {JUMBOCMD_P}, true }}},
     {DeviceId::ANEMOI_DEV, {"Anemoi", {{S1_RS232, S2_RS232, CAN_BUS}, {ANEMOI_P}, true}}},
-    {DeviceId::XCVARIO_DEV, {"Master XCV", {{CAN_BUS, WIFI, BT_SPP, S2_RS232}, {XCVSYNC_P}, true}}},
-    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{CAN_BUS, WIFI, BT_SPP, S2_RS232}, {XCVSYNC_P}, true}}},
+    {DeviceId::XCVARIO_DEV, {"Master XCV", {{CAN_BUS, WIFI_CLIENT, BT_SPP, S2_RS232}, {XCVSYNC_P}, true}}},
+    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{CAN_BUS, WIFI_AP, BT_SPP, S2_RS232}, {XCVSYNC_P}, true}}},
     {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, CAN_BUS}, {FLARM_P, FLARMBIN_P}, true}}},
-    {DeviceId::NAVI_DEV,   {"Navi", {{S2_RS232, WIFI, BT_SPP, BT_LE}, {XCVARIO_P, OPENVARIO_P, BORGELT_P, CAMBRIDGE_P}, true}}},
+    {DeviceId::NAVI_DEV,   {"Navi", {{S2_RS232, WIFI_AP, BT_SPP, BT_LE}, {XCVARIO_P, OPENVARIO_P, BORGELT_P, CAMBRIDGE_P}, true}}},
     {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C, CAN_BUS}, {MAGSENS_P, MAGSENSBIN_P}, true}}},
     {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}, {KRT2_REMOTE_P}, true}}},
-    {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}, {ATR833_REMOTE_P}, true}}}
+    {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}, {ATR833_REMOTE_P}, true}}},
+    {DeviceId::MASTER_DEV, {"CAN auto", {{CAN_BUS}, {REGISTRATION_P}, true}}}
+    
 };
 
 // Lookup functions
@@ -108,7 +110,8 @@ constexpr std::pair<InterfaceId, std::string_view> INTFCS[] = {
     {I2C, "I2C bus"},
     {S1_RS232, "S1 serial"},
     {S2_RS232, "S2 serial"},
-    {WIFI, "Wifi"},
+    {WIFI_AP, "Wifi AP"},
+    {WIFI_CLIENT, "Wifi client"},
     {BT_SPP, "BT serial"},
     {BT_LE, "BT low energy"},
 };
@@ -315,7 +318,7 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
             itf = CAN;
         }
     }
-    else if ( iid == WIFI) {
+    else if ( iid == WIFI_AP) {
         if ( Wifi ) {
             Wifi->ConfigureIntf(listen_port);
             itf = Wifi;
@@ -447,10 +450,10 @@ bool DeviceManager::isAvail(InterfaceId iid) const
     else if ( iid == I2C && isIntf(CAN_BUS) ) {
         return false;
     }
-    else if ( (iid == BT_SPP || iid == BT_LE) && isIntf(WIFI) ) {
+    else if ( (iid == BT_SPP || iid == BT_LE) && isIntf(WIFI_AP) ) {
         return false;
     }
-    else if ( iid == WIFI && (isIntf(BT_SPP) || isIntf(BT_LE)) ) {
+    else if ( iid == WIFI_AP && (isIntf(BT_SPP) || isIntf(BT_LE)) ) {
         return false;
     }
     else if ( iid == S2_RS232 && hardwareRevision.get() < XCVARIO_21 ) {

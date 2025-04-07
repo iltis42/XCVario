@@ -53,9 +53,9 @@ void DataMonitor::header( ItfTarget ch, bool binary, int len, e_dir_t dir ){
 	const char * what;
 	switch( ch.raw ) {
 		case ItfTarget(BT_SPP).raw: what = "BT"; break;
-		case ItfTarget(WIFI,8880).raw: what = "W8880"; break;
-		case ItfTarget(WIFI,8881).raw: what = "W8881"; break;
-		case ItfTarget(WIFI,8882).raw: what = "W8882"; break;
+		case ItfTarget(WIFI_AP,8880).raw: what = "W8880"; break;
+		case ItfTarget(WIFI_AP,8881).raw: what = "W8881"; break;
+		case ItfTarget(WIFI_AP,8882).raw: what = "W8882"; break;
 		case ItfTarget(S1_RS232).raw:  what = "S1"; break;
 		case ItfTarget(S2_RS232).raw:  what = "S2"; break;
 		case ItfTarget(CAN_BUS).raw: what = "CAN"; break;

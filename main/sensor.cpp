@@ -1482,10 +1482,10 @@ void system_startup(void *args){
 	}else if ( (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE)
 		&& Wifi ) {
 		DeviceManager* dm = DeviceManager::Instance();
-		dm->addDevice(NAVI_DEV, XCVARIO_P, 8880, 8880, WIFI);
-		dm->addDevice(NAVI_DEV, FLARMHOST_P, 8881, 8881, WIFI);
+		dm->addDevice(NAVI_DEV, XCVARIO_P, 8880, 8880, WIFI_AP);
+		dm->addDevice(NAVI_DEV, FLARMHOST_P, 8881, 8881, WIFI_AP);
 		dm->addDevice(NAVI_DEV, FLARMBIN_P, 8881, 8881, NO_PHY);
-		dm->addDevice(NAVI_DEV, KRT2_REMOTE_P, 8882, 8882, WIFI);
+		dm->addDevice(NAVI_DEV, KRT2_REMOTE_P, 8882, 8882, WIFI_AP);
 	}
 
 	if( compass_enable.get() == CS_CAN ){

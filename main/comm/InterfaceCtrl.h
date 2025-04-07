@@ -21,8 +21,9 @@ typedef enum {
     S0_RS232,
     S1_RS232,
     S2_RS232,
+    WIFI_AP,
+    WIFI_CLIENT,
     BT_SPP,
-    WIFI,
     BT_LE
 } InterfaceId;
 

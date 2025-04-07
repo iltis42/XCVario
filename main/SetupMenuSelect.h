@@ -50,7 +50,7 @@ private:
 	int  _select_save = 0;
 	int  _char_index = 0;   // position of character to be altered
 	int  _col, _row;
-	bitfield_select bits;
+	bitfield_select bits = {};
 	std::vector<ITEM_t> _values;
 	int (*_action)( SetupMenuSelect *p );
 	SetupNG<int> *_nvs;

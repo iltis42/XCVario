@@ -13,14 +13,15 @@ constexpr const char* FORMATSTRING_AND_SPACE = "%s                ";
 
 class SetupMenuValFloat;
 
+typedef void (*SetupMenuCreator_t)(SetupMenu*);
+
 class SetupMenu : public MenuEntry
 {
 public:
 	SetupMenu() = delete;
-	explicit SetupMenu(const char* title, void (menu_create)(SetupMenu* ptr), int cont_id=0);
+	explicit SetupMenu(const char* title, SetupMenuCreator_t, int cont_id=0);
 	virtual ~SetupMenu();
 	void enter() override;
-	void exit(int ups=1) override;
 	void display( int mode=0 ) override;
 	bool isLeaf() const override { return false; }
 	const char *value() const override { return nullptr; };
@@ -52,7 +53,7 @@ public:
 	static SetupMenuValFloat *createVoltmeterAdjustMenu();
 
 protected:
-	void (*populateMenu)(SetupMenu*);
+	SetupMenuCreator_t populateMenu;
 	std::vector<MenuEntry*>  _childs;
 	int highlight = -1;
 	bool dyn_content = false; // reentrant create routine required, call it when dirty

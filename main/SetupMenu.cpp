@@ -576,7 +576,7 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // SetupMenu
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-SetupMenu::SetupMenu(const char *title, void (menu_create)(SetupMenu* ptr), int cont_id) :
+SetupMenu::SetupMenu(const char *title, SetupMenuCreator_t menu_create, int cont_id) :
 	MenuEntry(),
 	populateMenu(menu_create),
 	highlight(-1),
@@ -640,12 +640,12 @@ void SetupMenu::display(int mode)
 	for (int i = 0; i < _childs.size(); i++) {
 		MenuEntry *child = _childs[i];
 		MYUCG->setPrintPos(1, (i + 1) * 25 + 25);
-		if (!child->isLeaf() || (child->value() && *child->value() != '\0')) {
+		if (!child->isLeaf() || child->value()) {
 			MYUCG->setColor( COLOR_HEADER_LIGHT);
 		}
 		MYUCG->printf("%s", child->getTitle());
 		// ESP_LOGI(FNAME,"Child Title: %s", child->getTitle() );
-		if (child->value()) {
+		if (child->value() && *child->value() != '\0') {
 			int fl = MYUCG->getStrWidth(child->getTitle());
 			MYUCG->setPrintPos(1 + fl, (i + 1) * 25 + 25);
 			MYUCG->printf(": ");

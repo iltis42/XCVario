@@ -80,8 +80,6 @@ static void options_menu_create_compasswind_straightwind(SetupMenu *top);
 static void options_menu_create_compasswind_straightwind_limits(SetupMenu *top);
 static void options_menu_create_compasswind_straightwind_filters(SetupMenu *top);
 static void options_menu_create_compasswind_circlingwind(SetupMenu *top);
-// static void options_menu_create_wireless(SetupMenu *top);
-static void options_menu_create_wireless_custom_id(SetupMenu *top);
 static void options_menu_create_gload(SetupMenu *top);
 
 static void system_menu_create(SetupMenu *top);
@@ -90,9 +88,6 @@ static void system_menu_create_battery(SetupMenu *top);
 static void system_menu_create_hardware(SetupMenu *top);
 static void system_menu_create_altimeter_airspeed(SetupMenu *top);
 static void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top);
-static void system_menu_create_interfaceS1(SetupMenu *top);
-static void system_menu_create_interfaceS2(SetupMenu *top);
-static void system_menu_create_interfaceCAN(SetupMenu *top);
 static void system_menu_create_hardware_type(SetupMenu *top);
 static void system_menu_create_hardware_rotary(SetupMenu *top);
 static void system_menu_create_hardware_rotary_screens(SetupMenu *top);
@@ -201,69 +196,6 @@ int upd_screens(SetupMenuSelect *p) {
 }
 
 
-int update_s2_baud(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select baudrate: %d", p->getSelect() ); // coldstart
-	S2->setBaud((e_baud)(p->getSelect())); // 0 off, 1: 4800, 2:9600, etc support coldstart from BAUD_OFF
-	return 0;
-}
-
-int update_s2_pol(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select RX/TX polarity: %d", p->getSelect() );
-	S2->setLineInverse(p->getSelect()); // 0 off, 1 invers or TTL (always both, RX/TX)
-	return 0;
-}
-
-int update_s2_pin(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select Pin Swap: %d", p->getSelect() );
-	S2->setPinSwap(p->getSelect()); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
-	return 0;
-}
-
-int update_s2_txena(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select TX Enable: %d", p->getSelect() );
-	S2->setTxOn(p->getSelect()); // 0 normal Client (RO, Listener), 1 Master (Sender)
-	return 0;
-}
-
-int update_s2_protocol(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select profile: %d", p->getSelect()-1 );
-	if ( p->getSelect() > 0 ) {
-		S2->ConfigureIntf(p->getSelect()-1); // SM_FLARM = 0, SM_RADIO = 1, ... 
-	}
-	return 0;
-}
-
-int update_s1_baud(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select baudrate: %d", p->getSelect() );
-	S1->setBaud((e_baud)(p->getSelect()));  // 0 off, 1: 4800, 2:9600, etc
-	return 0;
-}
-
-int update_s1_pol(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select RX/TX polarity: %d", p->getSelect() );
-	S1->setLineInverse(p->getSelect()); // 0 off, 1 invers or TTL (always both, RX/TX)
-	return 0;
-}
-
-int update_s1_pin(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select Pin Swap: %d", p->getSelect() );
-	S1->setPinSwap(p->getSelect()); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
-	return 0;
-}
-
-int update_s1_txena(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select TX Enable: %d", p->getSelect() );
-	S1->setTxOn(p->getSelect()); // 0 normal Client (RO, Listener), 1 Master (Sender)
-	return 0;
-}
-
-int update_s1_protocol(SetupMenuSelect *p) {
-	if ( p->getSelect() > 0 ) {
-		ESP_LOGI(FNAME,"Select profile: %d", p->getSelect()-1 );
-		S1->ConfigureIntf(p->getSelect()-1); // SM_FLARM = 1, SM_RADIO = 2, ... 
-	}
-	return 0;
-}
 
 int do_display_test(SetupMenuSelect *p) {
 	if (display_test.get()) {
@@ -305,12 +237,6 @@ int update_rentry(SetupMenuValFloat *p) {
 
 int update_rentrys(SetupMenuSelect *p) {
 	update_rentry(0);
-	return 0;
-}
-
-int update_wifi_power(SetupMenuValFloat *p) {
-	ESP_ERROR_CHECK(
-			esp_wifi_set_max_tx_power(int(wifi_max_power.get() * 80.0 / 100.0)));
 	return 0;
 }
 
@@ -356,16 +282,6 @@ int data_monS2(SetupMenuSelect *p)
 	return 0;
 }
 
-int update_id(SetupMenuChar *p) {
-	const char *c = p->value();
-	ESP_LOGI(FNAME,"New Letter %c Index: %d", *c, (int)p->getCharIndex() );
-	char id[10] = { 0 };
-	strcpy(id, custom_wireless_id.get().id);
-	id[p->getCharIndex()] = *c;
-	ESP_LOGI(FNAME,"New ID %s", id );
-	custom_wireless_id.set(id);
-	return 0;
-}
 
 int add_key(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"add_key( %d ) ", p->getSelect() );
@@ -448,16 +364,6 @@ int factv_adj(SetupMenuValFloat *p) {
 	float bat = getBattery()->get(true);
 	MYUCG->setPrintPos(1, 100);
 	MYUCG->printf("%0.2f Volt", bat);
-	return 0;
-}
-
-int master_xcv_lock(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"master_xcv_lock");
-	MYUCG->setPrintPos(1, 130);
-	int mxcv = WifiClient::getScannedMasterXCV();
-	MYUCG->printf("Scanned: XCVario-%d", mxcv);
-	if (master_xcvario_lock.get() == 1)
-		master_xcvario.set(mxcv);
 	return 0;
 }
 
@@ -610,25 +516,13 @@ void SetupMenu::enter()
 	MenuEntry::enter();
 }
 
-void SetupMenu::exit(int ups)
-{
-	for (std::vector<MenuEntry *>::iterator it = _childs.begin(); it != _childs.end();) {
-		if ((*it)->isOneTime()) {
-			it = _childs.erase(it);
-			delete *it;
-		}
-		else{
-			++it;
-		}
-	}
-	MenuEntry::exit(ups);
-}
-
 void SetupMenu::display(int mode)
 {
 	xSemaphoreTake(display_mutex, portMAX_DELAY);
 	// ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
-	if ( dirty ) { populateMenu(this); }
+	if ( highlight > _childs.size()-1 ) {
+		highlight = _childs.size()-1;
+	}
 	clear();
 	int y = 25;
 	// ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );
@@ -1518,98 +1412,6 @@ void options_menu_create_compasswind(SetupMenu *top) {
 	top->addEntry(windlog);
 }
 
-void options_menu_create_wireless_custom_id(SetupMenu *top) {
-	SetupMenuChar *c1 = new SetupMenuChar("Letter 1", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 0);
-	SetupMenuChar *c2 = new SetupMenuChar("Letter 2", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 1);
-	SetupMenuChar *c3 = new SetupMenuChar("Letter 3", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 2);
-	SetupMenuChar *c4 = new SetupMenuChar("Letter 4", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 3);
-	SetupMenuChar *c5 = new SetupMenuChar("Letter 5", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 4);
-	SetupMenuChar *c6 = new SetupMenuChar("Letter 6", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 5);
-	top->addEntry(c1);
-	top->addEntry(c2);
-	top->addEntry(c3);
-	top->addEntry(c4);
-	top->addEntry(c5);
-	top->addEntry(c6);
-	static const char keys[][4] { "", "0", "1", "2", "3", "4", "5", "6", "7",
-			"8", "9", "-", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
-			"K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
-			"X", "Y", "Z" };
-	c1->addEntryList(keys, sizeof(keys) / 4);
-	c2->addEntryList(keys, sizeof(keys) / 4);
-	c3->addEntryList(keys, sizeof(keys) / 4);
-	c4->addEntryList(keys, sizeof(keys) / 4);
-	c5->addEntryList(keys, sizeof(keys) / 4);
-	c6->addEntryList(keys, sizeof(keys) / 4);
-}
-
-// Fixme move to devices
-// void options_menu_create_wireless(SetupMenu *top) {
-// 	SetupMenuSelect *btm = new SetupMenuSelect("Wireless", RST_ON_EXIT, 0, true,
-// 			&wireless_type);
-// 	btm->setHelp(
-// 			"Activate wireless interface type to connect navigation devices, or to another XCVario as client (reboots)",
-// 			220);
-// 	btm->addEntry("Disable");
-// 	btm->addEntry("Bluetooth");
-// 	btm->addEntry("Wireless Master");
-// 	btm->addEntry("Wireless Client");
-// 	btm->addEntry("Wireless Standalone");
-// 	btm->addEntry("Bluetooth LE");
-// 	top->addEntry(btm);
-
-// 	SetupMenuValFloat *wifip = new SetupMenuValFloat("WIFI Power", "%", 10.0,
-// 			100.0, 5.0, update_wifi_power, false, &wifi_max_power);
-// 	wifip->setPrecision(0);
-// 	top->addEntry(wifip);
-// 	wifip->setHelp("Maximum Wifi Power to be used 10..100% or 2..20dBm");
-
-// 	SetupMenuSelect *wifimal = new SetupMenuSelect("Lock Master", RST_NONE,
-// 			master_xcv_lock, true, &master_xcvario_lock);
-// 	wifimal->setHelp(
-// 			"In wireless client role, lock this client to the scanned master XCVario ID above");
-// 	wifimal->addEntry("Unlock");
-// 	wifimal->addEntry("Lock");
-// 	top->addEntry(wifimal);
-
-// 	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-// 			data_mon, true, nullptr);
-// 	datamon->setHelp(
-// 			"Short press button to start/pause, long press to terminate data monitor",
-// 			260);
-// 	datamon->addEntry("Disable");
-// 	datamon->addEntry("Bluetooth");
-// 	datamon->addEntry("Wifi 8880");
-// 	datamon->addEntry("Wifi 8881");
-// 	datamon->addEntry("Wifi 8882");
-// 	datamon->addEntry("RS232 S1");
-// 	datamon->addEntry("RS232 S2");
-// 	datamon->addEntry("CAN Bus");
-// 	top->addEntry(datamon);
-
-// 	SetupMenuSelect *datamonmod = new SetupMenuSelect("Monitor Mode", RST_NONE,
-// 			0, true, &data_monitor_mode);
-// 	datamonmod->setHelp(
-// 			"Select data display as ASCII text or as binary hexdump");
-// 	datamonmod->addEntry("ASCII");
-// 	datamonmod->addEntry("Binary");
-// 	top->addEntry(datamonmod);
-
-// 	SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
-// 	top->addEntry(cusid);
-// 	cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate",215);
-
-// 	// SetupMenuSelect *clearcore = new SetupMenuSelect("Clear coredump", RST_NONE, reinterpret_cast<int (*)(SetupMenuSelect*)>(clear_coredump), false, nullptr);
-// 	// clearcore->addEntry("doit");
-// 	// top->addEntry(clearcore);
-// }
-
 void options_menu_create_gload(SetupMenu *top) {
 	SetupMenuSelect *glmod = new SetupMenuSelect("Activation Mode", RST_NONE, 0,
 			true, &gload_mode);
@@ -2127,145 +1929,6 @@ void system_menu_create_altimeter_airspeed(SetupMenu *top) {
 			450, 1, 0, false, &v_max);
 	vmax->setHelp("Configure maximum speed for corresponding aircraft type");
 	top->addEntry(vmax);
-}
-
-void system_menu_create_interfaceS1(SetupMenu *top) {
-	SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT,
-			update_s1_baud, true, &serial1_speed);
-	top->addEntry(s1sp2);
-	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
-	// s1sp2->addEntry("OFF");
-	s1sp2->addEntry("4800 baud");
-	s1sp2->addEntry("9600 baud");
-	s1sp2->addEntry("19200 baud");
-	s1sp2->addEntry("38400 baud");
-	s1sp2->addEntry("57600 baud");
-	s1sp2->addEntry("115200 baud");
-
-	SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE,
-			update_s1_pol, true, &serial1_tx_inverted);
-	top->addEntry(stxi2);
-	stxi2->setHelp( "A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL uses a positive voltage");
-	stxi2->addEntry("RS232 Standard");
-	stxi2->addEntry("RS232 TTL");
-
-	SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX Pins", RST_NONE,
-			update_s1_pin, true, &serial1_pins_twisted);
-	top->addEntry(srxtw2);
-	srxtw2->setHelp("Option to swap RX and TX line for S1, a Flarm needs Normal, a Navi usually swapped. After change also a true power-cycle is needed");
-	srxtw2->addEntry("Normal");
-	srxtw2->addEntry("Swapped");
-
-	SetupMenuSelect *stxdis1 = new SetupMenuSelect("Role", RST_NONE,
-			update_s1_txena, true, &serial1_tx_enable);
-	top->addEntry(stxdis1);
-	stxdis1->setHelp(
-			"Option for 'Client' mode to listen only on the RX line, disables TX line to receive only data");
-	stxdis1->addEntry("Client (RX)");
-	stxdis1->addEntry("Master (RX&TX)");
-
-	SetupMenuSelect *sprots1 = new SetupMenuSelect( "Protocol", RST_NONE,
-			update_s1_protocol, true, &serial1_protocol);
-	top->addEntry(sprots1);
-	sprots1->setHelp(
-			"Specify the protocol driver for the external device connected to S1",
-			240);
-	sprots1->addEntry( "Disable");
-	sprots1->addEntry( "Flarm");
-	sprots1->addEntry( "Radio");
-	sprots1->addEntry( "XCTNAV S3");
-	sprots1->addEntry( "OPENVARIO");
-	sprots1->addEntry( "XCFLARMVIEW");
-
-	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-			data_monS1, true, nullptr);
-	datamon->setHelp(
-			"Short press button to start/pause, long press to terminate data monitor",
-			260);
-	datamon->addEntry("Start S1 RS232");
-
-	top->addEntry(datamon);
-
-}
-
-void system_menu_create_interfaceS2(SetupMenu *top) {
-	SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT,
-			update_s2_baud, true, &serial2_speed);
-	top->addEntry(s2sp2);
-	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
-	s2sp2->addEntry("OFF");
-	s2sp2->addEntry("4800 baud");
-	s2sp2->addEntry("9600 baud");
-	s2sp2->addEntry("19200 baud");
-	s2sp2->addEntry("38400 baud");
-	s2sp2->addEntry("57600 baud");
-	s2sp2->addEntry("115200 baud");
-
-	SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE,
-			update_s2_pol, true, &serial2_tx_inverted);
-	top->addEntry(stxi2);
-	stxi2->setHelp("A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL uses a positive voltage");
-	stxi2->addEntry("RS232 Standard");
-	stxi2->addEntry("RS232 TTL");
-
-	SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX Pins", RST_NONE,
-			update_s2_pin, true, &serial2_pins_twisted);
-	top->addEntry(srxtw2);
-	srxtw2->setHelp("Option to swap RX and TX line for S1, a Flarm needs Normal, a Navi usually swapped. After change also a true power-cycle is needed");
-	srxtw2->addEntry("Normal");
-	srxtw2->addEntry("Swapped");
-
-	SetupMenuSelect *stxdis2 = new SetupMenuSelect("Role", RST_NONE,
-			update_s2_txena, true, &serial2_tx_enable);
-	top->addEntry(stxdis2);
-	stxdis2->setHelp(
-			"Option for 'Client' mode to listen only on the RX line, disables TX line to receive only data");
-	stxdis2->addEntry("Client (RX)");
-	stxdis2->addEntry("Master (RX&TX)");
-
-	// Fixme move to devices
-	// SetupMenuSelect *sprots1 = new SetupMenuSelect( "Protocol", RST_NONE,
-	// 		update_s2_protocol, true, &serial2_protocol);
-	// top->addEntry(sprots1);
-	// sprots1->setHelp(
-	// 		"Specify the protocol driver for the external device connected to S2",
-	// 		240);
-	// sprots1->addEntry( "Disable");
-	// sprots1->addEntry( "Flarm");
-	// sprots1->addEntry( "Radio");
-	// sprots1->addEntry( "XCTNAV S3");
-	// sprots1->addEntry( "OPENVARIO");
-	// sprots1->addEntry( "XCFLARMVIEW");
-
-	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-			data_monS2, true, nullptr);
-	datamon->setHelp(
-			"Short press button to start/pause, long press to terminate data monitor",
-			260);
-	datamon->addEntry("Start S2 RS232");
-
-	top->addEntry(datamon);
-}
-
-void system_menu_create_interfaceCAN(SetupMenu *top) {
-	SetupMenuSelect *canmode = new SetupMenuSelect("Datarate", RST_ON_EXIT, 0,
-			true, &can_speed);
-	top->addEntry(canmode);
-	canmode->setHelp(
-			"Datarate on high speed serial CAN interace in kbit per second (reboots)");
-	canmode->addEntry("CAN OFF");
-	canmode->addEntry("250 kbit");
-	canmode->addEntry("500 kbit");
-	canmode->addEntry("1000 kbit");
-
-	SetupMenuSelect *devmod = new SetupMenuSelect("Mode", RST_ON_EXIT, 0, false,
-			&can_mode);
-	top->addEntry(devmod);
-	devmod->setHelp(
-			"Select 'Standalone' for single seater, 'Master' in front, 'Client' for secondary device in rear (reboots)");
-	devmod->addEntry("Master");
-	devmod->addEntry("Client");
-	devmod->addEntry("Standalone");
 }
 
 void system_menu_create(SetupMenu *sye) {

@@ -63,28 +63,38 @@ static constexpr const RoutingTarget* findRoute(const RoutingTarget& target) {
 
 
 // Define device names for the configuration menu
+// - The device id, must be a unique entry in this list with assiciated name
+// - Device attributes
+//   + a readable name
+//   + a list of interfaces, first one is a default
+//   + a list of protocol, first one is a default
+//   + an interface profile enum, if needed
+// - 
 constexpr std::pair<DeviceId, DeviceAttributes> DAVATTR[] = {
-    {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}, {JUMBOCMD_P}, true }}},
-    {DeviceId::ANEMOI_DEV, {"Anemoi", {{S1_RS232, S2_RS232, CAN_BUS}, {ANEMOI_P}, true}}},
-    {DeviceId::XCVARIO_DEV, {"Master XCV", {{CAN_BUS, WIFI_CLIENT, BT_SPP, S2_RS232}, {XCVSYNC_P}, true}}},
-    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{CAN_BUS, WIFI_AP, BT_SPP, S2_RS232}, {XCVSYNC_P}, true}}},
-    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, CAN_BUS}, {FLARM_P, FLARMBIN_P}, true}}},
-    {DeviceId::NAVI_DEV,   {"Navi", {{S2_RS232, WIFI_AP, BT_SPP, BT_LE}, {XCVARIO_P, OPENVARIO_P, BORGELT_P, CAMBRIDGE_P}, true}}},
-    {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C, CAN_BUS}, {MAGSENS_P, MAGSENSBIN_P}, true}}},
-    {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}, {KRT2_REMOTE_P}, true}}},
-    {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}, {ATR833_REMOTE_P}, true}}},
-    {DeviceId::MASTER_DEV, {"CAN auto", {{CAN_BUS}, {REGISTRATION_P}, true}}}
+    {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}, {JUMBOCMD_P}, true, false }}},
+    {DeviceId::ANEMOI_DEV, {"Anemoi", {{S2_RS232, S1_RS232, CAN_BUS}, {ANEMOI_P}, true, false}}},
+    {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, CAN_BUS, BT_SPP, S2_RS232}, {XCVSYNC_P}, true, false}, 8884}},
+    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, CAN_BUS, BT_SPP, S2_RS232}, {XCVSYNC_P}, true, false}, 8884}},
+    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232, CAN_BUS}, {FLARM_P, FLARMBIN_P}, true, false}}},
+    {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S2_RS232, BT_SPP, BT_LE, CAN_BUS}, {XCVARIO_P, OPENVARIO_P, BORGELT_P, CAMBRIDGE_P}, false, true}, 8880}},
+    {DeviceId::NAVI_DEV,   {"", {{WIFI_AP, CAN_BUS}, {FLARMHOST_P, FLARMBIN_P}, false, false}, 8881}},
+    {DeviceId::NAVI_DEV,   {"", {{WIFI_AP}, {KRT2_REMOTE_P}, false, false}, 8882}},
+    {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C, CAN_BUS}, {MAGSENS_P, MAGSENSBIN_P}, true, false}}},
+    {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}, {KRT2_REMOTE_P}, true, false}}},
+    {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}, {ATR833_REMOTE_P}, true, false}}},
+    {DeviceId::MASTER_DEV, {"CAN auto", {{CAN_BUS}, {REGISTRATION_P}, true, false}, CAN_REG_PORT}}
     
 };
 
 // Lookup functions
 DeviceAttributes DeviceManager::getDevAttr(DeviceId did) {
+    // retrieve first attribute entry
     for (const auto& entry : DAVATTR) {
         if (entry.first == did) {
             return entry.second;
         }
     }
-    return DeviceAttributes("no devices", {{}, {}, true});
+    return DeviceAttributes("no devices", {{}, {}, true, false});
 }
 
 std::string_view DeviceManager::getDevName(DeviceId did) {
@@ -100,7 +110,9 @@ std::vector<DeviceId> DeviceManager::allKnownDevs()
 {
     std::vector<DeviceId> ret;
     for (const auto& entry : DAVATTR) {
-        ret.push_back(entry.first);
+        if ( entry.second.name.empty() ) {
+            ret.push_back(entry.first);
+        }
     }
     return ret;
 }

@@ -554,6 +554,20 @@ void SetupMenu::display(int mode)
 	xSemaphoreGive(display_mutex);
 }
 
+void SetupMenu::highlightEntry(MenuEntry *value)
+{
+	int found = -1;
+	for (int i = 0; i < _childs.size(); ++i) {
+		if (_childs[i] == value) {
+			found = i;
+			break;
+		}
+	}
+	if ( found >= 0 ) {
+		highlight = found;
+	}
+}
+
 MenuEntry* SetupMenu::addEntry( MenuEntry * item )
 {
 	ESP_LOGI(FNAME,"add to childs");

@@ -29,6 +29,7 @@ public:
 	int incHighlight() { return ++highlight; }
 	void highlightTop() { highlight = -1; }
 	void highlightLast() { highlight = _childs.size()-1; }
+	void highlightEntry(MenuEntry*);
 	int getNrChilds() const { return _childs.size(); }
 	void setDynContent() { dyn_content = true; }
 	void setDirty() { dirty = true; }

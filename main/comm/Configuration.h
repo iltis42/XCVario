@@ -52,6 +52,37 @@ union RoutingTarget {
 
 using RoutingList = std::vector<RoutingTarget>;
 
+// Stuffed interfaces
+struct InterfacePack
+{
+    uint32_t bits;
+
+    // static constexpr InterfacePack stuff(std::array<InterfaceId, 5> vals) {
+    //     InterfacePack result{0};
+    //     for (int i = 0; i < 5; ++i) {
+    //         result.bits |= (static_cast<uint64_t>(vals[i]) & 0x1F) << (i * 5);
+    //     }
+    //     return result;
+    // }
+    constexpr InterfacePack(int raw) : bits(raw) {}
+
+    constexpr int32_t get() const {
+        return bits;
+    }
+
+    constexpr InterfaceId get(int index) const {
+        return static_cast<InterfaceId>((bits >> (index * 5)) & 0x1F);
+    }
+
+    constexpr std::array<InterfaceId, 5> unpack() const {
+        std::array<InterfaceId, 5> result{};
+        for (int i = 0; i < 5; ++i) {
+            result[i] = get(i);
+        }
+        return result;
+    }
+};
+
 
 // This stores:
 //   up to 5 interface id's that can the device connect to
@@ -62,6 +93,7 @@ union PackedAttributeList {
         int  interfaces  : 20;
         int  protocols   : 30;
         bool isReal      : 1; // A device with a physical realastate vs. a virtual
+        bool nultipleConf: 1; // can be configured in multiple instances (e.g. Navi)
         bool hasProfile  : 1; // Protocols are organized through a profile, instead of a list
         // bool reserved    : 5; // fill to 7 bits
     };
@@ -84,10 +116,11 @@ union PackedAttributeList {
         return packed;
     }
 
-    constexpr PackedAttributeList(std::array<InterfaceId, 5> itf, std::array<ProtocolType, 6> val, bool ir) {
+    constexpr PackedAttributeList(std::array<InterfaceId, 5> itf, std::array<ProtocolType, 6> val, bool ir, bool multi) {
         data = stuff(itf);
         data |= pack(val);
         data |= ir ? (uint64_t)1<<51 : 0;
+        data |= multi ? (uint64_t)1<<52 : 0;
     }
 
     // Get value at runtime
@@ -102,6 +135,7 @@ struct DeviceAttributes
 {
     std::string_view    name; // a readable name
     PackedAttributeList attr; // protocol dependencies, and other info
+    uint32_t            port; // optional default port
 
-    constexpr DeviceAttributes(std::string_view n, PackedAttributeList a) : name(n), attr(a) {}
+    constexpr DeviceAttributes(std::string_view n, PackedAttributeList a, int p=0   ) : name(n), attr(a), port(p) {}
 };

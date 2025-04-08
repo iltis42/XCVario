@@ -442,41 +442,45 @@ static int create_device(SetupMenuSelect *p)
     return 0;
 }
 
-static int new_interface_action(SetupMenuSelect *p)
+static int select_interface_action(SetupMenuSelect *p)
 {
     SetupMenu *top = p->getParent();
     // memorize interface
     new_interface = (InterfaceId)p->getValue();
     ESP_LOGI(FNAME, "nr childs %s: %d", top->getTitle(), top->getNrChilds());
-    if ( top->getNrChilds() < 4 ) {
-        SetupMenuSelect *confirm = new SetupMenuSelect("Really", RST_NONE, create_device);
-        confirm->mkConfirm();
-        // confirm->setOnce();
-        top->addEntry(confirm);
+    if ( new_device > 0 && new_interface > 0) {
+        SetupMenuSelect *confirm = static_cast<SetupMenuSelect*>(top->getEntry(3));
+        confirm->unlock();
         top->highlightLast();
     }
     return 0;
 }
 
-static int new_device_action(SetupMenuSelect *p)
+static int select_device_action(SetupMenuSelect *p)
 {
     ESP_LOGI(FNAME,"action did %d", p->getValue());
     SetupMenu *top = p->getParent();
     // memorize and lock the device selector
     new_device = (DeviceId)p->getValue();
-    p->lock();
-    SetupMenuSelect *text = new SetupMenuSelect("connected to", RST_NONE);
-    text->lock();
-    top->addEntry(text);
-    SetupMenuSelect *interface = new SetupMenuSelect("Interface", RST_NONE, new_interface_action);
-    DeviceManager *dm = DeviceManager::Instance();
-    for ( auto iid : DeviceManager::allKnownIntfs() ) {
-        if ( dm->isAvail(iid) ) {
+
+    SetupMenuSelect *interface = static_cast<SetupMenuSelect*>(top->getEntry(2));
+    DeviceAttributes dattr = DeviceManager::getDevAttr(new_device);
+    interface->delAllEntries();
+    InterfacePack tmp(dattr.attr.interfaces);
+    for (int i=0; i<5; ++i) {
+        InterfaceId iid = tmp.get(i);
+        if ( DEVMAN->isAvail(iid) ) {
             interface->addEntry(DeviceManager::getItfName(iid).data(), iid);
         }
     }
-    top->addEntry(interface);
-    top->highlightLast();
+    if ( new_device > 0 && new_interface > 0) {
+        SetupMenuSelect *confirm = static_cast<SetupMenuSelect*>(top->getEntry(3));
+        confirm->unlock();
+        top->highlightLast();
+    }
+    else {
+        top->highlightEntry(interface);
+    }
 
     return 0;
 }
@@ -486,22 +490,41 @@ static void system_menu_add_device(SetupMenu *top)
     ESP_LOGI(FNAME,"Create new device menu");
     SetupMenuSelect *ndev = static_cast<SetupMenuSelect*>(top->getEntry(0));
     if ( ! ndev ) {
-        ndev = new SetupMenuSelect("Device", RST_NONE, new_device_action, false);
+        ndev = new SetupMenuSelect("Device", RST_NONE, select_device_action, false);
         top->addEntry(ndev);
+        // text
+        SetupMenuSelect *text = new SetupMenuSelect("connected to", RST_NONE);
+        text->lock();
+        top->addEntry(text);
     }
-    ndev->unlock();
-    DeviceManager *dm = DeviceManager::Instance();
-    ndev->delAllEntries();
+    else {
+        ndev->delAllEntries();
+    }
     for ( auto did : DeviceManager::allKnownDevs() ) {
-        if ( ! dm->getDevice(did) ) {
+        DeviceAttributes dattr = DeviceManager::getDevAttr(did);
+        if ( ! DEVMAN->getDevice(did) || dattr.attr.nultipleConf ) {
             ndev->addEntry(DeviceManager::getDevName(did).data(), did);
         }
     }
-    MenuEntry *ent = top->getEntry(1);
-    while ( ent ) {
-        top->delEntry(ent);
-        ent = top->getEntry(1);
+
+    // empty interfaces list
+    SetupMenuSelect *interface = static_cast<SetupMenuSelect*>(top->getEntry(2));
+    SetupMenuSelect *confirm = static_cast<SetupMenuSelect*>(top->getEntry(3));
+    if ( ! interface ) {
+        interface = new SetupMenuSelect("Interface", RST_NONE, select_interface_action);
+        top->addEntry(interface);
+        confirm = new SetupMenuSelect("Create it", RST_NONE, create_device);
+        confirm->mkConfirm();
+        top->addEntry(confirm);
     }
+    else {
+        interface->delAllEntries();
+    }
+    interface->addEntry("---", NO_PHY);
+    // confirmation
+    confirm->lock();
+    new_device = NO_DEVICE;
+    new_interface = NO_PHY;
 }
 
 static int start_dm_action(SetupAction* p)
@@ -544,6 +567,7 @@ void system_menu_connected_devices(SetupMenu *top)
         top->delEntry(ent);
         ent = top->getEntry(1);
     }
+    // List all configured devices
     for ( auto dev : dm->allDevs() ) {
         std::string_view dnam = DeviceManager::getDevName(dev->_id);
         if ( ! dnam.empty() ) {

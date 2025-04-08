@@ -15,7 +15,7 @@ constexpr int UARTRXFIFO_LEN = 256;
 constexpr int UARTTXFIFO_LEN = 1024;
 constexpr int UARTEVENTQ_LEN = 10;
 
-const int baud[] = { 0, 4800, 9600, 19200, 38400, 57600, 115200 };
+const int baud[] = { 4800, 9600, 19200, 38400, 57600, 115200 };
 
 
 t_serial_cfg sm_serial_config[] = {

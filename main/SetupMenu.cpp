@@ -485,7 +485,6 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 SetupMenu::SetupMenu(const char *title, SetupMenuCreator_t menu_create, int cont_id) :
 	MenuEntry(),
 	populateMenu(menu_create),
-	highlight(-1),
 	content_id(cont_id)
 {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
@@ -519,13 +518,14 @@ void SetupMenu::enter()
 void SetupMenu::display(int mode)
 {
 	xSemaphoreTake(display_mutex, portMAX_DELAY);
-	// ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
-	if ( highlight > _childs.size()-1 ) {
+	ESP_LOGI(FNAME,"SetupMenu display(%s-%d)", _title, highlight );
+	if ( highlight >= (int)(_childs.size()) ) {
 		highlight = _childs.size()-1;
 	}
+	ESP_LOGI(FNAME,"SetupMenu display %d", highlight );
 	clear();
 	int y = 25;
-	// ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );
+	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", _title, y, _childs.size());
 	MYUCG->setFont(ucg_font_ncenR14_hr);
 	MYUCG->setPrintPos(1, y);
 	MYUCG->setFontPosBottom();

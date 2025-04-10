@@ -464,11 +464,13 @@ static int select_device_action(SetupMenuSelect *p)
     new_device = (DeviceId)p->getValue();
 
     SetupMenuSelect *interface = static_cast<SetupMenuSelect*>(top->getEntry(2));
-    DeviceAttributes dattr = DeviceManager::getDevAttr(new_device);
+    const DeviceAttributes *dattr = DeviceManager::getDevAttr(new_device);
     interface->delAllEntries();
-    InterfacePack tmp(dattr.attr.interfaces);
+    InterfacePack tmp(dattr->attr.interfaces);
+    ESP_LOGI(FNAME,"List Itfs raw %x", dattr->attr.interfaces);
     for (int i=0; i<5; ++i) {
         InterfaceId iid = tmp.get(i);
+        ESP_LOGI(FNAME,"Itf id %d", iid);
         if ( DEVMAN->isAvail(iid) ) {
             interface->addEntry(DeviceManager::getItfName(iid).data(), iid);
         }
@@ -501,8 +503,10 @@ static void system_menu_add_device(SetupMenu *top)
         ndev->delAllEntries();
     }
     for ( auto did : DeviceManager::allKnownDevs() ) {
-        DeviceAttributes dattr = DeviceManager::getDevAttr(did);
-        if ( ! DEVMAN->getDevice(did) || dattr.attr.nultipleConf ) {
+        ESP_LOGI(FNAME,"Dev %d", did);
+        const DeviceAttributes *dattr = DeviceManager::getDevAttr(did);
+        ESP_LOGI(FNAME,"Attr %lx", (unsigned long)(dattr->attr.data));
+        if ( ! DEVMAN->getDevice(did) || dattr->attr.multipleConf ) {
             ndev->addEntry(DeviceManager::getDevName(did).data(), did);
         }
     }

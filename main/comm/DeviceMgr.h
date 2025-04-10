@@ -111,7 +111,7 @@ public:
     // debugging
     void dumpMap() const;
     // Setup access
-    static DeviceAttributes getDevAttr(DeviceId did);
+    static const DeviceAttributes* getDevAttr(DeviceId did);
     static std::string_view getDevName(DeviceId did);
     static std::vector<DeviceId> allKnownDevs();
     static std::string_view getItfName(InterfaceId iid);

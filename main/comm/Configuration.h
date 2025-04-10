@@ -93,7 +93,7 @@ union PackedAttributeList {
         int  interfaces  : 20;
         int  protocols   : 30;
         bool isReal      : 1; // A device with a physical realastate vs. a virtual
-        bool nultipleConf: 1; // can be configured in multiple instances (e.g. Navi)
+        bool multipleConf: 1; // can be configured in multiple instances (e.g. Navi)
         bool hasProfile  : 1; // Protocols are organized through a profile, instead of a list
         // bool reserved    : 5; // fill to 7 bits
     };

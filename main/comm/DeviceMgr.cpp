@@ -83,18 +83,18 @@ constexpr std::pair<DeviceId, DeviceAttributes> DAVATTR[] = {
     {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}, {KRT2_REMOTE_P}, true, false}}},
     {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}, {ATR833_REMOTE_P}, true, false}}},
     {DeviceId::MASTER_DEV, {"CAN auto", {{CAN_BUS}, {REGISTRATION_P}, true, false}, CAN_REG_PORT}}
-    
 };
 
+constexpr const DeviceAttributes NullDev("Null", {{}, {}, false, false});
 // Lookup functions
-DeviceAttributes DeviceManager::getDevAttr(DeviceId did) {
+const DeviceAttributes* DeviceManager::getDevAttr(DeviceId did) {
     // retrieve first attribute entry
     for (const auto& entry : DAVATTR) {
         if (entry.first == did) {
-            return entry.second;
+            return &entry.second;
         }
     }
-    return DeviceAttributes("no devices", {{}, {}, true, false});
+    return &NullDev;
 }
 
 std::string_view DeviceManager::getDevName(DeviceId did) {
@@ -110,7 +110,7 @@ std::vector<DeviceId> DeviceManager::allKnownDevs()
 {
     std::vector<DeviceId> ret;
     for (const auto& entry : DAVATTR) {
-        if ( entry.second.name.empty() ) {
+        if ( ! entry.second.name.empty() ) {
             ret.push_back(entry.first);
         }
     }

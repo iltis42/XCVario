@@ -529,6 +529,7 @@ void IMU::defaultImuReference()
 	}
 	ref_rot = accelDefaultRef;
 	imu_reference.set(ref_rot, false); // nvs
+	imu_reference.commit();
 	progress = 0; // reset the calibration procedure
 	delay( 1000);
 	esp_restart();

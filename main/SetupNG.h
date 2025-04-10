@@ -10,6 +10,10 @@
 #include "BTSender.h"
 #include "Polars.h"
 #include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
+#include "Compass.h"
+#include "SetupCommon.h"
+#include "WifiApp.h"
+#include "ESP32NVS.h"
 
 #include <esp_partition.h>
 #include <esp_err.h>
@@ -23,15 +27,12 @@
 #include <esp_log.h>
 
 #include <string>
-#include <stdio.h>
+#include <cstdio>
 #include <cstdio>
 #include <cstring>
 #include <iostream>
 #include <vector>
-#include "Compass.h"
-#include "SetupCommon.h"
-#include "WifiApp.h"
-#include "ESP32NVS.h"
+#include <cmath>
 
 // forwards
 class Quaternion;
@@ -332,6 +333,8 @@ public:
 		return ret;
 	}
 
+	virtual bool isValid() const;
+
 	virtual bool init() {
 		if( flags._volatile != PERSISTENT ){
 			// ESP_LOGI(FNAME,"NVS volatile set default");
@@ -357,10 +360,10 @@ public:
 				// ESP_LOGI(FNAME,"NVS size okay");
 				ret = NVS.getBlob(_key, &_value, &required_size);
 
-				if ( !ret ){
-					ESP_LOGE(FNAME, "NVS nvs_get_blob returned error");
+				if ( !ret || !isValid() ){
+					ESP_LOGE(FNAME, "NVS nvs_get_blob error");
 					erase();
-					set( _default );  // try to init
+					set(_default);  // try to init
 					commit();
 				}
 				else {
@@ -409,9 +412,6 @@ private:
 	t_setup_flags flags;
 	void (* _action)();
 };
-
-
-
 
 extern SetupNG<float> 		QNH;
 extern SetupNG<float> 		polar_wingload;

@@ -38,6 +38,13 @@
 #include <esp_http_server.h>
 #include "WifiApp.h"
 
+// Specialization for float
+template<typename T>
+bool SetupNG<T>::isValid() const { return true; }
+template<>
+bool SetupNG<float>::isValid() const { return ! std::isnan(_value); }
+
+
 void change_mc() {
 	Speed2Fly.change_mc();
 }

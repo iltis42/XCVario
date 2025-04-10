@@ -39,9 +39,9 @@ public:
 	void delAllEntries();
 	void mkEnable(const char *what=nullptr);
 	void mkConfirm();
-	inline void updateEntry( const char *ent, int num ) { _values[num].first = ent; }
+	void updateEntry( const char *ent, int num );
 	int getSelect() const { return _select; }
-	int getValue() const { return _values[_select].second; };
+	int getValue() const;
 	void setSelect( int sel );
 	int numEntries() const { return _values.size(); };
 

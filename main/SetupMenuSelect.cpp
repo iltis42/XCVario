@@ -221,14 +221,26 @@ void SetupMenuSelect::mkConfirm()
 	addEntry("yes");
 }
 
-void SetupMenuSelect::setSelect( int sel ) {
-	_select = (int16_t)sel;
+void SetupMenuSelect::updateEntry(const char *ent, int num)
+{
+	if (_select >=0  && _select < _values.size()) {
+		_values.at(num).first = ent;
+	}
+	ESP_LOGI(FNAME, "Out of bounds");
+}
+
+int SetupMenuSelect::getValue() const
+{
+	if (_select >=0  && _select < _values.size()) {
+		return _values[_select].second;
+	}
+	ESP_LOGW(FNAME, "Out of bounds");
+	return 0;
+}
+
+void SetupMenuSelect::setSelect(int sel)
+{
+    _select = (int16_t)sel;
 	// if( _nvs ) // fixme
 	// 	_select = _nvs->set( sel );
 }
-
-
-
-
-
-

@@ -345,6 +345,8 @@ public:
 		return ret;
 	}
 
+	virtual bool isValid() const;
+
 	virtual bool init() {
 		if( flags._volatile != PERSISTENT ){
 			// ESP_LOGI(FNAME,"NVS volatile set default");
@@ -370,8 +372,8 @@ public:
 				// ESP_LOGI(FNAME,"NVS size okay");
 				ret = NVS.getBlob(_key, &_value, &required_size);
 
-				if ( !ret ){
-					// ESP_LOGE(FNAME, "NVS nvs_get_blob returned error");
+				if ( !ret || !isValid() ){
+					//ESP_LOGE(FNAME, "NVS nvs_get_blob error");
 					erase();
 					set( _default );  // try to init
 					commit();
@@ -422,9 +424,6 @@ private:
 	t_setup_flags flags;
 	void (* _action)();
 };
-
-
-
 
 extern SetupNG<float> 		QNH;
 extern SetupNG<float> 		polar_wingload;

@@ -1719,7 +1719,7 @@ extern "C" void  app_main(void)
 		Rotary = new ESPRotary( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0); // XCV-20 uses GPIO_2 for Rotary
 	}
 	else {
-		Rotary = new ESPRotary( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
+		Rotary = new ESPRotary( GPIO_NUM_39, GPIO_NUM_36, GPIO_NUM_0);
 	}
 
 #ifdef Quaternionen_Test

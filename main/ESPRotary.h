@@ -71,7 +71,9 @@ public:
 	void sendLongPress() const;
 	void sendEscape() const;
 	bool readSwitch() const { return state; } // fixme, polling does create a pile on the event queue
-	gpio_num_t getSw() { return sw; };
+	gpio_num_t getSw() const { return sw; };
+	gpio_num_t getClk() const { return clk; };
+	gpio_num_t getDt() const { return dt; };
 
 private:
 	gpio_num_t clk, dt, sw; // actually used pins

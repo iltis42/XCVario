@@ -70,7 +70,7 @@ public:
 	void sendRelease() const;
 	void sendLongPress() const;
 	void sendEscape() const;
-	bool readSwitch() const { return state; } // fixme, polling does create a pile on the event queue
+	bool readSwitch() const;
 	gpio_num_t getSw() const { return sw; };
 	gpio_num_t getClk() const { return clk; };
 	gpio_num_t getDt() const { return dt; };

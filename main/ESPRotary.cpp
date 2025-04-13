@@ -3,7 +3,7 @@
 
 #include "SetupNG.h"
 #include "sensor.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
@@ -297,7 +297,6 @@ void ESPRotary::sendRot( int diff ) const
 		float step = pow(obs->getRotDynamic(), abs(diff)-1) * sign(diff);
 		ESP_LOGI(FNAME, "Rotation step %.2f, time %d us", step, pulse_time);
 		obs->rot( int(step) );
-		xQueueReset(buttonQueue); // rince queueed up events due to intermediate polling
 	}
 }
 
@@ -306,7 +305,6 @@ void ESPRotary::sendPress() const
 	// ESP_LOGI(FNAME,"Pressed action");
 	if (!observers.empty()) {
 		observers.top()->press();
-		xQueueReset(buttonQueue);
 	}
 }
 
@@ -315,7 +313,6 @@ void ESPRotary::sendRelease() const
 	// ESP_LOGI(FNAME,"Release action");
 	if (!observers.empty()) {
 		observers.top()->release();
-		xQueueReset(buttonQueue);
 	}
 }
 
@@ -324,7 +321,6 @@ void ESPRotary::sendLongPress() const
 	// ESP_LOGI(FNAME,"Long pressed action");
 	if (!observers.empty()) {
 		observers.top()->longPress();
-		xQueueReset(buttonQueue);
 	}
 }
 
@@ -333,9 +329,20 @@ void ESPRotary::sendEscape() const
 	// ESP_LOGI(FNAME,"Rotary up action");
 	if (!observers.empty()) {
 		observers.top()->escape();
-		xQueueReset(buttonQueue);
 	}
 }
 
-
-
+// In case an event processing routine is asking itself for button status
+bool ESPRotary::readSwitch() const
+{
+	// return true for any button event in the queue, except a release
+	int event;
+	while (xQueueReceive(buttonQueue, &event, 0) == pdTRUE) {
+		if (event == SHORT_PRESS
+			|| event == LONG_PRESS) {
+			xQueueReset(buttonQueue);
+			return true;
+		}
+	}
+	return false;
+}

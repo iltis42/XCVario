@@ -146,6 +146,33 @@ std::vector<InterfaceId> DeviceManager::allKnownIntfs()
     return ret;
 }
 
+constexpr std::pair<ProtocolType, std::string_view> PRTCLS[] = {
+    {REGISTRATION_P, "Auto registration."},
+    {XCVSYNC_P, "XCV sync"},
+    {JUMBOCMD_P, "jumbo command"},
+    {ANEMOI_P, "Anemoi"},
+    {FLARM_P, "Flarm"},
+    {FLARMHOST_P, "Flarm host"},
+    {FLARMBIN_P, "Flarm BP"},
+    {MAGSENS_P, "Magsens"},
+    {MAGSENSBIN_P, "Magsens BP"},
+    {XCVARIO_P, "XCVario"},
+    {OPENVARIO_P, "Open-Vario"},
+    {BORGELT_P, "Borgelt"},
+    {CAMBRIDGE_P, "Cambridge"},
+    {KRT2_REMOTE_P, "KRT2"},
+    {ATR833_REMOTE_P, "ATR833"}
+};
+
+std::string_view DeviceManager::getPrtclName(ProtocolType pid) {
+    for (const auto& entry : PRTCLS) {
+        if (entry.first == pid) {
+            return entry.second;
+        }
+    }
+    return "";
+}
+
 // a dummy interface
 class DmyItf final : public InterfaceCtrl
 {

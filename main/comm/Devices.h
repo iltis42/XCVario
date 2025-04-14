@@ -47,7 +47,7 @@ typedef enum
     CAMBRIDGE_P,
     NMEA_P,
     KRT2_REMOTE_P,
-	ATR833_REMOTE_P,
+    ATR833_REMOTE_P,
     TEST_P
 } ProtocolType;
 

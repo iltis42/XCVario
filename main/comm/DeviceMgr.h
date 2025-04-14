@@ -116,6 +116,7 @@ public:
     static std::vector<DeviceId> allKnownDevs();
     static std::string_view getItfName(InterfaceId iid);
     static std::vector<InterfaceId> allKnownIntfs();
+    static std::string_view getPrtclName(ProtocolType pid);
     std::vector<const Device *> allDevs() const;
 
 private:

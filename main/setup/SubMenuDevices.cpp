@@ -13,6 +13,7 @@
 #include "SetupAction.h"
 #include "comm/DeviceMgr.h"
 #include "comm/SerialLine.h"
+#include "DataMonitor.h"
 #include "WifiClient.h"
 #include "sensor.h"
 #include "logdef.h"
@@ -533,7 +534,8 @@ static void system_menu_add_device(SetupMenu *top)
 
 static int start_dm_action(SetupAction* p)
 {
-    // DEVMAN->startDM((DeviceId)p->getCode());
+    DataMonitor *dm = new DataMonitor();
+    dm->start(p, (ItfTarget)p->getCode());
     return 0;
 }
 

@@ -32,7 +32,6 @@
 #include "protocol/FlarmSim.h"
 #include "WifiClient.h"
 #include "Blackboard.h"
-#include "DataMonitor.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
 #include "SetupNG.h"
@@ -239,49 +238,6 @@ int update_rentrys(SetupMenuSelect *p) {
 	update_rentry(0);
 	return 0;
 }
-
-int data_mon(SetupMenuSelect *p)
-{
-	// Fixme rewrite
-	// ItfTarget ch;
-	// switch (p->getSelect()) {
-	// 	case 1: ch = ItfTarget(BT_SPP); break;
-	// 	case 2: ch = ItfTarget(WIFI,8880); break;
-	// 	case 3: ch = ItfTarget(WIFI,8881); break;
-	// 	case 4: ch = ItfTarget(WIFI,8882); break;
-	// 	case 5: ch = ItfTarget(S1_RS232); break;
-	// 	case 6: ch = ItfTarget(S2_RS232); break;
-	// 	case 7: ch = ItfTarget(CAN_BUS); break;
-	// 	default: break;
-	// }
-	// if (ch != ItfTarget()) {
-	// 	ESP_LOGI(FNAME,"data_mon( %d ) ", (int)ch.raw );
-	// 	DM.start(p, ch);
-	// 	return 1;
-	// }
-	return 0;
-}
-
-int data_monS1(SetupMenuSelect *p)
-{
-	ItfTarget tmp(S1_RS232);
-	if ( DEVMAN->isIntf(tmp) ) {
-		DM.start(p, tmp);
-		return 1;
-	}
-	return 0;
-}
-
-int data_monS2(SetupMenuSelect *p)
-{
-	ItfTarget tmp(S2_RS232);
-	if ( DEVMAN->isIntf(tmp) ) {
-		DM.start(p, tmp);
-		return 1;
-	}
-	return 0;
-}
-
 
 int add_key(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"add_key( %d ) ", p->getSelect() );

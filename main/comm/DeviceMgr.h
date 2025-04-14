@@ -110,6 +110,8 @@ public:
     static int getFreeCANId(int prio);
     // debugging
     void dumpMap() const;
+    bool startDM(ItfTarget iid);
+    void stopDM();
     // Setup access
     static const DeviceAttributes* getDevAttr(DeviceId did);
     static std::string_view getDevName(DeviceId did);

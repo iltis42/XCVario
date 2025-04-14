@@ -9,7 +9,6 @@
 #include "Compass.h" // 3-Axis Magnetic Sensor
 #include "S2F.h"
 #include "StraightWind.h"
-#include "DataMonitor.h"
 #include "AdaptUGC.h"
 #include "CenterAid.h"
 #include "vector_3d.h"
@@ -102,8 +101,6 @@ extern long unsigned int _gps_millis;
 extern IpsDisplay *Display;
 
 extern ESPRotary *Rotary;
-
-extern DataMonitor DM;
 
 extern SemaphoreHandle_t spiMutex;
 

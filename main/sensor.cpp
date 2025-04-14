@@ -31,6 +31,7 @@
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
 #include "setup/SetupRoot.h"
+#include "SString.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
@@ -81,7 +82,6 @@
 #include <string>
 #include <cstdio>
 #include <cstring>
-#include "DataMonitor.h"
 #include "AdaptUGC.h"
 #include "CenterAid.h"
 #include "OneWireESP32.h"
@@ -136,7 +136,6 @@ bool netif_initialized = false;
 OTA *ota = 0;
 
 SetupRoot  *Menu = nullptr;
-DataMonitor DM;
 
 // Gyro and acceleration sensor
 I2C_t& i2c = i2c1;  // i2c0 or i2c1

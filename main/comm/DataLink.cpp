@@ -235,7 +235,9 @@ void DataLink::deleteProtocol(ProtocolItf *proto)
 void DataLink::process(const char *packet, int len)
 {
     // Feed the data monitor
-    DM.monitorString(_itf_id, DIR_RX, packet, len);
+    if (_monitoring) {
+        DM->monitorString(DIR_RX, packet, len);
+    }
 
     if (_active == nullptr) {
         return;

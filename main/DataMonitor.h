@@ -13,7 +13,7 @@
 #include "MenuEntry.h"
 #include "comm/InterfaceCtrl.h"
 
-class SetupMenuSelect;
+class SetupAction;
 
 typedef enum { DIR_RX, DIR_TX } e_dir_t;
 
@@ -21,29 +21,26 @@ class DataMonitor: public MenuEntry
 {
 public:
 	DataMonitor();
-	void monitorString( ItfTarget ch, e_dir_t dir, const char *s, int len );
-	void start(SetupMenuSelect * p, ItfTarget ch);
+	void monitorString(e_dir_t dir, const char *s, int len );
+	void start(SetupAction *p, ItfTarget ch);
 	void display(int) override {}
 	const char* value() const override { return ""; }
 	void press() override;
 	void rot( int count ) override {};
 	void longPress() override;
 	void escape() override {};
-	int maxChar( const char *s, int pos, int len, bool binary );
-	bool active() { return mon_started; };
+	int maxChar( const char *s, int pos, int len);
 
 private:
-	void printString( ItfTarget ch, e_dir_t dir, const char *s, bool binary, int len );
-	void header( ItfTarget ch, bool binary, int len=0, e_dir_t dir=DIR_RX );
+	void printString(e_dir_t dir, const char *s, int len );
+	void header(int len=0, e_dir_t dir=DIR_RX);
 	void scroll(int scroll);
-	bool mon_started;
 	int scrollpos;
-	bool paused;
-	SetupMenuSelect *setup;
-	ItfTarget channel;
-	bool first;
-	int rx_total;
-	int tx_total;
+	bool paused = true;
+	ItfTarget channel = {};
+	int rx_total = 0;
+	int tx_total = 0;
+	bool bin_mode = false;
 };
 
-extern DataMonitor DM;
+extern DataMonitor *DM;

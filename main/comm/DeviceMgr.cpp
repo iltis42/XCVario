@@ -197,8 +197,8 @@ static int tt_snd(Message *msg)
             ESP_LOGD(FNAME, "reshedule message %d/%d", len, msg->buffer.length());
             msg->buffer.erase(0, len); // chop sent bytes off
         }
-        else if ( plsrety == 0 ) {
-            DM.monitorString(ItfTarget(itf->getId(),port), DIR_TX, msg->buffer.c_str(), len);
+        else if ( plsrety == 0 && monitor_target == ItfTarget(itf->getId(), port) ) {
+            DM->monitorString(DIR_TX, msg->buffer.c_str(), len);
         }
     }
     return plsrety;
@@ -591,6 +591,39 @@ void DeviceManager::dumpMap() const
         ESP_LOGI(FNAME, "%d: %p (did%d/iid%s/dl*%d)", it.first, d, d->_id, d->_itf->getStringId(), d->_dlink.size());
         for ( auto &l : d->_dlink ) {
             l->dumpProto();
+        }
+    }
+}
+
+bool DeviceManager::startDM(ItfTarget iid)
+{
+    bool ret = false;
+    for ( auto dev : _device_map ) {
+        // all devices
+        for (DataLink* dl : dev.second->_dlink) {
+            ESP_LOGI(FNAME, "DM %x<>%x", (unsigned)dl->getTarget().raw, (unsigned)iid.raw );
+            if ( dl->getTarget() == iid ) {
+                ESP_LOGI(FNAME, "DM activate");
+                ret = dl->isBinActive();
+                dl->setMonitor(true);
+            }
+            else {
+                dl->setMonitor(false);
+            }
+        }
+    }
+    // activate the send callback
+    monitor_target = iid;
+    return ret;
+}
+
+void DeviceManager::stopDM()
+{
+    monitor_target = ItfTarget();
+    for ( auto dev : _device_map ) {
+        // all devices
+        for (DataLink* dl : dev.second->_dlink) {
+            dl->setMonitor(false);
         }
     }
 }

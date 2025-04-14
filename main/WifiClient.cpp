@@ -1,5 +1,17 @@
-#include <stdio.h>
-#include <string.h>    //strlen
+
+#include "WifiClient.h"
+
+#include "RingBufCPP.h"
+#include "Protocols.h"
+#include "ESPRotary.h"
+#include "sensor.h"
+#include "Router.h"
+#include "SString.h"
+#include "logdef.h"
+
+
+#include <cstdio>
+#include <cstring>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_wifi.h"
@@ -12,12 +24,6 @@
 #include "lwip/sys.h"
 #include "lwip/netdb.h"
 #include "lwip/dns.h"
-#include "logdef.h"
-#include "RingBufCPP.h"
-#include "Protocols.h"
-#include "WifiClient.h"
-#include "sensor.h"
-#include "Router.h"
 
 extern bool netif_initialized;
 

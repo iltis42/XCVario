@@ -1,6 +1,8 @@
 #include "DataMonitor.h"
+
+#include "comm/DeviceMgr.h"
 #include "SetupMenu.h"
-#include "SetupMenuSelect.h"
+#include "setup/SetupAction.h"
 #include "sensor.h"
 #include "SetupNG.h"
 #include "Flarm.h"
@@ -9,24 +11,20 @@
 #define SCROLL_TOP      20
 #define SCROLL_BOTTOM  320
 
-DataMonitor::DataMonitor(){
-	mon_started = false;
-	MYUCG = 0;
+DataMonitor *DM = nullptr;
+
+DataMonitor::DataMonitor()
+{
 	scrollpos = SCROLL_BOTTOM;
-	paused = true;
-	setup = 0;
-	channel = 0;
-	first=true;
-	rx_total = 0;
-	tx_total = 0;
+	DM = this;
 }
 
-int DataMonitor::maxChar( const char *str, int pos, int len, bool binary ){
+int DataMonitor::maxChar( const char *str, int pos, int len ){
 	int N=0;
 	int i=0;
 	char s[4] = { 0 };
 	while( N <= 240 ){
-		if( binary ){
+		if( bin_mode ){
 			sprintf( s, "%02x ", str[i+pos] );
 		}
 		else{
@@ -42,7 +40,8 @@ int DataMonitor::maxChar( const char *str, int pos, int len, bool binary ){
 	return i;
 }
 
-void DataMonitor::header( ItfTarget ch, bool binary, int len, e_dir_t dir ){
+void DataMonitor::header( int len, e_dir_t dir )
+{
 	if( dir == DIR_RX ){
 		rx_total += len;
 	}
@@ -50,19 +49,14 @@ void DataMonitor::header( ItfTarget ch, bool binary, int len, e_dir_t dir ){
 		tx_total += len;
 	}
 	// ESP_LOGI(FNAME,"header() %d %d %d ", len, rx_total, tx_total );
-	const char * what;
-	switch( ch.raw ) {
-		case ItfTarget(BT_SPP).raw: what = "BT"; break;
-		case ItfTarget(WIFI_AP,8880).raw: what = "W8880"; break;
-		case ItfTarget(WIFI_AP,8881).raw: what = "W8881"; break;
-		case ItfTarget(WIFI_AP,8882).raw: what = "W8882"; break;
-		case ItfTarget(S1_RS232).raw:  what = "S1"; break;
-		case ItfTarget(S2_RS232).raw:  what = "S2"; break;
-		case ItfTarget(CAN_BUS).raw: what = "CAN"; break;
-		default:      what = "OFF"; break;
+	char what[10];
+	strncpy(what, DeviceManager::getItfName(channel.iid).data(), 10);
+	what[3] = '\0'; // cut after first three chars
+	if ( channel.port > 0 ) {
+		sprintf( what+1, "%d", channel.port);
 	}
 	const char * b;
-	if( binary )
+	if( bin_mode )
 		b = "B-";
 	else
 		b = "";
@@ -76,23 +70,20 @@ void DataMonitor::header( ItfTarget ch, bool binary, int len, e_dir_t dir ){
 		MYUCG->printf( "%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
 }
 
-void DataMonitor::monitorString( ItfTarget ch, e_dir_t dir, const char *str, int len )
+void DataMonitor::monitorString(e_dir_t dir, const char *str, int len)
 {
-	if( !mon_started ) { return; }
-
-	// ESP_LOGI(FNAME,"ch %x, channel %x", (unsigned)ch.raw, (unsigned)channel.raw );
-	bool binary = data_monitor_mode.get() == MON_MOD_BINARY;
-	if( paused || (ch != channel) ){
+	ESP_LOGI(FNAME,"dir %d, len %d", (int)dir, len );
+	// bool binary = data_monitor_mode.get() == MON_MOD_BINARY;
+	if( paused )
+	{
 		// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );
-		if( ch == channel )
-			header( ch, binary, len, dir );
+		header( len, dir );
 		return;
 	}
-	printString( ch, dir, str, binary, len );
+	printString(dir, str, len);
 }
 
-void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool binary, int len ){
-	// if (! binary)
+void DataMonitor::printString(e_dir_t dir, const char *str, int len ){
 	// ESP_LOGI(FNAME,"DM ch:%x dir:%d len:%d data:%s", (unsigned)ch.raw, dir, len, str );
 	const int scroll_lines = 20;
 	char dirsym = 0;
@@ -102,20 +93,14 @@ void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool 
 	else{
 		dirsym = '<';
 	}
-	if( first ){
-		first = false;
-		MYUCG->setColor( COLOR_BLACK );
-		MYUCG->drawBox( 0,SCROLL_TOP,240,320 );
-	}
 	MYUCG->setColor( COLOR_WHITE );
-    header( ch, binary, len, dir );
-	//if( !binary )
-	// 	len = len-1;  // ignore the \n in ASCII mode
+    header(len, dir );
+
 	int hunklen = 0;
 	int pos=0;
 	do {
 		// ESP_LOGI(FNAME,"DM 1 len: %d pos: %d", len, pos );
-		hunklen = maxChar( str, pos, len, binary );
+		hunklen = maxChar( str, pos, len );
 		if( hunklen ){
 			char hunk[64] = { 0 };
 			memcpy( (void*)hunk, (void*)(str+pos), hunklen );
@@ -127,14 +112,14 @@ void DataMonitor::printString( ItfTarget ch, e_dir_t dir, const char *str, bool 
 			MYUCG->setFont(ucg_font_fub11_tr, true );
 			char txt[256];
 			int hpos = 0;
-			if( binary ){   // format data as readable text
+			if( bin_mode ){   // format data as readable text
 				hpos += sprintf( txt, "%c ", dirsym );
 				for( int i=0; i<hunklen && hpos<95 ; i++ ){
 					hpos += sprintf( txt+hpos, "%02x ", hunk[i] );
 				}
 				txt[hpos] = 0; // zero terminate string
 				MYUCG->print( txt );
-				ESP_LOGI(FNAME,"DM binary ch:%d dir:%d string:%s", (int)ch.raw, dir, txt );
+				ESP_LOGI(FNAME,"DM binary ch:%d dir:%d string:%s", (int)channel.raw, dir, txt );
 			}
 			else{
 				hpos += sprintf( txt, "%c ", dirsym );
@@ -159,51 +144,50 @@ void DataMonitor::scroll(int scroll){
 
 void DataMonitor::press(){
 	ESP_LOGI(FNAME,"press paused: %d", paused );
-	if( paused )
+	if( paused ) {
 		paused = false;
-	else
+	}
+	else {
 		paused = true;
-	// }
+	}
 }
 
 void DataMonitor::longPress()
 {
 	ESP_LOGI(FNAME,"stop");
-	if( !mon_started ){
-		ESP_LOGI(FNAME,"longPress, but not started, return" );
-		return;
-	}
+	DEVMAN->stopDM();
 	channel = 0;
-	mon_started = false;
 	paused = false;
 	delay(1000);
 	MYUCG->scrollLines( 0 );
+	DM = nullptr;
+	delete this;
 	exit();
 }
 
-void DataMonitor::start(SetupMenuSelect *p, ItfTarget ch)
+void DataMonitor::start(SetupAction *p, ItfTarget ch)
 {
-	ESP_LOGI(FNAME,"start");
-	// forced replacement of the Select Menu on the observer stack
-	p->detach();
+	ESP_LOGI(FNAME,"start %x", unsigned(ch.raw));
 	attach();
 	_parent = p->getParent();
-	mon_started = false; // important to avoid context race
 	tx_total = 0;
 	rx_total = 0;
 	channel = ch;
+	bin_mode = false;
 	MYUCG->setColor( COLOR_BLACK );
 	MYUCG->drawBox( 0,0,240,320 );
 	MYUCG->setColor( COLOR_WHITE );
 	MYUCG->setFont(ucg_font_fub11_tr, true );
 	paused = false;
-	header( channel, data_monitor_mode.get() == MON_MOD_BINARY );
-	if( display_orientation.get() == DISPLAY_TOPDOWN )
+	header();
+	if( display_orientation.get() == DISPLAY_TOPDOWN ) {
 		MYUCG->scrollSetMargins( 0, SCROLL_TOP );
-	else
+	}
+	else {
 		MYUCG->scrollSetMargins( SCROLL_TOP, 0 );
-	mon_started = true;
+	}
 	paused = false; // will resume with press()
+	bin_mode = DEVMAN->startDM(channel);
 	ESP_LOGI(FNAME,"started");
 }
 

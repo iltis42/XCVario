@@ -9,8 +9,8 @@
 
 #include "WifiAP.h"
 #include "Router.h"
+#include "SString.h"
 #include "sensor.h"
-#include "DataMonitor.h"
 #include "comm/DataLink.h"
 #include "logdefnone.h"
 

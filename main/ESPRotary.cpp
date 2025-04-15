@@ -18,7 +18,7 @@
 // the global access to the rotary knob
 ESPRotary *Rotary = nullptr;
 
-constexpr int DEBOUNCE_TIME_us = 500;         // us debounce threshold
+constexpr int DEBOUNCE_TIME_us = 700;         // us debounce threshold
 
 static QueueHandle_t buttonQueue = nullptr;
 static TaskHandle_t pid = nullptr;
@@ -72,7 +72,7 @@ void IRAM_ATTR longpress_timeout(void* arg)
 }
 
 // The rotary portion ISR, PCNT event callback function
-static int IRAM_ATTR get_increment(int delta_t_us)
+static int IRAM_ATTR get_step(int delta_t_us)
 {
     if (delta_t_us > 100000) return 1;
     if (delta_t_us > 50000)  return 2;
@@ -86,12 +86,12 @@ static bool IRAM_ATTR pcnt_event_handler(pcnt_unit_handle_t unit, const pcnt_wat
 	uint64_t currentTime = esp_timer_get_time();
 
 	pulse_time = int(currentTime-lastPulseTime);
-	int increment = get_increment(pulse_time);
-	if ( increment == 1 ) {
+	int step = get_step(pulse_time);
+	if ( step == 1 ) {
 		wp_value = sign(edata->watch_point_value);
 	}
 		//else suppress all of a sudden changes in rotational direction
-	int evt = (increment * wp_value) << 4;
+	int evt = (step * wp_value) << 4;
 	BaseType_t high_task_wakeup = pdFALSE;
 	xQueueSendFromISR((QueueHandle_t)user_ctx, &evt, &high_task_wakeup);
 	lastPulseTime = currentTime;
@@ -198,7 +198,7 @@ ESPRotary::~ESPRotary()
 void ESPRotary::begin()
 {
 	// Init pulse counter unit
-	int increment = rotary_inc.get();
+	int increment = rotary_inc.get() + 1;
 	ESP_LOGI(FNAME, "new inc %d", increment);
 	pcnt_unit_config_t unit_config = {
 		.low_limit = -increment, // enforce an event trigger on every tick and an auto reset of the pulse counter
@@ -318,8 +318,10 @@ esp_err_t ESPRotary::updateRotDir()
 	return pcnt_channel_set_edge_action(pcnt_chan, PCNT_CHANNEL_EDGE_ACTION_HOLD, rot_action);
 }
 
+// Increment setup is stored with values 0,1,2 and here used with values 1,2,3
 void ESPRotary::updateIncrement(int inc)
 {
+	inc += 1;
 	if ( inc > 0 && inc < 4 && inc != increment ) {
 		ESP_LOGI(FNAME, "Update rot inc %d->%d", increment, inc);
 		increment = inc;

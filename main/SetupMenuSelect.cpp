@@ -28,7 +28,9 @@ SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, i
 	bits._save = save;
 	if( _nvs ) {
 		// ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
-		_select = _nvs->get(); // > _values.size()-1) ? _values.size()-1 : _nvs->get();
+		_select = _nvs->get();
+		if ( _select < -1 ) { _select = -1; }
+		else if ( _select > _values.size()-1) { _select = _values.size()-1; }
 	}
 }
 
@@ -108,7 +110,7 @@ void SetupMenuSelect::press()
 	ESP_LOGI(FNAME,"press() ext handler: %d _select: %d", bits._ext_handler, _select );
 
 	if( _nvs ) {
-		_nvs->set((int)_select, false ); // do sync in next step
+		_nvs->set(_values[_select].second, false ); // do sync in next step
 	}
 	if ( helptext ) {
 		SavedDelay(bits._save);
@@ -240,7 +242,5 @@ int SetupMenuSelect::getValue() const
 
 void SetupMenuSelect::setSelect(int sel)
 {
-    _select = (int16_t)sel;
-	// if( _nvs ) // fixme
-	// 	_select = _nvs->set( sel );
+	_select = sel;
 }

@@ -131,6 +131,11 @@ static int set_rotary_direction(SetupMenuSelect *p) {
 	return 0;
 }
 
+static int set_rotary_increment(SetupMenuSelect *p) {
+	Rotary->updateIncrement(p->getValue());
+	return 0;
+}
+
 int audio_setup_s(SetupMenuSelect *p) {
 	Audio::setup();
 	return 0;
@@ -574,7 +579,7 @@ static int modulo(int a, int b) {
 
 void SetupMenu::rot(int count)
 {
-	ESP_LOGI(FNAME,"SetupMenu::rot %d %d", highlight, _childs.size() );
+	ESP_LOGI(FNAME,"select %d: %d/%d", count, highlight, _childs.size() );
 	MYUCG->setColor(COLOR_BLACK);
 	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	MYUCG->setColor(COLOR_WHITE);
@@ -1651,15 +1656,13 @@ void system_menu_create_hardware_rotary(SetupMenu *top) {
 	rotype->addEntry("Clockwise");
 	rotype->addEntry("Counterclockwise");
 
-	SetupMenuSelect *roinc = new SetupMenuSelect("Sensitivity", RST_NONE, 0,
-			false, &rotary_inc);
+	SetupMenuSelect *roinc = new SetupMenuSelect("Sensitivity", RST_NONE, set_rotary_increment, false, &rotary_inc);
 	top->addEntry(roinc);
 	roinc->setHelp(
-			"Select rotary sensitivity in number of Indent's for one increment, to your personal preference, 1 Indent is most sensitive");
-	roinc->addEntry("1 Indent");
-	roinc->addEntry("2 Indent");
-	roinc->addEntry("3 Indent");
-	roinc->addEntry("4 Indent");
+			"Select rotary sensitivity in number of tick's for one increment, to your personal preference, 1 tick is most sensitive");
+	roinc->addEntry("1 tick", 1);
+	roinc->addEntry("2 tick", 2);
+	roinc->addEntry("3 tick", 3);
 
 	// Rotary Default
 	SetupMenuSelect *rd = new SetupMenuSelect("Rotation", RST_ON_EXIT, 0, true,

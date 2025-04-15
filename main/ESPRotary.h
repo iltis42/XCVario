@@ -59,9 +59,11 @@ public:
 	static constexpr const int DEFAULT_LONG_PRESS_THRESHOLD = 400;
 
 	ESPRotary(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw);
-	virtual ~ESPRotary() = default;
+	~ESPRotary();
 	void begin();
+	void stop();
 	esp_err_t updateRotDir();
+	void updateIncrement(int inc);
 	void setLongPressTimeout(int lptime_ms) { lp_duration = (uint64_t)1000 * lptime_ms; }
 
 	// observer feed
@@ -83,6 +85,7 @@ private:
 	uint64_t lp_duration = DEFAULT_LONG_PRESS_THRESHOLD * 1000; // default 400msec
 	bool state = false;
 	bool hold = false; // timer timeout set the hold state
+	int increment = 1;
 };
 
 extern ESPRotary *Rotary;

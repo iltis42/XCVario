@@ -20,8 +20,8 @@ ESPRotary *Rotary = nullptr;
 
 constexpr int DEBOUNCE_TIME_us = 500;         // us debounce threshold
 
-static QueueHandle_t buttonQueue;
-static TaskHandle_t pid = NULL;
+static QueueHandle_t buttonQueue = nullptr;
+static TaskHandle_t pid = nullptr;
 static std::stack<RotaryObserver *> observers;
 
 // The button portion of the rotary ISR
@@ -88,7 +88,7 @@ static bool IRAM_ATTR pcnt_event_handler(pcnt_unit_handle_t unit, const pcnt_wat
 	pulse_time = int(currentTime-lastPulseTime);
 	int increment = get_increment(pulse_time);
 	if ( increment == 1 ) {
-		wp_value = edata->watch_point_value;
+		wp_value = sign(edata->watch_point_value);
 	}
 		//else suppress all of a sudden changes in rotational direction
 	int evt = (increment * wp_value) << 4;
@@ -144,7 +144,7 @@ void ObserverTask( void *arg )
 				knob.sendRelease();
 			} else {
 				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
-				ESP_LOGD(FNAME, "Rotation step %d, time %dus", step, pulse_time);
+				ESP_LOGI(FNAME, "Rotation step %d, time %dus", step, pulse_time);
 				knob.sendRot(step);
 			}
 		}
@@ -178,20 +178,31 @@ ESPRotary::ESPRotary(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw) :
 {
 	// Init. the button early
 	gpio_set_direction(sw, GPIO_MODE_INPUT);
-	gpio_pullup_en(sw); // Rotary Encoder Button
-}
-
-void ESPRotary::begin()
-{
+	gpio_pullup_en(sw); // Button
+	// Rotary Encoder
 	gpio_set_direction(clk, GPIO_MODE_INPUT);
 	gpio_set_direction(dt, GPIO_MODE_INPUT);
 	gpio_pulldown_en(clk);
 	gpio_pulldown_en(dt);
+}
 
+ESPRotary::~ESPRotary()
+{
+	if ( pid ) {
+		vTaskDelete(pid);
+		vQueueDelete(buttonQueue);
+		esp_timer_delete(lp_timer);
+	}
+}
+
+void ESPRotary::begin()
+{
 	// Init pulse counter unit
+	int increment = rotary_inc.get();
+	ESP_LOGI(FNAME, "new inc %d", increment);
 	pcnt_unit_config_t unit_config = {
-		.low_limit = -1, // enforce an event trigger on every tick and an auto reset of the pulse counter
-		.high_limit = 1,
+		.low_limit = -increment, // enforce an event trigger on every tick and an auto reset of the pulse counter
+		.high_limit = increment,
 		.intr_priority = 0,
 		.flags = {}
 	};
@@ -222,11 +233,13 @@ void ESPRotary::begin()
 	ESP_ERROR_CHECK(pcnt_unit_set_glitch_filter(pcnt_unit, &filter_config));
 
 	// Enable event watching on high/low limits
-	ESP_ERROR_CHECK(pcnt_unit_add_watch_point(pcnt_unit, 1));
-	ESP_ERROR_CHECK(pcnt_unit_add_watch_point(pcnt_unit, -1));
+	ESP_ERROR_CHECK(pcnt_unit_add_watch_point(pcnt_unit, increment));
+	ESP_ERROR_CHECK(pcnt_unit_add_watch_point(pcnt_unit, -increment));
 
 	// Register event callback
-	buttonQueue = xQueueCreate(10, sizeof(int));
+	if ( ! buttonQueue ) {
+		buttonQueue = xQueueCreate(10, sizeof(int));
+	}
 	pcnt_event_callbacks_t cbs = {
 		.on_reach = pcnt_event_handler
 	};
@@ -238,7 +251,9 @@ void ESPRotary::begin()
 	pcnt_unit_clear_count(pcnt_unit);
 	pcnt_unit_start(pcnt_unit);
 
-	xTaskCreate(&ObserverTask, "knob", 5096, this, 14, &pid);
+	if ( ! pid ) {
+		xTaskCreate(&ObserverTask, "knob", 5096, this, 14, &pid);
+	}
 
 	// alternative to pcnt module
 	// gpio_config_t io_conf = {
@@ -254,26 +269,40 @@ void ESPRotary::begin()
 	// gpio_isr_handler_add(clk, encoder_isr_handler, this);
 
 
-	gpio_config_t io_conf = {
-		.pin_bit_mask = (1ULL << sw),
-		.mode = GPIO_MODE_INPUT,
-		.pull_up_en = GPIO_PULLUP_ENABLE,
-		.pull_down_en = GPIO_PULLDOWN_DISABLE,
-		.intr_type = GPIO_INTR_ANYEDGE
-	};
-	gpio_config(&io_conf);
-	gpio_install_isr_service(0);
-	gpio_isr_handler_add(sw, button_isr_handler, this);
-
 	// Create long press timer
-	esp_timer_create_args_t timer_args = {
-        .callback = (esp_timer_cb_t)longpress_timeout,
-        .arg = this,
-        .dispatch_method = ESP_TIMER_TASK,
-        .name = "long_press",
-        .skip_unhandled_events = true,
-    };
-    esp_timer_create(&timer_args, &lp_timer);
+	if ( ! lp_timer ) {
+		gpio_config_t io_conf = {
+			.pin_bit_mask = (1ULL << sw),
+			.mode = GPIO_MODE_INPUT,
+			.pull_up_en = GPIO_PULLUP_ENABLE,
+			.pull_down_en = GPIO_PULLDOWN_DISABLE,
+			.intr_type = GPIO_INTR_ANYEDGE
+		};
+		gpio_config(&io_conf);
+		gpio_install_isr_service(0);
+		gpio_isr_handler_add(sw, button_isr_handler, this);
+	
+		esp_timer_create_args_t timer_args = {
+			.callback = (esp_timer_cb_t)longpress_timeout,
+			.arg = this,
+			.dispatch_method = ESP_TIMER_TASK,
+			.name = "long_press",
+			.skip_unhandled_events = true,
+		};
+		esp_timer_create(&timer_args, &lp_timer);
+	}
+}
+
+void ESPRotary::stop()
+{
+	if ( pcnt_unit ) {
+		pcnt_unit_stop(pcnt_unit);
+		pcnt_unit_disable(pcnt_unit);
+		pcnt_del_channel(pcnt_chan);
+		pcnt_chan = nullptr;
+		pcnt_del_unit(pcnt_unit);
+		pcnt_unit = nullptr;
+	}
 }
 
 esp_err_t ESPRotary::updateRotDir()
@@ -287,6 +316,18 @@ esp_err_t ESPRotary::updateRotDir()
 		rot_action = (rot_action == PCNT_CHANNEL_EDGE_ACTION_INCREASE) ? PCNT_CHANNEL_EDGE_ACTION_DECREASE : PCNT_CHANNEL_EDGE_ACTION_INCREASE;
 	}
 	return pcnt_channel_set_edge_action(pcnt_chan, PCNT_CHANNEL_EDGE_ACTION_HOLD, rot_action);
+}
+
+void ESPRotary::updateIncrement(int inc)
+{
+	if ( inc > 0 && inc < 4 && inc != increment ) {
+		ESP_LOGI(FNAME, "Update rot inc %d->%d", increment, inc);
+		increment = inc;
+		stop();
+		vTaskDelay(pdMS_TO_TICKS(10));
+		begin();
+	}
+	
 }
 
 void ESPRotary::sendRot( int diff ) const

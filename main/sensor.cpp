@@ -1728,5 +1728,6 @@ extern "C" void  app_main(void)
 		WMM_Model::geomag_test();
 #endif
 	system_startup( 0 );
+	Rotary->updateRotDir();   // Update Rotary direction after XCVario hardware has been detected
 	vTaskDelete( NULL );
 }

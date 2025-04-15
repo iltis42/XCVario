@@ -71,7 +71,7 @@ public:
     // Choose from an enumerated set of configurations, -1: OFF; 0: as is; 1,2,3..: load a preset profile 
     virtual void ConfigureIntf(int cfg) = 0;
     // if blocked returns number of ms for next possible invocation, returned len reflect the sent bytes
-    // a negative return value reflects nother error.
+    // a negative return value reflects another error.
     virtual int Send(const char *msg, int &len, int port=0) = 0;
     DataLink* newDataLink(int port);
     void addDataLink(DataLink *dl);
@@ -79,6 +79,7 @@ public:
     void DeleteDataLink(int port);
     void DeleteAllDataLinks();
     int getNrDLinks() const { return _dlink.size(); }
+    int isOneToOne() const { return _one_to_one; }
 
 protected:
     std::map<int, DataLink*> _dlink;

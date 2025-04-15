@@ -25,6 +25,8 @@
 
 static DeviceId new_device;
 static InterfaceId new_interface;
+static char tmp_title[50];
+// static SetupNG<float> tmp_value( "TMP_VAL", 0.0, SYNC_NONE, VOLATILE);
 
 //
 // Interfaces
@@ -371,11 +373,19 @@ static int remove_device(SetupMenuSelect *p)
 static int create_device(SetupMenuSelect *p)
 {
     if ( p->getSelect() == 1 ) {
-        DeviceManager *dm = DeviceManager::Instance();
-        dm->addDevice(new_device, NO_ONE, 0, 0, new_interface);
+        // Confirmed; default protocols and port
+        const DeviceAttributes *da = DeviceManager::getDevAttr(new_device);
+        for (int i=0; i<da->prcols.getExtra(); ++i) {
+            ProtocolType pid = da->prcols.proto(i);
+            if ( pid != NO_ONE ) {
+                ESP_LOGI(FNAME,"add protocol %d for device id %d", pid, new_device);
+                DEVMAN->addDevice(new_device, pid, da->port, da->port, new_interface);
+            }
+        }
+    
     }
     p->setTerminateMenu();
-    p->getParent()->setDirty();
+    p->getParent()->getParent()->setDirty();
     return 0;
 }
 
@@ -403,12 +413,12 @@ static int select_device_action(SetupMenuSelect *p)
     SetupMenuSelect *interface = static_cast<SetupMenuSelect*>(top->getEntry(2));
     const DeviceAttributes *dattr = DeviceManager::getDevAttr(new_device);
     interface->delAllEntries();
-    InterfacePack tmp(dattr->attr.interfaces);
-    ESP_LOGI(FNAME,"List Itfs raw %x", dattr->attr.interfaces);
-    for (int i=0; i<5; ++i) {
-        InterfaceId iid = tmp.get(i);
+    const PackedInt5Array &tmp = dattr->itfs;
+    ESP_LOGI(FNAME,"List Itfs raw %x", (unsigned)tmp.data);
+    for (int i=0; i<tmp.maxSize; ++i) {
+        InterfaceId iid = tmp.itf(i);
         ESP_LOGI(FNAME,"Itf id %d", iid);
-        if ( DEVMAN->isAvail(iid) ) {
+        if ( iid != NO_DEVICE && DEVMAN->isAvail(iid) ) {
             interface->addEntry(DeviceManager::getItfName(iid).data(), iid);
         }
     }
@@ -441,9 +451,9 @@ static void system_menu_add_device(SetupMenu *top)
     }
     for ( auto did : DeviceManager::allKnownDevs() ) {
         ESP_LOGI(FNAME,"Dev %d", did);
-        const DeviceAttributes *dattr = DeviceManager::getDevAttr(did);
-        ESP_LOGI(FNAME,"Attr %lx", (unsigned long)(dattr->attr.data));
-        if ( ! DEVMAN->getDevice(did) || dattr->attr.multipleConf ) {
+        const DeviceAttributes *da = DeviceManager::getDevAttr(did);
+        ESP_LOGI(FNAME,"Itf %lx Prot %lx", (unsigned long)(da->itfs.data), (unsigned long)(da->prcols.data));
+        if ( da->isSelectable() && (!DEVMAN->getDevice(did) || da->multipleConf) ) {
             ndev->addEntry(DeviceManager::getDevName(did).data(), did);
         }
     }
@@ -475,19 +485,41 @@ static int start_dm_action(SetupAction* p)
     return 0;
 }
 
+static void system_menu_datalink(SetupMenu *top)
+{
+    SetupAction *monitor = new SetupAction("Start data monitor", start_dm_action, top->getContId());
+    top->addEntry(monitor);
+    // SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE,remove_device, false, nullptr, false, false);
+    // remove->mkConfirm();
+    // top->addEntry(remove);
+}
+
 static void system_menu_device(SetupMenu *top)
 {
     DeviceId did = (DeviceId)top->getContId();
-    DeviceManager *dm = DeviceManager::Instance();
-    Device *dev = dm->getDevice(did);
+    Device *dev = DEVMAN->getDevice(did);
     // Interface
-    // static char itf_title[30];
-    // sprintf(itf_title, "%s port %d", dm->getItfName(dev->_itf->getId()), dev->getSendPort());
-    SetupMenu *itf = new SetupMenu(dm->getItfName(dev->_itf->getId()).data(), get_itf_menu_creator(dev->_itf->getId()));
+    SetupMenu *itf = new SetupMenu(DEVMAN->getItfName(dev->_itf->getId()).data(), get_itf_menu_creator(dev->_itf->getId()));
     top->addEntry(itf);
-    // dev->
-    SetupAction *monitor = new SetupAction("Start data monitor", start_dm_action, did);
-    top->addEntry(monitor);
+    SetupMenuSelect *text;
+    if ( dev->_itf->isOneToOne() ) {
+        text = new SetupMenuSelect(" -- one data layer --", RST_NONE);
+    }
+    else {
+        text = new SetupMenuSelect("with port's:", RST_NONE);
+    }
+    text->lock();
+    top->addEntry(text);
+
+    // Datalinks
+    char *cptr = tmp_title;
+    for (DataLink* dl : dev->_dlink) {
+        sprintf(cptr, "%d", dl->getPort());
+        SetupMenu *port  = new SetupMenu(cptr, system_menu_datalink, (int)dl->getTarget().raw);
+        top->addEntry(port);
+        cptr += 7;
+    }
+
     SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE,remove_device, false, nullptr, false, false);
     remove->mkConfirm();
     top->addEntry(remove);
@@ -503,14 +535,13 @@ void system_menu_connected_devices(SetupMenu *top)
         top->addEntry(adddev);
     }
 
-    DeviceManager *dm = DeviceManager::Instance();
     MenuEntry *ent = top->getEntry(1);
     while ( ent ) {
         top->delEntry(ent);
         ent = top->getEntry(1);
     }
     // List all configured devices
-    for ( auto dev : dm->allDevs() ) {
+    for ( auto dev : DEVMAN->allDevs() ) {
         std::string_view dnam = DeviceManager::getDevName(dev->_id);
         if ( ! dnam.empty() ) {
             SetupMenu *devmenu = new SetupMenu(dnam.data(), system_menu_device, dev->_id);

@@ -19,6 +19,7 @@
 #include "CircleWind.h"
 #include "Protocols.h"
 #include "ESPAudio.h"
+#include "comm/DeviceMgr.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -251,10 +252,10 @@ const char * SetupCommon::getFixedID() {
 }
 
 
-bool SetupCommon::isMaster(){
-	bool ret = (wireless == WL_WLAN_MASTER) || ((can_speed.get() != CAN_SPEED_OFF) && (can_mode.get() == CAN_MODE_MASTER));
-	// ESP_LOGI(FNAME,"isMaster ret:%d", ret );
-	return( ret );
+bool SetupCommon::isMaster()
+{
+	// fixme complete and check
+	return DEVMAN->getDevice(XCVARIOCLIENT_DEV) != nullptr;
 }
 
 bool SetupCommon::mustSync( uint8_t sync ){
@@ -268,19 +269,9 @@ bool SetupCommon::haveWLAN(){
 	return( (wireless == WL_WLAN_MASTER) ||  (wireless == WL_WLAN_STANDALONE) ||  (wireless == WL_WLAN_CLIENT ) );
 }
 
-bool SetupCommon::isClient(){
-	// ESP_LOGI(FNAME,"wireless:%d can_speed: %d can_mode: %d", wireless, can_speed.get(), can_mode.get() );
-	return((wireless == WL_WLAN_CLIENT) || ((can_speed.get() != CAN_SPEED_OFF) && (can_mode.get() == CAN_MODE_CLIENT) ));
-}
-
-bool SetupCommon::isCanClient(){
-	// ESP_LOGI(FNAME,"wireless:%d can_speed: %d can_mode: %d", wireless, can_speed.get(), can_mode.get() );
-	return( (can_speed.get() != CAN_SPEED_OFF) && (can_mode.get() == CAN_MODE_CLIENT) );
-}
-
-bool SetupCommon::isCanMaster(){
-	// ESP_LOGI(FNAME,"wireless:%d can_speed: %d can_mode: %d", wireless, can_speed.get(), can_mode.get() );
-	return( (can_speed.get() != CAN_SPEED_OFF) && (can_mode.get() == CAN_MODE_MASTER) );
+bool SetupCommon::isClient()
+{
+	return DEVMAN->getDevice(XCVARIO_DEV) != nullptr;
 }
 
 bool SetupCommon::isWired(){

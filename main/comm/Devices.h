@@ -22,7 +22,7 @@ typedef enum
     NAVI_DEV,
     MAGSENS_DEV,
     RADIO_KRT2_DEV,
-	RADIO_ATR833_DEV,
+    RADIO_ATR833_DEV,
     TEST_DEV,
     TEST_DEV2
 } DeviceId;

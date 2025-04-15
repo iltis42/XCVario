@@ -34,10 +34,10 @@ public:
     SerialLine(uart_port_t uart, gpio_num_t rx_pin, gpio_num_t tx_pin);   // uart: [0 = console], 1 = S1, 2 = S2
     virtual ~SerialLine();
 
-    void setBaud(e_baud baud) { cfg.baud = baud; };    // BAUD_9600, etc
-    void setLineInverse(bool apol) { cfg.polarity = apol; } // 0: Normal, 1: Invert
-    void setPinSwap(bool pinswp) { cfg.pin_swp = pinswp; }  // 0: Standard 1: Swapped
-    void setTxOn(bool tx) { cfg.tx_ena = tx; }           // 0: no tx  1: tx on
+    void setBaud(e_baud baud) { cfg.baud = baud; applyBaud(); };    // BAUD_9600, etc
+    void setLineInverse(bool apol) { cfg.polarity = apol; applyLineInverse(); } // 0: Normal, 1: Invert
+    void setPinSwap(bool pinswp) { cfg.pin_swp = pinswp; applyPins(); }  // 0: Standard 1: Swapped
+    void setTxOn(bool tx) { cfg.tx_ena = tx; applyPins(); }           // 0: no tx  1: tx on
 
     // Ctrl
     InterfaceId getId() const override { return _intfid; }

@@ -41,7 +41,7 @@ static SetupMenuCreator_t get_itf_menu_creator(InterfaceId iid)
     if ( iid == WIFI_AP ) {
         return options_menu_create_wifi;
     }
-    else if ( iid == S2_RS232 ) {
+    else if ( iid == S1_RS232 ) {
         return system_menu_create_interfaceS1;
     }
     else if ( iid == S2_RS232 ) {
@@ -191,7 +191,7 @@ void options_menu_create_bluetooth(SetupMenu *top)
 static int update_s1_baud(SetupMenuSelect *p)
 {
     ESP_LOGI(FNAME, "Select baudrate: %d", p->getSelect());
-    S1->setBaud((e_baud)(p->getSelect())); // 0 off, 1: 4800, 2:9600, etc
+    S1->setBaud((e_baud)(p->getSelect())); // 0: 4800, 1:9600, etc
     return 0;
 }
 
@@ -212,23 +212,13 @@ static int update_s1_pin(SetupMenuSelect *p)
 static int update_s1_txena(SetupMenuSelect *p)
 {
     ESP_LOGI(FNAME, "Select TX Enable: %d", p->getSelect());
-    S1->setTxOn(p->getSelect()); // 0 normal Client (RO, Listener), 1 Master (Sender)
-    return 0;
-}
-
-static int update_s1_protocol(SetupMenuSelect *p)
-{
-    if (p->getSelect() > 0)
-    {
-        ESP_LOGI(FNAME, "Select profile: %d", p->getSelect() - 1);
-        S1->ConfigureIntf(p->getSelect() - 1); // SM_FLARM = 1, SM_RADIO = 2, ...
-    }
+    S1->setTxOn(p->getSelect()); // 0 RO Listener, 1 TX enabled
     return 0;
 }
 
 void system_menu_create_interfaceS1(SetupMenu *top)
 {
-    SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT, update_s1_baud, true, &serial1_speed);
+    SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s1_baud, true, &serial1_speed);
     s1sp2->addEntry("4800 baud");
     s1sp2->addEntry("9600 baud");
     s1sp2->addEntry("19200 baud");
@@ -238,44 +228,28 @@ void system_menu_create_interfaceS1(SetupMenu *top)
     top->addEntry(s1sp2);
 
     SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE, update_s1_pol, true, &serial1_tx_inverted);
-    top->addEntry(stxi2);
     stxi2->setHelp("A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL "
                     "uses a positive voltage");
     stxi2->addEntry("RS232 Standard");
     stxi2->addEntry("RS232 TTL");
+    top->addEntry(stxi2);
 
-    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX Pins", RST_NONE,
-                                                  update_s1_pin, true, &serial1_pins_twisted);
-    top->addEntry(srxtw2);
-    srxtw2->setHelp("Option to swap RX and TX line for S1, a Flarm needs Normal, a Navi usually swapped. "
-                    "After change also a true power-cycle is needed");
+    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX", RST_NONE, update_s1_pin, true, &serial1_pins_twisted);
+    srxtw2->setHelp("Option to swap RX and TX line, a Flarm needs Normal, a Navi usually swapped.");
     srxtw2->addEntry("Normal");
     srxtw2->addEntry("Swapped");
+    top->addEntry(srxtw2);
 
-    // SetupMenuSelect *stxdis1 = new SetupMenuSelect("Role", RST_NONE,
-    //                                                update_s1_txena, true, &serial1_tx_enable);
-    // top->addEntry(stxdis1);
-    // stxdis1->setHelp(
-    //     "Option for 'Client' mode to listen only on the RX line, disables TX line to receive only data");
-    // stxdis1->addEntry("Client (RX)");
-    // stxdis1->addEntry("Master (RX&TX)");
-
-    SetupMenuSelect *sprots1 = new SetupMenuSelect("Protocol", RST_NONE,
-                                                   update_s1_protocol, true, &serial1_protocol);
-    top->addEntry(sprots1);
-    sprots1->setHelp("Specify the protocol driver for the external device connected to S1", 240);
-    sprots1->addEntry("Disable");
-    sprots1->addEntry("Flarm");
-    sprots1->addEntry("Radio");
-    sprots1->addEntry("XCTNAV S3");
-    sprots1->addEntry("OPENVARIO");
-    sprots1->addEntry("XCFLARMVIEW");
+    SetupMenuSelect *stxdis1 = new SetupMenuSelect("TX line", RST_NONE, update_s1_txena, true, &serial1_tx_enable);
+    stxdis1->setHelp("Option to listen only on the RX line, disables TX line to receive only data");
+    stxdis1->mkEnable();
+    top->addEntry(stxdis1);
 }
 
 static int update_s2_baud(SetupMenuSelect *p)
 {
     ESP_LOGI(FNAME, "Select baudrate: %d", p->getSelect()); // coldstart
-    S2->setBaud((e_baud)(p->getSelect()));                  // 0: 4800, 1:9600, ..
+    S2->setBaud((e_baud)(p->getSelect()));
     return 0;
 }
 
@@ -296,76 +270,38 @@ static int update_s2_pin(SetupMenuSelect *p)
 static int update_s2_txena(SetupMenuSelect *p)
 {
     ESP_LOGI(FNAME, "Select TX Enable: %d", p->getSelect());
-    S2->setTxOn(p->getSelect()); // 0 normal Client (RO, Listener), 1 Master (Sender)
-    return 0;
-}
-
-static int update_s2_protocol(SetupMenuSelect *p)
-{
-    ESP_LOGI(FNAME, "Select profile: %d", p->getSelect() - 1);
-    if (p->getSelect() > 0)
-    {
-        S2->ConfigureIntf(p->getSelect() - 1); // SM_FLARM = 0, SM_RADIO = 1, ...
-    }
+    S2->setTxOn(p->getSelect());
     return 0;
 }
 
 void system_menu_create_interfaceS2(SetupMenu *top)
 {
-    SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT,
-                                                 update_s2_baud, true, &serial2_speed);
-    top->addEntry(s2sp2);
+    SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s2_baud, true, &serial2_speed);
     s2sp2->addEntry("4800 baud");
     s2sp2->addEntry("9600 baud");
     s2sp2->addEntry("19200 baud");
     s2sp2->addEntry("38400 baud");
     s2sp2->addEntry("57600 baud");
     s2sp2->addEntry("115200 baud");
+    top->addEntry(s2sp2);
 
     SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE, update_s2_pol, true, &serial2_tx_inverted);
-    top->addEntry(stxi2);
     stxi2->setHelp("A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL "
                     "uses a positive voltage");
     stxi2->addEntry("RS232 Standard");
     stxi2->addEntry("RS232 TTL");
+    top->addEntry(stxi2);
 
-    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX Pins", RST_NONE,
-                                                  update_s2_pin, true, &serial2_pins_twisted);
-    top->addEntry(srxtw2);
-    srxtw2->setHelp("Option to swap RX and TX line for S1, a Flarm needs Normal, a Navi usually swapped. "
-                    "After change also a true power-cycle is needed");
+    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX", RST_NONE, update_s2_pin, true, &serial2_pins_twisted);
+    srxtw2->setHelp("Option to swap RX and TX line, a Flarm needs Normal, a Navi usually swapped.");
     srxtw2->addEntry("Normal");
     srxtw2->addEntry("Swapped");
+    top->addEntry(srxtw2);
 
-    SetupMenuSelect *stxdis2 = new SetupMenuSelect("Role", RST_NONE, update_s2_txena, true, &serial2_tx_enable);
+    SetupMenuSelect *stxdis2 = new SetupMenuSelect("TX line", RST_NONE, update_s2_txena, true, &serial2_tx_enable);
+    stxdis2->setHelp("Option to listen only on the RX line, disables TX line to receive only data");
+    stxdis2->mkEnable();
     top->addEntry(stxdis2);
-    stxdis2->setHelp(
-        "Option for 'Client' mode to listen only on the RX line, disables TX line to receive only data");
-    stxdis2->addEntry("Client (RX)");
-    stxdis2->addEntry("Master (RX&TX)");
-
-    // Fixme move to devices
-    // SetupMenuSelect *sprots1 = new SetupMenuSelect( "Protocol", RST_NONE,
-    // 		update_s2_protocol, true, &serial2_protocol);
-    // top->addEntry(sprots1);
-    // sprots1->setHelp(
-    // 		"Specify the protocol driver for the external device connected to S2",
-    // 		240);
-    // sprots1->addEntry( "Disable");
-    // sprots1->addEntry( "Flarm");
-    // sprots1->addEntry( "Radio");
-    // sprots1->addEntry( "XCTNAV S3");
-    // sprots1->addEntry( "OPENVARIO");
-    // sprots1->addEntry( "XCFLARMVIEW");
-
-    // SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-    //                                                data_monS2, true, nullptr);
-    // datamon->setHelp(
-    //     "Short press button to start/pause, long press to terminate data monitor",
-    //     260);
-    // datamon->addEntry("Start S2 RS232");
-
-    // top->addEntry(datamon);
 }
 
 void system_menu_create_interfaceCAN(SetupMenu *top)

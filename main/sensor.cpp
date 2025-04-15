@@ -991,7 +991,7 @@ void system_startup(void *args){
 	Display->writeText(line++, ver.c_str() );
 	Rotary->begin();
 	sleep(1);
-	if( software_update.get() || Rotary->readSwitch() ) {
+	if( software_update.get() || Rotary->readBootupStatus() ) {
 		software_update.set( 0 ); // only one shot, then boot normal
 
 		if( true ) { // have CAN?
@@ -1523,16 +1523,16 @@ void system_startup(void *args){
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
 		Display->writeText( line++, "Selftest FAILED");
-		if( !Rotary->readSwitch() )
+		if( !Rotary->readBootupStatus() )
 			sleep(4);
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
 		Display->writeText( line++, "Selftest PASSED");
-		if( !Rotary->readSwitch() )
+		if( !Rotary->readBootupStatus() )
 			sleep(2);
 	}
-	if( Rotary->readSwitch() )
+	if( Rotary->readBootupStatus() )
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}

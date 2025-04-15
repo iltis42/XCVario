@@ -71,21 +71,23 @@ static constexpr const RoutingTarget* findRoute(const RoutingTarget& target) {
 //   + an interface profile enum, if needed
 // - 
 constexpr std::pair<DeviceId, DeviceAttributes> DAVATTR[] = {
-    {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}, {JUMBOCMD_P}, true, false }}},
-    {DeviceId::ANEMOI_DEV, {"Anemoi", {{S2_RS232, S1_RS232, CAN_BUS}, {ANEMOI_P}, true, false}}},
-    {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, CAN_BUS, BT_SPP, S2_RS232}, {XCVSYNC_P}, true, false}, 8884}},
-    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, CAN_BUS, BT_SPP, S2_RS232}, {XCVSYNC_P}, true, false}, 8884}},
-    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232, CAN_BUS}, {FLARM_P, FLARMBIN_P}, true, false}}},
-    {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S2_RS232, BT_SPP, BT_LE, CAN_BUS}, {XCVARIO_P, OPENVARIO_P, BORGELT_P, CAMBRIDGE_P}, false, true}, 8880}},
-    {DeviceId::NAVI_DEV,   {"", {{WIFI_AP, CAN_BUS}, {FLARMHOST_P, FLARMBIN_P}, false, false}, 8881}},
-    {DeviceId::NAVI_DEV,   {"", {{WIFI_AP}, {KRT2_REMOTE_P}, false, false}, 8882}},
-    {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C, CAN_BUS}, {MAGSENS_P, MAGSENSBIN_P}, true, false}}},
-    {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}, {KRT2_REMOTE_P}, true, false}}},
-    {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}, {ATR833_REMOTE_P}, true, false}}},
-    {DeviceId::MASTER_DEV, {"CAN auto", {{CAN_BUS}, {REGISTRATION_P}, true, false}, CAN_REG_PORT}}
+    {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}}, {{JUMBOCMD_P}, 1} }},
+    {DeviceId::ANEMOI_DEV, {"Anemoi", {{S2_RS232, S1_RS232, CAN_BUS}}, {{ANEMOI_P}, 1}, 0, IS_REAL }},
+    {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, CAN_BUS, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL }},
+    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884 }},
+    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232, CAN_BUS}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL }},
+    {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
+                                    {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
+                                    8880, IS_REAL|MULTI_CONF}},
+    {DeviceId::NAVI_DEV,   {"Flarm consumer", {{WIFI_AP, CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, MULTI_CONF}},
+    {DeviceId::NAVI_DEV,   {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, MULTI_CONF}},
+    {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C, CAN_BUS}}, {{MAGSENSBIN_P}, 1}, 31, IS_REAL }},
+    {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL }},
+    {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL }},
+    {DeviceId::MASTER_DEV, {"CAN auto-connect", {{CAN_BUS}}, {{REGISTRATION_P}, 1}, CAN_REG_PORT, IS_REAL }}
 };
 
-constexpr const DeviceAttributes NullDev("Null", {{}, {}, false, false});
+constexpr const DeviceAttributes NullDev("Null", {{NO_PHY}}, {{NO_ONE}}, 0, 0);
 // Lookup functions
 const DeviceAttributes* DeviceManager::getDevAttr(DeviceId did) {
     // retrieve first attribute entry
@@ -182,6 +184,7 @@ public:
     int Send(const char *msg, int &len, int port=0) { return 0; }
 };
 static DmyItf dummy_itf;
+static ItfTarget monitor_target = {};
 
 static int tt_snd(Message *msg)
 {

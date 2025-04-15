@@ -88,54 +88,132 @@ struct InterfacePack
 //   up to 5 interface id's that can the device connect to
 //   up to 6 protocol id's that match to the devices
 //   other attributes in a bitfield
-union PackedAttributeList {
+
+// A packed array of 5bit integral values
+union PackedInt5Array {
     struct{
-        int  interfaces  : 20;
-        int  protocols   : 30;
-        bool isReal      : 1; // A device with a physical realastate vs. a virtual
-        bool multipleConf: 1; // can be configured in multiple instances (e.g. Navi)
-        bool hasProfile  : 1; // Protocols are organized through a profile, instead of a list
-        // bool reserved    : 5; // fill to 7 bits
+        uint64_t value  : 60;
+        int      flags  : 4;
     };
     uint64_t data = 0; // 64-bit storage
 
     // constexpr function to pack values at compile time
-    static constexpr uint64_t stuff(std::array<InterfaceId, 5> vals) {
-        uint64_t stuffed = 0;
-        for (int i = 0; i < 5; ++i) {
-            stuffed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
-        }
-        return stuffed;
-    }
-
-    static constexpr uint64_t pack(std::array<ProtocolType, 6> vals) {
+    static constexpr uint64_t pack(std::array<InterfaceId, 12> vals) {
         uint64_t packed = 0;
-        for (int i = 0; i < 6; ++i) {
-            packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5 + 20);
+        for (int i = 0; i < 12; ++i) {
+            packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
         }
         return packed;
     }
 
-    constexpr PackedAttributeList(std::array<InterfaceId, 5> itf, std::array<ProtocolType, 6> val, bool ir, bool multi) {
-        data = stuff(itf);
-        data |= pack(val);
-        data |= ir ? (uint64_t)1<<51 : 0;
-        data |= multi ? (uint64_t)1<<52 : 0;
+    static constexpr uint64_t pack(std::array<ProtocolType, 12> vals) {
+        uint64_t packed = 0;
+        for (int i = 0; i < 12; ++i) {
+            packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
+        }
+        return packed;
+    }
+
+    // static constexpr uint64_t pack(std::array<int, 12> vals) {
+    //     uint64_t packed = 0;
+    //     for (int i = 0; i < 12; ++i) {
+    //         packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
+    //     }
+    //     return packed;
+    // }
+
+    static constexpr int maxSize = 12;
+
+    constexpr PackedInt5Array(std::array<InterfaceId, 12> itf, int flgs=0) {
+        data = pack(itf);
+        data |= uint64_t(flgs)<<60;
+    }
+
+    constexpr PackedInt5Array(std::array<ProtocolType, 12> proto, int flgs=0) {
+        data = pack(proto);
+        data |= uint64_t(flgs)<<60;
     }
 
     // Get value at runtime
-    constexpr ProtocolType get(int index) const {
-        return static_cast<ProtocolType>((data >> (index * 5)) & 0x1f);
+    constexpr int get(int index) const {
+        return (data >> (index * 5)) & 0x1f;
     }
+    constexpr InterfaceId itf(int index) const {
+        return static_cast<InterfaceId>(get(index));
+    }
+    constexpr ProtocolType proto(int index) const {
+        return static_cast<ProtocolType>(get(index));
+    }
+    constexpr int getExtra() const { return flags; }
 };
 
+// union PackedAttributeList {
+//     struct{
+//         int  interfaces  : 20;
+//         int  protocols   : 30;
+//         bool isReal      : 1; // A device with a physical realastate vs. a virtual
+//         bool multipleConf: 1; // can be configured in multiple steps (e.g. Navi)
+//         bool hasProfile  : 1; // Protocols are organized through a profile, instead of a list
+//         // bool reserved    : 5; // fill to 7 bits
+//     };
+//     uint64_t data = 0; // 64-bit storage
+
+//     // constexpr function to pack values at compile time
+//     static constexpr uint64_t stuff(std::array<InterfaceId, 5> vals) {
+//         uint64_t stuffed = 0;
+//         for (int i = 0; i < 5; ++i) {
+//             stuffed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
+//         }
+//         return stuffed;
+//     }
+
+//     static constexpr uint64_t pack(std::array<ProtocolType, 6> vals) {
+//         uint64_t packed = 0;
+//         for (int i = 0; i < 6; ++i) {
+//             packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5 + 20);
+//         }
+//         return packed;
+//     }
+
+//     constexpr PackedAttributeList(std::array<InterfaceId, 5> itf, std::array<ProtocolType, 6> val, bool ir, bool multi) {
+//         data = stuff(itf);
+//         data |= pack(val);
+//         data |= ir ? (uint64_t)1<<51 : 0;
+//         data |= multi ? (uint64_t)1<<52 : 0;
+//     }
+
+//     // Get value at runtime
+//     constexpr ProtocolType get(int index) const {
+//         return static_cast<ProtocolType>((data >> (index * 5)) & 0x1f);
+//     }
+// };
+
+// some common flag constants
+constexpr int IS_REAL       = 0x01;
+constexpr int MULTI_CONF    = 0x02;
+constexpr int HAS_PROFILE   = 0x04;
 
 // Flash stored device invariant attributes
 struct DeviceAttributes
 {
     std::string_view    name; // a readable name
-    PackedAttributeList attr; // protocol dependencies, and other info
-    uint32_t            port; // optional default port
+    PackedInt5Array     itfs; // interface options
+    PackedInt5Array     prcols; // protocol options, with nr of mandatory protos (from left)
+    uint16_t            port; // optional default port
 
-    constexpr DeviceAttributes(std::string_view n, PackedAttributeList a, int p=0   ) : name(n), attr(a), port(p) {}
+    union {
+        struct {
+            int isReal      : 1; // a device with a physical realastate and meant to be selectable
+            int multipleConf: 1; // can be configured in multiple steps (e.g. Navi)
+            int hasProfile  : 1; // protocols are organized through a profile, instead of a list
+        };
+        int flags;
+    };
+
+    constexpr DeviceAttributes(std::string_view n, PackedInt5Array i, PackedInt5Array p, int o=0, int f=0 ) 
+        : name(n), itfs(i), prcols(p), port(o), flags(f) {}
+
+    bool isSelectable() const { return (bool)isReal; }
+    bool isMultiConf() const { return (bool)multipleConf; }
+
 };

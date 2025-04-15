@@ -31,6 +31,7 @@
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
 #include "setup/SetupRoot.h"
+#include "SString.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
@@ -81,7 +82,6 @@
 #include <string>
 #include <cstdio>
 #include <cstring>
-#include "DataMonitor.h"
 #include "AdaptUGC.h"
 #include "CenterAid.h"
 #include "OneWireESP32.h"
@@ -136,7 +136,6 @@ bool netif_initialized = false;
 OTA *ota = 0;
 
 SetupRoot  *Menu = nullptr;
-DataMonitor DM;
 
 // Gyro and acceleration sensor
 I2C_t& i2c = i2c1;  // i2c0 or i2c1
@@ -1482,10 +1481,10 @@ void system_startup(void *args){
 	}else if ( (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE)
 		&& Wifi ) {
 		DeviceManager* dm = DeviceManager::Instance();
-		dm->addDevice(NAVI_DEV, XCVARIO_P, 8880, 8880, WIFI);
-		dm->addDevice(NAVI_DEV, FLARMHOST_P, 8881, 8881, WIFI);
+		dm->addDevice(NAVI_DEV, XCVARIO_P, 8880, 8880, WIFI_AP);
+		dm->addDevice(NAVI_DEV, FLARMHOST_P, 8881, 8881, WIFI_AP);
 		dm->addDevice(NAVI_DEV, FLARMBIN_P, 8881, 8881, NO_PHY);
-		dm->addDevice(NAVI_DEV, KRT2_REMOTE_P, 8882, 8882, WIFI);
+		dm->addDevice(NAVI_DEV, KRT2_REMOTE_P, 8882, 8882, WIFI_AP);
 	}
 
 	if( compass_enable.get() == CS_CAN ){
@@ -1719,7 +1718,7 @@ extern "C" void  app_main(void)
 		Rotary = new ESPRotary( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0); // XCV-20 uses GPIO_2 for Rotary
 	}
 	else {
-		Rotary = new ESPRotary( GPIO_NUM_36, GPIO_NUM_39, GPIO_NUM_0);
+		Rotary = new ESPRotary( GPIO_NUM_39, GPIO_NUM_36, GPIO_NUM_0);
 	}
 
 #ifdef Quaternionen_Test

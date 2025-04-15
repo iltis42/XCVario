@@ -235,7 +235,9 @@ void DataLink::deleteProtocol(ProtocolItf *proto)
 void DataLink::process(const char *packet, int len)
 {
     // Feed the data monitor
-    DM.monitorString(_itf_id, DIR_RX, packet, len);
+    if (_monitoring) {
+        DM->monitorString(DIR_RX, packet, len);
+    }
 
     if (_active == nullptr) {
         return;
@@ -258,7 +260,7 @@ void DataLink::process(const char *packet, int len)
         {
             control = _active->nextBytes(packet, len);
             if ( control.act & FORWARD_BIT ) {
-                forwardMsg(_active->getDeviceId());
+                doForward(_active->getDeviceId());
             }
             if ( control.act == NXT_PROTO ) {
                 switchProtocol();
@@ -330,7 +332,7 @@ void DataLink::dumpProto()
     }
 }
 
-void DataLink::forwardMsg(DeviceId src_dev)
+void DataLink::doForward(DeviceId src_dev)
 {
     // consider forwarding
     // std::string log("route ");

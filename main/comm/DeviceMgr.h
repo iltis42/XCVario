@@ -99,7 +99,8 @@ public:
     // Remove device of this type
     void removeDevice(DeviceId did);
     InterfaceCtrl* getIntf(DeviceId did);
-    bool isIntf(ItfTarget Iid);
+    bool isIntf(ItfTarget iid) const;
+    bool isAvail(InterfaceId iid) const;
     RoutingList getRouting(RoutingTarget t);
     void refreshRouteCache();
     DataLink *getFlarmHost();
@@ -109,9 +110,16 @@ public:
     static int getFreeCANId(int prio);
     // debugging
     void dumpMap() const;
+    bool startDM(ItfTarget iid);
+    void stopDM();
     // Setup access
-    // DevMap::const_iterator startIterate() const { return _device_map.begin(); }
-    std::vector<const Device*> allDevs() const; //  { return _device_map.end(); }
+    static const DeviceAttributes* getDevAttr(DeviceId did);
+    static std::string_view getDevName(DeviceId did);
+    static std::vector<DeviceId> allKnownDevs();
+    static std::string_view getItfName(InterfaceId iid);
+    static std::vector<InterfaceId> allKnownIntfs();
+    static std::string_view getPrtclName(ProtocolType pid);
+    std::vector<const Device *> allDevs() const;
 
 private:
     // Complete list of all devices known at runtime

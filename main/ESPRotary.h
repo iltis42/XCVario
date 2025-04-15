@@ -37,17 +37,20 @@ public:
 	virtual void longPress() = 0;
 	virtual void release() = 0;
 	virtual void escape() = 0;
+	void setRotDynamic(float d) { _rot_dynamic = d; }
+	float getRotDynamic() const { return _rot_dynamic; }
 
 	void attach();
 	void detach();
+
+private:
+	float _rot_dynamic = 2.f; // optional rotary accelerator.
 };
 
-static void button_isr_handler(void* arg);
-static void longpress_timeout(void *arg);
-static void ObserverTask(void *arg);
 
 class ESPRotary
 {
+private:
 	friend void button_isr_handler(void* arg);
 	friend void longpress_timeout(void *arg);
 	friend void ObserverTask(void *arg);
@@ -56,9 +59,11 @@ public:
 	static constexpr const int DEFAULT_LONG_PRESS_THRESHOLD = 400;
 
 	ESPRotary(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw);
-	virtual ~ESPRotary() = default;
+	~ESPRotary();
 	void begin();
+	void stop();
 	esp_err_t updateRotDir();
+	void updateIncrement(int inc);
 	void setLongPressTimeout(int lptime_ms) { lp_duration = (uint64_t)1000 * lptime_ms; }
 
 	// observer feed
@@ -67,8 +72,10 @@ public:
 	void sendRelease() const;
 	void sendLongPress() const;
 	void sendEscape() const;
-	bool readSwitch() const { return state; } // fixme, polling does create a pile on the event queue
-	inline gpio_num_t getSw() { return sw; };
+	bool readSwitch() const;
+	gpio_num_t getSw() const { return sw; };
+	gpio_num_t getClk() const { return clk; };
+	gpio_num_t getDt() const { return dt; };
 
 private:
 	gpio_num_t clk, dt, sw; // actually used pins
@@ -78,6 +85,7 @@ private:
 	uint64_t lp_duration = DEFAULT_LONG_PRESS_THRESHOLD * 1000; // default 400msec
 	bool state = false;
 	bool hold = false; // timer timeout set the hold state
+	int increment = 1;
 };
 
 extern ESPRotary *Rotary;

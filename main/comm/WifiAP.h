@@ -43,7 +43,7 @@ public:
 
 public:
     // Ctrl
-    InterfaceId getId() const override { return WIFI; }
+    InterfaceId getId() const override { return WIFI_AP; }
     const char* getStringId() const override { return "WiFi"; }
     void ConfigureIntf(int port) override;                              // 8880, 8881, 8882, 8883
 	virtual int Send(const char *msg, int &len, int port=0) override;

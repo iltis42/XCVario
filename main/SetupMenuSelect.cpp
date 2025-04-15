@@ -28,12 +28,16 @@ SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, i
 	bits._save = save;
 	if( _nvs ) {
 		// ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
-		_select = _nvs->get(); // > _values.size()-1) ? _values.size()-1 : _nvs->get();
+		_select = _nvs->get();
+		if ( _select < -1 ) { _select = -1; }
+		else if ( _select > _values.size()-1) { _select = _values.size()-1; }
 	}
 }
 
 void SetupMenuSelect::enter()
 {
+	if ( bits._locked ) { return; }
+
 	_select_save = _select;
 	_select = (_select > _values.size()-1) ? _values.size()-1 : _select;
 	_show_inline = _values.size() > 9 || !helptext;
@@ -46,7 +50,7 @@ void SetupMenuSelect::display(int mode)
 	_row = 50;
     ESP_LOGI(FNAME,"display title:%s action: %x", _title, (int)(_action));
 	if ( !helptext ) {
-		_row = (_parent->getMenuPos() + 1) * 25;
+		_row = (_parent->getHighlight() + 1) * 25;
 		MYUCG->setColor(COLOR_BLACK);
 		MYUCG->drawFrame(1, _row + 3, 238, 25);
 		MYUCG->setColor(COLOR_WHITE);
@@ -65,15 +69,15 @@ void SetupMenuSelect::display(int mode)
 		MYUCG->printf("<< %s",_title);
 		if( _select > _values.size() )
 			_select = _values.size()-1;
-		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _values.size(), _values.size(), _values[_select] );
+		ESP_LOGI(FNAME,"select=%d size=%d val=%s", _select, _values.size(), _values[_select].first );
 		if( _show_inline ){
 			MYUCG->setPrintPos( _col, _row );
-			MYUCG->printf(FORMATSTRING_AND_SPACE, _values[_select] );
+			MYUCG->printf(FORMATSTRING_AND_SPACE, _values[_select].first );
 		}else
 		{
 			for( int i=0; i<_values.size() && i<+10; i++ )	{
 				MYUCG->setPrintPos( _col, _row+25*i );
-				MYUCG->print( _values[i] );
+				MYUCG->print( _values[i].first );
 			}
 			MYUCG->drawFrame( _col,(_select+1)*25+3,238,25 );
 		}
@@ -91,7 +95,7 @@ void SetupMenuSelect::rot(int count)
 	{
 		MYUCG->setPrintPos(_col, _row);
 		MYUCG->setFont(ucg_font_ncenR14_hr, true );
-		MYUCG->printf(FORMATSTRING_AND_SPACE,_values[_select] );
+		MYUCG->printf(FORMATSTRING_AND_SPACE,_values[_select].first);
 	}else {
 		MYUCG->setColor(COLOR_BLACK);
 		MYUCG->drawFrame( _col,(prev_select+1)*25+3,238,25 );  // blank old frame
@@ -106,7 +110,7 @@ void SetupMenuSelect::press()
 	ESP_LOGI(FNAME,"press() ext handler: %d _select: %d", bits._ext_handler, _select );
 
 	if( _nvs ) {
-		_nvs->set((int)_select, false ); // do sync in next step
+		_nvs->set(_values[_select].second, false ); // do sync in next step
 	}
 	if ( helptext ) {
 		SavedDelay(bits._save);
@@ -132,6 +136,10 @@ void SetupMenuSelect::press()
 		exit(-1);
 		return;
 	}
+	else if ( bits._end_menu ) {
+		exit(2);
+		return;
+	}
 	exit();
 }
 
@@ -139,32 +147,39 @@ void SetupMenuSelect::longPress(){
 	press();
 }
 
-
-
 const char *SetupMenuSelect::value() const 
 {
-	return _values[ _select ];
+	if ( _values.size() > 0 ) {
+		return _values[_select].first;
+	}
+	return "";
 }
 
 bool SetupMenuSelect::existsEntry( std::string ent ){
-	for( std::vector<const char*>::iterator iter = _values.begin(); iter != _values.end(); ++iter ) {
-		if( std::string(*iter) == ent ) {
+	for( std::vector<ITEM_t>::iterator iter = _values.begin(); iter != _values.end(); ++iter ) {
+		if( std::string(iter->first) == ent ) {
 			return true;
 		}
 	}
 	return false;
 }
 
-void SetupMenuSelect::addEntry( const char* ent ) {
-	_values.push_back( ent );
+void SetupMenuSelect::addEntry(const char* ent, int v)
+{
+	_values.push_back(ITEM_t(ent,v));
 
+}
+
+void SetupMenuSelect::addEntry(const char* ent)
+{
+	_values.push_back(ITEM_t(ent, _values.size()));
 }
 
 void SetupMenuSelect::addEntryList( const char ent[][4], int size )
 {
 	// ESP_LOGI(FNAME,"addEntryList() char ent[][4]");
 	for( int i=0; i<size; i++ ) {
-		_values.push_back( (char *)ent[i] );
+		_values.push_back(ITEM_t((char *)ent[i], _values.size()));
 #ifdef DEBUG_MAX_ENTRIES
 		if( num_max < _values.size() ){
 			ESP_LOGI(FNAME,"addEntryList:%s  num:%d", (char *)ent[i], _values.size() );
@@ -176,8 +191,8 @@ void SetupMenuSelect::addEntryList( const char ent[][4], int size )
 
 void SetupMenuSelect::delEntry( const char* ent )
 {
-	for( std::vector<const char *>::iterator iter = _values.begin(); iter != _values.end(); ++iter ) {
-		if( std::string(*iter) == std::string(ent) )
+	for( std::vector<ITEM_t>::iterator iter = _values.begin(); iter != _values.end(); ++iter ) {
+		if( strcmp(iter->first, ent) == 0 )
 		{
 			_values.erase( iter );
 			break;
@@ -188,27 +203,44 @@ void SetupMenuSelect::delEntry( const char* ent )
 	}
 }
 
-void SetupMenuSelect::mkBinary(const char *what)
+void SetupMenuSelect::delAllEntries()
+{
+	_values.clear();
+	_select = 0;
+}
+
+void SetupMenuSelect::mkEnable(const char *what)
 {
 	// precondition: _values is empty
-	addEntry("Disable");
-	addEntry(what? what : "Enable");
+	addEntry("disable");
+	addEntry(what? what : "enable");
 }
 
-int SetupMenuSelect::getSelect() {
-	if( _nvs )
-		_select = _nvs->get();
-	return (int)_select;
+void SetupMenuSelect::mkConfirm()
+{
+	// precondition: _values is empty
+	addEntry("cancel");
+	addEntry("yes");
 }
 
-void SetupMenuSelect::setSelect( int sel ) {
-	_select = (int16_t)sel;
-	if( _nvs )
-		_select = _nvs->set( sel );
+void SetupMenuSelect::updateEntry(const char *ent, int num)
+{
+	if (_select >=0  && _select < _values.size()) {
+		_values.at(num).first = ent;
+	}
+	ESP_LOGI(FNAME, "Out of bounds");
 }
 
+int SetupMenuSelect::getValue() const
+{
+	if (_select >=0  && _select < _values.size()) {
+		return _values[_select].second;
+	}
+	ESP_LOGW(FNAME, "Out of bounds");
+	return 0;
+}
 
-
-
-
-
+void SetupMenuSelect::setSelect(int sel)
+{
+	_select = sel;
+}

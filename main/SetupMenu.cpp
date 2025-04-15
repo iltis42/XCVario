@@ -32,7 +32,6 @@
 #include "protocol/FlarmSim.h"
 #include "WifiClient.h"
 #include "Blackboard.h"
-#include "DataMonitor.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
 #include "SetupNG.h"
@@ -80,9 +79,6 @@ static void options_menu_create_compasswind_straightwind(SetupMenu *top);
 static void options_menu_create_compasswind_straightwind_limits(SetupMenu *top);
 static void options_menu_create_compasswind_straightwind_filters(SetupMenu *top);
 static void options_menu_create_compasswind_circlingwind(SetupMenu *top);
-static void options_menu_create_wireless(SetupMenu *top);
-static void options_menu_create_wireless_custom_id(SetupMenu *top);
-static void options_menu_create_wireless_routing(SetupMenu *top);
 static void options_menu_create_gload(SetupMenu *top);
 
 static void system_menu_create(SetupMenu *top);
@@ -91,12 +87,6 @@ static void system_menu_create_battery(SetupMenu *top);
 static void system_menu_create_hardware(SetupMenu *top);
 static void system_menu_create_altimeter_airspeed(SetupMenu *top);
 static void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top);
-static void system_menu_create_interfaceS1(SetupMenu *top);
-static void system_menu_create_interfaceS1_routing(SetupMenu *top);
-static void system_menu_create_interfaceS2(SetupMenu *top);
-static void system_menu_create_interfaceS2_routing(SetupMenu *top);
-static void system_menu_create_interfaceCAN(SetupMenu *top);
-static void system_menu_create_interfaceCAN_routing(SetupMenu *top);
 static void system_menu_create_hardware_type(SetupMenu *top);
 static void system_menu_create_hardware_rotary(SetupMenu *top);
 static void system_menu_create_hardware_rotary_screens(SetupMenu *top);
@@ -131,22 +121,6 @@ int compass_ena(SetupMenuSelect *p) {
 	return 0;
 }
 
-int update_routing(SetupMenuSelect *p) {
-	// uint32_t routing = ((uint32_t) rt_s1_xcv.get() << (RT_XCVARIO))
-	// 		| ((uint32_t) rt_s1_wl.get() << (RT_WIRELESS))
-	// 		| ((uint32_t) rt_s1_s2.get() << (RT_S1))
-	// 		| ((uint32_t) rt_s1_can.get() << (RT_CAN));
-	// ESP_LOGI(FNAME,"update_routing S1: %x", (unsigned int)routing);
-	// serial1_tx.set(routing);
-	// routing = (uint32_t) rt_s2_xcv.get() << (RT_XCVARIO)
-	// 		| ((uint32_t) rt_s2_wl.get() << (RT_WIRELESS))
-	// 		| ((uint32_t) rt_s1_s2.get() << (RT_S1))
-	// 		| ((uint32_t) rt_s2_can.get() << (RT_CAN));
-	// ESP_LOGI(FNAME,"update_routing S2: %x", (unsigned int)routing);
-	// serial2_tx.set(routing);
-	return 0;
-}
-
 int vario_setup(SetupMenuValFloat *p) {
 	bmpVario.configChange();
 	return 0;
@@ -154,6 +128,11 @@ int vario_setup(SetupMenuValFloat *p) {
 
 static int set_rotary_direction(SetupMenuSelect *p) {
 	Rotary->updateRotDir();
+	return 0;
+}
+
+static int set_rotary_increment(SetupMenuSelect *p) {
+	Rotary->updateIncrement(p->getValue());
 	return 0;
 }
 
@@ -221,69 +200,6 @@ int upd_screens(SetupMenuSelect *p) {
 }
 
 
-int update_s2_baud(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select baudrate: %d", p->getSelect() ); // coldstart
-	S2->setBaud((e_baud)(p->getSelect())); // 0 off, 1: 4800, 2:9600, etc support coldstart from BAUD_OFF
-	return 0;
-}
-
-int update_s2_pol(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select RX/TX polarity: %d", p->getSelect() );
-	S2->setLineInverse(p->getSelect()); // 0 off, 1 invers or TTL (always both, RX/TX)
-	return 0;
-}
-
-int update_s2_pin(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select Pin Swap: %d", p->getSelect() );
-	S2->setPinSwap(p->getSelect()); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
-	return 0;
-}
-
-int update_s2_txena(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select TX Enable: %d", p->getSelect() );
-	S2->setTxOn(p->getSelect()); // 0 normal Client (RO, Listener), 1 Master (Sender)
-	return 0;
-}
-
-int update_s2_protocol(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select profile: %d", p->getSelect()-1 );
-	if ( p->getSelect() > 0 ) {
-		S2->ConfigureIntf(p->getSelect()-1); // SM_FLARM = 0, SM_RADIO = 1, ... 
-	}
-	return 0;
-}
-
-int update_s1_baud(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select baudrate: %d", p->getSelect() );
-	S1->setBaud((e_baud)(p->getSelect()));  // 0 off, 1: 4800, 2:9600, etc
-	return 0;
-}
-
-int update_s1_pol(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select RX/TX polarity: %d", p->getSelect() );
-	S1->setLineInverse(p->getSelect()); // 0 off, 1 invers or TTL (always both, RX/TX)
-	return 0;
-}
-
-int update_s1_pin(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select Pin Swap: %d", p->getSelect() );
-	S1->setPinSwap(p->getSelect()); // 0 normal (3:TX 4:RX), 1 swapped (3:RX 4:TX)
-	return 0;
-}
-
-int update_s1_txena(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"Select TX Enable: %d", p->getSelect() );
-	S1->setTxOn(p->getSelect()); // 0 normal Client (RO, Listener), 1 Master (Sender)
-	return 0;
-}
-
-int update_s1_protocol(SetupMenuSelect *p) {
-	if ( p->getSelect() > 0 ) {
-		ESP_LOGI(FNAME,"Select profile: %d", p->getSelect()-1 );
-		S1->ConfigureIntf(p->getSelect()-1); // SM_FLARM = 1, SM_RADIO = 2, ... 
-	}
-	return 0;
-}
 
 int do_display_test(SetupMenuSelect *p) {
 	if (display_test.get()) {
@@ -325,63 +241,6 @@ int update_rentry(SetupMenuValFloat *p) {
 
 int update_rentrys(SetupMenuSelect *p) {
 	update_rentry(0);
-	return 0;
-}
-
-int update_wifi_power(SetupMenuValFloat *p) {
-	ESP_ERROR_CHECK(
-			esp_wifi_set_max_tx_power(int(wifi_max_power.get() * 80.0 / 100.0)));
-	return 0;
-}
-
-int data_mon(SetupMenuSelect *p) {
-	ItfTarget ch;
-	switch (p->getSelect()) {
-		case 1: ch = ItfTarget(BT_SPP); break;
-		case 2: ch = ItfTarget(WIFI,8880); break;
-		case 3: ch = ItfTarget(WIFI,8881); break;
-		case 4: ch = ItfTarget(WIFI,8882); break;
-		case 5: ch = ItfTarget(S1_RS232); break;
-		case 6: ch = ItfTarget(S2_RS232); break;
-		case 7: ch = ItfTarget(CAN_BUS); break;
-		default: break;
-	}
-	if (ch != ItfTarget()) {
-		ESP_LOGI(FNAME,"data_mon( %d ) ", (int)ch.raw );
-		DM.start(p, ch);
-		return 1;
-	}
-	return 0;
-}
-
-int data_monS1(SetupMenuSelect *p)
-{
-	ItfTarget tmp(S1_RS232);
-	if ( DEVMAN->isIntf(tmp) ) {
-		DM.start(p, tmp);
-		return 1;
-	}
-	return 0;
-}
-
-int data_monS2(SetupMenuSelect *p)
-{
-	ItfTarget tmp(S2_RS232);
-	if ( DEVMAN->isIntf(tmp) ) {
-		DM.start(p, tmp);
-		return 1;
-	}
-	return 0;
-}
-
-int update_id(SetupMenuChar *p) {
-	const char *c = p->value();
-	ESP_LOGI(FNAME,"New Letter %c Index: %d", *c, (int)p->getCharIndex() );
-	char id[10] = { 0 };
-	strcpy(id, custom_wireless_id.get().id);
-	id[p->getCharIndex()] = *c;
-	ESP_LOGI(FNAME,"New ID %s", id );
-	custom_wireless_id.set(id);
 	return 0;
 }
 
@@ -466,16 +325,6 @@ int factv_adj(SetupMenuValFloat *p) {
 	float bat = getBattery()->get(true);
 	MYUCG->setPrintPos(1, 100);
 	MYUCG->printf("%0.2f Volt", bat);
-	return 0;
-}
-
-int master_xcv_lock(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"master_xcv_lock");
-	MYUCG->setPrintPos(1, 130);
-	int mxcv = WifiClient::getScannedMasterXCV();
-	MYUCG->printf("Scanned: XCVario-%d", mxcv);
-	if (master_xcvario_lock.get() == 1)
-		master_xcvario.set(mxcv);
 	return 0;
 }
 
@@ -594,22 +443,14 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // SetupMenu
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
-// SetupMenu::SetupMenu() :
-// 	MenuEntry(),
-// 	populateMenu(0)
-// {
-// 	highlight = -1;
-// 	_parent = 0;
-// 	helptext = 0;
-// }
-
-SetupMenu::SetupMenu(const char *title, void (menu_create)(SetupMenu* ptr)) :
+SetupMenu::SetupMenu(const char *title, SetupMenuCreator_t menu_create, int cont_id) :
 	MenuEntry(),
 	populateMenu(menu_create),
-	highlight(-1)
+	content_id(cont_id)
 {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
 	_title = title;
+	setRotDynamic(1.f);
 }
 
 SetupMenu::~SetupMenu() {
@@ -628,7 +469,7 @@ void SetupMenu::catchFocus(bool activate) {
 void SetupMenu::enter()
 {
 	ESP_LOGI(FNAME,"enter inSet %d, mptr: %p", gflags.inSetup, populateMenu );
-	if (_childs.empty() && populateMenu) {
+	if ((_childs.empty() || dyn_content) && populateMenu) {
 		(populateMenu)(this);
 		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
 	}
@@ -638,10 +479,14 @@ void SetupMenu::enter()
 void SetupMenu::display(int mode)
 {
 	xSemaphoreTake(display_mutex, portMAX_DELAY);
-	// ESP_LOGI(FNAME,"SetupMenu display( %s)", _title );
+	ESP_LOGI(FNAME,"SetupMenu display(%s-%d)", _title, highlight );
+	if ( highlight >= (int)(_childs.size()) ) {
+		highlight = _childs.size()-1;
+	}
+	ESP_LOGI(FNAME,"SetupMenu display %d", highlight );
 	clear();
 	int y = 25;
-	// ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", selected->_title,y, _childs.size()  );
+	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", _title, y, _childs.size());
 	MYUCG->setFont(ucg_font_ncenR14_hr);
 	MYUCG->setPrintPos(1, y);
 	MYUCG->setFontPosBottom();
@@ -655,7 +500,7 @@ void SetupMenu::display(int mode)
 		}
 		MYUCG->printf("%s", child->getTitle());
 		// ESP_LOGI(FNAME,"Child Title: %s", child->getTitle() );
-		if (child->value()) {
+		if (child->value() && *child->value() != '\0') {
 			int fl = MYUCG->getStrWidth(child->getTitle());
 			MYUCG->setPrintPos(1 + fl, (i + 1) * 25 + 25);
 			MYUCG->printf(": ");
@@ -668,6 +513,20 @@ void SetupMenu::display(int mode)
 	}
 	showhelp();
 	xSemaphoreGive(display_mutex);
+}
+
+void SetupMenu::highlightEntry(MenuEntry *value)
+{
+	int found = -1;
+	for (int i = 0; i < _childs.size(); ++i) {
+		if (_childs[i] == value) {
+			found = i;
+			break;
+		}
+	}
+	if ( found >= 0 ) {
+		highlight = found;
+	}
 }
 
 MenuEntry* SetupMenu::addEntry( MenuEntry * item )
@@ -683,8 +542,8 @@ void SetupMenu::delEntry( MenuEntry * item ) {
 	std::vector<MenuEntry *>::iterator position = std::find(_childs.begin(), _childs.end(), item );
 	if (position != _childs.end()) {
 		ESP_LOGI(FNAME,"found entry, now erase" );
+		delete *position;
 		_childs.erase(position);
-        delete *position;
 	}
 }
 
@@ -706,14 +565,21 @@ const MenuEntry* SetupMenu::findMenu(const char *title) const
 	return nullptr;
 }
 
+MenuEntry *SetupMenu::getEntry(int n) const
+{
+	if ( n < _childs.size() ) {
+		return _childs[n];
+	}
+	return nullptr;
+}
+
 static int modulo(int a, int b) {
 	return (a % b + b) % b;
 }
 
 void SetupMenu::rot(int count)
 {
-	count = count/abs(count); // no progression for the menu (count is never 0)
-	ESP_LOGI(FNAME,"SetupMenu::rot %d %d", highlight, _childs.size() );
+	ESP_LOGI(FNAME,"select %d: %d/%d", count, highlight, _childs.size() );
 	MYUCG->setColor(COLOR_BLACK);
 	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
 	MYUCG->setColor(COLOR_WHITE);
@@ -726,7 +592,7 @@ void SetupMenu::press()
 {
 	ESP_LOGI(FNAME,"press() inSet %d highl: %d", gflags.inSetup, highlight );
 	if (highlight == -1) {
-		_parent->menuSetTop();
+		_parent->highlightTop();
 		exit();
 	} else {
 		ESP_LOGI(FNAME,"SetupMenu to child");
@@ -736,25 +602,31 @@ void SetupMenu::press()
 	}
 }
 
+void SetupMenu::longPress()
+{
+	if (highlight == -1) {
+		exit(-1); // fast exit
+	} else {
+		press();
+	}
+}
+
 void vario_menu_create_damping(SetupMenu *top) {
 	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", 2.0, 10.0,
 			0.1, vario_setup, false, &vario_delay);
-	vda->setHelp(
-			"Response time, time constant of Vario low pass kalman filter");
+	vda->setHelp("Response time, time constant of Vario low pass filter");
 	top->addEntry(vda);
 
 	SetupMenuValFloat *vdav = new SetupMenuValFloat("Averager", "sec", 2.0,
 			60.0, 1, 0, false, &vario_av_delay);
-	vdav->setHelp(
-			"Response time, time constant of digital Average Vario Display");
+	vdav->setHelp("Response time, time constant of digital Average Vario Display");
 	top->addEntry(vdav);
 }
 
 void vario_menu_create_meanclimb(SetupMenu *top) {
 	SetupMenuValFloat *vccm = new SetupMenuValFloat("Minimum climb", "", 0.0,
 			2.0, 0.1, 0, false, &core_climb_min);
-	vccm->setHelp(
-			"Minimum climb rate that counts for arithmetic mean climb value");
+	vccm->setHelp("Minimum climb rate that counts for arithmetic mean climb value");
 	top->addEntry(vccm);
 
 	SetupMenuValFloat *vcch = new SetupMenuValFloat("Duration", "min", 1, 300,
@@ -891,11 +763,8 @@ void vario_menu_create(SetupMenu *vae) {
 	vga->setPrecision(0);
 	vae->addEntry(vga);
 
-	SetupMenuSelect *vlogscale = new SetupMenuSelect("Log. Scale", RST_NONE, 0,
-			true, &log_scale);
-	vlogscale->setHelp("Use a logarithmic scale in the vario gauge");
-	vlogscale->addEntry("DISABLE");
-	vlogscale->addEntry("ENABLE");
+	SetupMenuSelect *vlogscale = new SetupMenuSelect("Log. Scale", RST_NONE, 0, true, &log_scale);
+	vlogscale->mkEnable();
 	vae->addEntry(vlogscale);
 
 	SetupMenuSelect *vamod = new SetupMenuSelect("Mode", RST_NONE, 0, true,
@@ -915,12 +784,9 @@ void vario_menu_create(SetupMenu *vae) {
 	nemod->addEntry("Relative");
 	vae->addEntry(nemod);
 
-	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, 0, true,
-			&ps_display);
-	sink->setHelp(
-			"Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
-	sink->addEntry("DISABLE");
-	sink->addEntry("ENABLE");
+	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, 0, true, &ps_display);
+	sink->setHelp("Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
+	sink->mkEnable();
 	vae->addEntry(sink);
 
 	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, 0,
@@ -931,11 +797,9 @@ void vario_menu_create(SetupMenu *vae) {
 	ncolor->addEntry("Red");
 	vae->addEntry(ncolor);
 
-	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_ON_EXIT, 0,
-			true, &screen_centeraid);
+	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_ON_EXIT, 0, true, &screen_centeraid);
 	scrcaid->setHelp("Enable/disable display of centering aid (reboots)");
-	scrcaid->addEntry("Disable");
-	scrcaid->addEntry("Enable");
+	scrcaid->mkEnable();
 	vae->addEntry(scrcaid);
 
 	SetupMenu *vdamp = new SetupMenu("Vario Damping", vario_menu_create_damping);
@@ -964,12 +828,10 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	oc->setHelp("Maximum tone frequency variation");
 	top->addEntry(oc);
 
-	SetupMenuSelect *dt = new SetupMenuSelect("Dual Tone", RST_NONE,
-			audio_setup_s, true, &dual_tone);
+	SetupMenuSelect *dt = new SetupMenuSelect("Dual Tone", RST_NONE, audio_setup_s, true, &dual_tone);
 	dt->setHelp(
 			"Select dual tone modue aka ilec sound (di/da/di), or single tone (di/di/di) mode");
-	dt->addEntry("Disable");       // 0
-	dt->addEntry("Enable");        // 1
+	dt->mkEnable();
 	top->addEntry(dt);
 
 	SetupMenuValFloat *htv = new SetupMenuValFloat("Dual Tone Pitch", "%", 0,
@@ -1000,34 +862,21 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 			true, &audio_variable_frequency);
 	advarto->setHelp(
 			"Enable audio frequency updates within climbing tone intervals, disable keeps frequency constant");
-	advarto->addEntry("Disable");       // 0
-	advarto->addEntry("Enable");        // 1
+	advarto->mkEnable();
 	top->addEntry(advarto);
 }
 
 void audio_menu_create_deadbands(SetupMenu *top) {
-	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", -5.0,
-			0, 0.1, 0, false, &deadband_neg);
-	dbminlv->setHelp(
-			"Lower (sink) limit of deadband for Audio mute function when in Vario mode");
+	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", -5.0, .0, 0.1, nullptr, false, &deadband_neg);
 	top->addEntry(dbminlv);
 
-	SetupMenuValFloat *dbmaxlv = new SetupMenuValFloat("Upper Vario", "", 0,
-			5.0, 0.1, 0, false, &deadband);
-	dbmaxlv->setHelp(
-			"Upper (climb) limit of deadband for Audio mute function when in Vario mode");
+	SetupMenuValFloat *dbmaxlv = new SetupMenuValFloat("Upper Vario", "", .0, 5.0, 0.1, nullptr, false, &deadband);
 	top->addEntry(dbmaxlv);
 
-	SetupMenuValFloat *dbmaxls2fn = new SetupMenuValFloat("Lower S2F", "",
-			-25.0, 0, 1, 0, false, &s2f_deadband_neg);
-	dbmaxls2fn->setHelp(
-			"Negative (too slow) speed deviation limit of deadband in S2F mode");
+	SetupMenuValFloat *dbmaxls2fn = new SetupMenuValFloat("Lower S2F", "", -25.0, .0, 1, nullptr, false, &s2f_deadband_neg);
 	top->addEntry(dbmaxls2fn);
 
-	SetupMenuValFloat *dbmaxls2f = new SetupMenuValFloat("Upper S2F", "", 0,
-			25.0, 1, 0, false, &s2f_deadband);
-	dbmaxls2f->setHelp(
-			"Positive (too fast) speed deviation limit of deadband in S2F mode");
+	SetupMenuValFloat *dbmaxls2f = new SetupMenuValFloat("Upper S2F", "", .0, 25.0, 1, nullptr, false, &s2f_deadband);
 	top->addEntry(dbmaxls2f);
 }
 
@@ -1085,8 +934,7 @@ void audio_menu_create_volume(SetupMenu *top) {
 			true, &audio_split_vol);
 	amspvol->setHelp(
 			"Enable independent audio volume in SpeedToFly and Vario modes, disable for one volume for both");
-	amspvol->addEntry("Disable");      // 0
-	amspvol->addEntry("Enable");       // 1
+	amspvol->mkEnable();
 	top->addEntry(amspvol);
 }
 
@@ -1176,29 +1024,20 @@ void glider_menu_create_polarpoints(SetupMenu *top) {
 	wil->setHelp(
 			"Wingloading that corresponds to the 3 value pairs for speed/sink of polar");
 	top->addEntry(wil);
-	SetupMenuValFloat *pov1 = new SetupMenuValFloat("Speed 1", "km/h", 50.0,
-			120.0, 1, 0, false, &polar_speed1);
+	SetupMenuValFloat *pov1 = new SetupMenuValFloat("Speed 1", "km/h", 50.0, 120.0, 1, nullptr, false, &polar_speed1);
 	pov1->setHelp("Speed 1, near minimum sink from polar e.g. 80 km/h");
 	top->addEntry(pov1);
-	SetupMenuValFloat *pos1 = new SetupMenuValFloat("Sink  1", "m/s", -3.0, 0.0,
-			0.01, 0, false, &polar_sink1);
-	pos1->setHelp("Sink at Speed 1 from polar");
+	SetupMenuValFloat *pos1 = new SetupMenuValFloat("Sink  1", "m/s", -3.0, 0.0, 0.01, nullptr, false, &polar_sink1);
 	top->addEntry(pos1);
-	SetupMenuValFloat *pov2 = new SetupMenuValFloat("Speed 2", "km/h", 70.0,
-			180.0, 1, 0, false, &polar_speed2);
+	SetupMenuValFloat *pov2 = new SetupMenuValFloat("Speed 2", "km/h", 70.0, 180.0, 1, nullptr, false, &polar_speed2);
 	pov2->setHelp("Speed 2 for a moderate cruise from polar e.g. 120 km/h");
 	top->addEntry(pov2);
-	SetupMenuValFloat *pos2 = new SetupMenuValFloat("Sink  2", "m/s", -5.0, 0.0,
-			0.01, 0, false, &polar_sink2);
-	pos2->setHelp("Sink at Speed 2 from polar");
+	SetupMenuValFloat *pos2 = new SetupMenuValFloat("Sink  2", "m/s", -5.0, 0.0, 0.01, nullptr, false, &polar_sink2);
 	top->addEntry(pos2);
-	SetupMenuValFloat *pov3 = new SetupMenuValFloat("Speed 3", "km/h", 100.0,
-			250.0, 1, 0, false, &polar_speed3);
+	SetupMenuValFloat *pov3 = new SetupMenuValFloat("Speed 3", "km/h", 100.0, 250.0, 1, nullptr, false, &polar_speed3);
 	pov3->setHelp("Speed 3 for a fast cruise from polar e.g. 170 km/h");
 	top->addEntry(pov3);
-	SetupMenuValFloat *pos3 = new SetupMenuValFloat("Sink  3", "m/s", -6.0, 0.0,
-			0.01, 0, false, &polar_sink3);
-	pos3->setHelp("Sink at Speed 3 from polar");
+	SetupMenuValFloat *pos3 = new SetupMenuValFloat("Sink  3", "m/s", -6.0, 0.0, 0.01, nullptr, false, &polar_sink3);
 	top->addEntry(pos3);
 }
 
@@ -1218,23 +1057,15 @@ void glider_menu_create(SetupMenu *poe) {
 	pa->setHelp("Adjust the polar at 3 points, in the commonly used metric system",230);
 	poe->addEntry(pa);
 
-	SetupMenuValFloat *maxbal = new SetupMenuValFloat("Max Ballast", "liters",
-			0, 500, 1, 0, false, &polar_max_ballast);
-	maxbal->setHelp(
-			"Maximum water ballast for selected glider, to sync with XCSoar using fraction of max ballast");
+	SetupMenuValFloat *maxbal = new SetupMenuValFloat("Max Ballast", "liters", 0, 500, 1, nullptr, false, &polar_max_ballast);
 	poe->addEntry(maxbal);
 
-	SetupMenuValFloat *wingarea = new SetupMenuValFloat("Wing Area", "m2", 0,
-			50, 0.1, 0, false, &polar_wingarea);
-	wingarea->setHelp(
-			"Wing area for the selected glider - adjustment to support wing extensions or new types, in square meters");
+	SetupMenuValFloat *wingarea = new SetupMenuValFloat("Wing Area", "m2", 0, 50, 0.1, nullptr, false, &polar_wingarea);
 	poe->addEntry(wingarea);
 
-	SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", 0,
-			1000, 1, empty_weight_adj, false, &empty_weight);
+	SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", 0, 1000, 1, empty_weight_adj, false, &empty_weight);
 	fixball->setPrecision(0);
-	fixball->setHelp(
-			"Net rigged weight of the glider, according to the weight and balance plan");
+	fixball->setHelp("Net rigged weight of the glider, according to the weight and balance plan");
 	poe->addEntry(fixball);
 }
 
@@ -1334,15 +1165,12 @@ void options_menu_create_compasswind_compass_nmea(SetupMenu *top) {
 	top->addEntry(nmeaHdt);
 }
 
+// Fixme goes to devices
 void options_menu_create_compasswind_compass(SetupMenu *top) {
-	SetupMenuSelect *compSensor = new SetupMenuSelect("Sensor Option",
-			RST_ON_EXIT, compass_ena, true, &compass_enable);
+	SetupMenuSelect *compSensor = new SetupMenuSelect("Sensor Option", RST_NONE, compass_ena, true, &compass_enable);
 	compSensor->addEntry("Disable");
-	compSensor->addEntry("Enable I2C sensor");
-	compSensor->addEntry("Disable");
-	compSensor->addEntry("Enable CAN sensor");
-	compSensor->setHelp(
-			"Option to enable/disable the Compass Sensor (reboots)");
+	compSensor->addEntry("I2C sensor");
+	compSensor->addEntry("CAN sensor");
 	top->addEntry(compSensor);
 
 	SetupMenuSelect *compSensorCal = new SetupMenuSelect("Sensor Calibration",
@@ -1355,6 +1183,7 @@ void options_menu_create_compasswind_compass(SetupMenu *top) {
 			"Calibrate Magnetic Sensor, mandatory for operation");
 	top->addEntry(compSensorCal);
 
+	// Fixme replace by WMM
 	SetupMenuValFloat *cd = new SetupMenuValFloat("Setup Declination", "°",
 			-180, 180, 1.0, compassDeclinationAction, false,
 			&compass_declination);
@@ -1558,124 +1387,6 @@ void options_menu_create_compasswind(SetupMenu *top) {
 	top->addEntry(windlog);
 }
 
-void options_menu_create_wireless_routing(SetupMenu *top) {
-	SetupMenuSelect *wloutxcv = new SetupMenuSelect("XCVario", RST_NONE, 0,
-			true, &rt_xcv_wl);
-	wloutxcv->addEntry("Disable");
-	wloutxcv->addEntry("Enable");
-	top->addEntry(wloutxcv);
-	SetupMenuSelect *wloutxs1 = new SetupMenuSelect("S1-RS232", RST_NONE,
-			update_routing, true, &rt_s1_wl);
-	wloutxs1->addEntry("Disable");
-	wloutxs1->addEntry("Enable");
-	top->addEntry(wloutxs1);
-	SetupMenuSelect *wloutxs2 = new SetupMenuSelect("S2-RS232", RST_NONE,
-			update_routing, true, &rt_s2_wl);
-	wloutxs2->addEntry("Disable");
-	wloutxs2->addEntry("Enable");
-	top->addEntry(wloutxs2);
-	SetupMenuSelect *wloutxcan = new SetupMenuSelect("CAN-bus", RST_NONE, 0,
-			true, &rt_wl_can);
-	wloutxcan->addEntry("Disable");
-	wloutxcan->addEntry("Enable");
-	top->addEntry(wloutxcan);
-}
-
-void options_menu_create_wireless_custom_id(SetupMenu *top) {
-	SetupMenuChar *c1 = new SetupMenuChar("Letter 1", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 0);
-	SetupMenuChar *c2 = new SetupMenuChar("Letter 2", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 1);
-	SetupMenuChar *c3 = new SetupMenuChar("Letter 3", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 2);
-	SetupMenuChar *c4 = new SetupMenuChar("Letter 4", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 3);
-	SetupMenuChar *c5 = new SetupMenuChar("Letter 5", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 4);
-	SetupMenuChar *c6 = new SetupMenuChar("Letter 6", RST_NONE, update_id,
-			false, custom_wireless_id.get().id, 5);
-	top->addEntry(c1);
-	top->addEntry(c2);
-	top->addEntry(c3);
-	top->addEntry(c4);
-	top->addEntry(c5);
-	top->addEntry(c6);
-	static const char keys[][4] { "", "0", "1", "2", "3", "4", "5", "6", "7",
-			"8", "9", "-", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J",
-			"K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
-			"X", "Y", "Z" };
-	c1->addEntryList(keys, sizeof(keys) / 4);
-	c2->addEntryList(keys, sizeof(keys) / 4);
-	c3->addEntryList(keys, sizeof(keys) / 4);
-	c4->addEntryList(keys, sizeof(keys) / 4);
-	c5->addEntryList(keys, sizeof(keys) / 4);
-	c6->addEntryList(keys, sizeof(keys) / 4);
-}
-
-void options_menu_create_wireless(SetupMenu *top) {
-	SetupMenuSelect *btm = new SetupMenuSelect("Wireless", RST_ON_EXIT, 0, true,
-			&wireless_type);
-	btm->setHelp(
-			"Activate wireless interface type to connect navigation devices, or to another XCVario as client (reboots)",
-			220);
-	btm->addEntry("Disable");
-	btm->addEntry("Bluetooth");
-	btm->addEntry("Wireless Master");
-	btm->addEntry("Wireless Client");
-	btm->addEntry("Wireless Standalone");
-	btm->addEntry("Bluetooth LE");
-	top->addEntry(btm);
-
-	SetupMenu *wlrt = new SetupMenu("WL Routing", options_menu_create_wireless_routing);
-	top->addEntry(wlrt);
-	wlrt->setHelp("Select data source that is routed from/to Wireless BT or WIFI interface");
-
-	SetupMenuValFloat *wifip = new SetupMenuValFloat("WIFI Power", "%", 10.0,
-			100.0, 5.0, update_wifi_power, false, &wifi_max_power);
-	wifip->setPrecision(0);
-	top->addEntry(wifip);
-	wifip->setHelp("Maximum Wifi Power to be used 10..100% or 2..20dBm");
-
-	SetupMenuSelect *wifimal = new SetupMenuSelect("Lock Master", RST_NONE,
-			master_xcv_lock, true, &master_xcvario_lock);
-	wifimal->setHelp(
-			"In wireless client role, lock this client to the scanned master XCVario ID above");
-	wifimal->addEntry("Unlock");
-	wifimal->addEntry("Lock");
-	top->addEntry(wifimal);
-
-	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-			data_mon, true, nullptr);
-	datamon->setHelp(
-			"Short press button to start/pause, long press to terminate data monitor",
-			260);
-	datamon->addEntry("Disable");
-	datamon->addEntry("Bluetooth");
-	datamon->addEntry("Wifi 8880");
-	datamon->addEntry("Wifi 8881");
-	datamon->addEntry("Wifi 8882");
-	datamon->addEntry("RS232 S1");
-	datamon->addEntry("RS232 S2");
-	datamon->addEntry("CAN Bus");
-	top->addEntry(datamon);
-
-	SetupMenuSelect *datamonmod = new SetupMenuSelect("Monitor Mode", RST_NONE,
-			0, true, &data_monitor_mode);
-	datamonmod->setHelp(
-			"Select data display as ASCII text or as binary hexdump");
-	datamonmod->addEntry("ASCII");
-	datamonmod->addEntry("Binary");
-	top->addEntry(datamonmod);
-
-	SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
-	top->addEntry(cusid);
-	cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate",215);
-
-	// SetupMenuSelect *clearcore = new SetupMenuSelect("Clear coredump", RST_NONE, reinterpret_cast<int (*)(SetupMenuSelect*)>(clear_coredump), false, nullptr);
-	// clearcore->addEntry("doit");
-	// top->addEntry(clearcore);
-}
-
 void options_menu_create_gload(SetupMenu *top) {
 	SetupMenuSelect *glmod = new SetupMenuSelect("Activation Mode", RST_NONE, 0,
 			true, &gload_mode);
@@ -1782,10 +1493,8 @@ void options_menu_create(SetupMenu *opt) {
 	SetupMenuSelect *atl = new SetupMenuSelect("Auto Transition", RST_NONE, 0,
 			true, &fl_auto_transition);
 	opt->addEntry(atl);
-	atl->setHelp(
-			"Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
-	atl->addEntry("Disable");
-	atl->addEntry("Enable");
+	atl->setHelp("Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
+	atl->mkEnable();
 
 	SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode",
 			RST_NONE, 0, true, &alt_display_mode);
@@ -1810,8 +1519,8 @@ void options_menu_create(SetupMenu *opt) {
 	opt->addEntry(compassWindMenu);
 	compassWindMenu->setHelp("Setup Compass and Wind", 280);
 
-	SetupMenu *wireless = new SetupMenu("Wireless", options_menu_create_wireless);
-	opt->addEntry(wireless);
+	// SetupMenu *wireless = new SetupMenu("Wireless", options_menu_create_wireless);
+	// opt->addEntry(wireless);
 
 	SetupMenu *gload = new SetupMenu("G-Load Display", options_menu_create_gload);
 	opt->addEntry(gload);
@@ -1947,15 +1656,13 @@ void system_menu_create_hardware_rotary(SetupMenu *top) {
 	rotype->addEntry("Clockwise");
 	rotype->addEntry("Counterclockwise");
 
-	SetupMenuSelect *roinc = new SetupMenuSelect("Sensitivity", RST_NONE, 0,
-			false, &rotary_inc);
+	SetupMenuSelect *roinc = new SetupMenuSelect("Sensitivity", RST_NONE, set_rotary_increment, false, &rotary_inc);
 	top->addEntry(roinc);
 	roinc->setHelp(
-			"Select rotary sensitivity in number of Indent's for one increment, to your personal preference, 1 Indent is most sensitive");
-	roinc->addEntry("1 Indent");
-	roinc->addEntry("2 Indent");
-	roinc->addEntry("3 Indent");
-	roinc->addEntry("4 Indent");
+			"Select rotary sensitivity in number of tick's for one increment, to your personal preference, 1 tick is most sensitive");
+	roinc->addEntry("1 tick", 1);
+	roinc->addEntry("2 tick", 2);
+	roinc->addEntry("3 tick", 3);
 
 	// Rotary Default
 	SetupMenuSelect *rd = new SetupMenuSelect("Rotation", RST_ON_EXIT, 0, true,
@@ -1966,11 +1673,9 @@ void system_menu_create_hardware_rotary(SetupMenu *top) {
 	rd->addEntry("Volume");
 	rd->addEntry("MC Value");
 
-	SetupMenuSelect *sact = new SetupMenuSelect("Setup Menu by", RST_NONE, 0,
-			true, &menu_long_press);
+	SetupMenuSelect *sact = new SetupMenuSelect("Enter Setup by", RST_NONE, nullptr, true, &menu_long_press);
 	top->addEntry(sact);
-	sact->setHelp(
-			"Select Mode to activate setup menu either by short press or long press > 0.4 seconds");
+	sact->setHelp("Activate setup menu either by short or long button press");
 	sact->addEntry("Short Press");
 	sact->addEntry("Long Press");
 }
@@ -2144,16 +1849,13 @@ void system_menu_create_hardware(SetupMenu *top) {
 void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
 	SetupMenuSelect *stawaen = new SetupMenuSelect("Stall Warning", RST_NONE, 0,
 			false, &stall_warning);
-	top->addEntry(stawaen);
 	stawaen->setHelp(
 			"Enable alarm sound when speed goes below configured stall speed (until 30% less)");
-	stawaen->addEntry("Disable");
-	stawaen->addEntry("Enable");
+	stawaen->mkEnable();
+	top->addEntry(stawaen);
 
-	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", 20,
-			200, 1, 0, true, &stall_speed, RST_ON_EXIT);
-	staspe->setHelp(
-			"Configure stalling speed for corresponding aircraft type and reboot (reboots)");
+	// Fixme no need to reboot
+	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", 20, 200, 0, nullptr, true, &stall_speed);
 	top->addEntry(staspe);
 }
 
@@ -2202,229 +1904,6 @@ void system_menu_create_altimeter_airspeed(SetupMenu *top) {
 	top->addEntry(vmax);
 }
 
-void system_menu_create_interfaceS1_routing(SetupMenu *top) {
-	SetupMenuSelect *s1outxcv = new SetupMenuSelect("XCVario", RST_NONE,
-			update_routing, true, &rt_s1_xcv);
-	s1outxcv->addEntry("Disable");
-	s1outxcv->addEntry("Enable");
-	top->addEntry(s1outxcv);
-
-	SetupMenuSelect *s1outwl = new SetupMenuSelect("Wireless", RST_NONE,
-			update_routing, true, &rt_s1_wl);
-	s1outwl->addEntry("Disable");
-	s1outwl->addEntry("Enable");
-	top->addEntry(s1outwl);
-
-	SetupMenuSelect *s1outs1 = new SetupMenuSelect("S2-RS232", RST_NONE,
-			update_routing, true, &rt_s1_s2);
-	s1outs1->addEntry("Disable");
-	s1outs1->addEntry("Enable");
-	top->addEntry(s1outs1);
-
-	SetupMenuSelect *s1outcan = new SetupMenuSelect("CAN-bus", RST_NONE,
-			update_routing, true, &rt_s1_can);
-	s1outcan->addEntry("Disable");
-	s1outcan->addEntry("Enable");
-	top->addEntry(s1outcan);
-}
-
-void system_menu_create_interfaceS1(SetupMenu *top) {
-	SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT,
-			update_s1_baud, true, &serial1_speed);
-	top->addEntry(s1sp2);
-	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
-	s1sp2->addEntry("OFF");
-	s1sp2->addEntry("4800 baud");
-	s1sp2->addEntry("9600 baud");
-	s1sp2->addEntry("19200 baud");
-	s1sp2->addEntry("38400 baud");
-	s1sp2->addEntry("57600 baud");
-	s1sp2->addEntry("115200 baud");
-
-	SetupMenu *s1out = new SetupMenu("S1 Routing", system_menu_create_interfaceS1_routing);
-	s1out->setHelp(
-			"Select data source to be routed from/to serial interface S1");
-	top->addEntry(s1out);
-
-	SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE,
-			update_s1_pol, true, &serial1_tx_inverted);
-	top->addEntry(stxi2);
-	stxi2->setHelp( "A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL uses a positive voltage");
-	stxi2->addEntry("RS232 Standard");
-	stxi2->addEntry("RS232 TTL");
-
-	SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX Pins", RST_NONE,
-			update_s1_pin, true, &serial1_pins_twisted);
-	top->addEntry(srxtw2);
-	srxtw2->setHelp("Option to swap RX and TX line for S1, a Flarm needs Normal, a Navi usually swapped. After change also a true power-cycle is needed");
-	srxtw2->addEntry("Normal");
-	srxtw2->addEntry("Swapped");
-
-	SetupMenuSelect *stxdis1 = new SetupMenuSelect("Role", RST_NONE,
-			update_s1_txena, true, &serial1_tx_enable);
-	top->addEntry(stxdis1);
-	stxdis1->setHelp(
-			"Option for 'Client' mode to listen only on the RX line, disables TX line to receive only data");
-	stxdis1->addEntry("Client (RX)");
-	stxdis1->addEntry("Master (RX&TX)");
-
-	SetupMenuSelect *sprots1 = new SetupMenuSelect( "Protocol", RST_NONE,
-			update_s1_protocol, true, &serial1_protocol);
-	top->addEntry(sprots1);
-	sprots1->setHelp(
-			"Specify the protocol driver for the external device connected to S1",
-			240);
-	sprots1->addEntry( "Disable");
-	sprots1->addEntry( "Flarm");
-	sprots1->addEntry( "Radio");
-	sprots1->addEntry( "XCTNAV S3");
-	sprots1->addEntry( "OPENVARIO");
-	sprots1->addEntry( "XCFLARMVIEW");
-
-	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-			data_monS1, true, nullptr);
-	datamon->setHelp(
-			"Short press button to start/pause, long press to terminate data monitor",
-			260);
-	datamon->addEntry("Start S1 RS232");
-
-	top->addEntry(datamon);
-
-}
-
-void system_menu_create_interfaceS2_routing(SetupMenu *top) {
-	SetupMenuSelect *s2outxcv = new SetupMenuSelect("XCVario", RST_NONE,
-			update_routing, true, &rt_s2_xcv);
-	s2outxcv->addEntry("Disable");
-	s2outxcv->addEntry("Enable");
-	top->addEntry(s2outxcv);
-	SetupMenuSelect *s2outwl = new SetupMenuSelect("Wireless", RST_NONE,
-			update_routing, true, &rt_s2_wl);
-	s2outwl->addEntry("Disable");
-	s2outwl->addEntry("Enable");
-	top->addEntry(s2outwl);
-	SetupMenuSelect *s2outs2 = new SetupMenuSelect("S1-RS232", RST_NONE,
-			update_routing, true, &rt_s1_s2);
-	s2outs2->addEntry("Disable");
-	s2outs2->addEntry("Enable");
-	top->addEntry(s2outs2);
-	SetupMenuSelect *s2outcan = new SetupMenuSelect("CAN-bus", RST_NONE,
-			update_routing, true, &rt_s2_can);
-	s2outcan->addEntry("Disable");
-	s2outcan->addEntry("Enable");
-	top->addEntry(s2outcan);
-}
-
-void system_menu_create_interfaceS2(SetupMenu *top) {
-	SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudraute", RST_ON_EXIT,
-			update_s2_baud, true, &serial2_speed);
-	top->addEntry(s2sp2);
-	// s2sp->setHelp( "Serial RS232 (TTL) speed, pins RX:2, TX:3 on external RJ45 connector");
-	s2sp2->addEntry("OFF");
-	s2sp2->addEntry("4800 baud");
-	s2sp2->addEntry("9600 baud");
-	s2sp2->addEntry("19200 baud");
-	s2sp2->addEntry("38400 baud");
-	s2sp2->addEntry("57600 baud");
-	s2sp2->addEntry("115200 baud");
-
-	SetupMenu *s2out = new SetupMenu("S2 Routing", system_menu_create_interfaceS2_routing);
-	s2out->setHelp(
-			"Select data source to be routed from/to serial interface S2");
-	top->addEntry(s2out);
-
-	SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE,
-			update_s2_pol, true, &serial2_tx_inverted);
-	top->addEntry(stxi2);
-	stxi2->setHelp("A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL uses a positive voltage");
-	stxi2->addEntry("RS232 Standard");
-	stxi2->addEntry("RS232 TTL");
-
-	SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX Pins", RST_NONE,
-			update_s2_pin, true, &serial2_pins_twisted);
-	top->addEntry(srxtw2);
-	srxtw2->setHelp("Option to swap RX and TX line for S1, a Flarm needs Normal, a Navi usually swapped. After change also a true power-cycle is needed");
-	srxtw2->addEntry("Normal");
-	srxtw2->addEntry("Swapped");
-
-	SetupMenuSelect *stxdis2 = new SetupMenuSelect("Role", RST_NONE,
-			update_s2_txena, true, &serial2_tx_enable);
-	top->addEntry(stxdis2);
-	stxdis2->setHelp(
-			"Option for 'Client' mode to listen only on the RX line, disables TX line to receive only data");
-	stxdis2->addEntry("Client (RX)");
-	stxdis2->addEntry("Master (RX&TX)");
-
-	SetupMenuSelect *sprots1 = new SetupMenuSelect( "Protocol", RST_NONE,
-			update_s2_protocol, true, &serial2_protocol);
-	top->addEntry(sprots1);
-	sprots1->setHelp(
-			"Specify the protocol driver for the external device connected to S2",
-			240);
-	sprots1->addEntry( "Disable");
-	sprots1->addEntry( "Flarm");
-	sprots1->addEntry( "Radio");
-	sprots1->addEntry( "XCTNAV S3");
-	sprots1->addEntry( "OPENVARIO");
-	sprots1->addEntry( "XCFLARMVIEW");
-
-	SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-			data_monS2, true, nullptr);
-	datamon->setHelp(
-			"Short press button to start/pause, long press to terminate data monitor",
-			260);
-	datamon->addEntry("Start S2 RS232");
-
-	top->addEntry(datamon);
-}
-
-void system_menu_create_interfaceCAN_routing(SetupMenu *top) {
-	SetupMenuSelect *canoutxcv = new SetupMenuSelect("XCVario", RST_NONE, 0,
-			true, &rt_can_xcv);
-	canoutxcv->mkBinary();
-	top->addEntry(canoutxcv);
-
-	SetupMenuSelect *canoutwl = new SetupMenuSelect("Wireless", RST_NONE, 0,
-			true, &rt_wl_can);
-	canoutwl->mkBinary();
-	top->addEntry(canoutwl);
-
-	SetupMenuSelect *canouts1 = new SetupMenuSelect("S1-RS232", RST_NONE,
-			update_routing, true, &rt_s1_can);
-	canouts1->mkBinary();
-	top->addEntry(canouts1);
-
-	SetupMenuSelect *canouts2 = new SetupMenuSelect("S2-RS232", RST_NONE,
-			update_routing, true, &rt_s2_can);
-	canouts2->mkBinary();
-	top->addEntry(canouts2);
-}
-
-void system_menu_create_interfaceCAN(SetupMenu *top) {
-	SetupMenuSelect *canmode = new SetupMenuSelect("Datarate", RST_ON_EXIT, 0,
-			true, &can_speed);
-	top->addEntry(canmode);
-	canmode->setHelp(
-			"Datarate on high speed serial CAN interace in kbit per second (reboots)");
-	canmode->addEntry("CAN OFF");
-	canmode->addEntry("250 kbit");
-	canmode->addEntry("500 kbit");
-	canmode->addEntry("1000 kbit");
-
-	SetupMenu *canrt = new SetupMenu("CAN Routing", system_menu_create_interfaceCAN_routing);
-	top->addEntry(canrt);
-	canrt->setHelp("Select data source that is routed from/to CAN interface");
-
-	SetupMenuSelect *devmod = new SetupMenuSelect("Mode", RST_ON_EXIT, 0, false,
-			&can_mode);
-	top->addEntry(devmod);
-	devmod->setHelp(
-			"Select 'Standalone' for single seater, 'Master' in front, 'Client' for secondary device in rear (reboots)");
-	devmod->addEntry("Master");
-	devmod->addEntry("Client");
-	devmod->addEntry("Standalone");
-}
-
 void system_menu_create(SetupMenu *sye) {
 	SetupMenu *soft = new SetupMenu("Software Update", system_menu_create_software);
 	sye->addEntry(soft);
@@ -2451,8 +1930,9 @@ void system_menu_create(SetupMenu *sye) {
 	sye->addEntry(aia);
 
 	// Devices menu
-	SetupMenu *devices = new SetupMenu("Connected Devices", system_menu_create_devices);
+	SetupMenu *devices = new SetupMenu("Connected Devices", system_menu_connected_devices);
 	devices->setHelp("Devices, Interfaces, Protocols", 240);
+	devices->setDynContent();
 	sye->addEntry(devices);
 
 	// // _serial1_speed
@@ -2487,7 +1967,7 @@ void system_menu_create(SetupMenu *sye) {
 			&logging);
 	logg->setHelp(
 			"Option to log e.g. raw sensor data in NMEA logger in XCSoar");
-	logg->mkBinary("Sensor RAW Data");
+	logg->mkEnable("Sensor RAW Data");
 	sye->addEntry(logg);
 
 }
@@ -2540,7 +2020,7 @@ void setup_create_root(SetupMenu *top) {
 			3000, 1, 0, true, &elevation);
 	afe->setHelp(
 			"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
-	afe->setDynamic(3.0);
+	afe->setRotDynamic(3.0);
 	top->addEntry(afe);
 
 	// Clear student mode, password correct

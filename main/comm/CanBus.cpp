@@ -342,11 +342,6 @@ void CANbus::recover()
 // begin CANbus, launch driver in normal mode after a selfTest
 bool CANbus::begin()
 {
-    // Initialize configuration structures using macro initializers
-    if (can_speed.get() == CAN_SPEED_OFF)
-    {
-        ESP_LOGI(FNAME, "CAN bus OFF");
-    }
     ESP_LOGI(FNAME, "CAN begin");
 
     if ( ! _initialized )

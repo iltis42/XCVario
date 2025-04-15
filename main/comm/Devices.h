@@ -22,7 +22,7 @@ typedef enum
     NAVI_DEV,
     MAGSENS_DEV,
     RADIO_KRT2_DEV,
-	RADIO_ATR833_DEV,
+    RADIO_ATR833_DEV,
     TEST_DEV,
     TEST_DEV2
 } DeviceId;
@@ -32,7 +32,8 @@ typedef enum
 typedef enum
 {
     NO_ONE = 0, // Disable
-    REGISTRATION_P, // CAN id registration 
+    REGISTRATION_P, // CAN id registration
+    XCVSYNC_P,
     JUMBOCMD_P,
     ANEMOI_P,
     FLARM_P,
@@ -46,7 +47,7 @@ typedef enum
     CAMBRIDGE_P,
     NMEA_P,
     KRT2_REMOTE_P,
-	ATR833_REMOTE_P,
+    ATR833_REMOTE_P,
     TEST_P
 } ProtocolType;
 

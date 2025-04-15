@@ -345,6 +345,8 @@ public:
 		return ret;
 	}
 
+	virtual bool isValid() const;
+
 	virtual bool init() {
 		if( flags._volatile != PERSISTENT ){
 			// ESP_LOGI(FNAME,"NVS volatile set default");
@@ -370,8 +372,8 @@ public:
 				// ESP_LOGI(FNAME,"NVS size okay");
 				ret = NVS.getBlob(_key, &_value, &required_size);
 
-				if ( !ret ){
-					// ESP_LOGE(FNAME, "NVS nvs_get_blob returned error");
+				if ( !ret || !isValid() ){
+					//ESP_LOGE(FNAME, "NVS nvs_get_blob error");
 					erase();
 					set( _default );  // try to init
 					commit();
@@ -422,9 +424,6 @@ private:
 	t_setup_flags flags;
 	void (* _action)();
 };
-
-
-
 
 extern SetupNG<float> 		QNH;
 extern SetupNG<float> 		polar_wingload;
@@ -531,23 +530,14 @@ extern SetupNG<int>  		temperature_unit;
 extern SetupNG<int>  		qnh_unit;
 extern SetupNG<int>  		rot_default;
 extern SetupNG<int>  		serial1_speed;
-extern SetupNG<int>         serial1_protocol;
 extern SetupNG<int>  		serial1_rxloop;
 extern SetupNG<int>  		serial1_tx;
-extern SetupNG<int>  		rt_s1_xcv;
-extern SetupNG<int>  		rt_s1_wl;
-extern SetupNG<int>  		rt_s1_s2;
-extern SetupNG<int>  		rt_s1_can;
 extern SetupNG<int>			serial1_pins_twisted;
 extern SetupNG<int>  		serial1_tx_inverted;
 extern SetupNG<int>  		serial1_rx_inverted;
 extern SetupNG<int>  		serial1_tx_enable;
 extern SetupNG<int>  		serial2_speed;
-extern SetupNG<int>         serial2_protocol;
 extern SetupNG<int>  		serial2_tx;
-extern SetupNG<int>  		rt_s2_xcv;
-extern SetupNG<int>  		rt_s2_wl;
-extern SetupNG<int>  		rt_s2_can;
 extern SetupNG<int>			serial2_pins_twisted;
 extern SetupNG<int>  		serial2_tx_inverted;
 extern SetupNG<int>  		serial2_rx_inverted;
@@ -676,9 +666,6 @@ extern SetupNG<float>       circle_wind_lowpass;
 extern SetupNG<float>      	max_circle_wind_delta_deg;
 extern SetupNG<float>      	max_circle_wind_delta_speed;
 extern SetupNG<int> 		can_speed;
-extern SetupNG<int> 		rt_can_xcv;
-extern SetupNG<int> 		rt_xcv_wl;
-extern SetupNG<int> 		rt_wl_can;
 extern SetupNG<int> 		can_mode;
 extern SetupNG<float> 		master_xcvario;
 extern SetupNG<int> 		master_xcvario_lock;

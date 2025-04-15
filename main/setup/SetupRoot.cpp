@@ -101,7 +101,7 @@ void SetupRoot::exit(int levels)
 
 void SetupRoot::rot(int count)
 {
-    ESP_LOGI(FNAME,"root: rot");
+    // ESP_LOGI(FNAME,"root: rot");
     if (rot_default.get() == 1) {
         // MC Value
         float mc = MC.get();

@@ -115,9 +115,9 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	MYUCG->printf( "Saved" );
 	delay(500);
 	MYUCG->setPrintPos( 1, 300 );
-	p->getParent()->menuPosInc();
-	if(p->getParent()->getMenuPos() > 7 )
-		p->getParent()->menuSetTop();
+	p->getParent()->incHighlight();
+	if(p->getParent()->getHighlight() > 7 )
+		p->getParent()->highlightTop();
 	MYUCG->printf( "Press key for next" );
 	ESP_LOGI( FNAME, "Compass deviation action for %s is finished",	p->value() );
 	return 0;

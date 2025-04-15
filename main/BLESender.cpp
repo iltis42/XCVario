@@ -16,7 +16,6 @@
 #include "sensor.h"
 #include "Router.h"
 #include "Flarm.h"
-#include "DataMonitor.h"
 #include "DataLink.h"
 // #include <BLEDevice.h>
 // #include <BLEServer.h>
@@ -121,7 +120,6 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 				std::string rx((char *)param->write.value, param->write.len);
 				if (rx.length()) {
 					dlb->process( rx.c_str(), rx.length(), 7 );
-					DM.monitorString( ItfTarget(BT_SPP), DIR_RX, rx.c_str(), rx.length() );
 					ESP_LOGI(FNAME,">BT LE RX: %d bytes",  rx.length()  );
 					ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(), rx.length() , ESP_LOG_INFO);
 				}
@@ -307,7 +305,6 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
 // 		std::string rx = pCharacteristic->getValue();
 // 		if (rx.length()) {
 // 			dlb->process( rx.c_str(), rx.length(), 7 );
-// 			DM.monitorString( ItfTarget(BT_SPP), DIR_RX, rx.c_str(), rx.length() );
 // 			ESP_LOGI(FNAME,">BT LE RX: %d bytes",  rx.length()  );
 // 			ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(), rx.length() , ESP_LOG_INFO);
 // 		}
@@ -369,7 +366,6 @@ void BLESender::progress(){
 	// 		// pTxCharacteristic->notify(); // No return value
 	// 		// ESP_LOGI(FNAME,"<BT LE TX %d bytes (pending: %d)", sent, indicationPending );
 	// 		// ESP_LOG_BUFFER_HEXDUMP(FNAME,&buf[pos],len, ESP_LOG_INFO);
-	// 		DM.monitorString( ItfTarget(BT_SPP), DIR_TX, buf, len );
 	// 		delay( congestion );  // slow down sender upon congestion
 	// 	}
 	// }

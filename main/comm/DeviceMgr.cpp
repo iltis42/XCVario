@@ -8,7 +8,7 @@
 
 #include "DeviceMgr.h"
 
-#include "RoutingTargets.h"
+#include "comm/Configuration.h"
 #include "comm/Messages.h"
 #include "comm/CanBus.h"
 #include "comm/WifiAP.h"
@@ -37,8 +37,8 @@ static TaskHandle_t SendTask = nullptr;
 // static routing table on device level
 //
 // entries with zero termination, entirely as ro flash data, no RAM usage
-static constexpr RoutingTarget flarm_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
-static constexpr RoutingTarget krt2_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI, 8882}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
+static constexpr RoutingTarget flarm_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
+static constexpr RoutingTarget krt2_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8882}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
 static constexpr RoutingTarget navi_routes[] = { {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {RADIO_KRT2_DEV, S2_RS232, 0}, {FLARM_DEV, CAN_BUS, 20}, {} };
 static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(FLARM_DEV, NO_PHY, 0), flarm_routes },
@@ -57,6 +57,124 @@ static constexpr const RoutingTarget* findRoute(const RoutingTarget& target) {
 }
 
 
+// known device attributes
+//
+// constexpr PackedAttributeList flarm_attr{ PackedAttributeList::pack({ ProtocolType::FLARM_P, ProtocolType::FLARMBIN_P}) };
+
+
+// Define device names for the configuration menu
+// - The device id, must be a unique entry in this list with assiciated name
+// - Device attributes
+//   + a readable name
+//   + a list of interfaces, first one is a default
+//   + a list of protocol, first one is a default
+//   + an interface profile enum, if needed
+// - 
+constexpr std::pair<DeviceId, DeviceAttributes> DAVATTR[] = {
+    {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}}, {{JUMBOCMD_P}, 1} }},
+    {DeviceId::ANEMOI_DEV, {"Anemoi", {{S2_RS232, S1_RS232, CAN_BUS}}, {{ANEMOI_P}, 1}, 0, IS_REAL }},
+    {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, CAN_BUS, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL }},
+    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884 }},
+    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232, CAN_BUS}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL }},
+    {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
+                                    {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
+                                    8880, IS_REAL|MULTI_CONF}},
+    {DeviceId::NAVI_DEV,   {"Flarm consumer", {{WIFI_AP, CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, MULTI_CONF}},
+    {DeviceId::NAVI_DEV,   {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, MULTI_CONF}},
+    {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C, CAN_BUS}}, {{MAGSENSBIN_P}, 1}, 31, IS_REAL }},
+    {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL }},
+    {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL }},
+    {DeviceId::MASTER_DEV, {"CAN auto-connect", {{CAN_BUS}}, {{REGISTRATION_P}, 1}, CAN_REG_PORT, IS_REAL }}
+};
+
+constexpr const DeviceAttributes NullDev("Null", {{NO_PHY}}, {{NO_ONE}}, 0, 0);
+// Lookup functions
+const DeviceAttributes* DeviceManager::getDevAttr(DeviceId did) {
+    // retrieve first attribute entry
+    for (const auto& entry : DAVATTR) {
+        if (entry.first == did) {
+            return &entry.second;
+        }
+    }
+    return &NullDev;
+}
+
+std::string_view DeviceManager::getDevName(DeviceId did) {
+    for (const auto& entry : DAVATTR) {
+        if (entry.first == did) {
+            return entry.second.name;
+        }
+    }
+    return "";
+}
+
+std::vector<DeviceId> DeviceManager::allKnownDevs()
+{
+    std::vector<DeviceId> ret;
+    for (const auto& entry : DAVATTR) {
+        if ( ! entry.second.name.empty() ) {
+            ret.push_back(entry.first);
+        }
+    }
+    return ret;
+}
+
+constexpr std::pair<InterfaceId, std::string_view> INTFCS[] = {
+    {CAN_BUS, "CAN bus"},
+    {I2C, "I2C bus"},
+    {S1_RS232, "S1 serial"},
+    {S2_RS232, "S2 serial"},
+    {WIFI_AP, "Wifi AP"},
+    {WIFI_CLIENT, "Wifi client"},
+    {BT_SPP, "BT serial"},
+    {BT_LE, "BT low energy"},
+};
+
+std::string_view DeviceManager::getItfName(InterfaceId iid) {
+    for (const auto& entry : INTFCS) {
+        if (entry.first == iid) {
+            return entry.second;
+        }
+    }
+    return "";
+}
+
+std::vector<InterfaceId> DeviceManager::allKnownIntfs()
+{
+    std::vector<InterfaceId> ret;
+    for (const auto& entry : INTFCS) {
+        ret.push_back(entry.first);
+    }
+    return ret;
+}
+
+constexpr std::pair<ProtocolType, std::string_view> PRTCLS[] = {
+    {REGISTRATION_P, "Auto registration."},
+    {XCVSYNC_P, "XCV sync"},
+    {JUMBOCMD_P, "jumbo command"},
+    {ANEMOI_P, "Anemoi"},
+    {FLARM_P, "Flarm"},
+    {FLARMHOST_P, "Flarm host"},
+    {FLARMBIN_P, "Flarm BP"},
+    {MAGSENS_P, "Magsens"},
+    {MAGSENSBIN_P, "Magsens BP"},
+    {XCVARIO_P, "XCVario"},
+    {OPENVARIO_P, "Open-Vario"},
+    {BORGELT_P, "Borgelt"},
+    {CAMBRIDGE_P, "Cambridge"},
+    {KRT2_REMOTE_P, "KRT2"},
+    {ATR833_REMOTE_P, "ATR833"}
+};
+
+std::string_view DeviceManager::getPrtclName(ProtocolType pid) {
+    for (const auto& entry : PRTCLS) {
+        if (entry.first == pid) {
+            return entry.second;
+        }
+    }
+    return "";
+}
+
 // a dummy interface
 class DmyItf final : public InterfaceCtrl
 {
@@ -66,6 +184,7 @@ public:
     int Send(const char *msg, int &len, int port=0) { return 0; }
 };
 static DmyItf dummy_itf;
+static ItfTarget monitor_target = {};
 
 static int tt_snd(Message *msg)
 {
@@ -81,8 +200,8 @@ static int tt_snd(Message *msg)
             ESP_LOGD(FNAME, "reshedule message %d/%d", len, msg->buffer.length());
             msg->buffer.erase(0, len); // chop sent bytes off
         }
-        else if ( plsrety == 0 ) {
-            DM.monitorString(ItfTarget(itf->getId(),port), DIR_TX, msg->buffer.c_str(), len);
+        else if ( plsrety == 0 && monitor_target == ItfTarget(itf->getId(), port) ) {
+            DM->monitorString(DIR_TX, msg->buffer.c_str(), len);
         }
     }
     return plsrety;
@@ -241,7 +360,7 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
             itf = CAN;
         }
     }
-    else if ( iid == WIFI) {
+    else if ( iid == WIFI_AP) {
         if ( Wifi ) {
             Wifi->ConfigureIntf(listen_port);
             itf = Wifi;
@@ -354,16 +473,37 @@ InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
     return nullptr;
 }
 
-bool DeviceManager::isIntf(ItfTarget Iid)
+bool DeviceManager::isIntf(ItfTarget iid) const
 {
     for ( auto dev : _device_map ) {
         // all devices
-        if ( dev.second->_itf->getId() == Iid.iid ) {
+        if ( dev.second->_itf->getId() == iid.iid ) {
             return true;
         }
     }
     return false;
 }
+
+bool DeviceManager::isAvail(InterfaceId iid) const
+{
+    if ( iid == CAN_BUS && (isIntf(I2C) || hardwareRevision.get() < XCVARIO_22) ) {
+        return false;
+    }
+    else if ( iid == I2C && isIntf(CAN_BUS) ) {
+        return false;
+    }
+    else if ( (iid == BT_SPP || iid == BT_LE) && isIntf(WIFI_AP) ) {
+        return false;
+    }
+    else if ( iid == WIFI_AP && (isIntf(BT_SPP) || isIntf(BT_LE)) ) {
+        return false;
+    }
+    else if ( iid == S2_RS232 && hardwareRevision.get() < XCVARIO_21 ) {
+        return false;
+    }
+    return true;
+}
+
 
 // Result should be cashed for performance purpose.
 RoutingList DeviceManager::getRouting(RoutingTarget target)
@@ -458,6 +598,39 @@ void DeviceManager::dumpMap() const
     }
 }
 
+bool DeviceManager::startDM(ItfTarget iid)
+{
+    bool ret = false;
+    for ( auto dev : _device_map ) {
+        // all devices
+        for (DataLink* dl : dev.second->_dlink) {
+            ESP_LOGI(FNAME, "DM %x<>%x", (unsigned)dl->getTarget().raw, (unsigned)iid.raw );
+            if ( dl->getTarget() == iid ) {
+                ESP_LOGI(FNAME, "DM activate");
+                ret = dl->isBinActive();
+                dl->setMonitor(true);
+            }
+            else {
+                dl->setMonitor(false);
+            }
+        }
+    }
+    // activate the send callback
+    monitor_target = iid;
+    return ret;
+}
+
+void DeviceManager::stopDM()
+{
+    monitor_target = ItfTarget();
+    for ( auto dev : _device_map ) {
+        // all devices
+        for (DataLink* dl : dev.second->_dlink) {
+            dl->setMonitor(false);
+        }
+    }
+}
+
 std::vector<const Device*> DeviceManager::allDevs() const
 {
     std::vector<const Device*> ret;
@@ -474,7 +647,7 @@ std::vector<const Device*> DeviceManager::allDevs() const
 // Resolve the existance of a device
 Device::~Device()
 {
-    ESP_LOGI(FNAME, "Delete device %d.", _id);
+    ESP_LOGI(FNAME, "Dtor device %d.", _id);
     // Detach data links from interface
     for (DataLink* dl : _dlink) {
         _itf->DeleteDataLink(dl->getPort());

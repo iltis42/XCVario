@@ -20,13 +20,10 @@ class DataLink;
 
 typedef enum
 { // never change, nvs item (!)
-	CAN_SPEED_OFF,
 	CAN_SPEED_250KBIT,
 	CAN_SPEED_500KBIT,
 	CAN_SPEED_1MBIT
 } CanSpeed;
-
-class SString;
 
 class CANbus final : public InterfaceCtrl
 {

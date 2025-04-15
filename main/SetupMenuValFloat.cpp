@@ -72,7 +72,7 @@ void SetupMenuValFloat::display(int mode)
 	}
 	else {
 		int col = MYUCG->getStrWidth(_title) + 4;
-		int row = (_parent->getMenuPos() + 1) * 25;
+		int row = (_parent->getHighlight() + 1) * 25;
 		MYUCG->setColor(COLOR_BLACK);
 		MYUCG->drawFrame(1, row + 3, 238, 25);
 		MYUCG->setColor(COLOR_WHITE);
@@ -94,7 +94,7 @@ void SetupMenuValFloat::displayVal()
 	}
 	else {
 		col = MYUCG->getStrWidth(_title) + 11;
-		row = (_parent->getMenuPos() + 2) * 25;
+		row = (_parent->getHighlight() + 2) * 25;
 	}
 	MYUCG->setPrintPos( col, row );
 	MYUCG->print( value() );
@@ -120,7 +120,7 @@ void SetupMenuValFloat::rot( int count )
 {
 	// ESP_LOGI(FNAME,"val rot %d times ", count );
 	_value = _nvs->get();
-	_value += std::pow( abs(count), _dynamic ) * step(_step) * sign(count);
+	_value += step(_step) * count;
 
 	if( _value < _min )
 		_value = _min;

@@ -511,6 +511,7 @@ void IMU::defaultImuReference()
 	}
 	ref_rot = accelDefaultRef;
 	imu_reference.set(ref_rot, false); // nvs
+	imu_reference.commit();
 	progress = 0; // reset the calibration procedure
 }
 // Concatenation of ground angle of attack and the basic reference calibration rotation

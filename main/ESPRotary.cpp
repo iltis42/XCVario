@@ -18,7 +18,7 @@
 // the global access to the rotary knob
 ESPRotary *Rotary = nullptr;
 
-constexpr int DEBOUNCE_TIME_us = 500;         // us debounce threshold
+constexpr int DEBOUNCE_TIME_us = 700;         // us debounce threshold
 
 static QueueHandle_t buttonQueue = nullptr;
 static TaskHandle_t pid = nullptr;

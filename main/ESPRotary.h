@@ -5,6 +5,9 @@
 
 #pragma once
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/queue.h"
+
 #include <driver/pulse_cnt.h>
 #include <esp_timer.h>
 #include <driver/gpio.h>
@@ -50,10 +53,8 @@ private:
 
 class ESPRotary
 {
-private:
 	friend void button_isr_handler(void* arg);
 	friend void longpress_timeout(void *arg);
-	friend void ObserverTask(void *arg);
 
 public:
 	static constexpr const int DEFAULT_LONG_PRESS_THRESHOLD = 400;
@@ -62,6 +63,7 @@ public:
 	~ESPRotary();
 	void begin();
 	void stop();
+	QueueHandle_t getQueue() const { return buttonQueue; }
 	esp_err_t updateRotDir();
 	void updateIncrement(int inc);
 	void setLongPressTimeout(int lptime_ms) { lp_duration = (uint64_t)1000 * lptime_ms; }
@@ -72,6 +74,7 @@ public:
 	void sendRelease() const;
 	void sendLongPress() const;
 	void sendEscape() const;
+	// gpio's
 	bool readSwitch() const; // safe to call in rotary callback
 	bool readBootupStatus() const { return gpio_get_level(sw) == 0; }
 	gpio_num_t getSw() const { return sw; };
@@ -79,6 +82,7 @@ public:
 	gpio_num_t getDt() const { return dt; };
 
 private:
+	QueueHandle_t buttonQueue = nullptr;
 	gpio_num_t clk, dt, sw; // actually used pins
 	pcnt_unit_handle_t pcnt_unit = nullptr;
 	pcnt_channel_handle_t pcnt_chan = nullptr;

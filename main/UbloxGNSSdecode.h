@@ -8,7 +8,7 @@
 #ifndef UbloxGNSSdecode_H_
 #define UbloxGNSSdecode_H_
 
-#include "SString.h"
+// #include "SString.h"
 #include "types.h"
 
 typedef struct _gnss_data {

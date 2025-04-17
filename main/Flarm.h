@@ -4,7 +4,6 @@
 #include <string> // std::string
 #include <locale> // std::locale, std::toupper
 #include <AdaptUGC.h>
-#include "RingBufCPP.h"  // SString, tbd: extra header
 #include "Units.h"
 
 class FlarmMsg;

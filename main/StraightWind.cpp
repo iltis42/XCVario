@@ -20,16 +20,16 @@
  *
  *  Last update: 2021-04-21
  */
+#include "StraightWind.h"
+
+#include "protocol/ProtocolItf.h"
 #include "Compass.h"
 #include "Flarm.h"
 #include "SetupNG.h"
-#include "StraightWind.h"
 #include "Units.h"
 #include "sensor.h"
 #include "math.h"
 #include "CircleWind.h"
-#include "Router.h"
-#include "SString.h"
 #include "sensor.h"
 #include "KalmanMPU6050.h"
 #include "vector.h"  // D2R, R2D
@@ -176,7 +176,7 @@ bool StraightWind::calculateWind()
 	float deviation = compass->getDeviation( averageTH );
 
 	if( (wind_logging.get() != WLOG_DISABLE) && compass ){
-		char log[SSTRLEN];
+		char log[ProtocolItf::MAX_LEN];
 		sprintf( log, "$WIND;");
 		int pos = strlen(log);
 		if( wind_logging.get() & WLOG_WIND ){
@@ -192,7 +192,7 @@ bool StraightWind::calculateWind()
 		}
 		pos = strlen(log);
 		sprintf( log+pos, "\n");
-		Router::sendXCV( log );
+		// Router::sendXCV( log ); fixme
 		// ESP_LOGI( FNAME,"%s", log );
 	}
 

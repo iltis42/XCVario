@@ -498,7 +498,7 @@ float Compass::heading( bool *ok )
 	if( wind_logging.get() ){
 		char log[120];
 		sprintf( log, "$COMPASS;%d;%d;%d;%.1f;%.1f;%.1f;%d\n", magRaw.x, magRaw.y, magRaw.z, IMU::getPitch(), IMU::getRoll(),  _heading,  totalReadErrors );
-		Router::sendXCV( log );
+		// Router::sendXCV( log ); fixme
 	}
 #endif
 

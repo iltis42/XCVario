@@ -28,7 +28,6 @@ Last update: 2021-04-05
 #include "KalmanMPU6050.h"
 #include "SetupNG.h"
 #include "MenuEntry.h"
-#include "Router.h"
 #include "vector.h"
 #include "sensor.h"
 #include "logdef.h"

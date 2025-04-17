@@ -6,7 +6,6 @@
 #include "quaternion.h"
 #include "sensor.h"
 #include "CircleWind.h"
-#include "Router.h"
 #include <cmath>
 #include <ctime>
 #include <sys/time.h>

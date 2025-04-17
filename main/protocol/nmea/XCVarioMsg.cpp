@@ -235,3 +235,50 @@ void NmeaPrtcl::sendXCVVersion(int v)
     DEV::Send(msg);
 }
 
+/*
+    HDM - Heading - Magnetic
+
+            1   2 3
+            |   | |
+    $--HDM,x.x,M*hh<CR><LF>
+
+    Field Number:
+    1) Heading Degrees, magnetic
+    2) M = magnetic
+    3) Checksum
+*/
+void NmeaPrtcl::sendXCVNmeaHDM(float heading)
+{
+    Message *msg = newMessage();
+
+    msg->buffer = "$HCHDM,";
+    char str[12];
+    sprintf( str,"%3.1f,M", heading );
+    ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
+    msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+    DEV::Send(msg);
+}
+
+/*
+    HDT - Heading - True
+
+            1   2 3
+            |   | |
+    $--HDT,x.x,T*hh<CR><LF>
+
+    Field Number:
+    1) Heading Degrees, true
+    2) T = True
+    3) Checksum
+*/
+void NmeaPrtcl::sendXCVNmeaHDT( float heading )
+{
+    Message *msg = newMessage();
+
+    msg->buffer = "$HCHDT,";
+    char str[12];
+    sprintf( str,"%3.1f,T", heading );
+    ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
+    msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+    DEV::Send(msg);
+}

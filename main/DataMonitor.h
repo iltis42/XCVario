@@ -7,7 +7,6 @@
 #pragma once
 
 #include "Setup.h"
-#include "SString.h"
 #include "AdaptUGC.h"
 #include "ESPRotary.h"
 #include "MenuEntry.h"

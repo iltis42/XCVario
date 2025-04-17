@@ -8,8 +8,6 @@
  */
 
 #include "WifiAP.h"
-#include "Router.h"
-#include "SString.h"
 #include "sensor.h"
 #include "comm/DataLink.h"
 #include "logdefnone.h"
@@ -138,8 +136,8 @@ public:
 					client_record_t &client_rec = *it;
 					if (FD_ISSET(client_rec.client, &read_fds)) {
 						ESP_LOGI(FNAME, "FD_ISSET socket: client %d, port %d", client_rec.client, config->port );
-						char r[SSTRLEN + 1];
-						ssize_t sizeRead = recv(client_rec.client, r, SSTRLEN - 1, MSG_DONTWAIT);
+						char r[ProtocolItf::MAX_LEN + 1];
+						ssize_t sizeRead = recv(client_rec.client, r, ProtocolItf::MAX_LEN - 1, MSG_DONTWAIT);
 						if (sizeRead > 0) {
 							ESP_LOGI(FNAME, "FD socket recv: client %d, port %d, read:%d bytes", client_rec.client, config->port, sizeRead );
 							WifiAP *wifi = static_cast<WifiAP *>(config->mywifi);

@@ -8,15 +8,12 @@
 #include "esp_task_wdt.h"
 #include <freertos/semphr.h>
 #include <algorithm>
-#include "RingBufCPP.h"
 #include <driver/uart.h>
 #include "Protocols.h"
 #include <logdef.h>
 #include "Switch.h"
 #include "sensor.h"
-#include "Router.h"
 #include "Flarm.h"
-#include "DataLink.h"
 // #include <BLEDevice.h>
 // #include <BLEServer.h>
 // #include <BLEUtils.h>
@@ -33,7 +30,7 @@ static uint16_t service_handle = 0;
 bool deviceConnected = false;
 
 static TaskHandle_t pid = nullptr;
-static DataLinkOld *dlb;
+// static DataLinkOld *dlb;
 // static int tick=0;
 static uint16_t peer_mtu;
 static int congestion=0;
@@ -119,7 +116,7 @@ static void gatts_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_
 				ESP_LOGI(FNAME, "Written value: %.*s", param->write.len, param->write.value);
 				std::string rx((char *)param->write.value, param->write.len);
 				if (rx.length()) {
-					dlb->process( rx.c_str(), rx.length(), 7 );
+					// dlb->process( rx.c_str(), rx.length(), 7 );
 					ESP_LOGI(FNAME,">BT LE RX: %d bytes",  rx.length()  );
 					ESP_LOG_BUFFER_HEXDUMP(FNAME,rx.c_str(), rx.length() , ESP_LOG_INFO);
 				}
@@ -379,7 +376,7 @@ void BLESender::begin()
 	// esp_log_level_set("GATTS", ESP_LOG_DEBUG);
 	// esp_log_level_set("BT_BTM", ESP_LOG_DEBUG);
 
-	dlb = new DataLinkOld();
+	// dlb = new DataLinkOld();
 	// Create the BLE Device
 	std::string ble_id(SetupCommon::getID());
 	ble_id += std::string("-LE");

@@ -18,7 +18,6 @@
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "KalmanMPU6050.h"
-#include "Router.h"
 #include "Atmosphere.h"
 #include "Flarm.h"
 #include "Units.h"
@@ -38,51 +37,6 @@ Protocols::~Protocols() {
 
 }
 
-/*
-HDM - Heading - Magnetic
-
-        1   2 3
-        |   | |
- $--HDM,x.x,M*hh<CR><LF>
-
- Field Number:
-  1) Heading Degrees, magnetic
-  2) M = magnetic
-  3) Checksum
- */
-void Protocols::sendNmeaHDM( float heading ) {
-	char str[21];
-	sprintf( str,"$HCHDM,%3.1f,M", heading );
-	// ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
-
-	int cs = calcNMEACheckSum(&str[1]);
-	int i = strlen(str);
-	sprintf( &str[i], "*%02X\r\n", cs );
-	Router::sendXCV(str);
-}
-
-/*
-HDT - Heading - True
-
-        1   2 3
-        |   | |
- $--HDT,x.x,T*hh<CR><LF>
-
- Field Number:
-  1) Heading Degrees, true
-  2) T = True
-  3) Checksum
- */
-void Protocols::sendNmeaHDT( float heading ) {
-	char str[21];
-	sprintf( str,"$HCHDT,%3.1f,T", heading );
-	// ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
-
-	int cs = calcNMEACheckSum(&str[1]);
-	int i = strlen(str);
-	sprintf( &str[i], "*%02X\r\n", cs );
-	Router::sendXCV(str);
-}
 
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
 	// ESP_LOGI(FNAME,"sendItem: %s", key );
@@ -188,7 +142,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	int cs = calcNMEACheckSum(&str[1]);
 	int i = strlen(str);
 	sprintf( &str[i], "*%02X\r\n", cs );
-	Router::sendXCV(str);
+	// Router::sendXCV(str); fixme
 }
 
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.

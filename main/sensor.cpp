@@ -31,7 +31,6 @@
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
 #include "setup/SetupRoot.h"
-#include "SString.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
@@ -60,7 +59,6 @@
 #include "comm/CanBus.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/TestQuery.h"
-#include "Router.h"
 
 #include "sdkconfig.h"
 #include <freertos/FreeRTOS.h>
@@ -114,7 +112,7 @@ SemaphoreHandle_t xMutex=NULL;
 SemaphoreHandle_t spiMutex=NULL;
 
 S2F Speed2Fly;
-Protocols OV( &Speed2Fly );
+Protocols OV( &Speed2Fly ); // todo delete
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
 
@@ -211,8 +209,33 @@ bool do_factory_reset() {
 	return( SetupCommon::factoryReset() );
 }
 
-void drawDisplay(void *pvParameters){
+void drawDisplay(void *arg)
+{
+	ESPRotary &knob = *static_cast<ESPRotary*>(arg);
+	QueueHandle_t buton_event_queue = knob.getQueue();
+
+	esp_task_wdt_add(NULL);
+
 	while (1) {
+		// handle button events
+		int event;
+		if (xQueueReceive(buton_event_queue, &event, pdMS_TO_TICKS(20)) == pdTRUE) {
+			if (event == SHORT_PRESS) {
+				ESP_LOGI(FNAME,"Button short press detected");
+				knob.sendPress();
+			} else if (event == LONG_PRESS) {
+				ESP_LOGI(FNAME,"Button long press detected");
+				knob.sendLongPress();
+			}else if (event == BUTTON_RELEASED) {
+				ESP_LOGI(FNAME, "Button released");
+				knob.sendRelease();
+			} else {
+				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
+				ESP_LOGI(FNAME, "Rotation step %d", step);
+				knob.sendRot(step);
+			}
+		}
+		
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
 		if( gflags.inSetup != true ) {
 			float t=OAT.get();
@@ -378,7 +401,7 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 		}
-		vTaskDelay(20/portTICK_PERIOD_MS);
+		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( dpid ) < 512  ) {
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 		}
@@ -560,18 +583,16 @@ void clientLoop(void *pvParameters)
 				gload_neg_max.set( IMU::getGliderAccelZ() );
 			}
 			toyFeed();
-			// Router::routeXCV();
 			if( true && !(ccount%5) ) { // todo need a mag_hdm.valid() flag
-				if( compass_nmea_hdm.get() ) {
-					xSemaphoreTake( xMutex, portMAX_DELAY );
-					OV.sendNmeaHDM( mag_hdm.get() );
-					xSemaphoreGive( xMutex );
-				}
+				NmeaPrtcl *prtcl = static_cast<NmeaPrtcl*>(DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P)); // Todo preliminary solution ..
+				if ( prtcl ) {
+					if( compass_nmea_hdm.get() ) {
+						prtcl->sendXCVNmeaHDM( mag_hdm.get() );
+					}
 
-				if( compass_nmea_hdt.get() ) {
-					xSemaphoreTake( xMutex, portMAX_DELAY );
-					OV.sendNmeaHDT( mag_hdt.get() );
-					xSemaphoreGive( xMutex );
+					if( compass_nmea_hdt.get() ) {
+						prtcl->sendXCVNmeaHDT( mag_hdt.get() );
+					}
 				}
 			}
 			esp_task_wdt_reset();
@@ -622,7 +643,7 @@ void readSensors(void *pvParameters){
 		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"TE, Delta: %d", (int)(millis() - m));
 		if( logging.get() == LOG_SENSOR_RAW ){
-			char log[SSTRLEN];
+			char log[ProtocolItf::MAX_LEN];
 			sprintf( log, "$SENS;");
 			int pos = strlen(log);
 			long delta = _millis - _gps_millis;
@@ -636,7 +657,7 @@ void readSensors(void *pvParameters){
 			}
 			pos=strlen(log);
 			sprintf( log+pos, "\n");
-			Router::sendXCV( log );
+			// Router::sendXCV( log ); fixme
 			ESP_LOGI(FNAME,"%s", log );
 		}
 		if( tok )
@@ -741,14 +762,15 @@ void readSensors(void *pvParameters){
 				// done periodically.
 				bool ok;
 				float heading = compass->getGyroHeading( &ok );
+				NmeaPrtcl *prtcl = static_cast<NmeaPrtcl*>(DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P)); // Todo preliminary solution ..
 				if(ok){
 					if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
 						mag_hdm.set( heading );
 					}
 					if( !(count%5) && compass_nmea_hdm.get() == true ) {
-						xSemaphoreTake( xMutex, portMAX_DELAY );
-						OV.sendNmeaHDM( heading );
-						xSemaphoreGive( xMutex );
+						if ( prtcl ) {
+							prtcl->sendXCVNmeaHDM(heading);
+						}
 					}
 				}
 				else{
@@ -761,10 +783,9 @@ void readSensors(void *pvParameters){
 						mag_hdt.set( theading );
 					}
 					if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
-						xSemaphoreTake( xMutex, portMAX_DELAY );
-						OV.sendNmeaHDT( theading );
-						xSemaphoreGive( xMutex );
-					}
+						if ( prtcl ) {
+							prtcl->sendXCVNmeaHDM(heading);
+						}					}
 				}
 				else{
 					if( mag_hdt.get() != -1 )
@@ -1662,7 +1683,7 @@ void system_startup(void *args){
 		xTaskCreate(&readSensors, "readSensors", 5120, NULL, 12, &bpid);
 	}
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid);       // increase stack by 500 byte
-	xTaskCreate(&drawDisplay, "drawDisplay", 6144, NULL, 4, &dpid); // increase stack by 1K
+	xTaskCreate(&drawDisplay, "drawDisplay", 6144, Rotary, 4, &dpid); // increase stack by 1K
 
 	Audio::startAudio();
 }
@@ -1712,7 +1733,6 @@ extern "C" void  app_main(void)
 	}
 	ESP_LOGI( FNAME,"Hardware revision %d", hardwareRevision.get());
 	MPU.clearpwm(); // Stop MPU heating
-	Router::begin(); // obsolete
 	// Init of rotary
 	if( hardwareRevision.get() == XCVARIO_20 ){
 		Rotary = new ESPRotary( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0); // XCV-20 uses GPIO_2 for Rotary

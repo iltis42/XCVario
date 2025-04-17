@@ -23,6 +23,9 @@ typedef enum
     MAGSENS_DEV,
     RADIO_KRT2_DEV,
     RADIO_ATR833_DEV,
+    FLARM_CONSUMER_DEV,
+    KRT2_HOST_DEV,
+    ATR833_HOST_DEV,
     TEST_DEV,
     TEST_DEV2
 } DeviceId;

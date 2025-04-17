@@ -136,6 +136,7 @@ void SetupRoot::press()
 {
     ESP_LOGI(FNAME,"root press active_srceen %d (%x)", active_screen, menu_screens.get());
 
+    // cycle through screens, incl. setup
 	if (!gflags.inSetup) {
 		active_screen = 0;
 		while (active_screen == 0 && (screen_index <= screen_mask_len)) {
@@ -158,7 +159,8 @@ void SetupRoot::press()
 
 void SetupRoot::longPress()
 {
-    if (menu_long_press.get() && !gflags.inSetup) {
+    // enter setup fron any screen
+    if (!gflags.inSetup) {
         begin();
     }
 }

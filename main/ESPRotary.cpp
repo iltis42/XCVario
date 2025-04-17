@@ -20,8 +20,6 @@ ESPRotary *Rotary = nullptr;
 
 constexpr int DEBOUNCE_TIME_us = 700;         // us debounce threshold
 
-static QueueHandle_t buttonQueue = nullptr;
-static TaskHandle_t pid = nullptr;
 static std::stack<RotaryObserver *> observers;
 
 // The button portion of the rotary ISR
@@ -52,11 +50,11 @@ void IRAM_ATTR button_isr_handler(void* arg)
 		if( knob->hold ) {
 			knob->hold = false;
 			int releaseEvent = BUTTON_RELEASED;
-			xQueueSendFromISR(buttonQueue, &releaseEvent, &xHigherPriorityTaskWoken);
+			xQueueSendFromISR(knob->buttonQueue, &releaseEvent, &xHigherPriorityTaskWoken);
 		}
 		else {
 			int pressType = SHORT_PRESS;
-			xQueueSendFromISR(buttonQueue, &pressType, &xHigherPriorityTaskWoken);
+			xQueueSendFromISR(knob->buttonQueue, &pressType, &xHigherPriorityTaskWoken);
 		}
 	}
 	if( xHigherPriorityTaskWoken ) {
@@ -66,9 +64,11 @@ void IRAM_ATTR button_isr_handler(void* arg)
 // hold time-out watch dog time (task context)
 void IRAM_ATTR longpress_timeout(void* arg)
 {
-	static_cast<ESPRotary*>(arg)->hold = true;
+	ESPRotary *knob = static_cast<ESPRotary*>(arg);
+
+	knob->hold = true;
 	int pressType = LONG_PRESS;
-	xQueueSend(buttonQueue, &pressType, 0); // task context
+	xQueueSend(knob->buttonQueue, &pressType, 0); // task context
 }
 
 // The rotary portion ISR, PCNT event callback function
@@ -125,36 +125,6 @@ static bool IRAM_ATTR pcnt_event_handler(pcnt_unit_handle_t unit, const pcnt_wat
 // }
 
 
-// Observer task
-void ObserverTask( void *arg )
-{
-	ESPRotary &knob = *static_cast<ESPRotary*>(arg);
-	while( true ) {
-		// handle button events
-		int event;
-		if (xQueueReceive(buttonQueue, &event, pdMS_TO_TICKS(100)) == pdTRUE) {
-			if (event == SHORT_PRESS) {
-				ESP_LOGI(FNAME,"Button short press detected");
-				knob.sendPress();
-			} else if (event == LONG_PRESS) {
-				ESP_LOGI(FNAME,"Button long press detected");
-				knob.sendLongPress();
-			}else if (event == BUTTON_RELEASED) {
-				ESP_LOGI(FNAME, "Button released");
-				knob.sendRelease();
-			} else {
-				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
-				ESP_LOGI(FNAME, "Rotation step %d, time %dus", step, pulse_time);
-				knob.sendRot(step);
-			}
-		}
-
-		if( uxTaskGetStackHighWaterMark( pid ) < 256 ) {
-			ESP_LOGW(FNAME,"Warning rotary task stack low: %d bytes", uxTaskGetStackHighWaterMark( pid ) );
-		}
-	}
-}
-
 // Observer registration
 void RotaryObserver::attach() {
 	// ESP_LOGI(FNAME,"Attach obs: %p", obs );
@@ -188,8 +158,7 @@ ESPRotary::ESPRotary(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw) :
 
 ESPRotary::~ESPRotary()
 {
-	if ( pid ) {
-		vTaskDelete(pid);
+	if ( buttonQueue ) {
 		vQueueDelete(buttonQueue);
 		esp_timer_delete(lp_timer);
 	}
@@ -250,10 +219,6 @@ void ESPRotary::begin()
 	pcnt_unit_enable(pcnt_unit);
 	pcnt_unit_clear_count(pcnt_unit);
 	pcnt_unit_start(pcnt_unit);
-
-	if ( ! pid ) {
-		xTaskCreate(&ObserverTask, "knob", 5096, this, 14, &pid);
-	}
 
 	// alternative to pcnt module
 	// gpio_config_t io_conf = {

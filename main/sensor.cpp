@@ -209,8 +209,33 @@ bool do_factory_reset() {
 	return( SetupCommon::factoryReset() );
 }
 
-void drawDisplay(void *pvParameters){
+void drawDisplay(void *arg)
+{
+	ESPRotary &knob = *static_cast<ESPRotary*>(arg);
+	QueueHandle_t buton_event_queue = knob.getQueue();
+
+	esp_task_wdt_add(NULL);
+
 	while (1) {
+		// handle button events
+		int event;
+		if (xQueueReceive(buton_event_queue, &event, pdMS_TO_TICKS(20)) == pdTRUE) {
+			if (event == SHORT_PRESS) {
+				ESP_LOGI(FNAME,"Button short press detected");
+				knob.sendPress();
+			} else if (event == LONG_PRESS) {
+				ESP_LOGI(FNAME,"Button long press detected");
+				knob.sendLongPress();
+			}else if (event == BUTTON_RELEASED) {
+				ESP_LOGI(FNAME, "Button released");
+				knob.sendRelease();
+			} else {
+				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
+				ESP_LOGI(FNAME, "Rotation step %d", step);
+				knob.sendRot(step);
+			}
+		}
+		
 		// TickType_t dLastWakeTime = xTaskGetTickCount();
 		if( gflags.inSetup != true ) {
 			float t=OAT.get();
@@ -376,7 +401,7 @@ void drawDisplay(void *pvParameters){
 				}
 			}
 		}
-		vTaskDelay(20/portTICK_PERIOD_MS);
+		esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( dpid ) < 512  ) {
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 		}
@@ -1658,7 +1683,7 @@ void system_startup(void *args){
 		xTaskCreate(&readSensors, "readSensors", 5120, NULL, 12, &bpid);
 	}
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid);       // increase stack by 500 byte
-	xTaskCreate(&drawDisplay, "drawDisplay", 6144, NULL, 4, &dpid); // increase stack by 1K
+	xTaskCreate(&drawDisplay, "drawDisplay", 6144, Rotary, 4, &dpid); // increase stack by 1K
 
 	Audio::startAudio();
 }

@@ -1,12 +1,9 @@
 
 #include "WifiClient.h"
 
-#include "RingBufCPP.h"
 #include "Protocols.h"
 #include "ESPRotary.h"
 #include "sensor.h"
-#include "Router.h"
-#include "SString.h"
 #include "logdef.h"
 
 
@@ -30,15 +27,15 @@ extern bool netif_initialized;
 int WifiClient::master_xcvario_scanned = 0; // e.g. 1234
 
 typedef struct xcv_sock_client {
-	RingBufCPP<SString>* txbuf;
-	RingBufCPP<SString>* rxbuf;
+	// RingBufCPP<SString>* txbuf;
+	// RingBufCPP<SString>* rxbuf;
 	int port;
 	bool connected;
 	int sock;
 }sock_client_t;
 
-static sock_client_t XCVarioCL = { .txbuf = nullptr/*&can_tx_q*/, .rxbuf = nullptr/*&can_rx_q*/, .port=8884, .connected=false, .sock=-1 };
-static sock_client_t FLARM   =   { .txbuf = nullptr/*&wl_flarm_tx_q*/, .rxbuf = nullptr/*&wl_flarm_rx_q*/, .port=8881, .connected=false, .sock=-1 };
+static sock_client_t XCVarioCL = { /*.txbuf = nullptr &can_tx_q, .rxbuf = nullptr &can_rx_q,*/ .port=8884, .connected=false, .sock=-1 };
+static sock_client_t FLARM   =   { /*.txbuf = nullptr &wl_flarm_tx_q, .rxbuf = nullptr &wl_flarm_rx_q,*/ .port=8881, .connected=false, .sock=-1 };
 
 EventGroupHandle_t WifiClient::wifi_event_group;
 esp_netif_t *WifiClient::sta_netif = 0;
@@ -227,22 +224,23 @@ void WifiClient::tcp_client(void *setup){
         // 	}
         // }
         int end=100;
-        SString rec;
+        // SString rec;
         while( 1 ){
-            char c;
-        	if( recv(config->sock, &c, 1, MSG_DONTWAIT ) > 0){
-                rec.append(c);
-        		if( c == '\n' || rec.full() ){
-        			// ESP_LOGI(FNAME, "Port %d read %d bytes: %s", config->port, rec.length(), rec.c_str() );
-        			// ESP_LOG_BUFFER_HEXDUMP(FNAME, rec.c_str(), rec.length(), ESP_LOG_INFO);
-        			// Router::forwardMsg( rec, *(config->rxbuf) );
-        			timeout = 0;
-        			rec.clear();
-        			config->connected = true;
-        			break;
-        		}
-        	}
-        	else{
+            // char c;
+        	// if( recv(config->sock, &c, 1, MSG_DONTWAIT ) > 0){
+            //     rec.append(c);
+        	// 	if( c == '\n' || rec.full() ){
+        	// 		// ESP_LOGI(FNAME, "Port %d read %d bytes: %s", config->port, rec.length(), rec.c_str() );
+        	// 		// ESP_LOG_BUFFER_HEXDUMP(FNAME, rec.c_str(), rec.length(), ESP_LOG_INFO);
+        	// 		// Router::forwardMsg( rec, *(config->rxbuf) );
+        	// 		timeout = 0;
+        	// 		rec.clear();
+        	// 		config->connected = true;
+        	// 		break;
+        	// 	}
+        	// }
+        	// else
+			{
         		end--;
         		if( !end ){
         			// ESP_LOGI(FNAME, "socket %d read timeout", config->sock );

@@ -31,7 +31,6 @@
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
 #include "setup/SetupRoot.h"
-#include "SString.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
@@ -60,7 +59,6 @@
 #include "comm/CanBus.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/TestQuery.h"
-#include "Router.h"
 
 #include "sdkconfig.h"
 #include <freertos/FreeRTOS.h>
@@ -620,7 +618,7 @@ void readSensors(void *pvParameters){
 		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"TE, Delta: %d", (int)(millis() - m));
 		if( logging.get() == LOG_SENSOR_RAW ){
-			char log[SSTRLEN];
+			char log[ProtocolItf::MAX_LEN];
 			sprintf( log, "$SENS;");
 			int pos = strlen(log);
 			long delta = _millis - _gps_millis;
@@ -634,7 +632,7 @@ void readSensors(void *pvParameters){
 			}
 			pos=strlen(log);
 			sprintf( log+pos, "\n");
-			Router::sendXCV( log );
+			// Router::sendXCV( log ); fixme
 			ESP_LOGI(FNAME,"%s", log );
 		}
 		if( tok )
@@ -1710,7 +1708,6 @@ extern "C" void  app_main(void)
 	}
 	ESP_LOGI( FNAME,"Hardware revision %d", hardwareRevision.get());
 	MPU.clearpwm(); // Stop MPU heating
-	Router::begin(); // obsolete
 	// Init of rotary
 	if( hardwareRevision.get() == XCVARIO_20 ){
 		Rotary = new ESPRotary( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0); // XCV-20 uses GPIO_2 for Rotary

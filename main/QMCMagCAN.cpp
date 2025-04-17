@@ -16,7 +16,6 @@
 #include "sensor.h"
 #include "SetupNG.h"
 #include "MenuEntry.h"
-#include "Router.h"
 #include "vector.h"
 #include "comm/CanBus.h"
 #include "logdef.h"

@@ -2,8 +2,6 @@
 
 #include "comm/InterfaceCtrl.h"
 #include "comm/DataLink.h"
-// #include "RingBufCPP.h"
-// #include "SString.h"
 
 #include <esp_wifi.h>
 #include <esp_event.h>

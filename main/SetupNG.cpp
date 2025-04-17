@@ -15,7 +15,6 @@
 #include "Polars.h"
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"
-#include "Router.h"
 #include "Switch.h"
 #include "CircleWind.h"
 #include "Protocols.h"
@@ -256,10 +255,6 @@ SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 2 );   // tag will stay SERIAL2
 SetupNG<int>  			serial1_pins_twisted( "SERIAL2_PINS", 0 );
 SetupNG<int>  			serial1_rxloop( "SERIAL2_RXLOOP", 0 );
 SetupNG<int>  			serial1_tx( "SERIAL2_TX", (1UL << RT_XCVARIO) | (1UL << RT_WIRELESS) );   //  Default Wireless and local XCVario for Flarm Warnings, bincom
-// SetupNG<int>  			rt_s1_xcv( "S2_TX_XCV", 1, RST_NONE, SYNC_NONE, VOLATILE  );
-// SetupNG<int>  			rt_s1_wl( "S2_TX_WL", 1, RST_NONE, SYNC_NONE, VOLATILE );
-// SetupNG<int>  			rt_s1_s2( "S2_TX_S2", 0, RST_NONE, SYNC_NONE, VOLATILE );
-// SetupNG<int>  			rt_s1_can( "S2_TX_CAN", 0, RST_NONE, SYNC_NONE, VOLATILE );
 SetupNG<int>  			serial1_tx_inverted( "SERIAL2_TX_INV", RS232_INVERTED );
 SetupNG<int>  			serial1_rx_inverted( "SERIAL2_RX_INV", RS232_INVERTED );
 SetupNG<int>  			serial1_tx_enable( "SER1_TX_ENA", 1 );

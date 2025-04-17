@@ -18,7 +18,6 @@
 #include "mpu/math.hpp"   // math helper for dealing with MPU data
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "KalmanMPU6050.h"
-#include "Router.h"
 #include "Atmosphere.h"
 #include "Flarm.h"
 #include "Units.h"
@@ -143,7 +142,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	int cs = calcNMEACheckSum(&str[1]);
 	int i = strlen(str);
 	sprintf( &str[i], "*%02X\r\n", cs );
-	Router::sendXCV(str);
+	// Router::sendXCV(str); fixme
 }
 
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.

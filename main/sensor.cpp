@@ -560,19 +560,15 @@ void clientLoop(void *pvParameters)
 				gload_neg_max.set( IMU::getGliderAccelZ() );
 			}
 			toyFeed();
-			// Router::routeXCV();
 			if( true && !(ccount%5) ) { // todo need a mag_hdm.valid() flag
 				NmeaPrtcl *prtcl = static_cast<NmeaPrtcl*>(DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P)); // Todo preliminary solution ..
 				if ( prtcl ) {
-					
 					if( compass_nmea_hdm.get() ) {
 						prtcl->sendXCVNmeaHDM( mag_hdm.get() );
 					}
 
 					if( compass_nmea_hdt.get() ) {
-						xSemaphoreTake( xMutex, portMAX_DELAY );
-						OV.sendNmeaHDT( mag_hdt.get() );
-						xSemaphoreGive( xMutex );
+						prtcl->sendXCVNmeaHDT( mag_hdt.get() );
 					}
 				}
 			}

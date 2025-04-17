@@ -38,28 +38,6 @@ Protocols::~Protocols() {
 
 }
 
-/*
-HDT - Heading - True
-
-        1   2 3
-        |   | |
- $--HDT,x.x,T*hh<CR><LF>
-
- Field Number:
-  1) Heading Degrees, true
-  2) T = True
-  3) Checksum
- */
-void Protocols::sendNmeaHDT( float heading ) {
-	char str[21];
-	sprintf( str,"$HCHDT,%3.1f,T", heading );
-	// ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
-
-	int cs = calcNMEACheckSum(&str[1]);
-	int i = strlen(str);
-	sprintf( &str[i], "*%02X\r\n", cs );
-	Router::sendXCV(str);
-}
 
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
 	// ESP_LOGI(FNAME,"sendItem: %s", key );

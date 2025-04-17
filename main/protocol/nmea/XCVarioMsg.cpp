@@ -258,3 +258,27 @@ void NmeaPrtcl::sendXCVNmeaHDM(float heading)
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
     DEV::Send(msg);
 }
+
+/*
+    HDT - Heading - True
+
+            1   2 3
+            |   | |
+    $--HDT,x.x,T*hh<CR><LF>
+
+    Field Number:
+    1) Heading Degrees, true
+    2) T = True
+    3) Checksum
+*/
+void NmeaPrtcl::sendXCVNmeaHDT( float heading )
+{
+    Message *msg = newMessage();
+
+    msg->buffer = "$HCHDT,";
+    char str[12];
+    sprintf( str,"%3.1f,T", heading );
+    ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
+    msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+    DEV::Send(msg);
+}

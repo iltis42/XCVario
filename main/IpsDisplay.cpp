@@ -152,8 +152,8 @@ static int fh;
 
 SemaphoreHandle_t display_mutex=NULL;
 
-ucg_color_t IpsDisplay::colors[TEMAX+1+TEGAP];
-ucg_color_t IpsDisplay::colorsalt[TEMAX+1+TEGAP];
+ucg_color_t IpsDisplay::colors[320+1];
+ucg_color_t IpsDisplay::colorsalt[320+1];
 
 AdaptUGC *IpsDisplay::ucg = 0;
 

@@ -1596,13 +1596,12 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	disva->addEntry("B/W");
 
 	// Orientation   _display_orientation
-	SetupMenuSelect *diso = new SetupMenuSelect("Orientation", RST_ON_EXIT, 0,
-			true, &display_orientation);
-	top->addEntry(diso);
-	diso->setHelp(
-			"Display Orientation.  NORMAL means Rotary on left, TOPDOWN means Rotary on right  (reboots). A change will reset the AHRS reference calibration.");
-	diso->addEntry("NORMAL");
-	diso->addEntry("TOPDOWN");
+	SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", RST_ON_EXIT, 0, true, &display_orientation );
+	top->addEntry( diso );
+	diso->setHelp( "Display Orientation.  NORMAL means Rotary on left, TOPDOWN means Rotary on right  (reboots). A change will reset the AHRS reference calibration.");
+	diso->addEntry( "NORMAL");
+	diso->addEntry( "TOPDOWN");
+	diso->addEntry( "NINETY");
 
 	//
 	SetupMenuSelect *drawp = new SetupMenuSelect("Needle Alignment", RST_NONE,

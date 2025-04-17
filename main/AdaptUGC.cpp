@@ -136,12 +136,23 @@ void  AdaptUGC::begin() {
 		ili9341_config.page_address =  ILI9341_PAGE_ADDRESS_BOTTOM_TO_TOP;
 		ili9341_config.colum_address = ILI9341_COLUMN_ADDRESS_RIGHT_TO_LEFT;
 	}
+	else if( display_orientation.get() == DISPLAY_NINETY ){
+		ili9341_config.page_address =  ILI9341_PAGE_ADDRESS_TOP_TO_BOTTOM;
+		ili9341_config.colum_address = ILI9341_COLUMN_ADDRESS_RIGHT_TO_LEFT;
+		ili9341_config.page_column_order = ILI9341_PAGE_COLUMN_ORDER_REVERSE;
+		ili9341_config.width = 320;
+		ili9341_config.height = 240;
+	}
 	esp32_ili9341_config.freq = rint( FREQ_BMP_SPI * 3 * ((100.0 + display_clock_adj.get())/100.0));
 	ESP_LOGI(FNAME, "eglib_Send() &eglib:%x  hal-driv:%x config:%x  clk:%.3f MHz\n", (unsigned int)eglib, (unsigned int)&esp32_ili9341, (unsigned int)&esp32_ili9341_config, (double)(esp32_ili9341_config.freq/1000000.0) );
 	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &ili9341, &ili9341_config );
-	setClipRange( 0,0, 240, 320 );
-}
+	if ( display_orientation.get() == DISPLAY_NINETY ) {
+		setClipRange( 0, 0, 320, 240 );
+	} else {
+		setClipRange( 0,0, 240, 320 );
 
+	}
+}
 int16_t AdaptUGC::getDisplayWidth() const
 {
 	return ili9341_config.width;

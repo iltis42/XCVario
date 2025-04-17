@@ -110,6 +110,7 @@ public:
     void sendXCVEmptyWeight(float w);
     void sendXCVWaterWeight(float v);
     void sendXCVVersion(int v);
+    void sendXCVNmeaHDM(float heading);
 
     // MagSens transmitter
     bool sendHello();

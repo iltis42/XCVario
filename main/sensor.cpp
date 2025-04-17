@@ -114,7 +114,7 @@ SemaphoreHandle_t xMutex=NULL;
 SemaphoreHandle_t spiMutex=NULL;
 
 S2F Speed2Fly;
-Protocols OV( &Speed2Fly );
+Protocols OV( &Speed2Fly ); // todo delete
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
 
@@ -562,16 +562,18 @@ void clientLoop(void *pvParameters)
 			toyFeed();
 			// Router::routeXCV();
 			if( true && !(ccount%5) ) { // todo need a mag_hdm.valid() flag
-				if( compass_nmea_hdm.get() ) {
-					xSemaphoreTake( xMutex, portMAX_DELAY );
-					OV.sendNmeaHDM( mag_hdm.get() );
-					xSemaphoreGive( xMutex );
-				}
+				NmeaPrtcl *prtcl = static_cast<NmeaPrtcl*>(DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P)); // Todo preliminary solution ..
+				if ( prtcl ) {
+					
+					if( compass_nmea_hdm.get() ) {
+						prtcl->sendXCVNmeaHDM( mag_hdm.get() );
+					}
 
-				if( compass_nmea_hdt.get() ) {
-					xSemaphoreTake( xMutex, portMAX_DELAY );
-					OV.sendNmeaHDT( mag_hdt.get() );
-					xSemaphoreGive( xMutex );
+					if( compass_nmea_hdt.get() ) {
+						xSemaphoreTake( xMutex, portMAX_DELAY );
+						OV.sendNmeaHDT( mag_hdt.get() );
+						xSemaphoreGive( xMutex );
+					}
 				}
 			}
 			esp_task_wdt_reset();
@@ -741,14 +743,15 @@ void readSensors(void *pvParameters){
 				// done periodically.
 				bool ok;
 				float heading = compass->getGyroHeading( &ok );
+				NmeaPrtcl *prtcl = static_cast<NmeaPrtcl*>(DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P)); // Todo preliminary solution ..
 				if(ok){
 					if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
 						mag_hdm.set( heading );
 					}
 					if( !(count%5) && compass_nmea_hdm.get() == true ) {
-						xSemaphoreTake( xMutex, portMAX_DELAY );
-						OV.sendNmeaHDM( heading );
-						xSemaphoreGive( xMutex );
+						if ( prtcl ) {
+							prtcl->sendXCVNmeaHDM(heading);
+						}
 					}
 				}
 				else{
@@ -761,10 +764,9 @@ void readSensors(void *pvParameters){
 						mag_hdt.set( theading );
 					}
 					if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
-						xSemaphoreTake( xMutex, portMAX_DELAY );
-						OV.sendNmeaHDT( theading );
-						xSemaphoreGive( xMutex );
-					}
+						if ( prtcl ) {
+							prtcl->sendXCVNmeaHDM(heading);
+						}					}
 				}
 				else{
 					if( mag_hdt.get() != -1 )

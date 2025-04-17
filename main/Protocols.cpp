@@ -39,29 +39,6 @@ Protocols::~Protocols() {
 }
 
 /*
-HDM - Heading - Magnetic
-
-        1   2 3
-        |   | |
- $--HDM,x.x,M*hh<CR><LF>
-
- Field Number:
-  1) Heading Degrees, magnetic
-  2) M = magnetic
-  3) Checksum
- */
-void Protocols::sendNmeaHDM( float heading ) {
-	char str[21];
-	sprintf( str,"$HCHDM,%3.1f,M", heading );
-	// ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
-
-	int cs = calcNMEACheckSum(&str[1]);
-	int i = strlen(str);
-	sprintf( &str[i], "*%02X\r\n", cs );
-	Router::sendXCV(str);
-}
-
-/*
 HDT - Heading - True
 
         1   2 3

@@ -21,6 +21,9 @@ public:
     BootUpScreen();
     ~BootUpScreen();
 
+    // this will fill the logo completely
+    void finish();
+
     // Clock tick callback
     bool tick() override;
 

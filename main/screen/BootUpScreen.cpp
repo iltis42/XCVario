@@ -349,7 +349,7 @@ const unsigned char logo_bitmap[LOGO_HEIGHT][LOGO_WIDTH / 8] = {
 };
 
 
-constexpr const int MAX_PIXELS_PER_FRAME = 7;
+constexpr const int MAX_PIXELS_PER_FRAME = 12;
 
 BootUpScreen::BootUpScreen() :
     Clock_I()
@@ -366,8 +366,36 @@ BootUpScreen::BootUpScreen() :
     x_offset = width-LOGO_WIDTH/2;
     y_offset = height-LOGO_HEIGHT/2;
     srand(time(NULL)); // seed for randomness
+    MYUCG->setColor(COLOR_WHITE);
 
     Clock::start(this);
+}
+
+BootUpScreen::~BootUpScreen()
+{
+    Clock::stop(this);
+}
+
+void BootUpScreen::finish()
+{
+    Clock::stop(this);
+
+    for (int y = LOGO_HEIGHT-1; y >= 0; y--) {
+        for (int xi = 0; xi < LOGO_WIDTH; xi+=8) {
+            int byte = logo_bitmap[y][xi/8];
+            if ( byte == 0 ) { continue; }
+
+            int bit = 0x80;
+            int bitcount = 0;
+            while (bitcount < 8) { // && xi+bitcount < LOGO_WIDTH (for all LOGO_WIDTH%8 != 0)
+                if (byte & bit) {
+                    MYUCG->drawPixel(xi + bitcount + x_offset, y + y_offset);
+                }
+                bitcount++;
+                bit >>=1;
+            }
+        }
+    }
 }
 
 bool BootUpScreen::tick()
@@ -389,7 +417,3 @@ bool BootUpScreen::tick()
 }
 
 
-BootUpScreen::~BootUpScreen()
-{
-    Clock::stop(this);
-}

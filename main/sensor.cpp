@@ -31,6 +31,7 @@
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
 #include "setup/SetupRoot.h"
+#include "screen/BootUpScreen.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
@@ -1009,7 +1010,8 @@ void system_startup(void *args){
 	sprintf( hw,", XCV-%d", hardwareRevision.get()+18);  // plus 18, e.g. 2 = XCVario-20
 	std::string hwrev( hw );
 	ver += hwrev;
-	Display->writeText(line++, ver.c_str() );
+	Display->writeText(1, ver.c_str() );
+	BootUpScreen *boot_screen = new BootUpScreen();
 	Rotary->begin();
 	sleep(1);
 	if( software_update.get() || Rotary->readBootupStatus() ) {
@@ -1063,11 +1065,11 @@ void system_startup(void *args){
 			ESP_LOGI( FNAME,"MPU %.2f", accelG[0] );
 			delay( 10 );
 		}
-		char ahrs[30];
+		// char ahrs[30];
 		accelG /= samples;
 		float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
-		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accel );
-		Display->writeText( line++, ahrs );
+		// sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accel );
+		// Display->writeText( line++, ahrs );
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		if ( IMU::MPU6050Read() == ESP_OK) {
@@ -1079,7 +1081,7 @@ void system_startup(void *args){
 		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );
 		if( hardwareRevision.get() >= XCVARIO_21 ) {
 			ESP_LOGI( FNAME,"hardwareRevision detected = 3, XCVario-21+");
-			Display->writeText( line++, "AHRS Sensor: NOT FOUND");
+			// Display->writeText( line++, "AHRS Sensor: NOT FOUND"); fixme
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
@@ -1109,7 +1111,7 @@ void system_startup(void *args){
 		Wifi = new WifiAP();
 	}
 	wireless_id += SetupCommon::getID();
-	Display->writeText(line++, wireless_id.c_str() );
+	// Display->writeText(line++, wireless_id.c_str() ); fixme
 	Cipher::begin();
 	if( Cipher::checkKeyAHRS() ){
 		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
@@ -1229,25 +1231,25 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Aispeed sensor current speed=%f", ias.get() );
 		if( !offset_plausible && ( ias.get() < 50 ) ){
 			ESP_LOGE(FNAME,"Error: air speed presure sensor offset out of bounds, act value=%d", offset );
-			Display->writeText( line++, "AS Sensor: NEED ZERO" );
+			// Display->writeText( line++, "AS Sensor: NEED ZERO" ); fixme
 			logged_tests += "AS Sensor offset test: FAILED\n";
 			selftestPassed = false;
 		}
 		else {
 			ESP_LOGI(FNAME,"air speed offset test PASSED, readout value in bounds=%d", offset );
-			char s[40];
-			if( ias.get() > 50 ) {
-				sprintf(s, "AS Sensor: %d km/h", (int)(ias.get()+0.5) );
-				Display->writeText( line++, s );
-			}
-			else
-				Display->writeText( line++, "AS Sensor: OK" );
+			// char s[40];
+			// if( ias.get() > 50 ) {
+			// 	sprintf(s, "AS Sensor: %d km/h", (int)(ias.get()+0.5) );
+			// 	Display->writeText( line++, s );
+			// }
+			// else
+			// 	Display->writeText( line++, "AS Sensor: OK" );
 			logged_tests += "AS Sensor offset test: PASSED\n";
 		}
 	}
 	else{
 		ESP_LOGE(FNAME,"Error with air speed pressure sensor, no working sensor found!");
-		Display->writeText( line++, "AS Sensor: NOT FOUND");
+		// Display->writeText( line++, "AS Sensor: NOT FOUND"); fixme
 		logged_tests += "AS Sensor: NOT FOUND\n";
 		selftestPassed = false;
 		asSensor = 0;
@@ -1272,13 +1274,13 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"End T sensor test");
 		if( temperature == DEVICE_DISCONNECTED_C ) {
 			ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
-			Display->writeText( line++, "Temp Sensor: NOT FOUND");
+			// Display->writeText( line++, "Temp Sensor: NOT FOUND"); fixme
 			gflags.validTemperature = false;
 			logged_tests += "External Temperature Sensor: NOT FOUND\n";
 		}else
 		{
 			ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
-			Display->writeText( line++, "Temp Sensor: OK");
+			// Display->writeText( line++, "Temp Sensor: OK");
 			gflags.validTemperature = true;
 			logged_tests += "External Temperature Sensor:PASSED\n";
 
@@ -1321,26 +1323,26 @@ void system_startup(void *args){
 
 	if( !baroSensor->selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
-		Display->writeText( line++, "Baro Sensor: NOT FOUND");
+		// Display->writeText( line++, "Baro Sensor: NOT FOUND"); fixme
 		selftestPassed = false;
 		batest=false;
 		logged_tests += "Baro Sensor Test: NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"Baro Sensor test OK, T=%f P=%f", ba_t, ba_p);
-		Display->writeText( line++, "Baro Sensor: OK");
+		// Display->writeText( line++, "Baro Sensor: OK");
 		logged_tests += "Baro Sensor Test: PASSED\n";
 	}
 	if( !teSensor->selfTest(te_t, te_p) ) {
 		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
-		Display->writeText( line++, "TE Sensor: NOT FOUND");
+		// Display->writeText( line++, "TE Sensor: NOT FOUND"); fixme
 		selftestPassed = false;
 		tetest=false;
 		logged_tests += "TE Sensor Test: NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"TE Sensor test OK,   T=%f P=%f", te_t, te_p);
-		Display->writeText( line++, "TE Sensor: OK");
+		// Display->writeText( line++, "TE Sensor: OK");
 		logged_tests += "TE Sensor Test: PASSED\n";
 	}
 	if( tetest && batest ) {
@@ -1348,7 +1350,7 @@ void system_startup(void *args){
 		if( (abs(ba_t - te_t) >4.0)  && ( ias.get() < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
 			selftestPassed = false;
 			ESP_LOGE(FNAME,"Severe T delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
-			Display->writeText( line++, "TE/Baro Temp: Unequal");
+			// Display->writeText( line++, "TE/Baro Temp: Unequal"); fixme
 			logged_tests += "TE/Baro Sensor T diff. <4°C: FAILED\n";
 		}
 		else{
@@ -1362,7 +1364,7 @@ void system_startup(void *args){
 		if( (abs(ba_p - te_p) >delta)  && ( ias.get() < 50 ) ) {
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Abs p sensors deviation delta > 2.5 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
-			Display->writeText( line++, "TE/Baro P: Unequal");
+			// Display->writeText( line++, "TE/Baro P: Unequal"); fixme
 			logged_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
 		}
 		else {
@@ -1383,18 +1385,17 @@ void system_startup(void *args){
 	ESP_LOGI(FNAME,"Poti and Audio test");
 	if( !Audio::selfTest() ) {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
-		Display->writeText( line++, "Digital Poti: Failure");
+		// Display->writeText( line++, "Digital Poti: Failure"); fixme
 		selftestPassed = false;
 		logged_tests += "Digital Audio Poti test: FAILED\n";
 	}
 	else{
 		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 		logged_tests += "Digital Audio Poti test: PASSED\n";
-		Display->writeText( line++, "Digital Poti: OK");
+		// Display->writeText( line++, "Digital Poti: OK");
 	}
 
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	std::string resultCAN;
 	if( Audio::haveCAT5171() ) // todo && CAN configured
 	{
 		ESP_LOGI(FNAME,"NOW add/test CAN");
@@ -1404,7 +1405,6 @@ void system_startup(void *args){
 		if( CAN->selfTest() ){
 			if( dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS) ) {
 				// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
-				resultCAN = "OK";
 				ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
 				// Add the legacs MagSens CAN receiver, would be deleted if a MagSens V2 is found
 				dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
@@ -1424,7 +1424,7 @@ void system_startup(void *args){
 			}
 		}
 		else {
-			resultCAN = "FAIL";
+			// Display->writeText( line++, "CAN bus: Fail");
 			logged_tests += "CAN Bus selftest: FAILED\n";
 			ESP_LOGE(FNAME,"Error: CAN Interface failed");
 		}
@@ -1442,19 +1442,12 @@ void system_startup(void *args){
 	float bat = Battery.get(true);
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
-		if( resultCAN.length() )
-			Display->writeText( line++, "Bat Meter/CAN: ");
-		else
-			Display->writeText( line++, std::string("Bat Meter/CAN: Fail/" + resultCAN).c_str() );
+		// Display->writeText( line++, "Bat Meter: Fail"); fixme
 		logged_tests += "Battery Voltage Sensor: FAILED\n";
 		selftestPassed = false;
 	}
 	else{
 		ESP_LOGI(FNAME,"Battery voltage metering test PASSED, act value=%f", bat );
-		if( resultCAN.length() )
-			Display->writeText( line++, std::string("Bat Meter/CAN: OK/" + resultCAN).c_str() );
-		else
-			Display->writeText( line++, "Bat Meter: OK");
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
 	
@@ -1470,21 +1463,6 @@ void system_startup(void *args){
 		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
 		// dm->addDevice(TEST_DEV2, TEST_P, 2, 0, S2_RS232);
 	}
-	// Fixme readd test for serial interface plus cable
-	std::string result("Serial ");
-	if ( true )  // Serial::selfTest( S1 ) )
-		result += "S1 OK";
-	else
-		result += "S1 FAIL";
-	// if( (hardwareRevision.get() >= XCVARIO_21) && serial2_speed.get() ){
-	// 	if( Serial::selfTest( S2 ) )
-	// 		result += ",S2 OK";
-	// 	else
-	// 	 	result += ",S2 FAIL";
-	// }
-	if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ){
-		Display->writeText( line++, result.c_str() );
-	}
 
 	if( wireless == WL_BLUETOOTH ) {
 		if( BTspp && BTspp->selfTest() ){
@@ -1492,11 +1470,11 @@ void system_startup(void *args){
 			dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, BT_SPP);
 			dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
 			dm->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, NO_PHY);
-			Display->writeText( line++, "Bluetooth: OK");
+			// Display->writeText( line++, "Bluetooth: OK");
 			logged_tests += "Bluetooth test: PASSED\n";
 		}
 		else{
-			Display->writeText( line++, "Bluetooth: FAILED");
+			// Display->writeText( line++, "Bluetooth: FAILED"); fixme
 			logged_tests += "Bluetooth test: FAILED\n";
 		}
 	}else if ( (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE)
@@ -1524,12 +1502,12 @@ void system_startup(void *args){
 		if( err == ESP_OK )		{
 			// Activate working of magnetic sensor
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
-			Display->writeText( line++, "Compass: OK");
+			// Display->writeText( line++, "Compass: OK");
 			logged_tests += "Compass test: OK\n";
 		}
 		else{
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
-			Display->writeText( line++, "Compass: FAILED");
+			// Display->writeText( line++, "Compass: FAILED"); fixme
 			logged_tests += "Compass test: FAILED\n";
 			selftestPassed = false;
 		}
@@ -1543,13 +1521,13 @@ void system_startup(void *args){
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
-		Display->writeText( line++, "Selftest FAILED");
+		// Display->writeText( line++, "Selftest FAILED"); fixme 
 		if( !Rotary->readBootupStatus() )
 			sleep(4);
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
-		Display->writeText( line++, "Selftest PASSED");
+		// Display->writeText( line++, "Selftest PASSED");
 		if( !Rotary->readBootupStatus() )
 			sleep(2);
 	}
@@ -1557,6 +1535,9 @@ void system_startup(void *args){
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
+
+	// stop the boot logo
+	delete boot_screen;
 
 	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
 		ESP_LOGI(FNAME,"Client Mode");

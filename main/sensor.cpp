@@ -1587,6 +1587,8 @@ void system_startup(void *args){
 		}
 	}
 	delay( 100 );
+	Rotary->flushQueue();
+
 	if ( SetupCommon::isClient() ){
 		Device *dev = DEVMAN->getDevice(XCVARIO_DEV);
 		if (dev->_itf->getId() == WIFI_CLIENT) {

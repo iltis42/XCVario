@@ -142,8 +142,8 @@ public:
 
 	// scrolling, clipping, clear
 	inline void clearScreen(){ eglib_ClearScreen( eglib ); };
-	inline void scrollLines(int16_t lines) {  eglib_scrollScreen( eglib, lines ); };     	    // display driver function  tbd.
-	inline void scrollSetMargins( int16_t top, int16_t bottom ) { eglib_setScrollMargins( eglib, top, bottom ); };                 // display driver function
+	inline void scrollLines(int16_t lines) {  eglib_scrollScreen( eglib, lines ); };                               // display driver function  todo
+	inline void scrollSetMargins( int16_t top, int16_t bottom ) { eglib_setScrollMargins( eglib, top, bottom ); }; // display driver function
 	inline void setClipRange( int16_t x, int16_t y, int16_t w, int16_t h ) { eglib_setClipRange(eglib, x, y, w, h );};
 
 private:

@@ -193,7 +193,6 @@ uint16_t   stall_alarm_off_holddown=0;
 
 int count=0;
 unsigned long int flarm_alarm_holdtime=0;
-int the_can_mode = CAN_MODE_MASTER;
 
 float mpu_target_temp=45.0;
 
@@ -958,8 +957,6 @@ void system_startup(void *args){
 	// register_coredump();
 	Polars::begin();
 
-	the_can_mode = can_mode.get(); // initialize variable for CAN mode
-
 	// menu_screens.set(0);
 	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
@@ -1092,6 +1089,7 @@ void system_startup(void *args){
 	}
 	ESP_LOGI(FNAME,"Custom Wirelss-ID: %s", custom_wireless_id.get().id );
 
+	// todo place here the DEVMAN serialization read in of all configured devices.
 	std::string wireless_id("BT ID: ");
 	ESP_LOGI(FNAME,"Wirelss-Type: %d", wireless );
 	if( wireless == WL_BLUETOOTH ) {
@@ -1523,7 +1521,7 @@ void system_startup(void *args){
 	// stop the boot logo
 	delete boot_screen;
 
-	if ( wireless == WL_WLAN_CLIENT || the_can_mode == CAN_MODE_CLIENT ){
+	if ( SetupCommon::isClient() ){
 		ESP_LOGI(FNAME,"Client Mode");
 	}
 	else if( ias.get() < 50.0 ){
@@ -1590,7 +1588,8 @@ void system_startup(void *args){
 	}
 	delay( 100 );
 	if ( SetupCommon::isClient() ){
-		if( wireless == WL_WLAN_CLIENT ){
+		Device *dev = DEVMAN->getDevice(XCVARIO_DEV);
+		if (dev->_itf->getId() == WIFI_CLIENT) {
 			Display->clear();
 
 			int line=1;
@@ -1617,7 +1616,7 @@ void system_startup(void *args){
 				Display->writeText( 3, "Abort Wifi Scan" );
 			}
 		}
-		else if( the_can_mode == CAN_MODE_CLIENT ){
+		else if (dev->_itf->getId() == CAN_BUS) {
 			Display->clear();
 			Display->writeText( 1, "Wait for CAN Master" );
 			while( 1 ) {

@@ -35,8 +35,8 @@ void eglib_Send(
 
 void eglib_CommEnd(eglib_t *eglib) {
 	// Send pending I2C Slave address
-	if(eglib->hal.i2c_send_slave_addr)
-		eglib->hal.driver->send(eglib, 0, NULL, 0);
+	// if(eglib->hal.i2c_send_slave_addr)
+	// 	eglib->hal.driver->send(eglib, 0, NULL, 0); // This must be a bug, not understood
 	eglib->hal.driver->comm_end(eglib);
 	eglib->hal.comm_active = false;
 	eglib->hal.i2c_send_slave_addr = 0;

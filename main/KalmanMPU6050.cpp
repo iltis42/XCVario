@@ -499,7 +499,7 @@ int IMU::getAccelSamplesAndCalib(int side, float &wing_angle  )
 	return -1;
 }
 
-// Setup the rotation for the "upright" and "topdown" vario mounting positions
+// Setup the rotation for the "upright", "topdown" and "ninety" vario mounting positions
 void IMU::defaultImuReference()
 {
 	// Revert from calibrated IMU to default mapping, which fits 
@@ -508,6 +508,9 @@ void IMU::defaultImuReference()
 
 	if ( display_orientation.get() == DISPLAY_TOPDOWN ) {
 		accelDefaultRef = Quaternion(deg2rad(180.0f), vector_ijk(1,0,0)) * accelDefaultRef;
+	}
+	else if ( display_orientation.get() == DISPLAY_NINETY ) {
+		accelDefaultRef = Quaternion(deg2rad(-90.0f), vector_ijk(1,0,0)) * accelDefaultRef;
 	}
 	ref_rot = accelDefaultRef;
 	imu_reference.set(ref_rot, false); // nvs

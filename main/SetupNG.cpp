@@ -380,7 +380,6 @@ SetupNG<float>       	max_circle_wind_delta_deg("CIMDELD", 20.0 );
 SetupNG<float>       	max_circle_wind_delta_speed("CIMDELS", 5.0 );
 SetupNG<float>       	circle_wind_lowpass("CI_WINDLOW", 5 );
 SetupNG<int> 			can_speed( "CANSPEED", CAN_SPEED_1MBIT );
-SetupNG<int> 			can_mode( "CANMOD", CAN_MODE_STANDALONE );
 SetupNG<float> 			master_xcvario( "MSXCV", 0 );
 SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
 SetupNG<int> 			menu_long_press("MENU_LONG", 0 );

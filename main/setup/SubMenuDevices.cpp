@@ -314,43 +314,7 @@ void system_menu_create_interfaceCAN(SetupMenu *top)
     canmode->addEntry("250 kbit");
     canmode->addEntry("500 kbit");
     canmode->addEntry("1000 kbit (default)");
-
-    SetupMenuSelect *devmod = new SetupMenuSelect("Mode", RST_ON_EXIT, 0, false, &can_mode);
-    top->addEntry(devmod);
-    devmod->setHelp(
-        "Select 'Standalone' for single seater, 'Master' in front, 'Client' for secondary device in rear (reboots)");
-    devmod->addEntry("Master");
-    devmod->addEntry("Client");
-    devmod->addEntry("Standalone");
 }
-    // // _serial1_speed
-    // SetupMenu *rs232 = new SetupMenu("RS232 Interface S1", system_menu_create_interfaceS1);
-    // sye->addEntry(rs232);
-
-    // SetupMenu *can = new SetupMenu("CAN Interface", system_menu_create_interfaceCAN);
-
-    // if (hardwareRevision.get() >= XCVARIO_21) {
-    // 	SetupMenu *rs232_2 = new SetupMenu("RS232 Interface S2", system_menu_create_interfaceS2);
-    // 	sye->addEntry(rs232_2);
-    // }
-    // if (hardwareRevision.get() >= XCVARIO_22) {
-    // 	// Can Interface C1
-    // 	SetupMenu *can = new SetupMenu("CAN Interface", system_menu_create_interfaceCAN);
-    // 	sye->addEntry(can);
-    // }
-
-    // // NMEA protocol of variometer
-    // SetupMenuSelect *nmea = new SetupMenuSelect("NMEA Protocol", RST_NONE, 0,
-    // 		true, &nmea_protocol);
-    // sye->addEntry(nmea);
-    // nmea->setHelp(
-    // 		"Setup the protocol used for sending NMEA sentences. This needs to match the device driver chosen in XCSoar/LK8000");
-    // nmea->addEntry("OpenVario");
-    // nmea->addEntry("Borgelt");
-    // nmea->addEntry("Cambridge");
-    // nmea->addEntry("XCVario");
-    // nmea->addEntry("Disable");
-
 
 
 //

@@ -67,6 +67,7 @@ public:
 	esp_err_t updateRotDir();
 	void updateIncrement(int inc);
 	void setLongPressTimeout(int lptime_ms) { lp_duration = (uint64_t)1000 * lptime_ms; }
+	void flushQueue() { xQueueReset(buttonQueue); }
 
 	// observer feed
 	void sendRot(int diff) const;

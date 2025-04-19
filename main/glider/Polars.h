@@ -9,17 +9,17 @@
 #define MAIN_POLARS_H_
 
 typedef struct s_polars {
-	int 	 index;
-	const char	 *type;
-	float    wingload;
-	float    speed1;
-	float    sink1;
-	float    speed2;
-	float    sink2;
-	float    speed3;
-	float    sink3;
-	float    max_ballast;   // in liters or kg
-	float    wingarea;
+	int      index;
+	const char *type;
+	float    wingload;		// kg/mxm
+	float    speed1;		// km/h
+	float    sink1;			// m/s
+	float    speed2;		// km/h
+	float    sink2;			// m/s
+	float    speed3;		// km/h
+	float    sink3;			// m/s
+	float    max_ballast;	// in liters or kg
+	float    wingarea;		// mxm
 } t_polar;
 
 

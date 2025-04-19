@@ -495,7 +495,6 @@ extern SetupNG<float>  		s2f_delay;
 extern SetupNG<float>  		factory_volt_adjust;
 extern SetupNG<float>  		bugs;
 extern SetupNG<int>  		cruise_mode;
-extern SetupNG<float>  		OAT;
 extern SetupNG<float>  		OAT;   // outside temperature
 extern SetupNG<float>  		swind_dir;   // straight wind direction
 extern SetupNG<float>  		swind_speed;

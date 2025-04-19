@@ -12,7 +12,7 @@
 #include "ESP32NVS.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"
-#include "Polars.h"
+#include "glider/Polars.h"
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"
 #include "Switch.h"

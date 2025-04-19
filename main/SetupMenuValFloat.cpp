@@ -10,7 +10,7 @@
 #include "SetupMenu.h"
 #include "IpsDisplay.h"
 #include "BMPVario.h"
-#include "Polars.h"
+#include "glider/Polars.h"
 #include "sensor.h"
 #include "ESPAudio.h"
 #include "logdef.h"

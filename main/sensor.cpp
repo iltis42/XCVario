@@ -23,7 +23,7 @@
 #include "IpsDisplay.h"
 #include "S2F.h"
 #include "Version.h"
-#include "Polars.h"
+#include "glider/Polars.h"
 #include "Flarm.h"
 #include "Blackboard.h"
 #include "SetupMenuValFloat.h"

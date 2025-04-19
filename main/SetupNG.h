@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "Polars.h"
+#include "glider/Polars.h"
 #include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
 #include "comm/CanBus.h"
 #include "Compass.h"

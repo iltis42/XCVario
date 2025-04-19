@@ -5,10 +5,12 @@
  *      Author: iltis
  */
 
-#ifndef MAIN_POLARS_H_
-#define MAIN_POLARS_H_
+#pragma once
 
-typedef struct s_polars {
+struct compressed_polar;
+
+struct t_polar {
+	t_polar(const compressed_polar*);
 	int      index;
 	const char *type;
 	float    wingload;		// kg/mxm
@@ -20,18 +22,12 @@ typedef struct s_polars {
 	float    sink3;			// m/s
 	float    max_ballast;	// in liters or kg
 	float    wingarea;		// mxm
-} t_polar;
-
-
-class Polars {
-public:
-	Polars();
-	static const t_polar getPolar( int x );
-	static int numPolars();
-	static void begin();
-	virtual ~Polars();
 };
 
 
+namespace Polars {
+	const t_polar getPolar( int x );
+	int numPolars();
+	void begin();
+};
 
-#endif /* MAIN_POLARS_H_ */

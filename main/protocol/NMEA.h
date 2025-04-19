@@ -63,9 +63,10 @@ union Key {
 // message table
 class NmeaPrtcl;
 class NmeaPlugin;
-using NmeaMessageParser = std::function<dl_action_t(NmeaPrtcl*)>;
+using NmeaMessageParser = std::function<dl_action_t(NmeaPlugin*)>;
 typedef std::pair<Key, NmeaMessageParser> ParserEntry; // use const to reside in flash memory
-typedef std::map<Key, NmeaMessageParser> ParserMap;
+typedef std::pair<NmeaMessageParser, NmeaPlugin*> MapValue;
+typedef std::map<Key, MapValue> ParserMap;
 
 // nmea message extension
 class NmeaPlugin
@@ -74,6 +75,7 @@ public:
     explicit NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp) : _nmeaRef(nr), _belongs(ptyp) {}
     virtual ~NmeaPlugin() = default;
     ProtocolType getPtyp() const { return _belongs; }
+    NmeaPrtcl &getNMEA() const { return _nmeaRef; }
 
     // API
     virtual const ParserEntry* getPT() const = 0;
@@ -113,6 +115,8 @@ public:
     void sendXCVNmeaHDM(float heading);
     void sendXCVNmeaHDT(float heading);
 
+    // XCV client
+
     // MagSens transmitter
     bool sendHello();
     bool sendCalibration(); // Todo add calib param
@@ -134,11 +138,11 @@ public:
     bool sendJPReleasePressed(const int side);
     
 private:
-    const ProtocolType _ptyp; // a protocol id different per instance
+    const ProtocolType _ptyp;   // a protocol id different per instance
     ParserMap _parsmap;
     std::vector<NmeaPlugin*> _plugs;
-    Key _mkey;
-    NmeaMessageParser _parser;
+    Key      _mkey;     // identified message key
+    MapValue _parser;   // found parser, incl. parameter for the parser
     inline void nmeaIncrCRC(int &crc, const char c) {crc ^= c;}
 };
 

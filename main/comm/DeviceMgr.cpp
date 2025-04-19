@@ -67,6 +67,7 @@ static constexpr const RoutingTarget* findRoute(const RoutingTarget& target) {
 // - Device attributes
 //   + a readable name
 //   + a list of interfaces, first one is a default proposal
+//   + later entries with same dev id speicialize and override the first default
 //   + a list of protocol, first N are the by default configured ones
 //   + an interface profile enum, if needed
 // - 
@@ -74,13 +75,14 @@ constexpr std::pair<DeviceId, DeviceAttributes> DAVATTR[] = {
     {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}}, {{JUMBOCMD_P}, 1} }},
     {DeviceId::ANEMOI_DEV, {"Anemoi", {{S2_RS232, S1_RS232, CAN_BUS}}, {{ANEMOI_P}, 1}, 0, IS_REAL }},
     {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, CAN_BUS, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL }},
-    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884 }},
+    {DeviceId::XCVARIO_DEV, {"Master auto", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT }},
+    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL }},
     {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232, CAN_BUS}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL }},
     {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
                                     {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
                                     8880, IS_REAL|MULTI_CONF}},
-    {DeviceId::FLARM_HOST_DEV, {"Flarm host", {{WIFI_AP, CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, IS_REAL}},
-    {DeviceId::KRT2_HOST_DEV,   {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, IS_REAL}},
+    {DeviceId::NAVI_DEV,   {"Flarm host", {{WIFI_AP, CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, IS_VARIANT}},
+    {DeviceId::NAVI_DEV,   {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, IS_VARIANT}},
     {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C, CAN_BUS}}, {{MAGSENSBIN_P}, 1}, 31, IS_REAL }},
     {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL }},
     {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL }},
@@ -89,20 +91,27 @@ constexpr std::pair<DeviceId, DeviceAttributes> DAVATTR[] = {
 
 constexpr const DeviceAttributes NullDev("Null", {{NO_PHY}}, {{NO_ONE}}, 0, 0);
 // Lookup functions
-const DeviceAttributes* DeviceManager::getDevAttr(DeviceId did) {
+const DeviceAttributes* DeviceManager::getDevAttr(DeviceId did, InterfaceId via) {
     // retrieve first attribute entry
+    const DeviceAttributes *ret = &NullDev;
     for (const auto& entry : DAVATTR) {
-        if (entry.first == did) {
+        if (entry.first == did && ret == &NullDev) {
+            ret = &entry.second;
+            if (via == NO_PHY) {
+                return ret;
+            }
+        }
+        if (entry.first == did && via == entry.second.itfs.get(0)) {
             return &entry.second;
         }
     }
-    return &NullDev;
+    return ret;
 }
 
 std::string_view DeviceManager::getDevName(DeviceId did) {
     for (const auto& entry : DAVATTR) {
         if (entry.first == did) {
-            return entry.second.name;
+            return entry.second.name; // first hit rules
         }
     }
     return "";
@@ -112,7 +121,7 @@ std::vector<DeviceId> DeviceManager::allKnownDevs()
 {
     std::vector<DeviceId> ret;
     for (const auto& entry : DAVATTR) {
-        if ( ! entry.second.name.empty() ) {
+        if (! entry.second.name.empty()  && ! entry.second.isVariant()) {
             ret.push_back(entry.first);
         }
     }
@@ -569,9 +578,9 @@ DataLink *DeviceManager::getFlarmHost()
 // prio - 0,..,4 0:low prio data stream, .. 5: important high prio commanding
 // return an id chunk of four to use (0..0x3fc), use then +0, +1, +2, +3
 // else -1 in case there is no chunk left
+static int nxt_free_slot[5] = { 0x400, 0x200, 0x100, 0x80, 0x40 }; // 5 prio slots of 15 chucks of 4 ids
 int DeviceManager::getFreeCANId(int prio)
 {
-    static int nxt_free_slot[5] = { 0x400, 0x200, 0x100, 0x80, 0x40 }; // 5 prio slots of 15 chucks of 4 ids
     if ( prio > 4 ) {
         prio = 4;
     }
@@ -584,6 +593,19 @@ int DeviceManager::getFreeCANId(int prio)
         return slot;
     }
     return -1;
+}
+
+void DeviceManager::undoFreeCANId(int prio)
+{
+    if ( prio > 4 ) {
+        prio = 4;
+    }
+    if ( prio < 0 ) {
+        prio = 0;
+    }
+    if ( (nxt_free_slot[prio] & 0x3c) >= 4 ) {
+        nxt_free_slot[prio] -= 4; // revert reservation
+    }
 }
 
 void DeviceManager::dumpMap() const

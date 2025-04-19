@@ -27,6 +27,6 @@ private:
     static const ParserEntry _pt[];
     
     // The receiver
-    static dl_action_t magsensVersion(NmeaPrtcl *nmea);
-    static dl_action_t magsensConfirmation(NmeaPrtcl *nmea);
+    static dl_action_t magsensVersion(NmeaPlugin *plg);
+    static dl_action_t magsensConfirmation(NmeaPlugin *plg);
 };

@@ -338,7 +338,7 @@ static int create_device(SetupMenuSelect *p)
 {
     if ( p->getSelect() == 1 ) {
         // Confirmed; default protocols and port
-        const DeviceAttributes *da = DeviceManager::getDevAttr(new_device);
+        const DeviceAttributes *da = DeviceManager::getDevAttr(new_device, new_interface);
         for (int i=0; i<da->prcols.getExtra(); ++i) {
             ProtocolType pid = da->prcols.proto(i);
             if ( pid != NO_ONE ) {

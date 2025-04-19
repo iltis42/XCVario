@@ -74,7 +74,7 @@ SetupAction* JumboCmdMsg::LeftAction = nullptr;
 //
 //
 
-dl_action_t JumboCmdMsg::connected(NmeaPrtcl *nmea)
+dl_action_t JumboCmdMsg::connected(NmeaPlugin *plg)
 {
     ESP_LOGI(FNAME, "JP connected");
     // todo set a flag
@@ -84,10 +84,10 @@ dl_action_t JumboCmdMsg::connected(NmeaPrtcl *nmea)
 typedef std::vector<const char*> TokenTable;
 static TokenTable CONF_ITEM = { "WSPAN", "WSP_1", "LCORR", "RCORR", "WDFLT", "KICIT", "SEQNC", "REMDR", "WCONF"};
 
-dl_action_t JumboCmdMsg::config(NmeaPrtcl *nmea)
+dl_action_t JumboCmdMsg::config(NmeaPlugin *plg)
 {
     // grab token from e.g. message "$PJPRC WSPAN, "
-    ProtocolState *sm = nmea->getSM();
+    ProtocolState *sm = plg->getNMEA().getSM();
     std::string itoken = sm->_frame.substr(7);
     int idx = 0;
     TokenTable::iterator it = CONF_ITEM.begin();
@@ -136,18 +136,18 @@ dl_action_t JumboCmdMsg::config(NmeaPrtcl *nmea)
     return NOACTION;
 }
 
-dl_action_t JumboCmdMsg::info(NmeaPrtcl *nmea)
+dl_action_t JumboCmdMsg::info(NmeaPlugin *plg)
 {
     ESP_LOGI(FNAME, "JP info");
     // todo
     return NOACTION;
 }
 
-dl_action_t JumboCmdMsg::alive(NmeaPrtcl *nmea)
+dl_action_t JumboCmdMsg::alive(NmeaPlugin *plg)
 {
     // $PJPJA, R97
     ESP_LOGI(FNAME, "JP alive");
-    ProtocolState *sm = nmea->getSM();
+    ProtocolState *sm = plg->getNMEA().getSM();
     int tmp = 7;
     std::string token = NMEA::extractWord(sm->_frame, tmp);
     char* endptr;
@@ -163,7 +163,7 @@ dl_action_t JumboCmdMsg::alive(NmeaPrtcl *nmea)
     return NOACTION;
 }
 
-dl_action_t JumboCmdMsg::event(NmeaPrtcl *nmea)
+dl_action_t JumboCmdMsg::event(NmeaPlugin *plg)
 {
     ESP_LOGI(FNAME, "JP event");
     // todo

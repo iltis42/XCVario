@@ -24,9 +24,9 @@ uint8_t XCVarioMsg::_protocol_version = 1;
 // The XCVario protocol parser.
 //
 
-dl_action_t XCVarioMsg::parseExcl_xsX(NmeaPrtcl *nmea)
+dl_action_t XCVarioMsg::parseExcl_xsX(NmeaPlugin *plg)
 {
-    ProtocolState *sm = nmea->getSM();
+    ProtocolState *sm = plg->getNMEA().getSM();
     const std::vector<int> *word = &sm->_word_start;
 
     ESP_LOGI(FNAME,"parseXS %s", sm->_frame.c_str() );
@@ -61,9 +61,9 @@ dl_action_t XCVarioMsg::parseExcl_xsX(NmeaPrtcl *nmea)
     return NOACTION;
 }
 
-dl_action_t XCVarioMsg::parseExcl_xcs(NmeaPrtcl *nmea)
+dl_action_t XCVarioMsg::parseExcl_xcs(NmeaPlugin *plg)
 {
-    ProtocolState *sm = nmea->getSM();
+    ProtocolState *sm = plg->getNMEA().getSM();
     const std::vector<int> *word = &sm->_word_start;
 
     ESP_LOGI(FNAME, "xcs teleg: %s", sm->_frame.c_str());
@@ -95,7 +95,7 @@ dl_action_t XCVarioMsg::parseExcl_xcs(NmeaPrtcl *nmea)
     {
         ESP_LOGI(FNAME, "Got xcv protocol version: %d", value);
         _protocol_version = value;
-        nmea->sendXCVVersion(2);
+        plg->getNMEA().sendXCVVersion(2);
     }
 
     return NOACTION;

@@ -37,11 +37,11 @@ static int Conf_Pack_Nr = 0;
 //   response: $PMSC, <enum>\r\n
 
 
-dl_action_t MagSensMsg::magsensVersion(NmeaPrtcl *nmea)
+dl_action_t MagSensMsg::magsensVersion(NmeaPlugin *plg)
 {
     //$PMSV, <release_number>, <build_dateandtime>\r\n
     ESP_LOGI(FNAME,"PMS version");
-    ProtocolState *sm = nmea->getSM();
+    ProtocolState *sm = plg->getNMEA().getSM();
 
     int mag_release;
     char mag_build[40];
@@ -51,10 +51,10 @@ dl_action_t MagSensMsg::magsensVersion(NmeaPrtcl *nmea)
     return NOACTION;
 }
 
-dl_action_t MagSensMsg::magsensConfirmation(NmeaPrtcl *nmea)
+dl_action_t MagSensMsg::magsensConfirmation(NmeaPlugin *plg)
 {
     // $PMSC, <enum>\r\n
-    ProtocolState *sm = nmea->getSM();
+    ProtocolState *sm = plg->getNMEA().getSM();
 
     Conf_Pack_Nr = std::stoi(NMEA::extractWord(sm->_frame, sm->_word_start[0]));
     ESP_LOGI(FNAME,"PMS pack conf %d", Conf_Pack_Nr);

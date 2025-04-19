@@ -19,11 +19,11 @@ public:
 
 private:
     // Received messages
-    static dl_action_t parsePFLAA(NmeaPrtcl *nmea);
-    static dl_action_t parsePFLAE(NmeaPrtcl *nmea);
-    static dl_action_t parsePFLAU(NmeaPrtcl *nmea);
-    static dl_action_t parsePFLAX(NmeaPrtcl *nmea);
-    static dl_action_t parseExcl_xc(NmeaPrtcl *nmea);
+    static dl_action_t parsePFLAA(NmeaPlugin *plg);
+    static dl_action_t parsePFLAE(NmeaPlugin *plg);
+    static dl_action_t parsePFLAU(NmeaPlugin *plg);
+    static dl_action_t parsePFLAX(NmeaPlugin *plg);
+    static dl_action_t parseExcl_xc(NmeaPlugin *plg);
     
     static const ParserEntry _pt[];
 };

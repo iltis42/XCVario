@@ -72,11 +72,12 @@ void CANMasterRegMsg::sendLossOfResgitrations()
     DEV::Send(msg);
 }
 
-dl_action_t CANMasterRegMsg::registration_query(NmeaPrtcl *nmea)
+dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
 {
     ESP_LOGI(FNAME, "JP registration query");
     // e.g. read message "$PJPREG, 123, proto"
-    ProtocolState *sm = nmea->getSM();
+    NmeaPrtcl &nmea = plg->getNMEA();
+    ProtocolState *sm = nmea.getSM();
     if ( sm->_frame.size() < 12 ) {
         return NOACTION;
     }
@@ -98,37 +99,49 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPrtcl *nmea)
 
     DeviceId ndev = NO_DEVICE;
     ProtocolType nproto = NO_ONE;
+    int prio = 1;
     if ( protocol.compare("JUMBOCMD") == 0 ) {
         ndev = JUMBO_DEV;
         nproto = JUMBOCMD_P;
     } else if ( protocol.compare("MAGSENS") == 0 ) {
         ndev = MAGSENS_DEV;
         nproto = MAGSENS_P;
+    } else if ( protocol.compare("XCVCLIENT") == 0 ) {
+        ndev = XCVARIOCLIENT_DEV;
+        nproto = XCVSYNC_P;
+        prio = 4;
     }
     if ( ndev != NO_DEVICE ) {
         int client_ch = DEVMAN->getSendPort(ndev, nproto);
         if ( client_ch > 0 ) {
-            ESP_LOGD(FNAME, "reuse port %d", client_ch);
+            ESP_LOGI(FNAME, "reuse port %d", client_ch);
         } else {
-            client_ch = DeviceManager::getFreeCANId(1);
-            ESP_LOGD(FNAME, "new port %d", client_ch);
+            client_ch = DeviceManager::getFreeCANId(prio);
+            ESP_LOGI(FNAME, "new port %d", client_ch);
         }
-        if ( client_ch == -1 ) return NOACTION; // no luck
 
-        ESP_LOGD(FNAME, "use port %d", client_ch);
+        // Send a response in any case
+        Message* msg = DEV::acqMessage(nmea.getDeviceId(), nmea.getSendPort());
+        msg->buffer = "$PJMNAC, " + token + "\r\n"; // a NAC prepared
+        if ( client_ch > 0 ) {
 
-        Message* msg = DEV::acqMessage(nmea->getDeviceId(), nmea->getSendPort());
-
-        int master_ch = client_ch + 1;
-        DEVMAN->addDevice(ndev, nproto, master_ch, client_ch, CAN_BUS);
-
-        msg->buffer = "$PJMACC, " + token + ", " + std::to_string(client_ch) + 
-                                        ", " + std::to_string(master_ch);
-        msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+            ESP_LOGI(FNAME, "use port %d", client_ch);
+            int master_ch = client_ch + 1;
+            if ( DEVMAN->addDevice(ndev, nproto, master_ch, client_ch, CAN_BUS) ) {
+                // all good
+                msg->buffer.clear();
+                msg->buffer = "$PJMACC, " + token + ", " + std::to_string(client_ch) + ", " + std::to_string(master_ch);
+                msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+            }
+            else {
+                // Something went wrong, undo port reservation, send NAC
+                DeviceManager::undoFreeCANId(prio);
+            }
+        }
         DEV::Send(msg);
     }
 
-    return DO_ROUTING;
+    return NOACTION;
 }
 
 

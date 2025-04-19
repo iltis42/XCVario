@@ -48,7 +48,7 @@ typedef enum
     OPENVARIO_P,
     BORGELT_P,
     CAMBRIDGE_P,
-    NMEA_P,
+    XCVQUERY_P,
     KRT2_REMOTE_P,
     ATR833_REMOTE_P,
     TEST_P

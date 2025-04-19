@@ -18,9 +18,9 @@
 // The Cambridge protocol parser.
 //
 
-dl_action_t CambridgeMsg::parseExcl_g(NmeaPrtcl *nmea)
+dl_action_t CambridgeMsg::parseExcl_g(NmeaPlugin *plg)
 {
-    const char *s = nmea->getSM()->_frame.c_str();
+    const char *s = plg->getNMEA().getSM()->_frame.c_str();
 
     ESP_LOGI(FNAME,"Cambridge C302 / Borgelt !g: %s", s);
  

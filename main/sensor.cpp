@@ -1022,6 +1022,7 @@ void system_startup(void *args){
 			dm->addDevice(MASTER_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
 			dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
 		}
+		delete boot_screen; // screen now belongs to OTA
 		ota = new OTA();
 		ota->begin();
 		ota->doSoftwareUpdate( Display );
@@ -1502,24 +1503,23 @@ void system_startup(void *args){
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
-		MBOX->newMessage(1, "Selftest FAILED");
+		MBOX->newMessage(2, "Selftest FAILED");
 		if( !Rotary->readBootupStatus() )
 			sleep(4);
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
-		boot_screen->finish();
-		if( !Rotary->readBootupStatus() ) {
-			sleep(2);
-		}
+		boot_screen->finish(); // signal self tests passed
 	}
+
+	// stop the boot logo
+	delete boot_screen;
+
 	if( Rotary->readBootupStatus() )
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
 
-	// stop the boot logo
-	delete boot_screen;
 
 	if ( SetupCommon::isClient() ){
 		ESP_LOGI(FNAME,"Client Mode");

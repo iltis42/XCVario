@@ -659,7 +659,6 @@ extern SetupNG<int> 		menu_screens;
 extern SetupNG<int> 		screen_gmeter;
 extern SetupNG<int> 		screen_horizon;
 extern SetupNG<int> 		screen_centeraid;
-extern SetupNG<int> 		data_monitor_mode;
 extern SetupNG<t_bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;
 extern SetupNG<t_tenchar_id>  custom_wireless_id;

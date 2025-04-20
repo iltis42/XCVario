@@ -1065,7 +1065,7 @@ void system_startup(void *args){
 			delay( 10 );
 		}
 		accelG /= samples;
-		float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
+		// float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		if ( IMU::MPU6050Read() == ESP_OK) {
@@ -1451,9 +1451,9 @@ void system_startup(void *args){
 	if( wireless == WL_BLUETOOTH ) {
 		if( BTspp && BTspp->selfTest() ){
 			DeviceManager* dm = DeviceManager::Instance();
+			dm->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, BT_SPP);
 			dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, BT_SPP);
 			dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
-			dm->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, NO_PHY);
 			logged_tests += "Bluetooth test: PASSED\n";
 		}
 		else{

@@ -431,6 +431,19 @@ Device *DeviceManager::getDevice(DeviceId did)
     return nullptr;
 }
 
+Device *DeviceManager::getXCVPeer()
+{
+    DevMap::iterator it = _device_map.find(XCVARIOCLIENT_DEV);
+    if ( it != _device_map.end() ) {
+        return it->second;
+    }
+    it = _device_map.find(XCVARIO_DEV);
+    if ( it != _device_map.end() ) {
+        return it->second;
+    }
+    return nullptr;
+}
+
 ProtocolItf *DeviceManager::getProtocol(DeviceId did, ProtocolType proto)
 {
     Device *d = getDevice(did);

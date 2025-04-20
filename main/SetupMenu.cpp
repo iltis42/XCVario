@@ -182,7 +182,8 @@ void initGearWarning() {
 		gpio_set_direction(io, GPIO_MODE_INPUT);
 		gpio_set_pull_mode(io, GPIO_PULLUP_ONLY);
 		gpio_pullup_en(io);
-	}ESP_LOGI(FNAME,"initGearWarning: IO: %d", io );
+	}
+	ESP_LOGI(FNAME,"initGearWarning: IO: %d", io );
 }
 
 int config_gear_warning(SetupMenuSelect *p) {

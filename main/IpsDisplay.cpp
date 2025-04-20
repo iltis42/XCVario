@@ -8,7 +8,6 @@
 
 #include "IpsDisplay.h"
 #include "comm/DeviceMgr.h"
-#include "protocol/MagSensBin.h"
 #include "BLESender.h"
 #include "OneWireESP32.h"
 #include "WifiClient.h"
@@ -18,7 +17,6 @@
 #include "Flarm.h"
 #include "Compass.h"
 #include "CircleWind.h"
-#include "comm/CanBus.h"
 #include "comm/WifiAP.h"
 #include "comm/BTspp.h"
 #include "Blackboard.h"
@@ -954,34 +952,29 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 {
 	const int16_t CANH = 8;
 	const int16_t CANW = 14;
-	bool CANconnectedXCV = false;
-	bool CANconnectedMag = false;
-	if (CAN) {
-		CANconnectedXCV = CAN->connectedXCV();
-		// CANconnectedMag = CAN->connectedMagSens();
-	}
-	MagSensBinary *ms = static_cast<MagSensBinary*>(DEVMAN->getProtocol(MAGSENS_DEV, MAGSENSBIN_P));
-	CANconnectedMag = ( ms && ms->connected() );
+
+	Device *dev = DEVMAN->getXCVPeer();
+	bool CANconnectedXCV = dev && dev->isAlive();
+	dev = DEVMAN->getDevice(MAGSENS_DEV);
+	bool CANconnectedMag = dev && dev->isAlive();
+	
 	CANconnectedXCV ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
+	// lower horizontal line
 	if (CANconnectedMag)
 		ucg->setColor(COLOR_GREEN);
-	// ucg->setFont(ucg_font_fub11_hr);
-	// ucg->setPrintPos(x - 8, y);
 	ucg->drawLine( x-CANW/2, y+CANH/2, x+3, y+CANH/2 );
 	ucg->drawLine( x-CANW/2, y+CANH/2-1, x+3, y+CANH/2-1 );
 	ucg->drawDisc( x-CANW/2, y+CANH/2, 2, UCG_DRAW_ALL);
-	// ucg->print("c");
 	CANconnectedMag ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
-	if (Flarm::connected())
-		ucg->setColor(COLOR_GREEN);
+	// Z diagonal line
+	if (Flarm::connected()) { ucg->setColor(COLOR_GREEN); }
 	ucg->drawLine( x+2, y+CANH/2, x-4, y-CANH/2 );
 	ucg->drawLine( x+3, y+CANH/2-1, x-3, y-CANH/2-1 );
-	// ucg->print("a");
+	// upper horizontal line
 	CANconnectedXCV ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
 	ucg->drawLine( x-3, y-CANH/2, x+CANW/2, y-CANH/2 );
 	ucg->drawLine( x-3, y-CANH/2-1, x+CANW/2, y-CANH/2-1 );
 	ucg->drawDisc( x+CANW/2, y-CANH/2, 2, UCG_DRAW_ALL);
-	// ucg->print("n");
 }
 
 void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {

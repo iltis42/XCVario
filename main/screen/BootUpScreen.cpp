@@ -135,7 +135,7 @@ void decode_rle_bits(const uint8_t* rle_data, int rle_size, uint8_t* out_bits, i
 constexpr const int MAX_PIXELS_PER_FRAME = 12;
 
 BootUpScreen::BootUpScreen() :
-    Clock_I()
+    Clock_I(1)
 {
     int width = MYUCG->getDisplayWidth()/2;
     int height = MYUCG->getDisplayHeight()/2;

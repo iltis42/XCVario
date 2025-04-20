@@ -12,13 +12,14 @@
 class Clock_I
 {
 public:
-    Clock_I(int m=1) : MULTIPLIER(m) {}
-    virtual ~Clock_I() {}
+    explicit Clock_I(int m=1) : MULTIPLIER(m) {}
+    Clock_I() = delete;
+    virtual ~Clock_I() = default;
 public:
     inline bool myTurn() { return (++_counter % MULTIPLIER) == 0; }
     virtual bool tick() = 0;
-    unsigned int MULTIPLIER;
+    const unsigned MULTIPLIER;
 private:
-    unsigned int _counter = 0;
+    unsigned _counter = 0;
 };
 

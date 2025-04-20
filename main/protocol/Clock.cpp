@@ -61,7 +61,10 @@ Clock::Clock()
 void Clock::start(Clock_I *cb)
 {
     esp_timer_stop(_clock_timer);
-    clock_registry.insert(cb);
+    auto it = clock_registry.find(cb);
+    if ( it == clock_registry.end() ) {
+        clock_registry.insert(cb);
+    }
     esp_timer_start_periodic(_clock_timer, TICK_ATOM * 1000);
 }
 void Clock::stop(Clock_I *cb)

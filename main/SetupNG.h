@@ -87,7 +87,7 @@ typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data 
 typedef enum e_volatility { VOLATILE, PERSISTENT, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
 typedef enum e_can_mode { CAN_MODE_MASTER, CAN_MODE_CLIENT, CAN_MODE_STANDALONE } e_can_mode_t;
 typedef enum e_altimeter_select { AS_TE_SENSOR, AS_BARO_SENSOR, AS_EXTERNAL } e_altimeter_select_t;
-typedef enum e_menu_screens { SCREEN_VARIO, SCREEN_GMETER, SCREEN_HORIZON, SCREEN_FLARM, SCREEN_THERMAL_ASSISTANT } e_menu_screens_t; // addittional screens
+typedef enum e_menu_screens { SCREEN_VARIO=1, SCREEN_GMETER=2, SCREEN_HORIZON=4, SCREEN_FLARM=8, SCREEN_THERMAL_ASSISTANT=16 } e_menu_screens_t; // addittional screens
 typedef enum e_s2f_arrow_color { AC_WHITE_WHITE, AC_BLUE_BLUE, AC_GREEN_RED } e_s2f_arrow_color_t;
 typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RED }  e_vario_needle_color_t;
 typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN, DISPLAY_NINETY } e_display_orientation_t;
@@ -214,13 +214,13 @@ public:
 
 	}
 
-	inline T* getPtr() {
+	T* getPtr() {
 		return &_value;
 	}
-	inline T& getRef() {
+	T& getRef() {
 		return _value;
 	}
-	inline T get() const {
+	T get() const {
 		return _value;
 	}
 	const char * key() {
@@ -656,8 +656,6 @@ extern SetupNG<float> 		master_xcvario;
 extern SetupNG<int> 		master_xcvario_lock;
 extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		menu_screens;
-extern SetupNG<int> 		screen_gmeter;
-extern SetupNG<int> 		screen_horizon;
 extern SetupNG<int> 		screen_centeraid;
 extern SetupNG<t_bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;

@@ -191,12 +191,22 @@ int config_gear_warning(SetupMenuSelect *p) {
 	return 0;
 }
 
-int upd_screens(SetupMenuSelect *p) {
-	uint32_t screens = ((uint32_t) screen_gmeter.get() << (SCREEN_GMETER) |
-	//		( (uint32_t)screen_centeraid.get() << (SCREEN_THERMAL_ASSISTANT) ) |
-			((uint32_t) screen_horizon.get() << (SCREEN_HORIZON)));
+int upd_screens(SetupMenuSelect *p)
+{
+	int screens = menu_screens.get();
+	screens |= SCREEN_VARIO; // always
+	int mod_screen = p->getValue();
+	if ( p->getSelect() == 0 ) {
+		// disable
+		ESP_LOGI(FNAME,"disable screen: %d", mod_screen);
+		screens &= ~mod_screen;
+	}
+	else {
+		// enable
+		ESP_LOGI(FNAME,"enable screen: %d", mod_screen);
+		screens |= mod_screen;
+	}
 	menu_screens.set(screens);
-	// init_screens();
 	return 0;
 }
 
@@ -1628,17 +1638,15 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 
 }
 
-void system_menu_create_hardware_rotary_screens(SetupMenu *top) {
-	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE,
-			upd_screens, true, &screen_gmeter);
-	scrgmet->addEntry("Disable");
-	scrgmet->addEntry("Enable");
+void system_menu_create_hardware_rotary_screens(SetupMenu *top)
+{
+	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens);
+	scrgmet->mkEnable("enable", SCREEN_GMETER);
 	top->addEntry(scrgmet);
+
 	if (gflags.ahrsKeyValid) {
-		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE,
-				upd_screens, true, &screen_horizon);
-		horizon->addEntry("Disable");
-		horizon->addEntry("Enable");
+		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens);
+		horizon->mkEnable("enable", SCREEN_HORIZON);
 		top->addEntry(horizon);
 	}
 }

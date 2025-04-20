@@ -209,11 +209,11 @@ void SetupMenuSelect::delAllEntries()
 	_select = 0;
 }
 
-void SetupMenuSelect::mkEnable(const char *what)
+void SetupMenuSelect::mkEnable(const char *what, int val)
 {
 	// precondition: _values is empty
-	addEntry("disable");
-	addEntry(what? what : "enable");
+	addEntry("disable", val);
+	addEntry(what? what : "enable", val);
 }
 
 void SetupMenuSelect::mkConfirm()

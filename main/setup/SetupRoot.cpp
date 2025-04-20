@@ -14,29 +14,10 @@
 #include "logdef.h"
 
 
-static int screen_index = 0;
-static uint8_t screen_mask_len = 1;
-
-static void init_screens()
-{
-    uint32_t scr = menu_screens.get();
-    screen_gmeter.set((scr >> SCREEN_GMETER) & 1);
-    // 	screen_centeraid.set( (scr >> SCREEN_THERMAL_ASSISTANT) & 1);
-    screen_horizon.set((scr >> SCREEN_HORIZON) & 1);
-    screen_mask_len = 1; // default vario
-    while (scr)
-    {
-        scr = scr >> 1;
-        screen_mask_len++;
-    };
-    ESP_LOGI(FNAME, "screens mask len: %d, screens: %d", screen_mask_len, menu_screens.get());
-}
-
 SetupRoot::SetupRoot(IpsDisplay *display) : SetupMenu("Setup Root", nullptr)
 {
     _display = display;
     ESP_LOGI(FNAME,"Init root menu");
-    // selected = this;
     attach();
 }
 
@@ -50,11 +31,12 @@ void SetupRoot::begin(MenuEntry *setup)
     ESP_LOGI(FNAME,"SetupMenu %s", _title);
     // root will always own only one child
     if ( !_childs.empty() ) {
-        ESP_LOGW(FNAME,"Abort, found root menu not empty.");
+        ESP_LOGW(FNAME,"Found root menu not empty.");
         delete _childs.front();
         _childs.clear();
     }
 
+    // Given setup might be for QNH, or voltage adjustment
     if ( setup ) {
         addEntry(setup);
     } else {
@@ -64,9 +46,6 @@ void SetupRoot::begin(MenuEntry *setup)
     gflags.inSetup = true;
     _display->doMenu(true);
     delay(200); // fixme give display task time to finish drawing
-
-    audio_volume.set(default_volume.get());
-    init_screens();
 
     _childs.front()->enter();
 
@@ -126,22 +105,25 @@ void SetupRoot::press()
     ESP_LOGI(FNAME,"root press active_srceen %d (%x)", active_screen, menu_screens.get());
 
     // cycle through screens, incl. setup
-	if (!gflags.inSetup) {
-		active_screen = 0;
-		while (active_screen == 0 && (screen_index <= screen_mask_len)) {
-			if (menu_screens.get() & (1 << screen_index)) {
-				active_screen = screen_index;
-				ESP_LOGI(FNAME,"New active_screen: %d", active_screen );
-			}
-			screen_index++;
-		}
-		if (screen_index > screen_mask_len) {
-			ESP_LOGI(FNAME,"select vario screen");
-			screen_index = 0;
-			active_screen = 0; // fall back into default vario screen after optional screens
-		}
-	}
-    if (!menu_long_press.get() && active_screen == 0 && !gflags.inSetup) {
+    if (!gflags.inSetup)
+    {
+        while (active_screen < SCREEN_THERMAL_ASSISTANT)
+        {
+            active_screen <<= 1;
+            if (menu_screens.get() & active_screen)
+            {
+                ESP_LOGI(FNAME, "New active_screen: %x", active_screen);
+                break;
+            }
+        }
+        if ( active_screen >= SCREEN_THERMAL_ASSISTANT ) {
+            ESP_LOGI(FNAME, "select vario screen");
+            active_screen = SCREEN_VARIO;
+        }
+    }
+    // only if menu long press is not set, jump into the setup befor going back to the vario screen
+    if (!menu_long_press.get() && active_screen == SCREEN_VARIO && !gflags.inSetup)
+    {
         begin();
     }
 }

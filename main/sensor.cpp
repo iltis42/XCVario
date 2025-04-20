@@ -229,10 +229,12 @@ void drawDisplay(void *arg)
 			}else if (event == BUTTON_RELEASED) {
 				ESP_LOGI(FNAME, "Button released");
 				knob.sendRelease();
-			} else {
+			} else if (event & ROTARY_EVTMASK) {
 				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
 				ESP_LOGI(FNAME, "Rotation step %d", step);
 				knob.sendRot(step);
+			} else {
+				ESP_LOGI(FNAME, "Unknown button event %x", event);
 			}
 		}
 		

@@ -37,7 +37,7 @@ public:
 	void addEntryList( const char ent[][4], int size );
 	void delEntry( const char * ent );
 	void delAllEntries();
-	void mkEnable(const char *what=nullptr);
+	void mkEnable(const char *what=nullptr, int val=0);
 	void mkConfirm();
 	void updateEntry( const char *ent, int num );
 	int getSelect() const { return _select; }

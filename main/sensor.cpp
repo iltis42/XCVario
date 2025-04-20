@@ -114,7 +114,6 @@ SemaphoreHandle_t xMutex=NULL;
 SemaphoreHandle_t spiMutex=NULL;
 
 S2F Speed2Fly;
-Protocols OV( &Speed2Fly ); // todo delete
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
 
@@ -508,12 +507,13 @@ static void toyFeed()
 	// maybe just 1 or 2 per second
 	static char lb[150];
 
-	if( ahrs_rpyl_dataset.get() ){
-		OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
-		OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
-	}
+	// fixme
+	// if( ahrs_rpyl_dataset.get() ){
+	// 	OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
+	// 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
+	// 	OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
+	// 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
+	// }
 	if( nmea_protocol.get() == BORGELT ) {
 		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, BORGELT_P); // Todo preliminary solution ..
 		if ( prtcl ) {
@@ -1391,7 +1391,7 @@ void system_startup(void *args){
 				// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
 				ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
 				// Add the legacs MagSens CAN receiver, would be deleted if a MagSens V2 is found
-				dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
+				// dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
 				// dm->removeDevice(DeviceId::MASTER_DEV);
 				// ESP_LOGI(FNAME,"Removetest");
 				// delay(1000);

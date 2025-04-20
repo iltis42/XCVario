@@ -32,17 +32,6 @@ static void init_screens()
     ESP_LOGI(FNAME, "screens mask len: %d, screens: %d", screen_mask_len, menu_screens.get());
 }
 
-// static void initGearWarning()
-// {
-// 	gpio_num_t io = SetupMenu::getGearWarningIO();
-// 	if (io != GPIO_NUM_0) {
-// 		gpio_reset_pin(io);
-// 		gpio_set_direction(io, GPIO_MODE_INPUT);
-// 		gpio_set_pull_mode(io, GPIO_PULLUP_ONLY);
-// 		gpio_pullup_en(io);
-// 	}ESP_LOGI(FNAME,"initGearWarning: IO: %d", io );
-// }
-
 SetupRoot::SetupRoot(IpsDisplay *display) : SetupMenu("Setup Root", nullptr)
 {
     _display = display;

@@ -137,6 +137,16 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         tmp = nmea;
         break;
     }
+    case XCVSYNC_P:
+    {
+        ESP_LOGI(FNAME, "New XCVsync");
+        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
+        // The SyncMsg serves on both side, need to know it's role
+        // connect to a client -> you are master
+        nmea->addPlugin(new XCVSyncMsg(*nmea, did==XCVARIOCLIENT_DEV));
+        tmp = nmea;
+        break;
+    }
     case OPENVARIO_P:
     {
         ESP_LOGI(FNAME, "New OpenVario");

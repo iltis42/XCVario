@@ -24,43 +24,6 @@ uint8_t XCVarioMsg::_protocol_version = 1;
 // The XCVario protocol parser.
 //
 
-dl_action_t XCVarioMsg::parseExcl_xsX(NmeaPlugin *plg)
-{
-    ProtocolState *sm = plg->getNMEA().getSM();
-    const std::vector<int> *word = &sm->_word_start;
-
-    ESP_LOGI(FNAME,"parseXS %s", sm->_frame.c_str() );
-    char role = sm->_frame[3]; // M | C
-    int pos = word->at(0);
-    std::string key = NMEA::extractWord(sm->_frame, pos);
-    char type = sm->_frame[word->at(1)];
-    float val = atof(sm->_frame.c_str() + word->at(2));
-    ESP_LOGI(FNAME,"parsed NMEA: role=%c type=%c key=%s val=%f vali=%d", role, type , key.c_str(), val, (int)val );
-    SetupCommon *item = SetupCommon::getMember( key.c_str() );
-    if ( item ) {
-        if( type == 'F' ) {
-            SetupNG<float> *mi = static_cast<SetupNG<float> *>(item);
-            if( role == 'A' )
-                mi->ack( val );
-            else
-                mi->set( val, false );
-        }
-        else if( type == 'I' ) {
-            SetupNG<int> *mi = static_cast<SetupNG<int> *>(item);
-            if( role == 'A' && val == mi->get() ) {
-                mi->ack( val );
-            } else {
-                mi->set( (int)val, false );
-            }
-        }
-    }
-    else {
-        ESP_LOGW(FNAME,"Setup item with key %s not found", key.c_str() );
-    }
-
-    return NOACTION;
-}
-
 dl_action_t XCVarioMsg::parseExcl_xcs(NmeaPlugin *plg)
 {
     ProtocolState *sm = plg->getNMEA().getSM();
@@ -102,9 +65,6 @@ dl_action_t XCVarioMsg::parseExcl_xcs(NmeaPlugin *plg)
 }
 
 const ParserEntry XCVarioMsg::_pt[] = {
-    {Key("xsA"), XCVarioMsg::parseExcl_xsX},
-    {Key("xsC"), XCVarioMsg::parseExcl_xsX},
-    {Key("xsM"), XCVarioMsg::parseExcl_xsX},
     {Key("xcs"), XCVarioMsg::parseExcl_xcs},
     {}
 };

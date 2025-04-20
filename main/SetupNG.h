@@ -8,7 +8,7 @@
 #pragma once
 
 #include "glider/Polars.h"
-#include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
+#include "MPU.hpp"
 #include "comm/CanBus.h"
 #include "Compass.h"
 #include "SetupCommon.h"
@@ -269,9 +269,6 @@ public:
 		if ( dosync ) {
 			sync();
 		}
-		else if( (flags._sync == SYNC_BIDIR) && isClient() ){
-			sendAck();
-		}
 		if( doAct ){
 			if( _action != 0 ) {
 				(*_action)();
@@ -289,22 +286,15 @@ public:
 		return (e_unit_type_t)flags._unit;
 	}
 
-	void ack( T aval ){
-		if( aval != _value ){
-			// ESP_LOGI(FNAME,"sync to value client has acked");
-			_value = aval;
-		}
-	}
-
-	void sendAck(){
-		sendSetup( flags._sync, _key, typeName(), (void *)(&_value), sizeof( _value ), true );
-	}
-
 	bool sync(){
-		if( SetupCommon::mustSync( flags._sync ) ){
+		if( syncProto &&
+			( (!syncProto->isMaster() && flags._sync == SYNC_FROM_CLIENT) 
+				|| (syncProto->isMaster() && flags._sync == SYNC_FROM_MASTER) 
+				|| flags._sync == SYNC_BIDIR ) ) {
 			// ESP_LOGI( FNAME,"Now sync %s", _key );
-			sendSetup( flags._sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
+			syncProto->sendItem(_key, typeName(), (void *)(&_value), sizeof( _value ) );
 			return true;
+		
 		}
 		return false;
 	}
@@ -377,11 +367,11 @@ public:
 					set( _default );  // try to init
 					commit();
 				}
-				else {
+				// else {
 					// char val[30];
 					// value_str(val);
 					// ESP_LOGI(FNAME,"NVS key %s exists len: %d, value: %s", _key, required_size, val );
-				}
+				// }
 			}
 		}
 		return true;

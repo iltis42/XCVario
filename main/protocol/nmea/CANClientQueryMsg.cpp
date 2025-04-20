@@ -18,8 +18,6 @@
 
 #include <cstring>
 
-extern InterfaceCtrl* CAN;
-
 // The XCV client registration query message.
 //
 // - Registration query: Send a request to a potential XCV peer on the bus grabbing the master role,
@@ -90,6 +88,7 @@ dl_action_t CANClientQueryMsg::registration(NmeaPlugin *plg)
     // grab token from e.g. message "$PJMACC, 123, client_id, master_id"
     ProtocolState *sm = plg->getNMEA().getSM();
     CANClientQueryMsg *me = reinterpret_cast<CANClientQueryMsg*>(plg);
+    ESP_LOGI(FNAME, "Client received ACC");
     if ( sm->_frame.size() < 12 ) {
         return NOACTION;
     }
@@ -138,8 +137,8 @@ dl_action_t CANClientQueryMsg::rejected(NmeaPlugin *plg)
 }
 
 const ParserEntry CANClientQueryMsg::_pt[] = {
-    { Key("ACC"), CANClientQueryMsg::registration },
-    { Key("LOR"), CANClientQueryMsg::restart_query },
-    { Key("NAC"), CANClientQueryMsg::rejected },
+    { Key("MACC"), CANClientQueryMsg::registration },
+    { Key("MLOR"), CANClientQueryMsg::restart_query },
+    { Key("MNAC"), CANClientQueryMsg::rejected },
     {}
 };

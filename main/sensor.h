@@ -91,7 +91,6 @@ extern float slipAngle;
 
 extern S2F Speed2Fly;
 extern float meanClimb;
-extern Protocols OV;
 extern float baroP;    // Static pressure
 extern float dynamicP; // Pitot pressure
 

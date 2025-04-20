@@ -98,33 +98,6 @@ static bool IRAM_ATTR pcnt_event_handler(pcnt_unit_handle_t unit, const pcnt_wat
 	return high_task_wakeup;
 }
 
-// static void IRAM_ATTR encoder_isr_handler(void *arg)
-// {
-// 	static uint64_t lastPulseTime = 0;
-// 	static int encoder_position = 1;
-// 	ESPRotary *knob = static_cast<ESPRotary*>(arg);
-// 	uint64_t currentTime = esp_timer_get_time();
-// 	if (int(currentTime-lastPulseTime) < DEBOUNCE_TIME_us) {
-// 		return;
-// 	}
-// 	pulse_time = int(currentTime-lastPulseTime);
-// 	int increment = get_increment(pulse_time);
-// 	if ( increment == 1 ) {
-// 		encoder_position = 1;
-// 		encoder_position -= 2 * gpio_get_level(knob->getDt());
-// 	}
-// 	//else suppress all of a sudden changes in rotational direction
-// 	int evt = (increment * encoder_position) << 4;
-
-// 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-// 	xQueueSendFromISR(buttonQueue, &evt, &xHigherPriorityTaskWoken);
-// 	lastPulseTime = currentTime;
-// 	if( xHigherPriorityTaskWoken ) {
-// 		portYIELD_FROM_ISR ();
-// 	}
-// }
-
-
 // Observer registration
 void RotaryObserver::attach() {
 	// ESP_LOGI(FNAME,"Attach obs: %p", obs );
@@ -154,12 +127,15 @@ ESPRotary::ESPRotary(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw) :
 	gpio_set_direction(dt, GPIO_MODE_INPUT);
 	gpio_pulldown_en(clk);
 	gpio_pulldown_en(dt);
+
+	buttonQueue = xQueueCreate(10, sizeof(int));
 }
 
 ESPRotary::~ESPRotary()
 {
-	if ( buttonQueue ) {
-		vQueueDelete(buttonQueue);
+	vQueueDelete(buttonQueue);
+
+	if ( lp_timer ) {
 		esp_timer_delete(lp_timer);
 	}
 }
@@ -206,33 +182,15 @@ void ESPRotary::begin()
 	ESP_ERROR_CHECK(pcnt_unit_add_watch_point(pcnt_unit, -increment));
 
 	// Register event callback
-	if ( ! buttonQueue ) {
-		buttonQueue = xQueueCreate(10, sizeof(int));
-	}
 	pcnt_event_callbacks_t cbs = {
 		.on_reach = pcnt_event_handler
 	};
 	ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(pcnt_unit, &cbs, buttonQueue));
 
-
 	// Enable & start PCNT
 	pcnt_unit_enable(pcnt_unit);
 	pcnt_unit_clear_count(pcnt_unit);
 	pcnt_unit_start(pcnt_unit);
-
-	// alternative to pcnt module
-	// gpio_config_t io_conf = {
-	// 	.pin_bit_mask = (1ULL << clk) | (1ULL << dt),
-	// 	.mode = GPIO_MODE_INPUT,
-	// 	.pull_up_en = GPIO_PULLUP_ENABLE,
-	// 	.pull_down_en = GPIO_PULLDOWN_DISABLE,
-	// 	.intr_type = GPIO_INTR_NEGEDGE,
-	// };
-	// gpio_config(&io_conf);
-
-	// gpio_install_isr_service(0);
-	// gpio_isr_handler_add(clk, encoder_isr_handler, this);
-
 
 	// Create long press timer
 	if ( ! lp_timer ) {
@@ -244,7 +202,6 @@ void ESPRotary::begin()
 			.intr_type = GPIO_INTR_ANYEDGE
 		};
 		gpio_config(&io_conf);
-		gpio_install_isr_service(0);
 		gpio_isr_handler_add(sw, button_isr_handler, this);
 	
 		esp_timer_create_args_t timer_args = {

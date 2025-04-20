@@ -1659,6 +1659,9 @@ extern "C" void  app_main(void)
 	// global log level
 	esp_log_level_set("*", ESP_LOG_INFO);
 
+	// system global isr installer
+	gpio_install_isr_service(0);
+
 	// Mute audio
 	Audio::shutdown();
 

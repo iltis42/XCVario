@@ -1,5 +1,5 @@
 #include "AverageVario.h"
-#include "Setup.h"
+#include "SetupNG.h"
 #include "Protocols.h"
 #include "sensor.h"
 

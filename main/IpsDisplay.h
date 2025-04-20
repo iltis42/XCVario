@@ -9,7 +9,7 @@
 #pragma once
 
 #include "esp_system.h"
-#include "Setup.h"
+#include "SetupNG.h"
 #include "AdaptUGC.h"
 #include "Colors.h"
 #include <string>

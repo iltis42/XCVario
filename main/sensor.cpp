@@ -14,7 +14,7 @@
 #include "comm/BTspp.h"
 #include "BLESender.h"
 #include "Protocols.h"
-#include "Setup.h"
+#include "SetupNG.h"
 #include "ESPAudio.h"
 #include "SetupMenu.h"
 #include "ESPRotary.h"

@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "sensor.h"
-#include "Setup.h"
+#include "SetupNG.h"
 #include "math.h"
 #include "S2F.h"
 #include <logdef.h>

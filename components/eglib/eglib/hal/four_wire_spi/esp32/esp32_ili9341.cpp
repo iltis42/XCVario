@@ -49,6 +49,7 @@ static void einit(eglib_t *eglib)
 		.cs_ena_posttrans = 0,
 		.clock_speed_hz = (int)config->freq/2,
 		.input_delay_ns = 0,
+		.sample_point = SPI_SAMPLING_POINT_PHASE_0,
 		.spics_io_num = config->gpio_cs,
 		.flags = SPI_DEVICE_HALFDUPLEX,
 		.queue_size = 1, // Transaction queue size

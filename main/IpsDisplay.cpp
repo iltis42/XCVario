@@ -988,8 +988,10 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 		ucg->setColor( COLOR_MGREY );
 	ucg->setClipRange( flx, fly-FLOGO, FLOGO, FLOGO );
 	ucg->drawTriangle( flx+1, fly, flx+1+(FLOGO/2), fly, flx+1+(FLOGO/4), fly-(FLOGO/2)+2 );
+	ucg->undoClipRange();
 	ucg->setClipRange( flx+FLOGO/4+3, fly-FLOGO, FLOGO, FLOGO );
 	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/4)-2, UCG_DRAW_UPPER_RIGHT);
+	ucg->undoClipRange();
 	ucg->setClipRange( flx+FLOGO/4+5, fly-FLOGO, FLOGO, FLOGO );
 	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-2, UCG_DRAW_UPPER_RIGHT);
 	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-3, UCG_DRAW_UPPER_RIGHT);
@@ -1120,10 +1122,10 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	char s[32];
 	if( t != DEVICE_DISCONNECTED_C ) {
 		float temp_unit = Units::TemperatureUnit( t );
-		sprintf(s, "   %4.1f", std::roundf(temp_unit*10.f)/10.f );
+		sprintf(s, "%6.1f", std::roundf(temp_unit*10.f)/10.f );
 	}
 	else {
-		strcpy(s, "    --- ");
+		strcpy(s, "  --- ");
 	}
 	ucg->setColor( COLOR_WHITE );
 	ucg->setPrintPos(x-ucg->getStrWidth(s),y);
@@ -1627,6 +1629,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 			// ESP_LOGI(FNAME,"tmp2 %s ld: %d rd:%d s:%d aq:%d las:%d ", tmp, (lastdigit-(sign*used_quant))%mod, nr_rolling_digits, sign, used_quant, lastdigit );
 			ucg->print(tmp); // one below
 			fraction_prev = fraction;
+			ucg->undoClipRange();
 
 			// Roll leading digit independant of quant setting in 2 * (mod/10) range
 			int lead_quant = 2 * base; // eg. 2 for Q=1 and Q=5
@@ -1639,17 +1642,16 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 				// ESP_LOGI(FNAME,"Lead %f/%d: %f - %f m%d %d.", altitude, alt_leadpart, fraction, m, lead_digit);
 				nr_rolling_digits++; // one less digit remains to print
 				xp -= char_width; // one to the left
-				// ucg->undoClipRange();
 				// ucg->drawFrame(xp-1, y - char_height-1, char_width+1, char_height+1);
 				ucg->setClipRange(xp, y - char_height, char_width-1, char_height-1);
 				ucg->setPrintPos(xp, y + m - char_height);
 				ucg->print(lead_digit); // one above
 				ucg->setPrintPos(xp, y + m );
 				ucg->print((lead_digit+9)%10);
+				ucg->undoClipRange();
 				// ESP_LOGI(FNAME,"ld4: %d", (lead_digit+9)%10 );
 				s[len-1] = '\0'; len--; // chop another digits
 			}
-			ucg->undoClipRange();
 			ret=true;
 		}
 		ucg->setPrintPos(x - ucg->getStrWidth(s) - nr_rolling_digits*char_width , y);
@@ -2456,8 +2458,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			ucg->setColor( COLOR_MGREY );
 		ucg->setClipRange( flx, fly-FLOGO, FLOGO, FLOGO );
 		ucg->drawTriangle( flx+1, fly, flx+1+(FLOGO/2), fly, flx+1+(FLOGO/4), fly-(FLOGO/2)+2 );
+		ucg->undoClipRange();
 		ucg->setClipRange( flx+FLOGO/4+3, fly-FLOGO, FLOGO, FLOGO );
 		ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/4)-2, UCG_DRAW_UPPER_RIGHT);
+		ucg->undoClipRange();
 		ucg->setClipRange( flx+FLOGO/4+5, fly-FLOGO, FLOGO, FLOGO );
 		ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-2, UCG_DRAW_UPPER_RIGHT);
 		ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-3, UCG_DRAW_UPPER_RIGHT);

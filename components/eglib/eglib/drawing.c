@@ -13,6 +13,7 @@
  * =====
  *
  * Define a clipping range or box. All subsequent operations will be restricted to that area
+ * Stack the current clipping range as global vs. local c.r.
  */
 
 void eglib_setClipRange(
@@ -22,10 +23,16 @@ void eglib_setClipRange(
     coordinate_t w,
     coordinate_t h
 ) {
-    eglib->drawing.clip_xmax = eglib_GetWidth(eglib);
-    eglib->drawing.clip_xmin = 0;
-    eglib->drawing.clip_ymax = eglib_GetHeight(eglib);
-    eglib->drawing.clip_ymin = 0;
+    // Backup existing c.r.
+    eglib->drawing.clbs_xmax = eglib->drawing.clip_xmax;
+    eglib->drawing.clbs_xmin = eglib->drawing.clip_xmin;
+    eglib->drawing.clbs_ymax = eglib->drawing.clip_ymax;
+    eglib->drawing.clbs_ymin = eglib->drawing.clip_ymin;
+    // Set a new one, it have to reduce the given
+    // eglib->drawing.clip_xmax = eglib_GetWidth(eglib);
+    // eglib->drawing.clip_xmin = 0;
+    // eglib->drawing.clip_ymax = eglib_GetHeight(eglib);
+    // eglib->drawing.clip_ymin = 0;
     if ( (x >= eglib->drawing.clip_xmin) && (x < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmin = x;
     if ( ((x+w) >= eglib->drawing.clip_xmin) && ((x+w) < eglib->drawing.clip_xmax)) eglib->drawing.clip_xmax = x+w;
     if ( (y >= eglib->drawing.clip_ymin) && (y < eglib->drawing.clip_ymax)) eglib->drawing.clip_ymin = y;
@@ -39,13 +46,20 @@ void eglib_setClipRange(
  * =====
  *
  * Undefine a clipping range or box. All subsequent operations will operate on full screen
+ * Recall the previous c.r.
  */
 
 void eglib_undoClipRange( eglib_t *eglib){
-    eglib->drawing.clip_xmax = eglib_GetWidth(eglib);
-    eglib->drawing.clip_xmin = 0;
-    eglib->drawing.clip_ymax = eglib_GetHeight(eglib);
-    eglib->drawing.clip_ymin = 0;
+    // Pop the old one back
+    eglib->drawing.clip_xmax = eglib->drawing.clbs_xmax;
+    eglib->drawing.clip_xmin = eglib->drawing.clbs_xmin;
+    eglib->drawing.clip_ymax = eglib->drawing.clbs_ymax;
+    eglib->drawing.clip_ymin = eglib->drawing.clbs_ymin;
+    // Delete the old one
+    eglib->drawing.clbs_xmax = eglib_GetWidth(eglib);
+    eglib->drawing.clbs_xmin = 0;
+    eglib->drawing.clbs_ymax = eglib_GetHeight(eglib);
+    eglib->drawing.clbs_ymin = 0;
     // ESP_LOGI( "dl1", "U xmin:%d xmax:%d ymin:%d ymax:%d", eglib->drawing.clip_xmin, eglib->drawing.clip_xmax, eglib->drawing.clip_ymin, eglib->drawing.clip_ymax );
     return;
 };

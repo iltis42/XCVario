@@ -1513,15 +1513,16 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val, bool large ){
 	int ival = rint(val*10);  // integer value in steps of 10th
 	if( last_avg != ival){  // only print if there a change in rounded numeric string
 		char s[32];
-		if( large )
-			ucg->setFont(eglib_font_free_sansbold_66, false );
-		else
+		// if( large ) {
+		// 	ucg->setFont(eglib_font_free_sansbold_66, false );
+		// } else {
 			ucg->setFont(ucg_font_fub35_hn, false );
+		// }j
 		ucg->setFontPosCenter();
 		static const char* format[2] = {"%2.1f","%2.0f"};
 		sprintf(s, format[std::abs(ival)>100], float(ival/10.) );
 		int new_x_start = x - ucg->getStrWidth(s);
-		if( new_x_start > x_start ){      // do we have a shorter string stating at higer x position
+		if( new_x_start > x_start ){         // do we have a shorter string starting at higer x position
 			ucg->setColor( COLOR_BLACK );    // yes -> so blank exact prepending area
 			int fh = ucg->getFontAscent();   // height of blanking box
 			ucg->drawBox( x_start, y-fh/2, new_x_start-x_start, fh );  // draw blanking box

@@ -690,7 +690,7 @@ void Audio::dactask()
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
 		}
-		vTaskDelayUntil(&xLastWakeTime, 10/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(20));
 		if( volume_change ) {
 			volume_change--;
 		}

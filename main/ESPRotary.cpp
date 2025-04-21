@@ -18,7 +18,7 @@
 // the global access to the rotary knob
 ESPRotary *Rotary = nullptr;
 
-constexpr int DEBOUNCE_TIME_us = 700;         // us debounce threshold
+constexpr int DEBOUNCE_TIME_us = 1200;         // us debounce threshold
 
 static std::stack<RotaryObserver *> observers;
 

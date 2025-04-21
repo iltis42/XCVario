@@ -46,7 +46,7 @@ void MenuEntry::uprintf( int x, int y, const char* format, ...) {
 }
 
 void MenuEntry::reBoot(){
-	Audio::shutdown();
+	AUDIO->mute();
 	clear();
 	MYUCG->setPrintPos( 10, 50 );
 	MYUCG->print("...rebooting now" );

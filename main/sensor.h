@@ -71,7 +71,6 @@ extern SemaphoreHandle_t display_mutex;
 extern e_wireless_type wireless;
 
 extern float getTAS();
-void doAudio( float te );
 
 extern I2C_t& i2c;
 extern I2C_t& i2c_0;

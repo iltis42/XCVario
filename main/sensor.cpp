@@ -262,14 +262,14 @@ void drawDisplay(void *arg)
 					float acc_stall= stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
 					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
 						if( !gflags.stall_warning_active ){
-							Audio::alarm( true, max_volume.get() );
+							AUDIO->alarm( true, max_volume.get() );
 							Display->drawWarning( "! STALL !", true );
 							gflags.stall_warning_active = true;
 						}
 					}
 					else{
 						if( gflags.stall_warning_active ){
-							Audio::alarm( false );
+							AUDIO->alarm( false );
 							Display->clear();
 							gflags.stall_warning_active = false;
 						}
@@ -306,13 +306,13 @@ void drawDisplay(void *arg)
 					if( gw ){
 						if( Rotary->readSwitch() ){   // Acknowledge Warning -> Warning OFF
 							gear_warning_holdoff = 25000;  // ~500 sec
-							Audio::alarm( false );
+							AUDIO->alarm( false );
 							Display->clear();
 							gflags.gear_warning_active = false;
 							// SetupMenu::catchFocus( false );
 						}
 						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
-							Audio::alarm( true, max_volume.get() );
+							AUDIO->alarm( true, max_volume.get() );
 							Display->drawWarning( "! GEAR !", false );
 							gflags.gear_warning_active = true;
 							// SetupMenu::catchFocus( true );
@@ -321,7 +321,7 @@ void drawDisplay(void *arg)
 					else{
 						if( gflags.gear_warning_active ){
 							// SetupMenu::catchFocus( false );
-							Audio::alarm( false );
+							AUDIO->alarm( false );
 							Display->clear();
 							gflags.gear_warning_active = false;
 						}
@@ -346,7 +346,7 @@ void drawDisplay(void *arg)
 				if( gflags.flarmWarning && (millis() > flarm_alarm_holdtime) ){
 					gflags.flarmWarning = false;
 					Display->clear();
-					Audio::alarm( false );
+					AUDIO->alarm( false );
 				}
 			}
 			if( gflags.flarmWarning )
@@ -381,13 +381,13 @@ void drawDisplay(void *arg)
 			if( gload_mode.get() != GLOAD_OFF  ){
 				if( IMU::getGliderAccelZ() > gload_pos_limit.get() || IMU::getGliderAccelZ() < gload_neg_limit.get()  ){
 					if( !gflags.gload_alarm ) {
-						Audio::alarm( true, gload_alarm_volume.get() );
+						AUDIO->alarm( true, gload_alarm_volume.get() );
 						gflags.gload_alarm = true;
 					}
 				}else
 				{
 					if( gflags.gload_alarm ) {
-						Audio::alarm( false );
+						AUDIO->alarm( false );
 						gflags.gload_alarm = false;
 					}
 				}
@@ -407,37 +407,6 @@ void drawDisplay(void *arg)
 		if( uxTaskGetStackHighWaterMark( dpid ) < 512  ) {
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 		}
-	}
-}
-
-// depending on mode calculate value for Audio and set values accordingly
-void doAudio(){
-	polar_sink = Speed2Fly.sink( ias.get() );
-	float netto = te_vario.get() - polar_sink;
-	as2f = Speed2Fly.speed( netto, !Switch::getCruiseState() );
-	s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10)); // low pass damping moved to the correct place
-	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
-	if( vario_mode.get() == VARIO_NETTO || (Switch::getCruiseState() &&  (vario_mode.get() == CRUISE_NETTO)) ){
-		if( netto_mode.get() == NETTO_RELATIVE )
-			Audio::setValues( te_vario.get() - polar_sink + Speed2Fly.circlingSink( ias.get() ), s2f_delta );
-		else if( netto_mode.get() == NETTO_NORMAL )
-			Audio::setValues( te_vario.get() - polar_sink, s2f_delta );
-	}
-	else {
-		Audio::setValues( te_vario.get(), s2f_delta );
-	}
-}
-
-void audioTask(void *pvParameters){
-	while (1)
-	{
-		TickType_t xLastWakeTime = xTaskGetTickCount();
-		doAudio();
-		// Router::routeXCV();
-		if( uxTaskGetStackHighWaterMark( apid )  < 512 ) {
-			ESP_LOGW(FNAME,"Warning audio task stack low: %d", uxTaskGetStackHighWaterMark( apid ) );
-		}
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
 
@@ -751,7 +720,7 @@ void readSensors(void *pvParameters){
 		}
 
 		aTE = bmpVario.readAVGTE();
-		doAudio();
+		// doAudio(); fixme
 
 		if( (count % 2) == 0 ){
 			toyFeed();
@@ -1368,9 +1337,9 @@ void system_startup(void *args){
 	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
 	bmpVario.setup();
 	ESP_LOGI(FNAME,"Audio begin");
-	Audio::begin( DAC_CHAN_0 );
+	AUDIO->begin( DAC_CHAN_0 );
 	ESP_LOGI(FNAME,"Poti and Audio test");
-	if( !Audio::selfTest() ) {
+	if( !AUDIO->selfTest() ) {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
 		MBOX->newMessage(1, "Digital Poti: Failure");
 		selftestPassed = false;
@@ -1380,9 +1349,10 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 		logged_tests += "Digital Audio Poti test: PASSED\n";
 	}
+	audio_volume.set(default_volume.get());
 
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	if( Audio::haveCAT5171() ) // todo && CAN configured
+	if( AUDIO->haveCAT5171() ) // todo && CAN configured
 	{
 		ESP_LOGI(FNAME,"NOW add/test CAN");
 		CAN = new CANbus();
@@ -1645,7 +1615,6 @@ void system_startup(void *args){
 	}
 	if( SetupCommon::isClient() ){
 		xTaskCreate(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid);
-		xTaskCreate(&audioTask, "audioTask", 4096, NULL, 11, &apid);
 	}
 	else {
 		xTaskCreate(&readSensors, "readSensors", 5120, NULL, 12, &bpid);
@@ -1653,7 +1622,7 @@ void system_startup(void *args){
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid);       // increase stack by 500 byte
 	xTaskCreate(&drawDisplay, "drawDisplay", 6144, Rotary, 4, &dpid); // increase stack by 1K
 
-	Audio::startAudio();
+	AUDIO->startAudio();
 }
 
 extern "C" void  app_main(void)
@@ -1665,7 +1634,8 @@ extern "C" void  app_main(void)
 	gpio_install_isr_service(0);
 
 	// Mute audio
-	Audio::shutdown();
+	AUDIO = new Audio();
+	AUDIO->mute();
 
 	// Access to the non volatile setup
 	ESP_LOGI(FNAME,"app_main" );

@@ -104,7 +104,7 @@ float last_volume=0;   // is this used?
 
 void change_volume() {
 	float vol = audio_volume.get();
-	Audio::setVolume( vol );
+	AUDIO->setVolume( vol );
 	ESP_LOGI(FNAME,"change_volume -> %f", vol );
 }
 

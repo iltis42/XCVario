@@ -137,12 +137,12 @@ static int set_rotary_increment(SetupMenuSelect *p) {
 }
 
 int audio_setup_s(SetupMenuSelect *p) {
-	Audio::setup();
+	AUDIO->setup();
 	return 0;
 }
 
 int audio_setup_f(SetupMenuValFloat *p) {
-	Audio::setup();
+	AUDIO->setup();
 	return 0;
 }
 
@@ -395,7 +395,7 @@ int bug_adj(SetupMenuValFloat *p) {
 }
 
 int vol_adj(SetupMenuValFloat *p) {
-	// Audio::setVolume( (*(p->_value)) );
+	// AUDIO->setVolume( (*(p->_value)) );
 	return 0;
 }
 
@@ -438,7 +438,7 @@ static int windResetAction(SetupMenuSelect *p) {
 }
 
 static int eval_chop(SetupMenuSelect *p) {
-	Audio::evaluateChopping();
+	AUDIO->evaluateChopping();
 	return 0;
 }
 
@@ -1948,8 +1948,7 @@ void system_menu_create(SetupMenu *sye) {
 
 	SetupMenuSelect *logg = new SetupMenuSelect("Logging", RST_NONE, 0, true,
 			&logging);
-	logg->setHelp(
-			"Option to log e.g. raw sensor data in NMEA logger in XCSoar");
+	logg->setHelp("R&D option, do not use!\n Collect raw sensor data with NMEA logger in XCSoar");
 	logg->mkEnable("Sensor RAW Data");
 	sye->addEntry(logg);
 

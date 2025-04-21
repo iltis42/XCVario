@@ -145,7 +145,7 @@ void Flarm::initFlarmWarning(){
 	oldDist = 0;
 	oldVertical = 0;
 	oldBear = 0;
-	// Audio::alarm( true, 30, AUDIO_ALARM_FLARM_1 );
+	// AUDIO->alarm( true, 30, AUDIO_ALARM_FLARM_1 );
 }
 
 void Flarm::drawFlarmWarning(){
@@ -176,9 +176,9 @@ void Flarm::drawFlarmWarning(){
 	}
 
 	if( alarm != AUDIO_ALARM_OFF )
-		Audio::alarm( true, volume, alarm );
+		AUDIO->alarm( true, volume, alarm );
 	else
-		Audio::alarm( false );
+		AUDIO->alarm( false );
 
 	if( AlarmLevel != alarmOld ) {
 		ucg->setPrintPos(200, 25 );

@@ -31,5 +31,5 @@ extern uint8_t g_col_header_light_b;
 
 
 
-#define DISPLAY_H 320
-#define DISPLAY_W 240
+extern int16_t DISPLAY_H;
+extern int16_t DISPLAY_W;

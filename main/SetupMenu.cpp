@@ -1596,13 +1596,12 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	disva->addEntry("B/W");
 
 	// Orientation   _display_orientation
-	SetupMenuSelect *diso = new SetupMenuSelect("Orientation", RST_ON_EXIT, 0,
-			true, &display_orientation);
-	top->addEntry(diso);
-	diso->setHelp(
-			"Display Orientation.  NORMAL means Rotary on left, TOPDOWN means Rotary on right  (reboots). A change will reset the AHRS reference calibration.");
-	diso->addEntry("NORMAL");
-	diso->addEntry("TOPDOWN");
+	SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", RST_ON_EXIT, 0, true, &display_orientation );
+	top->addEntry( diso );
+	diso->setHelp( "Display Orientation.  NORMAL means Rotary on left, TOPDOWN means Rotary on right  (reboots). A change will reset the AHRS reference calibration.");
+	diso->addEntry( "NORMAL");
+	diso->addEntry( "TOPDOWN");
+	diso->addEntry( "NINETY");
 
 	//
 	SetupMenuSelect *drawp = new SetupMenuSelect("Needle Alignment", RST_NONE,
@@ -1928,39 +1927,15 @@ void system_menu_create(SetupMenu *sye) {
 	SetupMenu *aia = new SetupMenu("Altimeter, Airspeed", system_menu_create_altimeter_airspeed);
 	sye->addEntry(aia);
 
+	// Audio
+	SetupMenu *ad = new SetupMenu("Audio", audio_menu_create);
+	sye->addEntry(ad);
+
 	// Devices menu
 	SetupMenu *devices = new SetupMenu("Connected Devices", system_menu_connected_devices);
 	devices->setHelp("Devices, Interfaces, Protocols", 240);
 	devices->setDynContent();
 	sye->addEntry(devices);
-
-	// // _serial1_speed
-	// SetupMenu *rs232 = new SetupMenu("RS232 Interface S1", system_menu_create_interfaceS1);
-	// sye->addEntry(rs232);
-
-	// SetupMenu *can = new SetupMenu("CAN Interface", system_menu_create_interfaceCAN);
-
-	// if (hardwareRevision.get() >= XCVARIO_21) {
-	// 	SetupMenu *rs232_2 = new SetupMenu("RS232 Interface S2", system_menu_create_interfaceS2);
-	// 	sye->addEntry(rs232_2);
-	// }
-	// if (hardwareRevision.get() >= XCVARIO_22) {
-	// 	// Can Interface C1
-	// 	SetupMenu *can = new SetupMenu("CAN Interface", system_menu_create_interfaceCAN);
-	// 	sye->addEntry(can);
-	// }
-
-	// // NMEA protocol of variometer
-	// SetupMenuSelect *nmea = new SetupMenuSelect("NMEA Protocol", RST_NONE, 0,
-	// 		true, &nmea_protocol);
-	// sye->addEntry(nmea);
-	// nmea->setHelp(
-	// 		"Setup the protocol used for sending NMEA sentences. This needs to match the device driver chosen in XCSoar/LK8000");
-	// nmea->addEntry("OpenVario");
-	// nmea->addEntry("Borgelt");
-	// nmea->addEntry("Cambridge");
-	// nmea->addEntry("XCVario");
-	// nmea->addEntry("Disable");
 
 	SetupMenuSelect *logg = new SetupMenuSelect("Logging", RST_NONE, 0, true,
 			&logging);
@@ -2039,10 +2014,6 @@ void setup_create_root(SetupMenu *top) {
 		// Vario
 		SetupMenu *va = new SetupMenu("Vario and Speed 2 Fly", vario_menu_create);
 		top->addEntry(va);
-
-		// Audio
-		SetupMenu *ad = new SetupMenu("Audio", audio_menu_create);
-		top->addEntry(ad);
 
 		// Glider Setup
 		SetupMenu *po = new SetupMenu("Glider Details", glider_menu_create);

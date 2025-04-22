@@ -1,7 +1,5 @@
 #include <freertos/FreeRTOS.h>
-// #include <freertos/task.h>
 #include <freertos/semphr.h>
-// #include <esp_system.h>
 #include <driver/spi_master.h>
 #include <driver/gpio.h>
 #include <esp_log.h>
@@ -144,7 +142,7 @@ static IRAM_ATTR void ecomm_begin(eglib_t *_eglib) {
 
 static IRAM_ATTR void esend(eglib_t *_eglib, enum hal_dc_t dc, uint8_t *bytes, uint32_t length)
 {
-	// ESP_LOGI("ILI9341", "esend() DC-IO:%d dc:%s len:%d\n",config->gpio_dc,  dc?"DAT":"CMD", length );
+	// if ( length == 0 ) ESP_LOGI("ILI9341", "esend() DC-IO:%d dc:%s len:%u\n", config->gpio_dc, dc? "DAT": "CMD", (unsigned)length);
 	// ESP_LOG_BUFFER_HEXDUMP("ILI9341", bytes, length, ESP_LOG_INFO);
 	if (dc == HAL_DATA)
 	{
@@ -162,7 +160,10 @@ static IRAM_ATTR void esend(eglib_t *_eglib, enum hal_dc_t dc, uint8_t *bytes, u
 		// ta.user = (void *)0;
 		ta.flags = SPI_TRANS_USE_TXDATA; // | SPI_TRANS_MODE_OCT;
 		ta.rx_buffer = nullptr;
+		// ta.tx_data[0] = 0;
+		// if ( bytes ) {
 		ta.tx_data[0] = *bytes;
+		// }
 		ta.length = 8;
 		gpio_set_level(config->gpio_dc, 0);
 	}

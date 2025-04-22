@@ -23,7 +23,7 @@ int DataMonitor::maxChar( const char *str, int pos, int len ){
 	int N=0;
 	int i=0;
 	char s[4] = { 0 };
-	while( N <= 240 ){
+	while( N <= 240 && (i+pos)<len ) {
 		if( bin_mode ){
 			sprintf( s, "%02x ", str[i+pos] );
 		}
@@ -63,11 +63,7 @@ void DataMonitor::header( int len, e_dir_t dir )
 	MYUCG->setColor( COLOR_WHITE );
 	MYUCG->setFont(ucg_font_fub11_tr, true );
 	MYUCG->setPrintPos( 0, SCROLL_TOP );
-
-	if( paused )
-		MYUCG->printf( "%s%s: RX:%d TX:%d hold  ", b, what, rx_total, tx_total );
-	else
-		MYUCG->printf( "%s%s: RX:%d TX:%d bytes   ", b, what, rx_total, tx_total );
+	MYUCG->printf( "%s%s: RX:%d TX:%d %s  ", b, what, rx_total, tx_total, paused?"hold":"bytes" );
 }
 
 void DataMonitor::monitorString(e_dir_t dir, const char *str, int len)
@@ -137,32 +133,27 @@ void DataMonitor::printString(e_dir_t dir, const char *str, int len ){
 
 void DataMonitor::scroll(int scroll){
 	scrollpos+=scroll;
-	if( scrollpos >= SCROLL_BOTTOM )
+	if( scrollpos >= SCROLL_BOTTOM ) {
 		scrollpos = scroll;
+	}
 	MYUCG->scrollLines( scrollpos );  // set frame origin
 }
 
 void DataMonitor::press(){
 	ESP_LOGI(FNAME,"press paused: %d", paused );
-	if( paused ) {
-		paused = false;
-	}
-	else {
-		paused = true;
-	}
+	paused = ! paused;
 }
 
 void DataMonitor::longPress()
 {
 	ESP_LOGI(FNAME,"stop");
 	DEVMAN->stopDM();
-	channel = 0;
-	paused = false;
-	delay(1000);
+	paused = true;
+	delay(100); // streaming and controlling tasks are different ones ..
 	MYUCG->scrollLines( 0 );
 	DM = nullptr;
-	delete this;
 	exit();
+	delete this;
 }
 
 void DataMonitor::start(SetupAction *p, ItfTarget ch)

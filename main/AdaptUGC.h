@@ -90,6 +90,8 @@ class AdaptUGC
 public:
 	// init
 	void begin();
+	int16_t getDisplayWidth() const;
+	int16_t getDisplayHeight() const;
 	void invertDisplay( bool inv ) {invertDisp=inv;};  	        // solved in grafic layer
 	void setRedBlueTwist( bool twist ) {twistRB= twist;};   	    // no more needed, type of displays phased out
 	inline void undoClipRange() { eglib_undoClipRange(eglib);};
@@ -103,7 +105,8 @@ public:
 		twistRB?
 			eglib_SetIndexColor(eglib, 0, invertDisp?~b:b, invertDisp?~g:g, invertDisp?~r:r):
 			eglib_SetIndexColor(eglib, 0, invertDisp?~r:r, invertDisp?~g:g, invertDisp?~b:b);
-	}	
+	}
+
 	// graphics
 	inline void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1)  { eglib_DrawLine(eglib, x0, y0, x1, y1); }
 	inline void drawBox(int16_t x, int16_t y, int16_t w, int16_t h)  { eglib_DrawBox(eglib, x, y, w, h); }
@@ -139,8 +142,8 @@ public:
 
 	// scrolling, clipping, clear
 	inline void clearScreen(){ eglib_ClearScreen( eglib ); };
-	inline void scrollLines(int16_t lines) {  eglib_scrollScreen( eglib, lines ); };     	    // display driver function  tbd.
-	inline void scrollSetMargins( int16_t top, int16_t bottom ) { eglib_setScrollMargins( eglib, top, bottom ); };                 // display driver function
+	inline void scrollLines(int16_t lines) {  eglib_scrollScreen( eglib, lines ); };                               // display driver function  todo
+	inline void scrollSetMargins( int16_t top, int16_t bottom ) { eglib_setScrollMargins( eglib, top, bottom ); }; // display driver function
 	inline void setClipRange( int16_t x, int16_t y, int16_t w, int16_t h ) { eglib_setClipRange(eglib, x, y, w, h );};
 
 private:

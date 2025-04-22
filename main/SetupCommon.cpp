@@ -274,8 +274,17 @@ bool SetupCommon::isClient()
 	return DEVMAN->getDevice(XCVARIO_DEV) != nullptr;
 }
 
-bool SetupCommon::isWired(){
-	return(can_speed.get() && (can_mode.get() == CAN_MODE_CLIENT || can_mode.get() == CAN_MODE_MASTER));
+bool SetupCommon::isWired()
+{
+	// expensive, dont call all the time!
+	Device *dev = DEVMAN->getDevice(XCVARIO_DEV);
+	if (!dev) {
+		dev = DEVMAN->getDevice(XCVARIOCLIENT_DEV);
+	}
+	if (dev && dev->_itf->getId() == CAN_BUS) {
+		return true;
+	}
+	return false;
 }
 
 

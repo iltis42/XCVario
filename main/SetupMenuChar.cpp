@@ -33,39 +33,23 @@ SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (
 
 void SetupMenuChar::display(int mode)
 {
-	_col = 1;
-	_row = 50;
     ESP_LOGI(FNAME,"display title:%s action: %x", _title, (int)(_action));
-	if ( !helptext ) {
-		_row = (_parent->getHighlight() + 1) * 25;
-		MYUCG->setColor(COLOR_BLACK);
-		MYUCG->drawFrame(1, _row + 3, 238, 25);
-		MYUCG->setColor(COLOR_WHITE);
-		_col = MYUCG->getStrWidth(_title) + 4;
-		MYUCG->drawFrame(_col, _row + 3, 238, 25);
-		_col += 7;
-		_row += 25;
+	if ( _values.size() > 9 || canInline() ) {
+		indentHighlight(_parent->getHighlight());
 	}
 	else if( bits._ext_handler ){  // handling is done only in action method
 		ESP_LOGI(FNAME,"ext handler");
 	}
 	else
 	{
-		MYUCG->setPrintPos(1,25);
 		ESP_LOGI(FNAME,"Title: %s ", _title );
-		MYUCG->printf("<< %s",_title);
+		menuPrintLn("<<", 0);
+		menuPrintLn(_title, 0, 30);
 		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _values.size(), _values.size(), _values[_select] );
-		if( _values.size() > 9 ){
-			MYUCG->setPrintPos( _col, _row );
-			MYUCG->printf( FORMATSTRING_AND_SPACE, _values[_select] );
-		}else
-		{
-			for( int i=0; i<_values.size() && i<+10; i++ )	{
-				MYUCG->setPrintPos( _col, _row+25*i );
-				MYUCG->print( _values[i] );
-			}
-			MYUCG->drawFrame( _col,(_select+1)*25+3,238,25 );
+		for( int i=0; i<_values.size() && i<10; i++ )	{
+			menuPrintLn(_values[i], i+1);
 		}
+		doHighlight(_select);
 	}
 }
 
@@ -78,15 +62,13 @@ void SetupMenuChar::rot(int count)
 
 	if( _values.size() > 9 )
 	{
-		MYUCG->setPrintPos(_col, _row);
-		MYUCG->setFont(ucg_font_ncenR14_hr, true );
-		MYUCG->printf(FORMATSTRING_AND_SPACE, _values[_select] );
+		char buf[320];
+		sprintf(buf, FORMATSTRING_AND_SPACE, _values[_select]);
+		indentPrintLn(buf);
 	}else {
-		MYUCG->setColor(COLOR_BLACK);
-		MYUCG->drawFrame( _col,(prev_select+1)*25+3,238,25 );  // blank old frame
-		MYUCG->setColor(COLOR_WHITE);
+		unHighlight(prev_select);
 		ESP_LOGI(FNAME,"rot %d", _select );
-		MYUCG->drawFrame( _col,(_select+1)*25+3,238,25 );  // draw new frame
+		doHighlight(_select);
 	}
 }
 

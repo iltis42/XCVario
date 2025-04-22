@@ -44,7 +44,7 @@ void DisplayDeviations::display( int mode )
   ESP_LOGI(FNAME, "display()");
   clear();
   MYUCG->setFont( ucg_font_ncenR14_hr );
-  uprintf( 5, 25, _title );
+  menuPrintLn(_title, 0, 5);
   const char* skydirdev[8] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
   uint16_t y = 25;
   for( int i = 0; i < 8; i++ )

@@ -42,7 +42,7 @@ void ShowStraightWind::display(int mode)
 		clear();
 	}
 	MYUCG->setFont( ucg_font_ncenR14_hr );
-	uprintf( 5, 25, _title );
+	menuPrintLn(_title, 0, 5);
 
 	uint16_t y = 70;
 	char buffer[32];

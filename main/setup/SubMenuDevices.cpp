@@ -369,7 +369,7 @@ static int select_device_action(SetupMenuSelect *p)
         top->highlightLast();
     }
     else {
-        top->highlightEntry(interface);
+        top->setHighlight(interface);
     }
 
     return 0;

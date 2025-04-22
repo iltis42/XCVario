@@ -496,37 +496,33 @@ void SetupMenu::display(int mode)
 	}
 	ESP_LOGI(FNAME,"SetupMenu display %d", highlight );
 	clear();
-	int y = 25;
-	ESP_LOGI(FNAME,"Title: %s y=%d child size:%d", _title, y, _childs.size());
+	ESP_LOGI(FNAME,"Title: %s child size:%d", _title, _childs.size());
 	MYUCG->setFont(ucg_font_ncenR14_hr);
-	MYUCG->setPrintPos(1, y);
 	MYUCG->setFontPosBottom();
-	MYUCG->printf("<< %s", _title);
-	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
+	menuPrintLn("<<", 0);
+	menuPrintLn(_title, 0, 30);
+	doHighlight(highlight);
 	for (int i = 0; i < _childs.size(); i++) {
 		MenuEntry *child = _childs[i];
-		MYUCG->setPrintPos(1, (i + 1) * 25 + 25);
 		if (!child->isLeaf() || child->value()) {
 			MYUCG->setColor( COLOR_HEADER_LIGHT);
 		}
-		MYUCG->printf("%s", child->getTitle());
+		menuPrintLn(child->getTitle(), i+1);
 		// ESP_LOGI(FNAME,"Child Title: %s", child->getTitle() );
 		if (child->value() && *child->value() != '\0') {
 			int fl = MYUCG->getStrWidth(child->getTitle());
-			MYUCG->setPrintPos(1 + fl, (i + 1) * 25 + 25);
-			MYUCG->printf(": ");
-			MYUCG->setPrintPos(1 + fl + MYUCG->getStrWidth(":"), (i + 1) * 25 + 25);
+			menuPrintLn(": ", i+1, 1+fl);
 			MYUCG->setColor( COLOR_WHITE);
-			MYUCG->printf(" %s", child->value());
+			menuPrintLn(child->value(), i+1, 1 + fl + MYUCG->getStrWidth(": "));
 		}
 		MYUCG->setColor( COLOR_WHITE);
 		// ESP_LOGI(FNAME,"Child: %s y=%d",child->getTitle() ,y );
 	}
-	showhelp();
+	showhelp(true);
 	xSemaphoreGive(display_mutex);
 }
 
-void SetupMenu::highlightEntry(MenuEntry *value)
+void SetupMenu::setHighlight(MenuEntry *value)
 {
 	int found = -1;
 	for (int i = 0; i < _childs.size(); ++i) {
@@ -591,12 +587,9 @@ static int modulo(int a, int b) {
 void SetupMenu::rot(int count)
 {
 	ESP_LOGI(FNAME,"select %d: %d/%d", count, highlight, _childs.size() );
-	MYUCG->setColor(COLOR_BLACK);
-	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
-	MYUCG->setColor(COLOR_WHITE);
-
+	unHighlight(highlight);
 	highlight = modulo(highlight+1+count, _childs.size()+1) - 1;
-	MYUCG->drawFrame(1, (highlight + 1) * 25 + 3, 238, 25);
+	doHighlight(highlight);
 }
 
 void SetupMenu::press()
@@ -1105,8 +1098,7 @@ void options_menu_create_units(SetupMenu *top) {
 	teu->addEntry("Fahrenheit");
 	teu->addEntry("Kelvin");
 	top->addEntry(teu);
-	SetupMenuSelect *qnhi = new SetupMenuSelect("QNH", RST_NONE, 0, true,
-			&qnh_unit);
+	SetupMenuSelect *qnhi = new SetupMenuSelect("QNH", RST_NONE, 0, true, &qnh_unit);
 	qnhi->addEntry("Hectopascal");
 	qnhi->addEntry("InchMercury");
 	top->addEntry(qnhi);
@@ -2044,8 +2036,7 @@ SetupMenu* SetupMenu::createTopSetup() {
 
 SetupMenuValFloat* SetupMenu::createQNHMenu() {
 	SetupMenuValFloat *qnh = new SetupMenuValFloat("QNH", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH);
-	qnh->setHelp(
-			"QNH pressure value from ATC. On ground you may adjust to airfield altitude above MSL", 180);
+	qnh->setHelp("QNH pressure value from ATC. On ground you may adjust to airfield altitude above MSL", 180);
 	return qnh;
 }
 

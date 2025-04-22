@@ -45,11 +45,10 @@ void SetupRoot::begin(MenuEntry *setup)
 
     gflags.inSetup = true;
     _display->doMenu(true);
-    delay(200); // fixme give display task time to finish drawing
 
     _childs.front()->enter();
 
-    // initGearWarning();
+    // initGearWarning(); fixme
 }
 
 void SetupRoot::exit(int levels)
@@ -102,7 +101,7 @@ void SetupRoot::rot(int count)
 
 void SetupRoot::press()
 {
-    ESP_LOGI(FNAME,"root press active_srceen %d (%x)", active_screen, menu_screens.get());
+    ESP_LOGI(FNAME,"root press active_srceen %d (0x%x)", active_screen, menu_screens.get());
 
     // cycle through screens, incl. setup
     if (!gflags.inSetup)

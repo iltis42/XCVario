@@ -478,7 +478,7 @@ void IpsDisplay::initDisplay() {
 		ucg->setPrintPos(FIELD_START,YVAR-VARFONTH+7);
 
 		ucg->print("AV Vario");
-		ucg->setColor(0, COLOR_WHITE );
+		ucg->setColor(COLOR_WHITE );
 
 		// print TE scale
 		drawLegend();
@@ -492,14 +492,14 @@ void IpsDisplay::initDisplay() {
 		ucg->setFont(ucg_font_fub11_tr);
 		fh = ucg->getFontAscent();
 		ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh) - 8);
-		ucg->setColor(0, COLOR_HEADER );
+		ucg->setColor(COLOR_HEADER );
 
 		ucg->printf("%s %s", Units::AirspeedModeStr(), Units::AirspeedUnitStr() );
 
 		ucg->setPrintPos(ASVALX,YS2F-(2*fh) - 8);
 		ucg->print(" S2F");
 
-		ucg->setColor(0, COLOR_WHITE );
+		ucg->setColor(COLOR_WHITE );
 		// AS Box
 		int fl = ucg->getStrWidth(" 200- ");
 		ASLEN = fl+3;

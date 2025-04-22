@@ -21,6 +21,6 @@ public:
 
 private:
     // Received messages
-    static dl_action_t parseExcl_g(NmeaPrtcl *nmea);
+    static dl_action_t parseExcl_g(NmeaPlugin *plg);
     static const ParserEntry _pt[];
 };

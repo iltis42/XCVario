@@ -14,7 +14,7 @@
 #include "comm/BTspp.h"
 #include "BLESender.h"
 #include "Protocols.h"
-#include "Setup.h"
+#include "SetupNG.h"
 #include "ESPAudio.h"
 #include "SetupMenu.h"
 #include "ESPRotary.h"
@@ -23,7 +23,7 @@
 #include "IpsDisplay.h"
 #include "S2F.h"
 #include "Version.h"
-#include "Polars.h"
+#include "glider/Polars.h"
 #include "Flarm.h"
 #include "Blackboard.h"
 #include "SetupMenuValFloat.h"
@@ -114,7 +114,6 @@ SemaphoreHandle_t xMutex=NULL;
 SemaphoreHandle_t spiMutex=NULL;
 
 S2F Speed2Fly;
-Protocols OV( &Speed2Fly ); // todo delete
 
 AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
 
@@ -217,9 +216,13 @@ void drawDisplay(void *arg)
 
 	esp_task_wdt_add(NULL);
 
+	int event = 0;
 	while (1) {
-		// handle button events
-		int event;
+		// handle button events in this context
+		if ( ! (event & ROTARY_EVTMASK) ) {
+			// Empty the queue to avoid on-running events
+			xQueueReset(buton_event_queue);
+		}
 		if (xQueueReceive(buton_event_queue, &event, pdMS_TO_TICKS(20)) == pdTRUE) {
 			if (event == SHORT_PRESS) {
 				ESP_LOGI(FNAME,"Button short press detected");
@@ -230,10 +233,12 @@ void drawDisplay(void *arg)
 			}else if (event == BUTTON_RELEASED) {
 				ESP_LOGI(FNAME, "Button released");
 				knob.sendRelease();
-			} else {
+			} else if (event & ROTARY_EVTMASK) {
 				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
 				ESP_LOGI(FNAME, "Rotation step %d", step);
 				knob.sendRot(step);
+			} else {
+				ESP_LOGI(FNAME, "Unknown button event %x", event);
 			}
 		}
 		
@@ -261,14 +266,14 @@ void drawDisplay(void *arg)
 					float acc_stall= stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
 					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
 						if( !gflags.stall_warning_active ){
-							Audio::alarm( true, max_volume.get() );
+							AUDIO->alarm( true, max_volume.get() );
 							Display->drawWarning( "! STALL !", true );
 							gflags.stall_warning_active = true;
 						}
 					}
 					else{
 						if( gflags.stall_warning_active ){
-							Audio::alarm( false );
+							AUDIO->alarm( false );
 							Display->clear();
 							gflags.stall_warning_active = false;
 						}
@@ -305,13 +310,13 @@ void drawDisplay(void *arg)
 					if( gw ){
 						if( Rotary->readSwitch() ){   // Acknowledge Warning -> Warning OFF
 							gear_warning_holdoff = 25000;  // ~500 sec
-							Audio::alarm( false );
+							AUDIO->alarm( false );
 							Display->clear();
 							gflags.gear_warning_active = false;
 							// SetupMenu::catchFocus( false );
 						}
 						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
-							Audio::alarm( true, max_volume.get() );
+							AUDIO->alarm( true, max_volume.get() );
 							Display->drawWarning( "! GEAR !", false );
 							gflags.gear_warning_active = true;
 							// SetupMenu::catchFocus( true );
@@ -320,7 +325,7 @@ void drawDisplay(void *arg)
 					else{
 						if( gflags.gear_warning_active ){
 							// SetupMenu::catchFocus( false );
-							Audio::alarm( false );
+							AUDIO->alarm( false );
 							Display->clear();
 							gflags.gear_warning_active = false;
 						}
@@ -345,7 +350,7 @@ void drawDisplay(void *arg)
 				if( gflags.flarmWarning && (millis() > flarm_alarm_holdtime) ){
 					gflags.flarmWarning = false;
 					Display->clear();
-					Audio::alarm( false );
+					AUDIO->alarm( false );
 				}
 			}
 			if( gflags.flarmWarning )
@@ -380,13 +385,13 @@ void drawDisplay(void *arg)
 			if( gload_mode.get() != GLOAD_OFF  ){
 				if( IMU::getGliderAccelZ() > gload_pos_limit.get() || IMU::getGliderAccelZ() < gload_neg_limit.get()  ){
 					if( !gflags.gload_alarm ) {
-						Audio::alarm( true, gload_alarm_volume.get() );
+						AUDIO->alarm( true, gload_alarm_volume.get() );
 						gflags.gload_alarm = true;
 					}
 				}else
 				{
 					if( gflags.gload_alarm ) {
-						Audio::alarm( false );
+						AUDIO->alarm( false );
 						gflags.gload_alarm = false;
 					}
 				}
@@ -406,37 +411,6 @@ void drawDisplay(void *arg)
 		if( uxTaskGetStackHighWaterMark( dpid ) < 512  ) {
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 		}
-	}
-}
-
-// depending on mode calculate value for Audio and set values accordingly
-void doAudio(){
-	polar_sink = Speed2Fly.sink( ias.get() );
-	float netto = te_vario.get() - polar_sink;
-	as2f = Speed2Fly.speed( netto, !Switch::getCruiseState() );
-	s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10)); // low pass damping moved to the correct place
-	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
-	if( vario_mode.get() == VARIO_NETTO || (Switch::getCruiseState() &&  (vario_mode.get() == CRUISE_NETTO)) ){
-		if( netto_mode.get() == NETTO_RELATIVE )
-			Audio::setValues( te_vario.get() - polar_sink + Speed2Fly.circlingSink( ias.get() ), s2f_delta );
-		else if( netto_mode.get() == NETTO_NORMAL )
-			Audio::setValues( te_vario.get() - polar_sink, s2f_delta );
-	}
-	else {
-		Audio::setValues( te_vario.get(), s2f_delta );
-	}
-}
-
-void audioTask(void *pvParameters){
-	while (1)
-	{
-		TickType_t xLastWakeTime = xTaskGetTickCount();
-		doAudio();
-		// Router::routeXCV();
-		if( uxTaskGetStackHighWaterMark( apid )  < 512 ) {
-			ESP_LOGW(FNAME,"Warning audio task stack low: %d", uxTaskGetStackHighWaterMark( apid ) );
-		}
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }
 
@@ -508,12 +482,13 @@ static void toyFeed()
 	// maybe just 1 or 2 per second
 	static char lb[150];
 
-	if( ahrs_rpyl_dataset.get() ){
-		OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
-		OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
-	}
+	// fixme
+	// if( ahrs_rpyl_dataset.get() ){
+	// 	OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
+	// 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
+	// 	OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
+	// 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
+	// }
 	if( nmea_protocol.get() == BORGELT ) {
 		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, BORGELT_P); // Todo preliminary solution ..
 		if ( prtcl ) {
@@ -749,7 +724,7 @@ void readSensors(void *pvParameters){
 		}
 
 		aTE = bmpVario.readAVGTE();
-		doAudio();
+		// doAudio(); fixme
 
 		if( (count % 2) == 0 ){
 			toyFeed();
@@ -1022,6 +997,7 @@ void system_startup(void *args){
 			dm->addDevice(MASTER_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
 			dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
 		}
+		delete boot_screen; // screen now belongs to OTA
 		ota = new OTA();
 		ota->begin();
 		ota->doSoftwareUpdate( Display );
@@ -1064,7 +1040,7 @@ void system_startup(void *args){
 			delay( 10 );
 		}
 		accelG /= samples;
-		float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
+		// float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
 		logged_tests += "MPU6050 AHRS test: PASSED\n";
 		IMU::init();
 		if ( IMU::MPU6050Read() == ESP_OK) {
@@ -1365,9 +1341,9 @@ void system_startup(void *args){
 	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
 	bmpVario.setup();
 	ESP_LOGI(FNAME,"Audio begin");
-	Audio::begin( DAC_CHAN_0 );
+	AUDIO->begin( DAC_CHAN_0 );
 	ESP_LOGI(FNAME,"Poti and Audio test");
-	if( !Audio::selfTest() ) {
+	if( !AUDIO->selfTest() ) {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
 		MBOX->newMessage(1, "Digital Poti: Failure");
 		selftestPassed = false;
@@ -1377,9 +1353,10 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 		logged_tests += "Digital Audio Poti test: PASSED\n";
 	}
+	audio_volume.set(default_volume.get());
 
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	if( Audio::haveCAT5171() ) // todo && CAN configured
+	if( AUDIO->haveCAT5171() ) // todo && CAN configured
 	{
 		ESP_LOGI(FNAME,"NOW add/test CAN");
 		CAN = new CANbus();
@@ -1390,7 +1367,7 @@ void system_startup(void *args){
 				// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
 				ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
 				// Add the legacs MagSens CAN receiver, would be deleted if a MagSens V2 is found
-				dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
+				// dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
 				// dm->removeDevice(DeviceId::MASTER_DEV);
 				// ESP_LOGI(FNAME,"Removetest");
 				// delay(1000);
@@ -1450,9 +1427,9 @@ void system_startup(void *args){
 	if( wireless == WL_BLUETOOTH ) {
 		if( BTspp && BTspp->selfTest() ){
 			DeviceManager* dm = DeviceManager::Instance();
+			dm->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, BT_SPP);
 			dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, BT_SPP);
 			dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
-			dm->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, NO_PHY);
 			logged_tests += "Bluetooth test: PASSED\n";
 		}
 		else{
@@ -1502,24 +1479,23 @@ void system_startup(void *args){
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
-		MBOX->newMessage(1, "Selftest FAILED");
+		MBOX->newMessage(2, "Selftest FAILED");
 		if( !Rotary->readBootupStatus() )
 			sleep(4);
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
-		boot_screen->finish();
-		if( !Rotary->readBootupStatus() ) {
-			sleep(2);
-		}
+		boot_screen->finish(); // signal self tests passed
 	}
+
+	// stop the boot logo
+	delete boot_screen;
+
 	if( Rotary->readBootupStatus() )
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
 
-	// stop the boot logo
-	delete boot_screen;
 
 	if ( SetupCommon::isClient() ){
 		ESP_LOGI(FNAME,"Client Mode");
@@ -1643,7 +1619,6 @@ void system_startup(void *args){
 	}
 	if( SetupCommon::isClient() ){
 		xTaskCreate(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid);
-		xTaskCreate(&audioTask, "audioTask", 4096, NULL, 11, &apid);
 	}
 	else {
 		xTaskCreate(&readSensors, "readSensors", 5120, NULL, 12, &bpid);
@@ -1651,7 +1626,7 @@ void system_startup(void *args){
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid);       // increase stack by 500 byte
 	xTaskCreate(&drawDisplay, "drawDisplay", 6144, Rotary, 4, &dpid); // increase stack by 1K
 
-	Audio::startAudio();
+	AUDIO->startAudio();
 }
 
 extern "C" void  app_main(void)
@@ -1660,7 +1635,8 @@ extern "C" void  app_main(void)
 	esp_log_level_set("*", ESP_LOG_INFO);
 
 	// Mute audio
-	Audio::shutdown();
+	AUDIO = new Audio();
+	AUDIO->mute();
 
 	// Access to the non volatile setup
 	ESP_LOGI(FNAME,"app_main" );

@@ -23,7 +23,7 @@ typedef enum
     MAGSENS_DEV,
     RADIO_KRT2_DEV,
     RADIO_ATR833_DEV,
-    FLARM_CONSUMER_DEV,
+    FLARM_HOST_DEV,
     KRT2_HOST_DEV,
     ATR833_HOST_DEV,
     TEST_DEV,
@@ -48,7 +48,7 @@ typedef enum
     OPENVARIO_P,
     BORGELT_P,
     CAMBRIDGE_P,
-    NMEA_P,
+    XCVQUERY_P,
     KRT2_REMOTE_P,
     ATR833_REMOTE_P,
     TEST_P

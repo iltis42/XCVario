@@ -28,6 +28,7 @@ public:
     bool tick() override;
 
 private:
+    unsigned char *logo_bitmap = nullptr;
     int width;
     int height;
     int radius;

@@ -10,7 +10,7 @@
 #include "SetupMenu.h"
 #include "IpsDisplay.h"
 #include "BMPVario.h"
-#include "Polars.h"
+#include "glider/Polars.h"
 #include "sensor.h"
 #include "ESPAudio.h"
 #include "logdef.h"
@@ -66,17 +66,12 @@ void SetupMenuValFloat::setPrecision( int prec ){
 void SetupMenuValFloat::display(int mode)
 {
 	ESP_LOGI(FNAME,"display %s", _title);
-	if ( helptext ) {
-		uprintf( 5,25, _title );
-		displayVal();
+	if ( is_inline ) {
+		indentHighlight(_parent->getHighlight());
 	}
 	else {
-		int col = MYUCG->getStrWidth(_title) + 4;
-		int row = (_parent->getHighlight() + 1) * 25;
-		MYUCG->setColor(COLOR_BLACK);
-		MYUCG->drawFrame(1, row + 3, 238, 25);
-		MYUCG->setColor(COLOR_WHITE);
-		MYUCG->drawFrame(col, row + 3, 238, 25);
+		menuPrintLn(_title, 0, 5 );
+		displayVal();
 	}
 	if( _action != 0 ) {
 		(*_action)( this );
@@ -85,20 +80,13 @@ void SetupMenuValFloat::display(int mode)
 
 void SetupMenuValFloat::displayVal()
 {
-	int col = 1, row = 70;
-	const char *v = value();
-	ESP_LOGI(FNAME,"displayVal %s", v);
-	MYUCG->setColor(COLOR_WHITE);
-	if ( helptext ) {
-		MYUCG->setFont(ucg_font_fub25_hf, true);
+	// ESP_LOGI(FNAME,"displayVal %s", v);
+	if ( is_inline ) {
+		indentPrintLn(value());
 	}
 	else {
-		col = MYUCG->getStrWidth(_title) + 11;
-		row = (_parent->getHighlight() + 2) * 25;
-	}
-	MYUCG->setPrintPos( col, row );
-	MYUCG->print( value() );
-	if ( helptext ) {
+		MYUCG->setFont(ucg_font_fub25_hf, true);
+		menuPrintLn(value(), 2);
 		MYUCG->setFont(ucg_font_ncenR14_hr);
 	}
 }
@@ -158,7 +146,7 @@ void SetupMenuValFloat::press()
 		}
 	}
 
-	BMPVario::setHolddown( 150 );  // so seconds stop average
+	BMPVario::setHolddown( 150 );  // so seconds stop average ?? fixme
 
 	if( bits._end_menu ) {
 		exit(-1);

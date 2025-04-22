@@ -158,29 +158,6 @@ void options_menu_create_bluetooth(SetupMenu *top)
     // wifimal->addEntry("Lock");
     // top->addEntry(wifimal);
 
-    // SetupMenuSelect *datamon = new SetupMenuSelect("Monitor", RST_NONE,
-    //                                                data_mon, true, nullptr);
-    // datamon->setHelp(
-    //     "Short press button to start/pause, long press to terminate data monitor",
-    //     260);
-    // datamon->addEntry("Disable");
-    // datamon->addEntry("Bluetooth");
-    // datamon->addEntry("Wifi 8880");
-    // datamon->addEntry("Wifi 8881");
-    // datamon->addEntry("Wifi 8882");
-    // datamon->addEntry("RS232 S1");
-    // datamon->addEntry("RS232 S2");
-    // datamon->addEntry("CAN Bus");
-    // top->addEntry(datamon);
-
-    // SetupMenuSelect *datamonmod = new SetupMenuSelect("Monitor Mode", RST_NONE,
-    //                                                   0, true, &data_monitor_mode);
-    // datamonmod->setHelp(
-    //     "Select data display as ASCII text or as binary hexdump");
-    // datamonmod->addEntry("ASCII");
-    // datamonmod->addEntry("Binary");
-    // top->addEntry(datamonmod);
-
     // SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
     // top->addEntry(cusid);
     // cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate", 215);
@@ -338,7 +315,7 @@ static int create_device(SetupMenuSelect *p)
 {
     if ( p->getSelect() == 1 ) {
         // Confirmed; default protocols and port
-        const DeviceAttributes *da = DeviceManager::getDevAttr(new_device);
+        const DeviceAttributes *da = DeviceManager::getDevAttr(new_device, new_interface);
         for (int i=0; i<da->prcols.getExtra(); ++i) {
             ProtocolType pid = da->prcols.proto(i);
             if ( pid != NO_ONE ) {
@@ -382,7 +359,7 @@ static int select_device_action(SetupMenuSelect *p)
     for (int i=0; i<tmp.maxSize; ++i) {
         InterfaceId iid = tmp.itf(i);
         ESP_LOGI(FNAME,"Itf id %d", iid);
-        if ( iid != NO_DEVICE && DEVMAN->isAvail(iid) ) {
+        if ( iid != NO_PHY && DEVMAN->isAvail(iid) ) {
             interface->addEntry(DeviceManager::getItfName(iid).data(), iid);
         }
     }
@@ -392,7 +369,7 @@ static int select_device_action(SetupMenuSelect *p)
         top->highlightLast();
     }
     else {
-        top->highlightEntry(interface);
+        top->setHighlight(interface);
     }
 
     return 0;

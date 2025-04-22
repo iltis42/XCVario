@@ -48,7 +48,7 @@ void ShowCompassSettings::display(int mode)
 
 	clear();
 	MYUCG->setFont( ucg_font_ncenR14_hr );
-	uprintf( 5, 25, _title );
+	menuPrintLn(_title, 0, 5 );
 
 	uint16_t y = 75;
 	uint16_t y1 = 75;
@@ -57,7 +57,7 @@ void ShowCompassSettings::display(int mode)
 	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "Sensor enabled: %s",
 			(compass_enable.get() == 0) ? "No" : "Yes"  );
-	MYUCG->printf( "%s", buffer );
+	MYUCG->print( buffer );
 	y += 25;
 
 	MYUCG->setPrintPos( 0, y );
@@ -68,48 +68,48 @@ void ShowCompassSettings::display(int mode)
 		all_green = true;
 	sprintf( buffer, "Sensor calibrated: %s",
 			(compass_calibrated.get() == 0 || !all_green) ? "No" : "Yes"  );
-	MYUCG->printf( "%s", buffer );
+	MYUCG->print( buffer );
 	y += 25;
 
 	y1 = y;
 	const char* soText = "Sensor overflow: ";
 	int sotw = MYUCG->getStrWidth( soText );
 	MYUCG->setPrintPos( 0, y );
-	MYUCG->printf( "%s", soText );
+	MYUCG->print( soText );
 	MYUCG->setPrintPos( sotw, y );
-	MYUCG->printf( "%s", (compass->overflowFlag() == false) ? "No" : "Yes" );
+	MYUCG->print( (compass->overflowFlag() == false) ? "No" : "Yes" );
 	y += 25;
 
 	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "Compass declination: %d°",
 			static_cast<int>(compass_declination.get()) );
-	MYUCG->printf( "%s", buffer );
+	MYUCG->print( buffer );
 	y += 25;
 
   MYUCG->setPrintPos( 0, y );
   sprintf( buffer, "Display damping: %.02fs", (compass_damping.get()) );
-  MYUCG->printf( "%s", buffer );
+  MYUCG->print( buffer );
   y += 25;
 
   MYUCG->setPrintPos( 0, y );
   sprintf( buffer, "I2C Clock: %d KHz", static_cast<int>(compass_i2c_cl.get()) );
-  MYUCG->printf( "%s", buffer );
+  MYUCG->print( buffer );
   y += 25;
 
 	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "NMEA mag heading: %s",
 			(compass_nmea_hdm.get() == 0) ? "No" : "Yes"  );
-	MYUCG->printf( "%s", buffer );
+	MYUCG->print( buffer );
 	y += 25;
 
 	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "NMEA true heading: %s",
 			(compass_nmea_hdt.get() == 0) ? "No" : "Yes"  );
-	MYUCG->printf( "%s", buffer );
+	MYUCG->print( buffer );
 	y += 25;
 
 	MYUCG->setPrintPos( 5, 290 );
-	MYUCG->printf( "Press button to exit" );
+	MYUCG->print( "Press button to exit" );
 
 	while( Rotary->readSwitch() == false )
 	{
@@ -117,7 +117,7 @@ void ShowCompassSettings::display(int mode)
 
 		// Ca. after a second make an update of the overflow flag display.
 		MYUCG->setPrintPos( sotw, y1 );
-		MYUCG->printf( "%s", (compass->overflowFlag() == false) ? "No  " : "Yes" );
+		MYUCG->print( (compass->overflowFlag() == false) ? "No  " : "Yes" );
 	}
 
 	press();

@@ -23,6 +23,7 @@ typedef struct s_drawing{
 		bool filled_mode;
 		e_font_origin font_origin;
         coordinate_t clip_xmin, clip_xmax, clip_ymin, clip_ymax;
+        coordinate_t clbs_xmin, clbs_xmax, clbs_ymin, clbs_ymax; // two level clip region stack
 } drawing_t;
 
 

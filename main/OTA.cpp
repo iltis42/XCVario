@@ -16,7 +16,7 @@
 #include "freertos/event_groups.h"
 #include "MyWiFi.h"
 #include "IpsDisplay.h"
-#include "Setup.h"
+#include "SetupNG.h"
 #include "OTA.h"
 #include <logdef.h>
 #include "ESPAudio.h"
@@ -167,6 +167,6 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
     Webserver.stop();
 	ESP_LOGI(FNAME,"Now restart");
 	software_update.commit();
-	Audio::shutdown();
+	AUDIO->mute();
 	esp_restart();
 }

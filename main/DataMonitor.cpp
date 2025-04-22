@@ -69,7 +69,6 @@ void DataMonitor::header( int len, e_dir_t dir )
 void DataMonitor::monitorString(e_dir_t dir, const char *str, int len)
 {
 	ESP_LOGI(FNAME,"dir %d, len %d", (int)dir, len );
-	// bool binary = data_monitor_mode.get() == MON_MOD_BINARY;
 	if( paused )
 	{
 		// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );

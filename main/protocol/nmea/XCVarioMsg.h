@@ -23,8 +23,8 @@ public:
 
 private:
     // Received messages
-    static dl_action_t parseExcl_xsX(NmeaPrtcl *nmea);
-    static dl_action_t parseExcl_xcs(NmeaPrtcl *nmea);
+    static dl_action_t parseExcl_xsX(NmeaPlugin *plg);
+    static dl_action_t parseExcl_xcs(NmeaPlugin *plg);
 
     static const ParserEntry _pt[];
     static uint8_t _protocol_version;

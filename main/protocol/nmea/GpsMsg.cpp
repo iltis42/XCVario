@@ -37,9 +37,9 @@
 //            191194       Date of fix  19 November 1994
 //            020.3,E      Magnetic variation 20.3 deg East
 //  *68          mandatory checksum
-dl_action_t GpsMsg::parseGPRMC(NmeaPrtcl *nmea)
+dl_action_t GpsMsg::parseGPRMC(NmeaPlugin *plg)
 {
-    ProtocolState *sm = nmea->getSM();
+    ProtocolState *sm = plg->getNMEA().getSM();
     const std::vector<int> *word = &sm->_word_start;
     if ( word->size() < 9 ) {
         return NOACTION;
@@ -126,9 +126,9 @@ dl_action_t GpsMsg::parseGPRMC(NmeaPrtcl *nmea)
 //
 extern unsigned long _gps_millis;
 
-dl_action_t GpsMsg::parseGPGGA(NmeaPrtcl *nmea)
+dl_action_t GpsMsg::parseGPGGA(NmeaPlugin *plg)
 {
-    ProtocolState *sm = nmea->getSM();
+    ProtocolState *sm = plg->getNMEA().getSM();
     const std::vector<int> *word = &sm->_word_start;
     ESP_LOGD(FNAME, "parseGPGGA");
 

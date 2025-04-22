@@ -10,15 +10,26 @@
 
 #include "protocol/NMEA.h"
 
-class FlarmHostMsg final : public NmeaPlugin
+class XCVSyncMsg  final : public NmeaPlugin
 {
 public:
-    FlarmHostMsg(NmeaPrtcl &nr);
-    virtual ~FlarmHostMsg() = default;
+
+    explicit XCVSyncMsg(NmeaPrtcl &nr, bool master);
+    virtual ~XCVSyncMsg();
     const ParserEntry* getPT() const override { return _pt; }
 
+    bool isMaster() const { return _is_master; }
+
 public:
+    // only needed from SetupNG
+    bool sendItem(const char *key, char type, void *value, int len);
+    // bool sendAck(uint8_t sync, const char *key, char type, void *value, int len);
+ 
+private:
+    bool _is_master;
+
     // Received messages
-    static dl_action_t parsePFLAX(NmeaPlugin *plg);
+    static dl_action_t parseExcl_xsX(NmeaPlugin *plg);
     static const ParserEntry _pt[];
 };
+

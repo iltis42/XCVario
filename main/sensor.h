@@ -71,7 +71,6 @@ extern SemaphoreHandle_t display_mutex;
 extern e_wireless_type wireless;
 
 extern float getTAS();
-void doAudio( float te );
 
 extern I2C_t& i2c;
 extern I2C_t& i2c_0;
@@ -91,7 +90,6 @@ extern float slipAngle;
 
 extern S2F Speed2Fly;
 extern float meanClimb;
-extern Protocols OV;
 extern float baroP;    // Static pressure
 extern float dynamicP; // Pitot pressure
 

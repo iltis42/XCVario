@@ -32,5 +32,5 @@ public:
 
 private:
     IpsDisplay* _display;
-    int active_screen = 0;  // 0 = Vario
+    int active_screen = SCREEN_VARIO;
 };

@@ -9,6 +9,7 @@
 #include "DataLink.h"
 
 #include "protocol/nmea/CANMasterRegMsg.h"
+#include "protocol/nmea/CANClientQueryMsg.h"
 #include "protocol/nmea/JumboCmdMsg.h"
 #include "protocol/nmea/FlarmMsg.h"
 #include "protocol/nmea/FlarmHostMsg.h"
@@ -125,6 +126,24 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
         nmea->addPlugin(new XCVarioMsg(*nmea, ptyp));
         nmea->addPlugin(new CambridgeMsg(*nmea, ptyp));
+        tmp = nmea;
+        break;
+    }
+    case XCVQUERY_P:
+    {
+        ESP_LOGI(FNAME, "New XCVquery");
+        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
+        nmea->addPlugin(new CANClientQueryMsg(*nmea));
+        tmp = nmea;
+        break;
+    }
+    case XCVSYNC_P:
+    {
+        ESP_LOGI(FNAME, "New XCVsync");
+        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
+        // The SyncMsg serves on both side, need to know it's role
+        // connect to a client -> you are master
+        nmea->addPlugin(new XCVSyncMsg(*nmea, did==XCVARIOCLIENT_DEV));
         tmp = nmea;
         break;
     }

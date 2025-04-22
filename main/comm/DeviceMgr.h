@@ -42,6 +42,7 @@ struct Device
     ProtocolItf* getProtocol(ProtocolType p) const;
     DataLink *getDLforProtocol(ProtocolType p) const;
     PortList getPortList() const;
+    bool isAlive() const { return true; } // fixme
     // Attributes
     const DeviceId      _id;
     std::set<DataLink*> _dlink;
@@ -94,6 +95,7 @@ public:
     // API
     ProtocolItf* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid);
     Device* getDevice(DeviceId did);
+    Device* getXCVPeer();
     ProtocolItf *getProtocol(DeviceId dev, ProtocolType proto);
     int getSendPort(DeviceId did, ProtocolType proto);
     // Remove device of this type
@@ -108,12 +110,14 @@ public:
     int getNrDevs() const { return _device_map.size(); }
     // Search for the next free CAN id, organized in chunks of four in 5 prio categories.
     static int getFreeCANId(int prio);
+    static void undoFreeCANId(int prio);
     // debugging
     void dumpMap() const;
-    bool startDM(ItfTarget iid);
+    bool startDM(ItfTarget iid); // Data Monitor
     void stopDM();
+
     // Setup access
-    static const DeviceAttributes* getDevAttr(DeviceId did);
+    static const DeviceAttributes* getDevAttr(DeviceId did, InterfaceId via=NO_PHY);
     static std::string_view getDevName(DeviceId did);
     static std::vector<DeviceId> allKnownDevs();
     static std::string_view getItfName(InterfaceId iid);

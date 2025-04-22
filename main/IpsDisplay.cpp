@@ -8,7 +8,6 @@
 
 #include "IpsDisplay.h"
 #include "comm/DeviceMgr.h"
-#include "protocol/MagSensBin.h"
 #include "BLESender.h"
 #include "OneWireESP32.h"
 #include "WifiClient.h"
@@ -18,7 +17,6 @@
 #include "Flarm.h"
 #include "Compass.h"
 #include "CircleWind.h"
-#include "comm/CanBus.h"
 #include "comm/WifiAP.h"
 #include "comm/BTspp.h"
 #include "Blackboard.h"
@@ -480,7 +478,7 @@ void IpsDisplay::initDisplay() {
 		ucg->setPrintPos(FIELD_START,YVAR-VARFONTH+7);
 
 		ucg->print("AV Vario");
-		ucg->setColor(0, COLOR_WHITE );
+		ucg->setColor(COLOR_WHITE );
 
 		// print TE scale
 		drawLegend();
@@ -494,14 +492,14 @@ void IpsDisplay::initDisplay() {
 		ucg->setFont(ucg_font_fub11_tr);
 		fh = ucg->getFontAscent();
 		ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh) - 8);
-		ucg->setColor(0, COLOR_HEADER );
+		ucg->setColor(COLOR_HEADER );
 
 		ucg->printf("%s %s", Units::AirspeedModeStr(), Units::AirspeedUnitStr() );
 
 		ucg->setPrintPos(ASVALX,YS2F-(2*fh) - 8);
 		ucg->print(" S2F");
 
-		ucg->setColor(0, COLOR_WHITE );
+		ucg->setColor(COLOR_WHITE );
 		// AS Box
 		int fl = ucg->getStrWidth(" 200- ");
 		ASLEN = fl+3;
@@ -954,34 +952,29 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 {
 	const int16_t CANH = 8;
 	const int16_t CANW = 14;
-	bool CANconnectedXCV = false;
-	bool CANconnectedMag = false;
-	if (CAN) {
-		CANconnectedXCV = CAN->connectedXCV();
-		// CANconnectedMag = CAN->connectedMagSens();
-	}
-	MagSensBinary *ms = static_cast<MagSensBinary*>(DEVMAN->getProtocol(MAGSENS_DEV, MAGSENSBIN_P));
-	CANconnectedMag = ( ms && ms->connected() );
+
+	Device *dev = DEVMAN->getXCVPeer();
+	bool CANconnectedXCV = dev && dev->isAlive();
+	dev = DEVMAN->getDevice(MAGSENS_DEV);
+	bool CANconnectedMag = dev && dev->isAlive();
+	
 	CANconnectedXCV ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
+	// lower horizontal line
 	if (CANconnectedMag)
 		ucg->setColor(COLOR_GREEN);
-	// ucg->setFont(ucg_font_fub11_hr);
-	// ucg->setPrintPos(x - 8, y);
 	ucg->drawLine( x-CANW/2, y+CANH/2, x+3, y+CANH/2 );
 	ucg->drawLine( x-CANW/2, y+CANH/2-1, x+3, y+CANH/2-1 );
 	ucg->drawDisc( x-CANW/2, y+CANH/2, 2, UCG_DRAW_ALL);
-	// ucg->print("c");
 	CANconnectedMag ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
-	if (Flarm::connected())
-		ucg->setColor(COLOR_GREEN);
+	// Z diagonal line
+	if (Flarm::connected()) { ucg->setColor(COLOR_GREEN); }
 	ucg->drawLine( x+2, y+CANH/2, x-4, y-CANH/2 );
 	ucg->drawLine( x+3, y+CANH/2-1, x-3, y-CANH/2-1 );
-	// ucg->print("a");
+	// upper horizontal line
 	CANconnectedXCV ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
 	ucg->drawLine( x-3, y-CANH/2, x+CANW/2, y-CANH/2 );
 	ucg->drawLine( x-3, y-CANH/2-1, x+CANW/2, y-CANH/2-1 );
 	ucg->drawDisc( x+CANW/2, y-CANH/2, 2, UCG_DRAW_ALL);
-	// ucg->print("n");
 }
 
 void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
@@ -995,8 +988,10 @@ void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
 		ucg->setColor( COLOR_MGREY );
 	ucg->setClipRange( flx, fly-FLOGO, FLOGO, FLOGO );
 	ucg->drawTriangle( flx+1, fly, flx+1+(FLOGO/2), fly, flx+1+(FLOGO/4), fly-(FLOGO/2)+2 );
+	ucg->undoClipRange();
 	ucg->setClipRange( flx+FLOGO/4+3, fly-FLOGO, FLOGO, FLOGO );
 	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/4)-2, UCG_DRAW_UPPER_RIGHT);
+	ucg->undoClipRange();
 	ucg->setClipRange( flx+FLOGO/4+5, fly-FLOGO, FLOGO, FLOGO );
 	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-2, UCG_DRAW_UPPER_RIGHT);
 	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-3, UCG_DRAW_UPPER_RIGHT);
@@ -1127,10 +1122,10 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	char s[32];
 	if( t != DEVICE_DISCONNECTED_C ) {
 		float temp_unit = Units::TemperatureUnit( t );
-		sprintf(s, "   %4.1f", std::roundf(temp_unit*10.f)/10.f );
+		sprintf(s, "%6.1f", std::roundf(temp_unit*10.f)/10.f );
 	}
 	else {
-		strcpy(s, "    --- ");
+		strcpy(s, "  --- ");
 	}
 	ucg->setColor( COLOR_WHITE );
 	ucg->setPrintPos(x-ucg->getStrWidth(s),y);
@@ -1520,15 +1515,16 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val, bool large ){
 	int ival = rint(val*10);  // integer value in steps of 10th
 	if( last_avg != ival){  // only print if there a change in rounded numeric string
 		char s[32];
-		if( large )
-			ucg->setFont(eglib_font_free_sansbold_66, false );
-		else
+		// if( large ) {
+		// 	ucg->setFont(eglib_font_free_sansbold_66, false );
+		// } else {
 			ucg->setFont(ucg_font_fub35_hn, false );
+		// }j
 		ucg->setFontPosCenter();
 		static const char* format[2] = {"%2.1f","%2.0f"};
 		sprintf(s, format[std::abs(ival)>100], float(ival/10.) );
 		int new_x_start = x - ucg->getStrWidth(s);
-		if( new_x_start > x_start ){      // do we have a shorter string stating at higer x position
+		if( new_x_start > x_start ){         // do we have a shorter string starting at higer x position
 			ucg->setColor( COLOR_BLACK );    // yes -> so blank exact prepending area
 			int fh = ucg->getFontAscent();   // height of blanking box
 			ucg->drawBox( x_start, y-fh/2, new_x_start-x_start, fh );  // draw blanking box
@@ -1633,6 +1629,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 			// ESP_LOGI(FNAME,"tmp2 %s ld: %d rd:%d s:%d aq:%d las:%d ", tmp, (lastdigit-(sign*used_quant))%mod, nr_rolling_digits, sign, used_quant, lastdigit );
 			ucg->print(tmp); // one below
 			fraction_prev = fraction;
+			ucg->undoClipRange();
 
 			// Roll leading digit independant of quant setting in 2 * (mod/10) range
 			int lead_quant = 2 * base; // eg. 2 for Q=1 and Q=5
@@ -1645,17 +1642,16 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 				// ESP_LOGI(FNAME,"Lead %f/%d: %f - %f m%d %d.", altitude, alt_leadpart, fraction, m, lead_digit);
 				nr_rolling_digits++; // one less digit remains to print
 				xp -= char_width; // one to the left
-				// ucg->undoClipRange();
 				// ucg->drawFrame(xp-1, y - char_height-1, char_width+1, char_height+1);
 				ucg->setClipRange(xp, y - char_height, char_width-1, char_height-1);
 				ucg->setPrintPos(xp, y + m - char_height);
 				ucg->print(lead_digit); // one above
 				ucg->setPrintPos(xp, y + m );
 				ucg->print((lead_digit+9)%10);
+				ucg->undoClipRange();
 				// ESP_LOGI(FNAME,"ld4: %d", (lead_digit+9)%10 );
 				s[len-1] = '\0'; len--; // chop another digits
 			}
-			ucg->undoClipRange();
 			ret=true;
 		}
 		ucg->setPrintPos(x - ucg->getStrWidth(s) - nr_rolling_digits*char_width , y);
@@ -2462,8 +2458,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 			ucg->setColor( COLOR_MGREY );
 		ucg->setClipRange( flx, fly-FLOGO, FLOGO, FLOGO );
 		ucg->drawTriangle( flx+1, fly, flx+1+(FLOGO/2), fly, flx+1+(FLOGO/4), fly-(FLOGO/2)+2 );
+		ucg->undoClipRange();
 		ucg->setClipRange( flx+FLOGO/4+3, fly-FLOGO, FLOGO, FLOGO );
 		ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/4)-2, UCG_DRAW_UPPER_RIGHT);
+		ucg->undoClipRange();
 		ucg->setClipRange( flx+FLOGO/4+5, fly-FLOGO, FLOGO, FLOGO );
 		ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-2, UCG_DRAW_UPPER_RIGHT);
 		ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-3, UCG_DRAW_UPPER_RIGHT);

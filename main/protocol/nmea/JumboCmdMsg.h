@@ -31,9 +31,9 @@ private:
     static const ParserEntry _pt[];
 
     // Received jumbo messages
-    static dl_action_t connected(NmeaPrtcl *nmea);
-    static dl_action_t config(NmeaPrtcl *nmea);
-    static dl_action_t info(NmeaPrtcl *nmea);
-    static dl_action_t alive(NmeaPrtcl *nmea);
-    static dl_action_t event(NmeaPrtcl *nmea);
+    static dl_action_t connected(NmeaPlugin *plg);
+    static dl_action_t config(NmeaPlugin *plg);
+    static dl_action_t info(NmeaPlugin *plg);
+    static dl_action_t alive(NmeaPlugin *plg);
+    static dl_action_t event(NmeaPlugin *plg);
 };

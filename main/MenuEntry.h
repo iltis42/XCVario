@@ -21,12 +21,12 @@ class MenuEntry : public RotaryObserver
 	friend class SetupRoot;
 
 public:
-	MenuEntry() : RotaryObserver() {}
+	MenuEntry();
 	virtual ~MenuEntry() = default;
 
 	// from Observer
-	void release() override {}
-	void escape() override {}
+	void release() override {} // not used
+	void escape() override {} // not used
 
 	// own API
 	virtual void enter();
@@ -34,28 +34,46 @@ public:
 	virtual void display( int mode=0 ) = 0;
 	virtual bool isLeaf() const { return true; }
 	virtual const char* value() const = 0; // content as string
-	//
+
+	// helper
 	const char* getTitle() const { return _title; }
 	SetupMenu* getParent() const { return _parent; }
 	void regParent(SetupMenu* p);
+	bool isRoot() const;
 	bool isActive() const { return selected == this; }
 	void setHelp( const char *txt, int y=DEFAULT_HELP_Y_POS ) { helptext = (char*)txt; hypos = y; };
-	void showhelp();
+	void doHighlight(int sel) const;
+    void unHighlight(int sel) const;
+    void indentHighlight(int sel);
+	void indentPrintLn(const char *str) const;
+	bool canInline() const;
+	int freeBottomLines() const;
+	int nrOfHelpLines() const;
+	bool showhelp(bool inln=false);
 	void clear();
+	void clearHelpLines() const;
 	const MenuEntry* findMenu(const char *title) const;
-	void uprintf( int x, int y, const char* format, ...);
+	void menuPrintLn(const char* str, int sel, int x=1) const;
 	void uprint( int x, int y, const char* str );
 	void SavedDelay(bool showit=true);
 	void reBoot();
 
+public:
+	static int16_t dwidth;
+	static int16_t dheight;
+
 protected:
 	static bool _restart;
-private:
-	static MenuEntry *selected;
 
 protected:
 	SetupMenu  *_parent = nullptr;
 	const char *_title = nullptr;
 	const char *helptext = nullptr;
+	bool        is_inline = false;
 	int16_t     hypos = DEFAULT_HELP_Y_POS;
+	static int16_t cur_indent;
+	static int16_t cur_row;
+
+private:
+	static MenuEntry *selected;
 };

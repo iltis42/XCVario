@@ -6,7 +6,7 @@
  */
 #pragma once
 
-#include "Setup.h"
+#include "SetupNG.h"
 #include "AdaptUGC.h"
 #include "ESPRotary.h"
 #include "MenuEntry.h"

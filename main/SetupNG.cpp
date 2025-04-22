@@ -12,7 +12,7 @@
 #include "ESP32NVS.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"
-#include "Polars.h"
+#include "glider/Polars.h"
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"
 #include "Switch.h"
@@ -104,7 +104,7 @@ float last_volume=0;   // is this used?
 
 void change_volume() {
 	float vol = audio_volume.get();
-	Audio::setVolume( vol );
+	AUDIO->setVolume( vol );
 	ESP_LOGI(FNAME,"change_volume -> %f", vol );
 }
 
@@ -251,23 +251,21 @@ SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS );
 SetupNG<int>  			dst_unit( "DST_UNIT", DST_UNIT_M );
 SetupNG<int>  			qnh_unit("QNH_UNIT", QNH_HPA );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
-SetupNG<int>  			serial1_speed( "SERIAL2_SPEED", 2 );   // tag will stay SERIAL2 from historical reason
-SetupNG<int>  			serial1_pins_twisted( "SERIAL2_PINS", 0 );
-SetupNG<int>  			serial1_rxloop( "SERIAL2_RXLOOP", 0 );
-SetupNG<int>  			serial1_tx( "SERIAL2_TX", (1UL << RT_XCVARIO) | (1UL << RT_WIRELESS) );   //  Default Wireless and local XCVario for Flarm Warnings, bincom
-SetupNG<int>  			serial1_tx_inverted( "SERIAL2_TX_INV", RS232_INVERTED );
-SetupNG<int>  			serial1_rx_inverted( "SERIAL2_RX_INV", RS232_INVERTED );
+SetupNG<int>  			serial1_speed( "SERIAL1_SPEED", 2 );
+SetupNG<int>  			serial1_pins_twisted( "SERIAL1_PINS", 0 );
+SetupNG<int>  			serial1_rxloop( "SERIAL1_RXLOOP", 0 ); // fixme, not used any more
+SetupNG<int>  			serial1_tx_inverted( "SERIAL1_TX_INV", RS232_INVERTED );
+SetupNG<int>  			serial1_rx_inverted( "SERIAL1_RX_INV", RS232_INVERTED );
 SetupNG<int>  			serial1_tx_enable( "SER1_TX_ENA", 1 );
-SetupNG<int>  			serial2_speed( "SERIAL1_SPEED", 2 );
-SetupNG<int>  			serial2_pins_twisted( "SERIAL1_PINS", 0 );
-SetupNG<int>  			serial2_tx( "SERIAL1_TX", (1UL << RT_XCVARIO) | (1UL << RT_WIRELESS) );     //  BT device and XCVario, Serial2 is foreseen for Protocols or Kobo
-SetupNG<int>  			serial2_tx_inverted( "SERIAL1_TX_INV", RS232_INVERTED );
-SetupNG<int>  			serial2_rx_inverted( "SERIAL1_RX_INV", RS232_INVERTED );
+SetupNG<int>  			serial2_speed( "SERIAL2_SPEED", 2 );
+SetupNG<int>  			serial2_pins_twisted( "SERIAL2_PINS", 0 );
+SetupNG<int>  			serial2_tx_inverted( "SERIAL2_TX_INV", RS232_INVERTED );
+SetupNG<int>  			serial2_rx_inverted( "SERIAL2_RX_INV", RS232_INVERTED );
 SetupNG<int>  			serial2_tx_enable( "SER2_TX_ENA", 1 );
 SetupNG<int>  			software_update( "SOFTWARE_UPDATE", 0 );
 SetupNG<int>  			battery_display( "BAT_DISPLAY", 0 );
 SetupNG<int>  			airspeed_mode( "AIRSPEED_MODE", MODE_IAS );
-SetupNG<int>  			nmea_protocol( "NMEA_PROTOCOL", XCVARIO );
+SetupNG<int>  			nmea_protocol( "NMEA_PROTOCOL", XCVARIO ); // fixme
 SetupNG<int>		    log_level( "LOG_LEVEL", 3 );
 SetupNG<float>		    audio_factor( "AUDIO_FACTOR", 1 );
 SetupNG<float>		    te_comp_adjust ( "TECOMP_ADJ", 0);
@@ -384,10 +382,7 @@ SetupNG<float> 			master_xcvario( "MSXCV", 0 );
 SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
 SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
 SetupNG<int> 			menu_screens("MENU_SCR", 0 );
-SetupNG<int> 			screen_gmeter("SCR_GMET", 0, RST_NONE, SYNC_NONE, VOLATILE );
-SetupNG<int> 			screen_horizon("SCR_HORIZ", 0, RST_NONE, SYNC_NONE, VOLATILE );
-SetupNG<int> 			screen_centeraid("SCR_CA", 0, RST_NONE, SYNC_NONE  );
-SetupNG<int> 			data_monitor_mode("DATAMONM", MON_MOD_ASCII, true, SYNC_NONE, VOLATILE  );
+SetupNG<int> 			screen_centeraid("SCR_CA", 0, RST_NONE, SYNC_NONE );
 SetupNG<t_bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
 SetupNG<t_tenchar_id>  custom_wireless_id("WLID", t_tenchar_id("") );

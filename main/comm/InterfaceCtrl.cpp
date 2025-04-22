@@ -34,7 +34,7 @@ DataLink* InterfaceCtrl::newDataLink(int port)
         return _dlink.begin()->second;
     }
     else {
-        // Should be a different port to all in the list, or replace
+        // Should be a different port to all in the list, or reuse
         auto it = _dlink.find(port);
         if ( it != _dlink.end()) {
             return it->second;

@@ -21,12 +21,12 @@
 
 // $PGRMZ,880,F,2*3A
 //
-dl_action_t GarminMsg::parsePGRMZ(NmeaPrtcl *nmea)
+dl_action_t GarminMsg::parsePGRMZ(NmeaPlugin *plg)
 {
     if (alt_select.get() != AS_EXTERNAL) {
         return NOACTION;
     }
-    ProtocolState *sm = nmea->getSM();
+    ProtocolState *sm = plg->getNMEA().getSM();
     const std::vector<int> *word = &sm->_word_start;
     ESP_LOGD(FNAME, "parsePGRMZ");
 

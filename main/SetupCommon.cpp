@@ -12,22 +12,20 @@
 #include "ESP32NVS.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"
-#include "Polars.h"
-#include "logdef.h"
+#include "glider/Polars.h"
 #include "sensor.h"
 #include "Switch.h"
 #include "CircleWind.h"
 #include "Protocols.h"
 #include "ESPAudio.h"
 #include "comm/DeviceMgr.h"
+#include "logdef.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_system.h>
-#include <esp_log.h>
 #include <esp_http_server.h>
 #include <miniz.h>
-#include <esp32/rom/uart.h>
 #include <esp_mac.h>
 
 #include <cstdio>
@@ -35,14 +33,11 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <cstdio>
-
-// QueueHandle_t SetupCommon::commitSema = nullptr;
-// esp_timer_handle_t SetupCommon::_timer = nullptr;
 
 char SetupCommon::_ID[16] = { 0 };
 char SetupCommon::default_id[6] = { 0 };
 std::vector<SetupCommon *> *SetupCommon::instances = 0;
+XCVSyncMsg *SetupCommon::syncProto = nullptr;
 
 
 SetupCommon::SetupCommon() {
@@ -53,12 +48,6 @@ SetupCommon::SetupCommon() {
 SetupCommon::~SetupCommon() {
 	if( !instances->size() )
 		delete instances;
-}
-
-
-void SetupCommon::sendSetup( uint8_t sync, const char *key, char type, void *value, int len, bool ack ){
-	// ESP_LOGI(FNAME,"sendSetup(): key=%s, type=%c, len=%d, ack=%d", key, type, len, ack );
-	OV.sendItem( key, type, value, len, ack );
 }
 
 SetupCommon * SetupCommon::getMember( const char * key ){
@@ -254,15 +243,7 @@ const char * SetupCommon::getFixedID() {
 
 bool SetupCommon::isMaster()
 {
-	// fixme complete and check
-	return DEVMAN->getDevice(XCVARIOCLIENT_DEV) != nullptr;
-}
-
-bool SetupCommon::mustSync( uint8_t sync ){
-	if( !isClient() && !isMaster() )
-		return false;
-	else
-		return( ( (isClient() && sync == SYNC_FROM_CLIENT) || (isMaster() && sync == SYNC_FROM_MASTER) || sync == SYNC_BIDIR ) );
+	return syncProto && syncProto->isMaster();
 }
 
 bool SetupCommon::haveWLAN(){
@@ -271,17 +252,13 @@ bool SetupCommon::haveWLAN(){
 
 bool SetupCommon::isClient()
 {
-	return DEVMAN->getDevice(XCVARIO_DEV) != nullptr;
+	return syncProto && ! syncProto->isMaster();
 }
 
 bool SetupCommon::isWired()
 {
-	// expensive, dont call all the time!
-	Device *dev = DEVMAN->getDevice(XCVARIO_DEV);
-	if (!dev) {
-		dev = DEVMAN->getDevice(XCVARIOCLIENT_DEV);
-	}
-	if (dev && dev->_itf->getId() == CAN_BUS) {
+	// is the CAN bus in use
+	if ( CAN && CAN->getNrDLinks() > 0 ) {
 		return true;
 	}
 	return false;

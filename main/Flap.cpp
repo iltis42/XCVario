@@ -2,7 +2,7 @@
 #include "Flap.h"
 
 #include "sensor.h"
-#include "Setup.h"
+#include "SetupNG.h"
 #include "Units.h"
 #include "SetupMenu.h"
 #include "SetupMenuSelect.h"

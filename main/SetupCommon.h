@@ -7,21 +7,7 @@
 
 #pragma once
 
-#include <esp_partition.h>
-#include <esp_err.h>
-#include <nvs_flash.h>
-#include <nvs.h>
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
-#include <esp_timer.h>
-#include <esp_system.h>
-#include <esp_log.h>
-
-#include <string>
-#include <cstdio>
-#include <cstring>
-#include <iostream>
+#include "protocol/nmea/XCVSyncMsg.h"
 #include <vector>
 
 struct httpd_req;
@@ -51,7 +37,6 @@ public:
 	static char *getID();
 	static char *getDefaultID();
 	static const char *getFixedID();
-	static void sendSetup( uint8_t sync, const char * key, char type, void *value, int len, bool ack=false );
 	static SetupCommon * getMember( const char * key );
 	static bool syncEntry( int entry );
 	static int numEntries();
@@ -60,16 +45,17 @@ public:
 	static int restoreConfigChanges( int len, char *data );
 
 	// housekeeping supporters
+	static void setSyncProto(XCVSyncMsg *sp) { syncProto = sp; }
 	static bool isMaster();
 	static bool isClient();
     static bool isWired();
     static void commitDirty();
 
-    static bool mustSync( uint8_t sync);
 	static bool haveWLAN();
 
     // variables
     static std::vector<SetupCommon *> *instances;
+	static XCVSyncMsg *syncProto;
 
 protected:
 

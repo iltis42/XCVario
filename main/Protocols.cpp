@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "sensor.h"
-#include "Setup.h"
+#include "SetupNG.h"
 #include "math.h"
 #include "S2F.h"
 #include <logdef.h>
@@ -34,48 +34,7 @@ Protocols::Protocols(S2F * s2f) {
 }
 
 Protocols::~Protocols() {
-
 }
-
-
-void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
-	// ESP_LOGI(FNAME,"sendItem: %s", key );
-	char str[40];
-	char sender = 'U';
-	if( SetupCommon::isMaster()  )
-		sender='M';
-	else if( SetupCommon::isClient() ){
-		if( ack )
-			sender='A'; // ack from client
-		else
-			sender='C';
-	}
-	// ESP_LOGI(FNAME,"sender: %c", sender );
-	if( sender != 'U' ) {
-		int l = sprintf( str,"!xs%c,%s,%c,", sender, key, type );
-		if( type == 'F' )
-			sprintf( str+l,"%.3f", *(float*)(value) );
-		else if( type == 'I' )
-			sprintf( str+l,"%d", *(int*)(value) );
-
-		int cs = calcNMEACheckSum(&str[1]);
-		int i = strlen(str);
-		sprintf( &str[i], "*%02X\r\n", cs );
-		// ESP_LOGI(FNAME,"sendNMEAString: %s", str );
-		// SString nmea( str );
-		// if( !Router::forwardMsg( nmea, can_tx_q ) ){
-		// 	if( !_can_send_error ){
-		// 		_can_send_error = true;
-		// 		ESP_LOGW(FNAME,"Permanent send msg to XCV client XCV (%d bytes) failure", nmea.length() );
-		// 	}
-		// }
-		// else if( _can_send_error ){
-		// 	_can_send_error = false;
-		// 	ESP_LOGI(FNAME,"Okay again send msg to XCV client (%d bytes)", nmea.length() );
-		// }
-	}
-}
-
 
 void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){

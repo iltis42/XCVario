@@ -7,8 +7,8 @@
 
 #pragma once
 
-#include "Polars.h"
-#include "MPU.hpp" // change from .h to .hpp for Windows toolchain compatibility
+#include "glider/Polars.h"
+#include "MPU.hpp"
 #include "comm/CanBus.h"
 #include "Compass.h"
 #include "SetupCommon.h"
@@ -54,7 +54,6 @@ typedef enum altitude_display_mode  { MODE_QNH, MODE_QFE } altitude_display_mode
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO, DISPLAY_UL } display_style_t;
 typedef enum e_display_variant { DISPLAY_WHITE_ON_BLACK, DISPLAY_BLACK_ON_WHITE } display_variant_t;
 typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON, S2F_HW_SWITCH_INVERTED, S2F_SWITCH_DISABLE } e_s2f_type;
-typedef enum e_serial_route_type { RT_XCVARIO, RT_WIRELESS, RT_S1, RT_S2, RT_CAN } e_serial_routing_t;
 typedef enum e_wireless_type { WL_DISABLE, WL_BLUETOOTH, WL_WLAN_MASTER, WL_WLAN_CLIENT, WL_WLAN_STANDALONE, WL_BLUETOOTH_LE } e_wireless_t;
 typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED, AM_EXTERNAL, AM_FLAP, AM_AHRS } e_audiomode_t;
 typedef enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE } e_audio_tone_mode_t;
@@ -88,7 +87,7 @@ typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data 
 typedef enum e_volatility { VOLATILE, PERSISTENT, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
 typedef enum e_can_mode { CAN_MODE_MASTER, CAN_MODE_CLIENT, CAN_MODE_STANDALONE } e_can_mode_t;
 typedef enum e_altimeter_select { AS_TE_SENSOR, AS_BARO_SENSOR, AS_EXTERNAL } e_altimeter_select_t;
-typedef enum e_menu_screens { SCREEN_VARIO, SCREEN_GMETER, SCREEN_HORIZON, SCREEN_FLARM, SCREEN_THERMAL_ASSISTANT } e_menu_screens_t; // addittional screens
+typedef enum e_menu_screens { SCREEN_VARIO=1, SCREEN_GMETER=2, SCREEN_HORIZON=4, SCREEN_FLARM=8, SCREEN_THERMAL_ASSISTANT=16 } e_menu_screens_t; // addittional screens
 typedef enum e_s2f_arrow_color { AC_WHITE_WHITE, AC_BLUE_BLUE, AC_GREEN_RED } e_s2f_arrow_color_t;
 typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RED }  e_vario_needle_color_t;
 typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN, DISPLAY_NINETY } e_display_orientation_t;
@@ -215,13 +214,13 @@ public:
 
 	}
 
-	inline T* getPtr() {
+	T* getPtr() {
 		return &_value;
 	}
-	inline T& getRef() {
+	T& getRef() {
 		return _value;
 	}
-	inline T get() const {
+	T get() const {
 		return _value;
 	}
 	const char * key() {
@@ -270,9 +269,6 @@ public:
 		if ( dosync ) {
 			sync();
 		}
-		else if( (flags._sync == SYNC_BIDIR) && isClient() ){
-			sendAck();
-		}
 		if( doAct ){
 			if( _action != 0 ) {
 				(*_action)();
@@ -290,22 +286,15 @@ public:
 		return (e_unit_type_t)flags._unit;
 	}
 
-	void ack( T aval ){
-		if( aval != _value ){
-			// ESP_LOGI(FNAME,"sync to value client has acked");
-			_value = aval;
-		}
-	}
-
-	void sendAck(){
-		sendSetup( flags._sync, _key, typeName(), (void *)(&_value), sizeof( _value ), true );
-	}
-
 	bool sync(){
-		if( SetupCommon::mustSync( flags._sync ) ){
+		if( syncProto &&
+			( (!syncProto->isMaster() && flags._sync == SYNC_FROM_CLIENT) 
+				|| (syncProto->isMaster() && flags._sync == SYNC_FROM_MASTER) 
+				|| flags._sync == SYNC_BIDIR ) ) {
 			// ESP_LOGI( FNAME,"Now sync %s", _key );
-			sendSetup( flags._sync, _key, typeName(), (void *)(&_value), sizeof( _value ) );
+			syncProto->sendItem(_key, typeName(), (void *)(&_value), sizeof( _value ) );
 			return true;
+		
 		}
 		return false;
 	}
@@ -378,11 +367,11 @@ public:
 					set( _default );  // try to init
 					commit();
 				}
-				else {
+				// else {
 					// char val[30];
 					// value_str(val);
 					// ESP_LOGI(FNAME,"NVS key %s exists len: %d, value: %s", _key, required_size, val );
-				}
+				// }
 			}
 		}
 		return true;
@@ -495,7 +484,6 @@ extern SetupNG<float>  		s2f_delay;
 extern SetupNG<float>  		factory_volt_adjust;
 extern SetupNG<float>  		bugs;
 extern SetupNG<int>  		cruise_mode;
-extern SetupNG<float>  		OAT;
 extern SetupNG<float>  		OAT;   // outside temperature
 extern SetupNG<float>  		swind_dir;   // straight wind direction
 extern SetupNG<float>  		swind_speed;
@@ -531,14 +519,12 @@ extern SetupNG<int>  		qnh_unit;
 extern SetupNG<int>  		rot_default;
 extern SetupNG<int>  		serial1_speed;
 extern SetupNG<int>  		serial1_rxloop;
-extern SetupNG<int>  		serial1_tx;
-extern SetupNG<int>			serial1_pins_twisted;
+extern SetupNG<int>  		serial1_pins_twisted;
 extern SetupNG<int>  		serial1_tx_inverted;
 extern SetupNG<int>  		serial1_rx_inverted;
 extern SetupNG<int>  		serial1_tx_enable;
 extern SetupNG<int>  		serial2_speed;
-extern SetupNG<int>  		serial2_tx;
-extern SetupNG<int>			serial2_pins_twisted;
+extern SetupNG<int>  		serial2_pins_twisted;
 extern SetupNG<int>  		serial2_tx_inverted;
 extern SetupNG<int>  		serial2_rx_inverted;
 extern SetupNG<int>  		serial2_tx_enable;
@@ -670,10 +656,7 @@ extern SetupNG<float> 		master_xcvario;
 extern SetupNG<int> 		master_xcvario_lock;
 extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		menu_screens;
-extern SetupNG<int> 		screen_gmeter;
-extern SetupNG<int> 		screen_horizon;
 extern SetupNG<int> 		screen_centeraid;
-extern SetupNG<int> 		data_monitor_mode;
 extern SetupNG<t_bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;
 extern SetupNG<t_tenchar_id>  custom_wireless_id;

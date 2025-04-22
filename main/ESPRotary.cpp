@@ -3,11 +3,13 @@
 
 #include "SetupNG.h"
 #include "sensor.h"
+#include "protocol/Clock.h"
 #include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
+#include <freertos/portmacro.h>
 #include <driver/gpio.h>
 
 #include <cstdio>
@@ -18,57 +20,46 @@
 // the global access to the rotary knob
 ESPRotary *Rotary = nullptr;
 
-constexpr int DEBOUNCE_TIME_us = 700;         // us debounce threshold
-
 static std::stack<RotaryObserver *> observers;
 
-// The button portion of the rotary ISR
-void IRAM_ATTR button_isr_handler(void* arg)
+// clock tick timer (task context)
+bool IRAM_ATTR ESPRotary::tick()
 {
-	ESPRotary *knob = static_cast<ESPRotary*>(arg);
-	static uint64_t lastPressTime = 0;
-	uint64_t currentTime = esp_timer_get_time();
-	// Ignore interrupts occurring within debounce time
-	if (int(currentTime - lastPressTime) < DEBOUNCE_TIME_us) {
-		return;
+	// called every 10msec
+	int gotEvent;
+	bool buttonRead = gpio_get_level(getSw()) == 0; // button pressed (active LOW)
+	debounceCount = (buttonRead == lastButtonRead) ? (debounceCount+1) : 0;
+	lastButtonRead = buttonRead;
+	if ( holdCount > 0 ) {
+		holdCount++;
+		if ( holdCount > lp_duration ) {
+			gotEvent = LONG_PRESS;
+			holdCount = -1; // go for a "release"
+			xQueueSendFromISR(buttonQueue, &gotEvent, 0);
+		}
 	}
-
-	// We have not woken a task at the start of the ISR.
-	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+	if ( debounceCount < 3 || (buttonRead == state) ) {
+		return false;
+	}
 
 	// A valid edge detected
-	esp_timer_stop(knob->lp_timer);
-	lastPressTime = currentTime;
-	int buttonState = gpio_get_level(knob->getSw());
-	knob->state = buttonState == 0;
-
-	if (buttonState == 0 ) {
-		// Button pressed (active LOW)
-		esp_timer_start_once(knob->lp_timer, knob->lp_duration);
+	state = buttonRead;
+	if (state) {
+		holdCount = 1; // start counting
 	}
-	else{ // Button released
-		if( knob->hold ) {
-			knob->hold = false;
-			int releaseEvent = BUTTON_RELEASED;
-			xQueueSendFromISR(knob->buttonQueue, &releaseEvent, &xHigherPriorityTaskWoken);
+	else { // Button released
+		if( holdCount < 0 ) {
+			gotEvent = BUTTON_RELEASED;
+			xQueueSendFromISR(buttonQueue, &gotEvent, 0);
 		}
 		else {
-			int pressType = SHORT_PRESS;
-			xQueueSendFromISR(knob->buttonQueue, &pressType, &xHigherPriorityTaskWoken);
+			gotEvent = SHORT_PRESS;
+			xQueueSendFromISR(buttonQueue, &gotEvent, 0);
 		}
+		holdCount = 0; // stop counting
 	}
-	if( xHigherPriorityTaskWoken ) {
-		portYIELD_FROM_ISR ();
-	}
-}
-// hold time-out watch dog time (task context)
-void IRAM_ATTR longpress_timeout(void* arg)
-{
-	ESPRotary *knob = static_cast<ESPRotary*>(arg);
 
-	knob->hold = true;
-	int pressType = LONG_PRESS;
-	xQueueSend(knob->buttonQueue, &pressType, 0); // task context
+	return false;
 }
 
 // The rotary portion ISR, PCNT event callback function
@@ -98,33 +89,6 @@ static bool IRAM_ATTR pcnt_event_handler(pcnt_unit_handle_t unit, const pcnt_wat
 	return high_task_wakeup;
 }
 
-// static void IRAM_ATTR encoder_isr_handler(void *arg)
-// {
-// 	static uint64_t lastPulseTime = 0;
-// 	static int encoder_position = 1;
-// 	ESPRotary *knob = static_cast<ESPRotary*>(arg);
-// 	uint64_t currentTime = esp_timer_get_time();
-// 	if (int(currentTime-lastPulseTime) < DEBOUNCE_TIME_us) {
-// 		return;
-// 	}
-// 	pulse_time = int(currentTime-lastPulseTime);
-// 	int increment = get_increment(pulse_time);
-// 	if ( increment == 1 ) {
-// 		encoder_position = 1;
-// 		encoder_position -= 2 * gpio_get_level(knob->getDt());
-// 	}
-// 	//else suppress all of a sudden changes in rotational direction
-// 	int evt = (increment * encoder_position) << 4;
-
-// 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-// 	xQueueSendFromISR(buttonQueue, &evt, &xHigherPriorityTaskWoken);
-// 	lastPulseTime = currentTime;
-// 	if( xHigherPriorityTaskWoken ) {
-// 		portYIELD_FROM_ISR ();
-// 	}
-// }
-
-
 // Observer registration
 void RotaryObserver::attach() {
 	// ESP_LOGI(FNAME,"Attach obs: %p", obs );
@@ -142,6 +106,7 @@ void RotaryObserver::detach() {
 
 // The rotary knob
 ESPRotary::ESPRotary(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw) :
+	Clock_I(1),
 	clk(aclk),
 	dt(adt),
 	sw(asw)
@@ -154,14 +119,14 @@ ESPRotary::ESPRotary(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw) :
 	gpio_set_direction(dt, GPIO_MODE_INPUT);
 	gpio_pulldown_en(clk);
 	gpio_pulldown_en(dt);
+
+	buttonQueue = xQueueCreate(10, sizeof(int));
 }
 
 ESPRotary::~ESPRotary()
 {
-	if ( buttonQueue ) {
-		vQueueDelete(buttonQueue);
-		esp_timer_delete(lp_timer);
-	}
+	vQueueDelete(buttonQueue);
+	Clock::stop(this);
 }
 
 void ESPRotary::begin()
@@ -206,56 +171,18 @@ void ESPRotary::begin()
 	ESP_ERROR_CHECK(pcnt_unit_add_watch_point(pcnt_unit, -increment));
 
 	// Register event callback
-	if ( ! buttonQueue ) {
-		buttonQueue = xQueueCreate(10, sizeof(int));
-	}
 	pcnt_event_callbacks_t cbs = {
 		.on_reach = pcnt_event_handler
 	};
 	ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(pcnt_unit, &cbs, buttonQueue));
-
 
 	// Enable & start PCNT
 	pcnt_unit_enable(pcnt_unit);
 	pcnt_unit_clear_count(pcnt_unit);
 	pcnt_unit_start(pcnt_unit);
 
-	// alternative to pcnt module
-	// gpio_config_t io_conf = {
-	// 	.pin_bit_mask = (1ULL << clk) | (1ULL << dt),
-	// 	.mode = GPIO_MODE_INPUT,
-	// 	.pull_up_en = GPIO_PULLUP_ENABLE,
-	// 	.pull_down_en = GPIO_PULLDOWN_DISABLE,
-	// 	.intr_type = GPIO_INTR_NEGEDGE,
-	// };
-	// gpio_config(&io_conf);
-
-	// gpio_install_isr_service(0);
-	// gpio_isr_handler_add(clk, encoder_isr_handler, this);
-
-
-	// Create long press timer
-	if ( ! lp_timer ) {
-		gpio_config_t io_conf = {
-			.pin_bit_mask = (1ULL << sw),
-			.mode = GPIO_MODE_INPUT,
-			.pull_up_en = GPIO_PULLUP_ENABLE,
-			.pull_down_en = GPIO_PULLDOWN_DISABLE,
-			.intr_type = GPIO_INTR_ANYEDGE
-		};
-		gpio_config(&io_conf);
-		gpio_install_isr_service(0);
-		gpio_isr_handler_add(sw, button_isr_handler, this);
-	
-		esp_timer_create_args_t timer_args = {
-			.callback = (esp_timer_cb_t)longpress_timeout,
-			.arg = this,
-			.dispatch_method = ESP_TIMER_TASK,
-			.name = "long_press",
-			.skip_unhandled_events = true,
-		};
-		esp_timer_create(&timer_args, &lp_timer);
-	}
+	// start tick polling
+	Clock::start(this);
 }
 
 void ESPRotary::stop()

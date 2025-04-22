@@ -192,6 +192,7 @@ union PackedInt5Array {
 constexpr int IS_REAL       = 0x01;
 constexpr int MULTI_CONF    = 0x02;
 constexpr int HAS_PROFILE   = 0x04;
+constexpr int IS_VARIANT    = 0x08; // Same device id, just another option to connect
 
 // Flash stored device invariant attributes
 struct DeviceAttributes
@@ -205,7 +206,8 @@ struct DeviceAttributes
         struct {
             int isReal      : 1; // a device with a physical realastate and meant to be selectable
             int multipleConf: 1; // can be configured in multiple steps (e.g. Navi)
-            int hasProfile  : 1; // protocols are organized through a profile, instead of a list
+            int profileConf : 1; // protocols are organized through a profile, instead of a list
+            int aVariant    : 1; // just a variant of the connection details, not a new device entry
         };
         int flags;
     };
@@ -215,5 +217,7 @@ struct DeviceAttributes
 
     bool isSelectable() const { return (bool)isReal; }
     bool isMultiConf() const { return (bool)multipleConf; }
+    bool hasProfile() const { return (bool)profileConf; }
+    bool isVariant() const { return (bool)aVariant; }
 
 };

@@ -33,7 +33,7 @@ void NmeaPrtcl::addPlugin(NmeaPlugin *pm)
         Key key = entry->first;
         NmeaMessageParser value = entry->second;
         if ( _parsmap.find(key) == _parsmap.end() ) { // do not overwrite entries
-            _parsmap[key] = value;
+            _parsmap[key] = MapValue(value, pm);
             ESP_LOGI(FNAME, "copy parser for %s", key.toString().c_str());
         }
     }
@@ -59,7 +59,7 @@ dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
             _sm._state = HEADER;
             _sm._word_start.clear();
             _mkey.value = 0;
-            _parser = nullptr;
+            _parser = {};
             ESP_LOGD(FNAME, "Msg START_TOKEN");
         }
         break;
@@ -126,8 +126,8 @@ dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
         _sm._state = START_TOKEN; // restart parsing
         ESP_LOGI(FNAME, "Msg complete %s", _mkey.toString().c_str());
         action = _default_action;
-        if ( _parser ) {
-            action = (_parser)(this);
+        if ( _parser.first ) {
+            action = (_parser.first)(_parser.second);
         }
     }
     return dl_control_t(action);

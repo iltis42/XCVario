@@ -2,7 +2,7 @@
 
 #include "sensor.h"
 #include "logdef.h"
-#include "Setup.h"
+#include "SetupNG.h"
 
 
 #include <eglib/display/ili9341.h>

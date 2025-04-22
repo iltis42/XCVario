@@ -13,6 +13,9 @@
 
 MessageBox *MBOX; // the global representation
 
+// A message is represented throught 
+// - alert level (1,2,3)
+// - and a text message
 struct Message {
     int alert_level;
     std::string text;
@@ -26,8 +29,10 @@ void MessageBox::createMessageBox()
     }
 }
 
+const int CLOCK_DIVIDER = 4;
+
 MessageBox::MessageBox() :
-    Clock_I(2),
+    Clock_I(CLOCK_DIVIDER),
     width(MYUCG->getDisplayWidth()),
     height(MYUCG->getDisplayHeight())
 {
@@ -48,14 +53,17 @@ void MessageBox::newMessage(int alert_level, const char *str)
     else {
         _msg_list.push_back(std::move(msg));
     }
-    if ( ! current ) { Clock::start(this); }
+    if ( ! current ) {
+        nextMsg();
+        Clock::start(this);
+    }
 }
 
+// returns true in case a message is now on the display
 bool MessageBox::nextMsg()
 {
-    bool start_timer = (current == nullptr);
-
-    // clear potential old  message
+    // clear message area
+    xSemaphoreTake(display_mutex,portMAX_DELAY);
     MYUCG->undoClipRange();
     removeMsg();
 
@@ -64,11 +72,14 @@ bool MessageBox::nextMsg()
         _msg_list.pop_front();
     }
     else {
-        Display->redrawValues();
+        // All done
+        xSemaphoreGive(display_mutex);
+        current = nullptr;
+        Display->redrawValues(); // fixme
         return false;
     }
 
-    // prepare screen 
+    // prepare screen with a colored line on top
     if ( current->alert_level == 1 ) {
         MYUCG->setColor(COLOR_BLUE);
     }
@@ -79,7 +90,6 @@ bool MessageBox::nextMsg()
         MYUCG->setColor(COLOR_RED);
     }
     MYUCG->drawHLine(0, height - 26, width);
-    // MYUCG->setFont(ucg_font_fub35_hr);
     MYUCG->setFont(ucg_font_ncenR14_hr);
     MYUCG->setPrintPos(1, height-2);
     MYUCG->setColor(COLOR_WHITE);
@@ -88,17 +98,14 @@ bool MessageBox::nextMsg()
 
     // Exclude the message area for the rest of the system
     MYUCG->setClipRange(0, 0, width, height - 27);
+    xSemaphoreGive(display_mutex);
 
     // set time counter
     _start_scroll = 0;
     _nr_scroll = std::max(MYUCG->getStrWidth(current->text.c_str()) - width +2, 0);
-    _msg_to = current->alert_level * 10 * (1000/(2*Clock::TICK_ATOM)); // x 10 sec
+    _msg_to = current->alert_level * 10 * (1000/(CLOCK_DIVIDER*Clock::TICK_ATOM)); // x 10 sec
     _print_pos = 0;
 
-    // start the timer
-    if ( start_timer ) {
-        Clock::start(this);
-    }
     return true;
 }
 
@@ -119,13 +126,18 @@ bool MessageBox::tick()
 
     // move text to expose the full message
     _start_scroll++;
-    if (_start_scroll > (4000/(2*Clock::TICK_ATOM)) && _nr_scroll > 0) {
+    if (_start_scroll > (4000/(CLOCK_DIVIDER*Clock::TICK_ATOM)) && _nr_scroll > 0) {
         _nr_scroll--;
         _print_pos--;
+        xSemaphoreTake(display_mutex,portMAX_DELAY);
         MYUCG->undoClipRange();
+        MYUCG->setFont(ucg_font_ncenR14_hr);
+        MYUCG->setColor(COLOR_WHITE);
+        MYUCG->setFontPosBottom();
         MYUCG->setPrintPos(_print_pos, height-2);
         MYUCG->print(current->text.c_str());
         MYUCG->setClipRange(0, 0, width, height - 27);
+        xSemaphoreGive(display_mutex);
     }
     return false;
 }

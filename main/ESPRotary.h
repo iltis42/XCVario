@@ -5,11 +5,12 @@
 
 #pragma once
 
+#include "protocol/ClockIntf.h"
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 
 #include <driver/pulse_cnt.h>
-#include <esp_timer.h>
 #include <driver/gpio.h>
 
 
@@ -51,10 +52,8 @@ private:
 };
 
 
-class ESPRotary
+class ESPRotary final : public Clock_I
 {
-	friend void button_isr_handler(void* arg);
-	friend void longpress_timeout(void *arg);
 
 public:
 	static constexpr const int DEFAULT_LONG_PRESS_THRESHOLD = 400;
@@ -66,7 +65,7 @@ public:
 	QueueHandle_t getQueue() const { return buttonQueue; }
 	esp_err_t updateRotDir();
 	void updateIncrement(int inc);
-	void setLongPressTimeout(int lptime_ms) { lp_duration = (uint64_t)1000 * lptime_ms; }
+	void setLongPressTimeout(int lptime_ms) { lp_duration = lptime_ms/10; }
 	void flushQueue() { xQueueReset(buttonQueue); }
 
 	// observer feed
@@ -82,15 +81,19 @@ public:
 	gpio_num_t getClk() const { return clk; };
 	gpio_num_t getDt() const { return dt; };
 
+	// polling state machine
+	bool tick() override;
+
 private:
 	QueueHandle_t buttonQueue = nullptr;
 	gpio_num_t clk, dt, sw; // actually used pins
 	pcnt_unit_handle_t pcnt_unit = nullptr;
 	pcnt_channel_handle_t pcnt_chan = nullptr;
-	esp_timer_handle_t lp_timer = nullptr;
-	uint64_t lp_duration = DEFAULT_LONG_PRESS_THRESHOLD * 1000; // default 400msec
+	int lp_duration = DEFAULT_LONG_PRESS_THRESHOLD/10; // default 400msec
 	bool state = false;
-	bool hold = false; // timer timeout set the hold state
+	int holdCount = 0; // timer timeout set the hold state
+	bool lastButtonRead = false;
+	int debounceCount = 0;
 	int increment = 1;
 };
 

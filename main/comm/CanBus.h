@@ -8,6 +8,11 @@
 
 class DataLink;
 
+
+// There is no temperature control for XCV hardware < 23, GPIO Pin there is wired to CAN slope control
+#define HAS_MPU_TEMP_CONTROL (CAN && !CAN->hasSlopeSupport())
+
+
 // #define CAN_NMEA_ID_MASTER 0x20
 // #define CAN_CONFIG_ID_MASTER 0x21
 // #define CAN_KEEPALIVE_ID_MASTER 0x11

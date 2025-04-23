@@ -114,9 +114,6 @@ extern float mpu_target_temp;
 
 extern MPU_t MPU;
 
-// There is no temperature control for XCV hardware < 23, GPIO Pin there is wired to CAN slope control
-#define HAS_MPU_TEMP_CONTROL (CAN && !CAN->hasSlopeSupport())
-
 // The XCV access point password
 constexpr const char* PASSPHARSE = "xcvario-21";
 

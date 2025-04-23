@@ -99,6 +99,8 @@ public:
     void addPlugin(NmeaPlugin *pm); // one way addition
     bool hasProtocol(ProtocolType p);
     dl_control_t nextBytes(const char* c, int len) override;
+    // house keeping
+    const std::vector<NmeaPlugin*>& getAllPlugs() const { return _plugs; }
 
 
     // XCV transmitter routines

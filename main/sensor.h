@@ -16,6 +16,7 @@
 #include "AirspeedSensor.h"
 
 #include <hal/gpio_types.h>
+#include <esp_timer.h>
 
 // Display 4 Wire SPI and Display CS
 #define RESET_Display  GPIO_NUM_5       // Reset pin for Display

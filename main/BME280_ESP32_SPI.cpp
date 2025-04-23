@@ -93,6 +93,7 @@ bool BME280_ESP32_SPI::begin(){
 		.cs_ena_posttrans = 0,
 		.clock_speed_hz = _freq,
 		.input_delay_ns = 0,
+		.sample_point = SPI_SAMPLING_POINT_PHASE_0,
 		.spics_io_num = _cs,
 		.flags = 0,
 		.queue_size = 1, // Transaction queue size

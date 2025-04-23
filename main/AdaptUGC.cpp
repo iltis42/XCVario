@@ -126,7 +126,7 @@ void AdaptUGC::setFont(const uint8_t *f, bool filled ){    // adapter
 		eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_20px);
 		break;
 	default:
-		printf("No Font found !\n");
+		ESP_LOGI(FNAME, "Font not found !\n");
 	}
 }
 

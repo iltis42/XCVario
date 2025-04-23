@@ -227,8 +227,8 @@ public:
 		return _key;
 	}
 
-	virtual T getGui() const { return get(); } // tb. overloaded for blackboard
-	virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
+	// virtual T getGui() const { return get(); } // tb. overloaded for blackboard fixme
+	// virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
 	virtual bool value_str(char *str){
 		if( flags._volatile != VOLATILE ){

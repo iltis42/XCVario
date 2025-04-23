@@ -153,7 +153,7 @@ SetupNG<float> 			polar_speed2( "POLAR_SPEED2",   125, true, SYNC_FROM_MASTER, P
 SetupNG<float> 			polar_sink2( "POLAR_SINK2",    -0.97, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
 SetupNG<float> 			polar_speed3( "POLAR_SPEED3",   175, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
 SetupNG<float> 			polar_sink3( "POLAR_SINK3",    -2.24, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar );
-SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  160, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
+SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  80, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
 SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast );
 
 SetupNG<float>  		speedcal( "SPEEDCAL", 0.0, true, SYNC_FROM_MASTER );
@@ -169,7 +169,7 @@ SetupNG<float>  		range( "VARIO_RANGE", 5.0, true, SYNC_FROM_MASTER, PERSISTENT,
 SetupNG<int>			log_scale( "LOG_SCALE", 0 );
 SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_NONE, VOLATILE, 0 );  // ballast increase from reference weight in %
 SetupNG<float>  		ballast_kg( "BAL_KG" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_bal_water );
-SetupNG<float>			empty_weight( "EMPTY_WGT", 250, true, SYNC_BIDIR, PERSISTENT, change_empty_weight );
+SetupNG<float>			empty_weight( "EMPTY_WGT", 361.2, true, SYNC_BIDIR, PERSISTENT, change_empty_weight );
 SetupNG<float>			crew_weight( "CREW_WGT", 80, true, SYNC_BIDIR, PERSISTENT, change_crew_weight );
 SetupNG<float>			gross_weight( "CREW_WGT", 350, true, SYNC_NONE, VOLATILE ); // derived from above
 SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, modifyPolar  );
@@ -212,7 +212,7 @@ SetupNG<int>  			fl_auto_transition( "FL_AUTO" , 0 );
 SetupNG<int>  			alt_display_mode( "ALT_DISP_MODE" , MODE_QNH );
 SetupNG<float>  		transition_alt( "TRANS_ALT", 50 );   // Transition Altitude
 SetupNG<int>  			glider_type( "GLIDER_TYPE", 0, true, SYNC_FROM_MASTER, PERSISTENT,  polar_set );
-SetupNG<int>  			glider_type_index( "GLIDER_TYPE_IDX", 0, true, SYNC_FROM_MASTER, PERSISTENT, polar_update_name );
+SetupNG<int>  			glider_type_index( "GLIDER_TYPE_IDX", 1000, true, SYNC_FROM_MASTER, PERSISTENT, polar_update_name );
 SetupNG<int>  			ps_display( "PS_DISPLAY", 1 );
 
 SetupNG<float>  		as_offset( "AS_OFFSET" , -1 );

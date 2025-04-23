@@ -109,8 +109,8 @@ public:
     static int nrDevs() { return (DEVMAN) ? DEVMAN->getNrDevs() : 0; }
     int getNrDevs() const { return _device_map.size(); }
     // Search for the next free CAN id, organized in chunks of four in 5 prio categories.
-    static int getFreeCANId(int prio);
-    static void undoFreeCANId(int prio);
+    static int reserveCANId(int prio);
+    static void undoReserveCANId(int prio);
     // debugging
     void dumpMap() const;
     bool startDM(ItfTarget iid); // Data Monitor

@@ -592,7 +592,7 @@ DataLink *DeviceManager::getFlarmHost()
 // return an id chunk of four to use (0..0x3fc), use then +0, +1, +2, +3
 // else -1 in case there is no chunk left
 static int nxt_free_slot[5] = { 0x400, 0x200, 0x100, 0x80, 0x40 }; // 5 prio slots of 15 chucks of 4 ids
-int DeviceManager::getFreeCANId(int prio)
+int DeviceManager::reserveCANId(int prio)
 {
     if ( prio > 4 ) {
         prio = 4;
@@ -608,7 +608,7 @@ int DeviceManager::getFreeCANId(int prio)
     return -1;
 }
 
-void DeviceManager::undoFreeCANId(int prio)
+void DeviceManager::undoReserveCANId(int prio)
 {
     if ( prio > 4 ) {
         prio = 4;

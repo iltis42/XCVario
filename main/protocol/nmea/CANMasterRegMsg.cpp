@@ -114,7 +114,7 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
         if ( client_ch > 0 ) {
             ESP_LOGI(FNAME, "reuse port %d", client_ch);
         } else {
-            client_ch = DeviceManager::getFreeCANId(prio);
+            client_ch = DeviceManager::reserveCANId(prio);
             ESP_LOGI(FNAME, "new port %d", client_ch);
         }
 
@@ -133,7 +133,7 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
             }
             else {
                 // Something went wrong, undo port reservation, send NAC
-                DeviceManager::undoFreeCANId(prio);
+                DeviceManager::undoReserveCANId(prio);
             }
         }
         DEV::Send(msg);

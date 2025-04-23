@@ -38,7 +38,7 @@ bool IRAM_ATTR ESPRotary::tick()
 			xQueueSendFromISR(buttonQueue, &gotEvent, 0);
 		}
 	}
-	if ( debounceCount < 3 || (buttonRead == state) ) {
+	if ( debounceCount < 2 || (buttonRead == state) ) {
 		return false;
 	}
 

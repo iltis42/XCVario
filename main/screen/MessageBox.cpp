@@ -112,7 +112,7 @@ bool MessageBox::nextMsg()
 void MessageBox::removeMsg()
 {
     MYUCG->setColor(COLOR_BLACK);
-    MYUCG->drawBox(0, height - 26, width, height);
+    MYUCG->drawBox(0, height - 26, width, 26);
 }
 
 bool MessageBox::tick()

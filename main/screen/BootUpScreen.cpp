@@ -188,8 +188,8 @@ void BootUpScreen::finish()
 
 bool BootUpScreen::tick()
 {
+	xSemaphoreTake(display_mutex,portMAX_DELAY);
     MYUCG->setColor(COLOR_WHITE);
-
     for (int i = 0; i < MAX_PIXELS_PER_FRAME; ) {
         int x = rand() % LOGO_WIDTH;
         int y = rand() % LOGO_HEIGHT;
@@ -201,6 +201,7 @@ bool BootUpScreen::tick()
             i++;
         }
     }
+    xSemaphoreGive(display_mutex);
     return false;
 }
 

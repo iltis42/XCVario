@@ -321,7 +321,7 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 		delete avgZ;
 	}else{
 		ESP_LOGI( FNAME, "Show Calibration");
-		t_bitfield_compass b = calibration_bits.get();
+		bitfield_compass b = calibration_bits.get();
 		reporter( magRaw, scale, bias, b, true );
 		while( Rotary->readSwitch() == true  )
 			delay(100);

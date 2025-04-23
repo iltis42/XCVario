@@ -657,7 +657,7 @@ extern SetupNG<int> 		master_xcvario_lock;
 extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		menu_screens;
 extern SetupNG<int> 		screen_centeraid;
-extern SetupNG<t_bitfield_compass> 	calibration_bits;
+extern SetupNG<bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;
 extern SetupNG<t_tenchar_id>  custom_wireless_id;
 extern SetupNG<int> 		drawing_prio;

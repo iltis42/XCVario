@@ -383,7 +383,7 @@ SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
 SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
 SetupNG<int> 			menu_screens("MENU_SCR", 0 );
 SetupNG<int> 			screen_centeraid("SCR_CA", 0, RST_NONE, SYNC_NONE );
-SetupNG<t_bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
+SetupNG<bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
 SetupNG<t_tenchar_id>  custom_wireless_id("WLID", t_tenchar_id("") );
 SetupNG<int> 			drawing_prio("DRAWP", DP_NEEDLE );

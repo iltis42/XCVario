@@ -27,7 +27,7 @@
 #include "Messages.h"
 #include "DeviceMgr.h"
 #include "DataMonitor.h"
-#include "logdefnone.h"
+#include "logdef.h"
 
 #include <array>
 
@@ -44,7 +44,7 @@ NmeaPrtcl *DataLink::enforceNmea(DeviceId did, int sendport, ProtocolType ptyp)
 {
     if ( !_nmea ) {
         // Create an NMEA protocol first
-        return static_cast<NmeaPrtcl*> ( new NmeaPrtcl(did, sendport, ptyp, _sm, *this) );
+        return new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
     }
     return static_cast<NmeaPrtcl*>( _nmea);
 }
@@ -90,8 +90,8 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     {
         ESP_LOGI(FNAME, "New Flarm");
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new GpsMsg(*nmea, ptyp));
-        nmea->addPlugin(new GarminMsg(*nmea, ptyp));
+        nmea->addPlugin(new GpsMsg(*nmea));
+        nmea->addPlugin(new GarminMsg(*nmea));
         nmea->addPlugin(new FlarmMsg(*nmea));
         tmp = nmea;
         break;
@@ -124,8 +124,8 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     {
         ESP_LOGI(FNAME, "New XCVario");
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new XCVarioMsg(*nmea, ptyp));
-        nmea->addPlugin(new CambridgeMsg(*nmea, ptyp));
+        nmea->addPlugin(new XCVarioMsg(*nmea));
+        nmea->addPlugin(new CambridgeMsg(*nmea));
         tmp = nmea;
         break;
     }
@@ -143,7 +143,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
         // The SyncMsg serves on both side, need to know it's role
         // connect to a client -> you are master
-        nmea->addPlugin(new XCVSyncMsg(*nmea, did==XCVARIOCLIENT_DEV));
+        nmea->addPlugin(new XCVSyncMsg(*nmea, did==XCVARIOCLIENT_DEV)); // true when on master (!!)
         tmp = nmea;
         break;
     }
@@ -151,7 +151,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     {
         ESP_LOGI(FNAME, "New OpenVario");
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new OpenVarioMsg(*nmea, ptyp));
+        nmea->addPlugin(new OpenVarioMsg(*nmea));
         tmp = nmea;
         break;
     }
@@ -159,7 +159,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     {
         ESP_LOGI(FNAME, "New Borgelt");
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new BorgeltMsg(*nmea, ptyp));
+        nmea->addPlugin(new BorgeltMsg(*nmea));
         tmp = nmea;
         break;
     }
@@ -167,7 +167,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     {
         ESP_LOGI(FNAME, "New Cambridge");
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new CambridgeMsg(*nmea, ptyp));
+        nmea->addPlugin(new CambridgeMsg(*nmea));
         tmp = nmea;
         break;
     }
@@ -320,11 +320,6 @@ void DataLink::switchProtocol()
     }
 }
 
-ProtocolItf* DataLink::getBinary() const
-{
-    return _binary;
-}
-
 void DataLink::updateRoutes()
 {
     ESP_LOGD(FNAME, "get routing for %d/%d", _did, _itf_id.port);
@@ -344,10 +339,14 @@ PortList DataLink::getAllSendPorts() const
 
 void DataLink::dumpProto()
 {
-    for (ProtocolItf* it : std::array<ProtocolItf*, 2>{_nmea, _binary}) {
-        if (it) {
-            ESP_LOGI(FNAME, "    lp%d: did%d\tpid%d\tsp%d", getPort(), it->getDeviceId(), it->getProtocolId(), it->getSendPort());
+    ESP_LOGI(FNAME, "    listen port %d", getPort());
+    if ( _nmea ) {
+        for (auto it : static_cast<NmeaPrtcl*>(_nmea)->getAllPlugs() ) {
+            ESP_LOGI(FNAME, "       nm did%d\tpid%d\tsp%d", it->getNMEA().getDeviceId(), it->getPtyp(), it->getNMEA().getSendPort());
         }
+    }
+    if ( _binary ) {
+            ESP_LOGI(FNAME, "       bi did%d\tpid%d\tsp%d", _binary->getDeviceId(), _binary->getProtocolId(), _binary->getSendPort());
     }
 }
 

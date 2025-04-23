@@ -32,10 +32,11 @@ public:
     ProtocolItf *goBIN();
     void goNMEA();
     void switchProtocol();
-    ProtocolItf *getBinary() const;
+    ProtocolItf *getBinary() const { return _binary; };
+    ProtocolItf *getNmea() const { return _nmea; };
     void updateRoutes();
     int getPort() const { return _itf_id.port; } // the listen port
-    int getItfId() const { return _itf_id.iid; }
+    InterfaceId getItfId() const { return _itf_id.iid; }
     ItfTarget getTarget() const { return _itf_id; }
     PortList getAllSendPorts() const;
     // dbg

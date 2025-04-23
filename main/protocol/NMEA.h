@@ -51,7 +51,7 @@ union Key {
                 rev.push_back(str[last]);
             }
         }
-        return rev.c_str(); // Null termination
+        return rev;
     }
 
     // comparator for the std::map
@@ -72,9 +72,10 @@ typedef std::map<Key, MapValue> ParserMap;
 class NmeaPlugin
 {
 public:
-    explicit NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp) : _nmeaRef(nr), _belongs(ptyp) {}
+    explicit NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp) : _nmeaRef(nr), _pid(ptyp) {}
     virtual ~NmeaPlugin() = default;
-    ProtocolType getPtyp() const { return _belongs; }
+    ProtocolType getPtyp() const { return _pid; }
+    ProtocolType belongsPtyp() const;
     NmeaPrtcl &getNMEA() const { return _nmeaRef; }
 
     // API
@@ -83,7 +84,7 @@ public:
 protected:
     // access to state machine and buffers for the parse routines
     NmeaPrtcl &_nmeaRef;
-    ProtocolType _belongs;
+    ProtocolType _pid;
 };
 
 // generic mnea message parser

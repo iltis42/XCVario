@@ -13,7 +13,7 @@
 class GarminMsg final : public NmeaPlugin
 {
 public:
-    GarminMsg(NmeaPrtcl &nr, ProtocolType p) : NmeaPlugin(nr, p) {};
+    GarminMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, GARMIN_P) {};
     virtual ~GarminMsg() = default;
     const ParserEntry* getPT() const override { return _pt; }
 

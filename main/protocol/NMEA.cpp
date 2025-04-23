@@ -133,4 +133,7 @@ dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
     return dl_control_t(action);
 }
 
-
+ProtocolType NmeaPlugin::belongsPtyp() const
+{
+    return _nmeaRef.getProtocolId();
+}

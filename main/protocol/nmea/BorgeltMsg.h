@@ -13,7 +13,7 @@
 class BorgeltMsg final : public NmeaPlugin
 {
 public:
-    BorgeltMsg(NmeaPrtcl &nr, ProtocolType p) : NmeaPlugin(nr, p) {};
+    BorgeltMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, BORGELT_P) {};
     virtual ~BorgeltMsg() = default;
     const ParserEntry* getPT() const override { return _pt; }
 

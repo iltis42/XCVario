@@ -13,7 +13,7 @@
 class XCVarioMsg final : public NmeaPlugin
 {
 public:
-    XCVarioMsg(NmeaPrtcl &nr, ProtocolType p) : NmeaPlugin(nr, p) {};
+    XCVarioMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, XCVSYNC_P) {};
     virtual ~XCVarioMsg() = default;
     const ParserEntry* getPT() const override { return _pt; }
 

@@ -17,19 +17,21 @@
 #include <string_view>
 
 
-// Routing targets
+// Target device, or routing targets
 union RoutingTarget {
     struct {
         DeviceId    did  : 7;
         int         intf_port : 25;
     };
-    uint32_t raw; // Access the packed 32-bit value
+    uint32_t raw = 0; // Access the packed 32-bit value
 
     // Convenience
     constexpr RoutingTarget(DeviceId did, ItfTarget itfp=0)
         : raw((did & 0x7f) | (itfp.raw & 0x1ffffff) << 7) {}
     constexpr RoutingTarget(DeviceId did, InterfaceId itf, int port)
         : raw((did & 0x7f) | ItfTarget(itf, port).raw << 7) {}
+    constexpr RoutingTarget(uint32_t r)
+        : raw(r) {}
 
     constexpr DeviceId getDeviceId() const {
         return did;
@@ -45,6 +47,11 @@ union RoutingTarget {
     constexpr bool operator<(const RoutingTarget& other) const {
         return raw < other.raw;
     }
+    // Comparison operator for SetupNG
+    constexpr bool operator==(const RoutingTarget& other) const {
+        return raw == other.raw;
+    }
+    // For the route search
     bool match(const RoutingTarget& target) const {
         return ( did == target.did && getItfTarget().matchNoPhy(target.getItfTarget()) );
     }
@@ -52,42 +59,11 @@ union RoutingTarget {
 
 using RoutingList = std::vector<RoutingTarget>;
 
-// Stuffed interfaces
-struct InterfacePack
-{
-    uint32_t bits;
-
-    // static constexpr InterfacePack stuff(std::array<InterfaceId, 5> vals) {
-    //     InterfacePack result{0};
-    //     for (int i = 0; i < 5; ++i) {
-    //         result.bits |= (static_cast<uint64_t>(vals[i]) & 0x1F) << (i * 5);
-    //     }
-    //     return result;
-    // }
-    constexpr InterfacePack(int raw) : bits(raw) {}
-
-    constexpr int32_t get() const {
-        return bits;
-    }
-
-    constexpr InterfaceId get(int index) const {
-        return static_cast<InterfaceId>((bits >> (index * 5)) & 0x1F);
-    }
-
-    constexpr std::array<InterfaceId, 5> unpack() const {
-        std::array<InterfaceId, 5> result{};
-        for (int i = 0; i < 5; ++i) {
-            result[i] = get(i);
-        }
-        return result;
-    }
-};
-
 
 // This stores:
-//   up to 5 interface id's that can the device connect to
-//   up to 6 protocol id's that match to the devices
-//   other attributes in a bitfield
+//   up to 12 interface id's that can the device connect to
+//   .. or up to 12 protocol id's that match to the devices
+//   other attributes in a 4 bit bitfield
 
 // A packed array of 5bit integral values
 union PackedInt5Array {
@@ -97,41 +73,36 @@ union PackedInt5Array {
     };
     uint64_t data = 0; // 64-bit storage
 
-    // constexpr function to pack values at compile time
-    static constexpr uint64_t pack(std::array<InterfaceId, 12> vals) {
-        uint64_t packed = 0;
-        for (int i = 0; i < 12; ++i) {
-            packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
-        }
-        return packed;
-    }
-
-    static constexpr uint64_t pack(std::array<ProtocolType, 12> vals) {
-        uint64_t packed = 0;
-        for (int i = 0; i < 12; ++i) {
-            packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
-        }
-        return packed;
-    }
-
-    // static constexpr uint64_t pack(std::array<int, 12> vals) {
-    //     uint64_t packed = 0;
-    //     for (int i = 0; i < 12; ++i) {
-    //         packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
-    //     }
-    //     return packed;
-    // }
-
     static constexpr int maxSize = 12;
+    using ItfArray = std::array<InterfaceId, maxSize>;
+    using PrtclArray = std::array<ProtocolType, maxSize>;
 
-    constexpr PackedInt5Array(std::array<InterfaceId, 12> itf, int flgs=0) {
+    PackedInt5Array() = default;
+    constexpr PackedInt5Array(uint64_t d) : data(d) {}
+    constexpr PackedInt5Array(ItfArray itf, int flgs=0) {
         data = pack(itf);
         data |= uint64_t(flgs)<<60;
     }
-
-    constexpr PackedInt5Array(std::array<ProtocolType, 12> proto, int flgs=0) {
+    constexpr PackedInt5Array(PrtclArray proto, int flgs=0) {
         data = pack(proto);
         data |= uint64_t(flgs)<<60;
+    }
+
+
+    // constexpr function to pack values at compile time
+    static constexpr uint64_t pack(ItfArray vals) {
+        uint64_t packed = 0;
+        for (int i = 0; i < 12; ++i) {
+            packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
+        }
+        return packed;
+    }
+    static constexpr uint64_t pack(PrtclArray vals) {
+        uint64_t packed = 0;
+        for (int i = 0; i < 12; ++i) {
+            packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
+        }
+        return packed;
     }
 
     // Get value at runtime
@@ -145,48 +116,18 @@ union PackedInt5Array {
         return static_cast<ProtocolType>(get(index));
     }
     constexpr int getExtra() const { return flags; }
+
+    // Set value at runtime
+    void set(int index, int datum) {
+        data &= ~(0x1f << (index * 5));
+        data |= (static_cast<uint64_t>(datum) & 0x1f) << (index * 5);
+    }
+
+    // Compare
+    constexpr bool operator==(const PackedInt5Array& other) const {
+        return data == other.data;
+    }
 };
-
-// union PackedAttributeList {
-//     struct{
-//         int  interfaces  : 20;
-//         int  protocols   : 30;
-//         bool isReal      : 1; // A device with a physical realastate vs. a virtual
-//         bool multipleConf: 1; // can be configured in multiple steps (e.g. Navi)
-//         bool hasProfile  : 1; // Protocols are organized through a profile, instead of a list
-//         // bool reserved    : 5; // fill to 7 bits
-//     };
-//     uint64_t data = 0; // 64-bit storage
-
-//     // constexpr function to pack values at compile time
-//     static constexpr uint64_t stuff(std::array<InterfaceId, 5> vals) {
-//         uint64_t stuffed = 0;
-//         for (int i = 0; i < 5; ++i) {
-//             stuffed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5);
-//         }
-//         return stuffed;
-//     }
-
-//     static constexpr uint64_t pack(std::array<ProtocolType, 6> vals) {
-//         uint64_t packed = 0;
-//         for (int i = 0; i < 6; ++i) {
-//             packed |= (static_cast<uint64_t>(vals[i]) & 0x1f) << (i * 5 + 20);
-//         }
-//         return packed;
-//     }
-
-//     constexpr PackedAttributeList(std::array<InterfaceId, 5> itf, std::array<ProtocolType, 6> val, bool ir, bool multi) {
-//         data = stuff(itf);
-//         data |= pack(val);
-//         data |= ir ? (uint64_t)1<<51 : 0;
-//         data |= multi ? (uint64_t)1<<52 : 0;
-//     }
-
-//     // Get value at runtime
-//     constexpr ProtocolType get(int index) const {
-//         return static_cast<ProtocolType>((data >> (index * 5)) & 0x1f);
-//     }
-// };
 
 // some common flag constants
 constexpr int IS_REAL       = 0x01;
@@ -221,3 +162,20 @@ struct DeviceAttributes
     bool isVariant() const { return (bool)aVariant; }
 
 };
+
+// Device serialization
+struct DeviceNVS
+{
+    RoutingTarget   target; // devid, interface and port
+    PackedInt5Array proto;  // all protocols
+
+    // Default constructor for initialization
+    constexpr DeviceNVS() = default;
+    constexpr DeviceNVS(RoutingTarget t, PackedInt5Array::PrtclArray p, int f) : target(t), proto(p, f) {}
+    constexpr DeviceNVS(uint32_t t, uint64_t p) : target(t), proto(p) {}
+    
+    constexpr bool operator==(const DeviceNVS& other) const {
+        return target == other.target && proto == other.proto;
+    }
+};
+

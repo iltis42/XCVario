@@ -19,6 +19,7 @@
 #include "Protocols.h"
 #include "ESPAudio.h"
 #include "comm/DeviceMgr.h"
+#include "comm/CanBus.h"
 #include "logdef.h"
 
 #include <freertos/FreeRTOS.h>
@@ -36,25 +37,66 @@
 
 char SetupCommon::_ID[16] = { 0 };
 char SetupCommon::default_id[6] = { 0 };
-std::vector<SetupCommon *> *SetupCommon::instances = 0;
+std::vector<SetupCommon *> SetupCommon::instances;
 XCVSyncMsg *SetupCommon::syncProto = nullptr;
 
 
 SetupCommon::SetupCommon() {
-	if( !instances )  // instantiate first
-		instances = new std::vector<SetupCommon *>;
+	instances.push_back( this );  // add into vector of setup vars
 }
 
 SetupCommon::~SetupCommon() {
-	if( !instances->size() )
-		delete instances;
+	for ( auto it : instances ) {
+		if ( it == this ) {
+			it->erase();
+			break;
+		}
+	}
+}
+
+bool SetupCommon::erase() {
+	if( flags._volatile != PERSISTENT ){
+		return true;
+	}
+	bool ret = NVS.erase(_key.data());
+	if( !ret ){
+		return false;
+	}
+	else {
+		// ESP_LOGI(FNAME,"NVS erased key  %s", _key );
+		setDefault();
+		return true;
+	}
+}
+
+bool SetupCommon::exists() const {
+	if( flags._volatile != PERSISTENT ) {
+		return true;
+	}
+	size_t size;
+	bool ret = NVS.getBlob(_key.data(), nullptr, &size);
+	return ret;
+}
+
+bool SetupCommon::commit() {
+	// ESP_LOGI(FNAME,"NVS commit(): %s ", _key );
+	if( flags._volatile != PERSISTENT ){
+			return true;
+	}
+	write();
+	bool ret = NVS.commit();
+	if( !ret ) {
+		return false;
+	}
+	flags._dirty = false;
+	return true;
 }
 
 SetupCommon * SetupCommon::getMember( const char * key ){
-	for(int i = 0; i < instances->size(); i++ ) {
-		if( std::string( key ) == std::string( (*instances)[i]->key() )){
-			// ESP_LOGI(FNAME,"found key %s", (*instances)[i]->key() );
-			return (*instances)[i];
+	for(int i = 0; i < instances.size(); i++ ) {
+		if( std::string(key) == instances[i]->key() ){
+			// ESP_LOGI(FNAME,"found key %s", instances[i]->key() );
+			return instances[i];
 		}
 	}
 	return 0;
@@ -62,8 +104,8 @@ SetupCommon * SetupCommon::getMember( const char * key ){
 
 // at time of connection establishment
 bool SetupCommon::syncEntry( int entry ){
-    if( entry < instances->size() ) {
-        return (*instances)[entry]->sync();
+    if( entry < instances.size() ) {
+        return instances[entry]->sync();
     }
     return false;
 }
@@ -71,20 +113,22 @@ bool SetupCommon::syncEntry( int entry ){
 
 void SetupCommon::giveConfigChanges( httpd_req *req, bool log_only ){
 	ESP_LOGI(FNAME,"giveConfigChanges");
-	char cfg[50];
-	for(int i = 0; i < instances->size(); i++ ) {
-		if( (*instances)[i]->isDefault() == false ){
-			char val[20];
-			if( (*instances)[i]->value_str( val ) ){
-				sprintf( cfg, "%s,%s\n", (*instances)[i]->key(), val );
-				ESP_LOGI(FNAME,"%s,%s", (*instances)[i]->key(), val );
+	for(int i = 0; i < instances.size(); i++ ) {
+		if( instances[i]->isDefault() == false ) {
+			std::string val = instances[i]->valueAsStr();
+			if( ! val.empty() ){
+				std::string cfg(instances[i]->key());
+				cfg += ',' + val + '\n';
+				ESP_LOGI(FNAME,"%s,%s", instances[i]->key(), val.c_str() );
 				if( !log_only )
-					httpd_resp_send_chunk( req, cfg, strlen(cfg) );
+					httpd_resp_send_chunk( req, cfg.c_str(), cfg.size() );
 			}
 		}
 	}
-	if( !log_only )
-		httpd_resp_send_chunk( req, cfg, 0 );
+	if( !log_only ) {
+		std::string cfg;
+		httpd_resp_send_chunk( req, cfg.c_str(), 0 ); // send a zero length message
+	}
 }
 
 
@@ -109,13 +153,13 @@ int SetupCommon::restoreConfigChanges( int len, char *data ){
 			ESP_LOGI(FNAME,"found text/csv, valid=%d", valid );
 		}
 		else if( (line.length() > 1) && (valid >= 2) && line.find( "," ) != std::string::npos ){
-			printf( "%d, len:%d, %s\n", i, line.length(), line.c_str() );
+			ESP_LOGI(FNAME, "%d, len:%d, %s\n", i, line.length(), line.c_str() );
 			std::string key = line.substr(0, line.find(','));
 			std::string value = line.substr(line.find(',')+1, line.length());
-			printf( "%d %s ", i, key.c_str()  );
+			ESP_LOGI(FNAME, "%d %s ", i, key.c_str()  );
 			SetupCommon * item = getMember( key.c_str() );
-			printf( ", typename: %c \n", item->typeName()  );
-			item->setValueStr( value.c_str() );
+			ESP_LOGI(FNAME, ", typename: %c \n", item->typeName()  );
+			item->setValueFromStr( value.c_str() );
 			item->commit();  // lets do that lazy later
 			i++;
 		}
@@ -125,35 +169,35 @@ int SetupCommon::restoreConfigChanges( int len, char *data ){
 }
 
 void SetupCommon::commitDirty(){
-	for(int i = 0; i < instances->size(); i++ ) {
-		if( (*instances)[i]->dirty() )
-			(*instances)[i]->commit();
+	for(int i = 0; i < instances.size(); i++ ) {
+		if( instances[i]->dirty() )
+			instances[i]->commit();
 	}
 }
 
 bool SetupCommon::factoryReset(){
 	ESP_LOGI(FNAME,"\n\n******  FACTORY RESET ******");
 	bool retsum = true;
-	for(int i = 0; i < instances->size(); i++ ) {
-		ESP_LOGI(FNAME,"i=%d %s erase", i, (*instances)[i]->key() );
-		if( (*instances)[i]->mustReset() ){
-			bool ret = (*instances)[i]->erase();
+	for(int i = 0; i < instances.size(); i++ ) {
+		ESP_LOGI(FNAME,"i=%d %s erase", i, instances[i]->key() );
+		if( instances[i]->mustReset() ){
+			bool ret = instances[i]->erase();
 			if( ret != true ) {
-				ESP_LOGE(FNAME,"Error erasing %s", (*instances)[i]->key() );
+				ESP_LOGE(FNAME,"Error erasing %s", instances[i]->key() );
 				retsum = false;
 			}
-			ret = (*instances)[i]->init();
+			ret = instances[i]->init();
 			if( ret != true ) {
-				for(int i = 0; i < instances->size(); i++ ) {
-					if( (*instances)[i]->dirty() )
-						(*instances)[i]->commit();
+				for(int i = 0; i < instances.size(); i++ ) {
+					if( instances[i]->dirty() )
+						instances[i]->commit();
 				}
 				return true;
-				ESP_LOGE(FNAME,"Error init with default %s", (*instances)[i]->key() );
+				ESP_LOGE(FNAME,"Error init with default %s", instances[i]->key() );
 				retsum = false;
 			}
 			else {
-				ESP_LOGI(FNAME,"%s successfully initialized with default", (*instances)[i]->key() );
+				ESP_LOGI(FNAME,"%s successfully initialized with default", instances[i]->key() );
 			}
 		}
 	}
@@ -175,30 +219,30 @@ bool SetupCommon::initSetup( bool& present ) {
 		present = false;
 	}
 
-	for(int i = 0; i < instances->size(); i++ ) {
-			bool ret = (*instances)[i]->init();
+	for(int i = 0; i < instances.size(); i++ ) {
+			bool ret = instances[i]->init();
 			if( ret != true ) {
-				ESP_LOGE(FNAME,"Error init with default NVS: %s", (*instances)[i]->key() );
+				ESP_LOGE(FNAME,"Error init with default NVS: %s", instances[i]->key() );
 			}
 	}
 
 	if( factory_reset.get() ) {
 		ESP_LOGI(FNAME,"\n\n******  FACTORY RESET ******");
-		for(int i = 0; i < instances->size(); i++ ) {
-			ESP_LOGI(FNAME,"i=%d %s erase", i, (*instances)[i]->key() );
-			if( (*instances)[i]->mustReset() ){
-				bool ret = (*instances)[i]->erase();
+		for(int i = 0; i < instances.size(); i++ ) {
+			ESP_LOGI(FNAME,"i=%d %s erase", i, instances[i]->key() );
+			if( instances[i]->mustReset() ){
+				bool ret = instances[i]->erase();
 				if( ret != true ) {
-					ESP_LOGE(FNAME,"Error erasing %s", (*instances)[i]->key() );
+					ESP_LOGE(FNAME,"Error erasing %s", instances[i]->key() );
 					ret = false;
 				}
-				ret = (*instances)[i]->init();
+				ret = instances[i]->init();
 				if( ret != true ) {
-					ESP_LOGE(FNAME,"Error init with default %s", (*instances)[i]->key() );
+					ESP_LOGE(FNAME,"Error init with default %s", instances[i]->key() );
 					ret = false;
 				}
 				else {
-					ESP_LOGI(FNAME,"%s successfully initialized with default", (*instances)[i]->key() );
+					ESP_LOGI(FNAME,"%s successfully initialized with default", instances[i]->key() );
 				}
 			}
 		}
@@ -266,6 +310,6 @@ bool SetupCommon::isWired()
 
 
 int SetupCommon::numEntries() {
-	return instances->size();
+	return instances.size();
 }
 

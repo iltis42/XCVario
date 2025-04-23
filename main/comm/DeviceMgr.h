@@ -32,7 +32,6 @@ extern DeviceManager* DEVMAN;
 // Static parts of a supported device are id, protocol type(s), ..
 // Runtime relevant info is the link it is connected to, the port(s) it is using for communication.
 //
-// Additionally a routing table that contains all the connected devices relation.
 
 struct Device
 {
@@ -43,6 +42,7 @@ struct Device
     DataLink *getDLforProtocol(ProtocolType p) const;
     PortList getPortList() const;
     bool isAlive() const { return true; } // fixme
+    std::vector<DeviceNVS> getNvsData() const;
     // Attributes
     const DeviceId      _id;
     std::set<DataLink*> _dlink;
@@ -51,24 +51,24 @@ struct Device
     // InterfaceId                 _default_config; // RS232, Baudrate, etc.
 
 // Information to first hand preconfigure an interface at the moment a device gets added to the system
-struct InterfaceConfig
-{
-    InterfaceId     _id;
-    // BaudRate        _xxx;
-    // etc
-};
+// struct InterfaceConfig
+// {
+//     InterfaceId     _id;
+//     // BaudRate        _xxx;
+//     // etc
+// };
 
 
 // Device configuration options
 // This describes all selectable options in terms of device connectivity for this system.
-struct DevConfigItem
-{
-    DeviceId        _id;
-    ProtocolType    _prtcl;
-    int             _port; // can be 0 for devices that register each time
-    InterfaceId     _intfId;
-    InterfaceConfig _intfConfig;
-};
+// struct DevConfigItem
+// {
+//     DeviceId        _id;
+//     ProtocolType    _prtcl;
+//     int             _port; // can be 0 for devices that register each time
+//     InterfaceId     _intfId;
+//     InterfaceConfig _intfConfig;
+// };
 
 
 // A centeral for holding the device info at run time.

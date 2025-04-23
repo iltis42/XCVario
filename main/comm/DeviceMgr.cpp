@@ -15,6 +15,7 @@
 #include "comm/BTspp.h"
 #include "SerialLine.h"
 #include "protocol/ProtocolItf.h"
+#include "protocol/NMEA.h"
 #include "DataMonitor.h"
 
 #include "sensor.h"
@@ -34,19 +35,25 @@ MessagePool MP;
 // static vars
 static TaskHandle_t SendTask = nullptr;
 
-// static routing table on device level
 //
-// entries with zero termination, entirely as ro flash data, no RAM usage
-static constexpr RoutingTarget flarm_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
-static constexpr RoutingTarget krt2_routes[] = { {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8882}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, {XCVARIO_DEV, CAN_BUS, 20}, {} };
-static constexpr RoutingTarget navi_routes[] = { {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {RADIO_KRT2_DEV, S2_RS232, 0}, {FLARM_DEV, CAN_BUS, 20}, {} };
+// A routing table that contains the static connected devices relation.
+//
+// entries with zero termination, entirely as ro flash data
+static constexpr RoutingTarget flarm_routes[] = { 
+    {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, 
+    {XCVARIO_DEV, CAN_BUS, 20}, {} };
+static constexpr RoutingTarget krt2_routes[] = { 
+    {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8882}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, 
+    {XCVARIO_DEV, CAN_BUS, 20}, {} };
+static constexpr RoutingTarget navi_routes[] = { 
+    {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {RADIO_KRT2_DEV, S2_RS232, 0}, {FLARM_DEV, CAN_BUS, 20}, {} };
 static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(FLARM_DEV, NO_PHY, 0), flarm_routes },
     { RoutingTarget(RADIO_KRT2_DEV, NO_PHY, 0), krt2_routes },
     { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes }
 };
 // Search the flash data table
-static constexpr const RoutingTarget* findRoute(const RoutingTarget& target) {
+static const RoutingTarget* findRoute(const RoutingTarget& target) {
     // Search through Routes and find a match to the source device
     for (const auto& entry : Routes) {
         if (entry.first.match(target)) {
@@ -56,12 +63,9 @@ static constexpr const RoutingTarget* findRoute(const RoutingTarget& target) {
     return nullptr;
 }
 
-
-// known device attributes
 //
-// constexpr PackedAttributeList flarm_attr{ PackedAttributeList::pack({ ProtocolType::FLARM_P, ProtocolType::FLARMBIN_P}) };
-
-
+// Known device attributes
+//
 // Define device names for the configuration menu
 // - The device id, must be a unique entry in this list with assiciated name
 // - Device attributes
@@ -72,21 +76,21 @@ static constexpr const RoutingTarget* findRoute(const RoutingTarget& target) {
 //   + an interface profile enum, if needed
 // - 
 constexpr std::pair<DeviceId, DeviceAttributes> DAVATTR[] = {
-    {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}}, {{JUMBOCMD_P}, 1} }},
     {DeviceId::ANEMOI_DEV, {"Anemoi", {{S2_RS232, S1_RS232, CAN_BUS}}, {{ANEMOI_P}, 1}, 0, IS_REAL }},
-    {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, CAN_BUS, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL }},
-    {DeviceId::XCVARIO_DEV, {"Master auto", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT }},
-    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL }},
+    {DeviceId::MASTER_DEV, {"Auto-connect", {{CAN_BUS}}, {{REGISTRATION_P}, 1}, CAN_REG_PORT, IS_REAL }},
     {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232, CAN_BUS}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL }},
+    {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}}, {{JUMBOCMD_P}, 1} }},
+    {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, CAN_BUS, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL }},
+    {DeviceId::XCVARIO_DEV, {"Master finder", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT }},
+    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL }},
+    {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C, CAN_BUS}}, {{MAGSENSBIN_P}, 1}, 31, IS_REAL }},
     {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
                                     {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
                                     8880, IS_REAL|MULTI_CONF}},
     {DeviceId::NAVI_DEV,   {"Flarm host", {{WIFI_AP, CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, IS_VARIANT}},
     {DeviceId::NAVI_DEV,   {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, IS_VARIANT}},
-    {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C, CAN_BUS}}, {{MAGSENSBIN_P}, 1}, 31, IS_REAL }},
     {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL }},
     {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL }},
-    {DeviceId::MASTER_DEV, {"CAN auto-connect", {{CAN_BUS}}, {{REGISTRATION_P}, 1}, CAN_REG_PORT, IS_REAL }}
 };
 
 constexpr const DeviceAttributes NullDev("Null", {{NO_PHY}}, {{NO_ONE}}, 0, 0);
@@ -723,6 +727,33 @@ PortList Device::getPortList() const
         }
     }
     return pl;
+}
+
+std::vector<DeviceNVS> Device::getNvsData() const
+{
+    std::vector<DeviceNVS> NL;
+    NL.reserve(_dlink.size());
+    for (DataLink* dl : _dlink) {
+        DeviceNVS dev;
+        DeviceId did = NO_DEVICE;
+        NmeaPrtcl *nm = static_cast<NmeaPrtcl*>(dl->getNmea());
+        int i = 0;
+        if ( nm ) {
+            did = nm->getDeviceId();
+            for (auto it : nm->getAllPlugs() ) {
+                dev.proto.set(i, it->getPtyp());
+                i++;
+            }
+        }
+        ProtocolItf *bn = dl->getBinary();
+        if ( bn ) {
+            did = bn->getDeviceId();
+            dev.proto.set(i, bn->getProtocolId());
+        }
+        dev.target = RoutingTarget(did, dl->getTarget());
+        NL.push_back(dev);
+    }
+    return {};
 }
 
 int Device::getSendPort(ProtocolType p) const

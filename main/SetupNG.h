@@ -9,23 +9,25 @@
 
 #include "glider/Polars.h"
 #include "MPU.hpp"
-#include "comm/CanBus.h"
+#include "comm/Configuration.h"
 #include "Compass.h"
 #include "SetupCommon.h"
 #include "ESP32NVS.h"
+#include "quaternion.h"
+#include "logdef.h"
 
 
 #include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
-#include <esp_timer.h>
+// #include <freertos/queue.h>
+// #include <esp_timer.h>
 #include <esp_system.h>
 
-#include <esp_partition.h>
+// #include <esp_partition.h>
 #include <esp_err.h>
 #include <nvs_flash.h>
 #include <nvs.h>
 #include <cstdio>
-#include <cstring>
+// #include <cstring>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -125,91 +127,73 @@ typedef struct str_tenchar_id {
 	};
 }t_tenchar_id;
 
-typedef struct setup_flags{
-	bool _reset    :1;
-	bool _volatile :1;
-	uint8_t _sync  :2;
-	uint8_t _unit  :3;
-	bool _dirty    :1;
-} t_setup_flags;
-
 template<typename T>
 class SetupNG: public SetupCommon
 {
 public:
-	char typeName(void){
-		if( typeid( T ) == typeid( float ) )
+	char typeName(void) const {
+		if constexpr (std::is_same_v<T, float>)
 			return 'F';
-		else if( typeid( T ) == typeid( int ) )
+		else if constexpr (std::is_same_v<T, int>)
 			return 'I';
-		else if( typeid( T ) == typeid( t_bitfield_compass ) )
+		else if constexpr (std::is_same_v<T, Quaternion>)
+			return 'Q';
+		else if constexpr (std::is_same_v<T, bitfield_compass>)
 			return 'B';
-		else if( typeid( T ) == typeid( mpud::raw_axes_t ) )
+		else if constexpr (std::is_same_v<T, mpud::raw_axes_t>)
 			return 'A';
-		return 'U';
+		else if constexpr (std::is_same_v<T, DeviceNVS>)
+			return 'D';
+		else
+			return 'U';
 	}
-	SetupNG( const char * akey,          // unique identification TAG
-			T adefault,
-			bool reset=true,             // reset data on factory reset
-			e_sync_t sync=SYNC_NONE,
-			e_volatility vol=PERSISTENT, // sync with client device is applicable
-			void (* action)()=0,
-			e_unit_type_t unit = UNIT_NONE
-	)
+
+	SetupNG( const char * akey, T adefault, bool reset=true, e_sync_t sync=SYNC_NONE, e_volatility vol=PERSISTENT,
+			void (* action)()=0, e_unit_type_t unit = UNIT_NONE)
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		// if( strlen( akey ) > 15 ) {
 		// 	ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
 		// }
-		instances->push_back( this );  // add into vector
 		_key = akey;
 		_default = adefault;
 		flags._reset = reset;
 		flags._sync = sync;
 		flags._volatile = vol;
 		flags._unit = unit;
-		flags._dirty = false;
 		_action = action;
 	}
 
-	virtual bool dirty() {
-		return flags._dirty;
-	}
+	void setDefault() override { set( _default ); }
 
-	virtual void setDefault(){
-			set( _default );
-	}
-
-	virtual void setValueStr( const char * val ){
+	void setValueFromStr( const char * str ) override {
 		if( flags._volatile != VOLATILE ){
-			if( typeid( T ) == typeid( float ) ){
-				float t;
-				sscanf( val,"%f", &t );
-				memcpy((char *)&_value, &t, sizeof(t) );
+			if constexpr (std::is_same_v<T, float>) {
+				sscanf(str, "%f", &_value);
 			}
-			else if( typeid( T ) == typeid( int ) ){
-				int t;
-				sscanf( val,"%d", &t );
-				memcpy((char *)&_value, &t, sizeof(t) );
+			else if constexpr (std::is_same_v<T, int>) {
+				sscanf(str, "%d", &_value);
 			}
-			else if( typeid( T ) == typeid( t_bitfield_compass ) ){
-				int temp;
-				t_bitfield_compass t;
-				if (sscanf(val ,"%u", &temp) == 1 && temp < 256) {
-					unsigned char c=temp;
-					memcpy((char *)&_value, &c, sizeof(t) );
+			else if constexpr (std::is_same_v<T, Quaternion>) {
+				sscanf( str,"%f/%f/%f/%f", &_value.a, &_value.b, &_value.c, &_value.d );
+			}
+			else if constexpr (std::is_same_v<T, bitfield_compass>) {
+				unsigned temp;
+				if (sscanf(str ,"%u", &temp) == 1 && temp < 256) {
+					_value = bitfield_compass(temp);
 				}
 			}
-			else if( typeid( T ) == typeid( mpud::raw_axes_t ) ){
-				mpud::raw_axes_t t;
-				int x,y,z;
-				sscanf( val,"%d/%d/%d", &x, &y, &z );
-				t.x = x;
-				t.y = y;
-				t.z = z;
-				memcpy((char *)&_value, &t, sizeof(t) );
+			else if constexpr (std::is_same_v<T, mpud::raw_axes_t>) {
+				sscanf( str,"%hd/%hd/%hd", &_value.x, &_value.y, &_value.z );
 			}
-			flags._dirty = true;
+			else if constexpr (std::is_same_v<T, DeviceNVS>) {
+				uint32_t t;
+				uint64_t p;
+				if (sscanf(str ,"%x/%lx", (unsigned*)&t, (long unsigned*)&p) == 2) {
+					_value = DeviceNVS(t, p);
+				}
+			}
+			setDirty();
 		}
 
 	}
@@ -223,41 +207,31 @@ public:
 	T get() const {
 		return _value;
 	}
-	const char * key() {
-		return _key;
-	}
 
 	// virtual T getGui() const { return get(); } // tb. overloaded for blackboard fixme
 	// virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
-	virtual bool value_str(char *str){
+	std::string valueAsStr() const override {
+		std::string str;
 		if( flags._volatile != VOLATILE ){
-			if( typeid( T ) == typeid( float ) ){
-				float t;
-				memcpy(&t, &_value, sizeof(t) );
-				sprintf( str,"%f", t );
-				return true;
+			if constexpr (std::is_same_v<T, float>) {
+				str = std::to_string(_value);
 			}
-			else if( typeid( T ) == typeid( int ) ){
-				int t;
-				memcpy(&t, &_value, sizeof(t) );
-				sprintf( str,"%d", t );
-				return true;
+			else if constexpr (std::is_same_v<T, int>) {
+				str = std::to_string(_value);
 			}
-			else if( typeid( T ) == typeid( t_bitfield_compass ) ){
-				t_bitfield_compass t;
-				memcpy((char*)&t, &_value, sizeof(t) );
-				sprintf( str,"%u", *(char*)&t );
-				return true;
+			else if constexpr (std::is_same_v<T, Quaternion>) {
+				str = std::to_string(_value.a) + '/' + std::to_string(_value.b) + '/' + std::to_string(_value.c) + '/' + std::to_string(_value.d);
 			}
-			else if( typeid( T ) == typeid( mpud::raw_axes_t ) ){
-				mpud::raw_axes_t t;
-				memcpy((char*)&t, &_value, sizeof(t) );
-				sprintf( str, "%d/%d/%d", t.x, t.y, t.z );
-				return true;
+			else if constexpr (std::is_same_v<T, bitfield_compass>) {
+				uint8_t as_byte = *reinterpret_cast<const uint8_t*>(&_value);
+				str = std::to_string(as_byte);
+			}
+			else if constexpr (std::is_same_v<T, mpud::raw_axes_t>) {
+				str = std::to_string(_value.x) + '/' +std::to_string(_value.y) + '/' +std::to_string(_value.z);
 			}
 		}
-		return false;
+		return str;
 	}
 
 	bool set( T aval, bool dosync=true, bool doAct=true ) {
@@ -277,7 +251,7 @@ public:
 		if( flags._volatile == VOLATILE ){
 			return true;
 		}
-		flags._dirty = true;
+		setDirty();
 		// ESP_LOGI(FNAME,"set() %s", _key );
 		return true;
 	}
@@ -292,77 +266,53 @@ public:
 				|| (syncProto->isMaster() && flags._sync == SYNC_FROM_MASTER) 
 				|| flags._sync == SYNC_BIDIR ) ) {
 			// ESP_LOGI( FNAME,"Now sync %s", _key );
-			syncProto->sendItem(_key, typeName(), (void *)(&_value), sizeof( _value ) );
+			syncProto->sendItem(_key.data(), typeName(), (void *)(&_value), sizeof( _value ) );
 			return true;
 		
 		}
 		return false;
 	}
 
-	bool commit() {
-		// ESP_LOGI(FNAME,"NVS commit(): %s ", _key );
-		if( flags._volatile != PERSISTENT ){
-				return true;
-		}
-		write();
-		bool ret = NVS.commit();
-		if( !ret )
-			return false;
-		flags._dirty = false;
-		return true;
-	}
-
-	bool write() { // do the set blob that actually seems to write to the flash either
+	bool write() override { // do the set blob that actually seems to write to the flash either
 		// ESP_LOGI(FNAME,"NVS write(): ");
-		char val[30];
-		value_str(val);
-		// ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s, len:%d )", _key, val, sizeof( _value ) );
+		ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s, len:%d )", _key.data(), valueAsStr().c_str(), sizeof( _value ) );
 		portDISABLE_INTERRUPTS();
-		bool ret = NVS.setBlob( _key, (void *)(&_value), sizeof( _value ) );
+		bool ret = NVS.setBlob( _key.data(), (void *)(&_value), sizeof( _value ) );
 		portENABLE_INTERRUPTS();
 		if( !ret )
 			return false;
 		return true;
 	}
 
-	bool exists() {
-		if( flags._volatile != PERSISTENT ) {
-			return true;
-		}
-		size_t size;
-		bool ret = NVS.getBlob(_key, NULL, &size);
-		return ret;
-	}
+	bool isValid() const; // check on nan for <float>
 
-	virtual bool isValid() const;
-
-	virtual bool init() {
+	bool init() override {
 		if( flags._volatile != PERSISTENT ){
-			// ESP_LOGI(FNAME,"NVS volatile set default");
+			ESP_LOGI(FNAME,"NVS volatile set default");
 			set( _default );
 			return true;
 		}
 		size_t required_size;
-		bool ret = NVS.getBlob(_key, NULL, &required_size);
+		bool ret = NVS.getBlob(_key.data(), NULL, &required_size);
 		if ( !ret ){
-			// ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error", _key );
+			ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error", _key.data() );
 			set( _default );  // try to init
 			commit();
 		}
 		else {
-			// ESP_LOGI(FNAME,"NVS %s size: %d", _key, required_size );
+			ESP_LOGI(FNAME,"NVS %s size: %d", _key.data(), required_size );
 			if( required_size > sizeof( T ) ) {
-				// ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , sizeof( T ) );
+				ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , sizeof( T ) );
 				erase();
 				set( _default );  // try to init
 				return false;
 			}
 			else {
-				// ESP_LOGI(FNAME,"NVS size okay");
-				ret = NVS.getBlob(_key, &_value, &required_size);
+				ESP_LOGI(FNAME,"NVS size okay");
+				ret = NVS.getBlob(_key.data(), &_value, &required_size);
 
 				if ( !ret || !isValid() ){
-					//ESP_LOGE(FNAME, "NVS nvs_get_blob error");
+					ESP_LOGE(FNAME, "NVS nvs_get_blob error");
 					erase();
 					set( _default );  // try to init
 					commit();
@@ -378,40 +328,18 @@ public:
 	}
 
 
-	virtual bool erase() {
-		if( flags._volatile != PERSISTENT ){
-			return true;
-		}
-		bool ret = NVS.erase(_key);
-		if( !ret ){
-			return false;
-		}
-		else {
-			// ESP_LOGI(FNAME,"NVS erased key  %s", _key );
-			return set( _default );
-		}
-	}
-
-	virtual bool mustReset() {
-		return flags._reset;
-	}
-
-	virtual bool isDefault() {
+	bool isDefault() override {
 		if( _default == _value )
 			return true;
 		else
 			return false;
 	}
 
-	inline T getDefault() const { return _default; }
-	inline uint8_t getSync() { return flags._sync; }
+	T getDefault() const { return _default; }
 
 private:
-	T _value;
-	T _default;
-	const char * _key;
-	t_setup_flags flags;
-	void (* _action)();
+	T _value;         // the value
+	T _default;       // value applied with a factory reset
 };
 
 extern SetupNG<float> 		QNH;
@@ -665,6 +593,7 @@ extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
 extern SetupNG<int> 		logging;
 extern SetupNG<float>      	display_clock_adj;
+extern SetupNG<DeviceNVS>	connected_devices;
 
 
 extern float last_volume;   // is this used?

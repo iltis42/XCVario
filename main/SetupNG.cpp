@@ -22,6 +22,8 @@
 #include "Flap.h"
 #include "OneWireESP32.h"
 #include "comm/DeviceMgr.h"
+#include "comm/CanBus.h"
+#include "comm/Configuration.h"
 #include "protocol/NMEA.h"
 #include "logdef.h"
 
@@ -395,5 +397,5 @@ SetupNG<Quaternion>			imu_reference("IMU_REFERENCE", Quaternion(), false);
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", {} );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", {} );
 SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)
-
+SetupNG<DeviceNVS>		connected_devices("DEV0", {{FLARM_DEV, S1_RS232, 0}, {FLARM_P, FLARMBIN_P}, 0});
 

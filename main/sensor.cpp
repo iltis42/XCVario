@@ -308,23 +308,20 @@ void drawDisplay(void *arg)
 						}
 					}
 					if( gw ){
-						if( Rotary->readSwitch() ){   // Acknowledge Warning -> Warning OFF
+						if( Rotary->readBootupStatus() ){   // Acknowledge Warning -> Warning OFF
 							gear_warning_holdoff = 25000;  // ~500 sec
 							AUDIO->alarm( false );
 							Display->clear();
 							gflags.gear_warning_active = false;
-							// SetupMenu::catchFocus( false );
 						}
 						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
 							AUDIO->alarm( true, max_volume.get() );
 							Display->drawWarning( "! GEAR !", false );
 							gflags.gear_warning_active = true;
-							// SetupMenu::catchFocus( true );
 						}
 					}
 					else{
 						if( gflags.gear_warning_active ){
-							// SetupMenu::catchFocus( false );
 							AUDIO->alarm( false );
 							Display->clear();
 							gflags.gear_warning_active = false;

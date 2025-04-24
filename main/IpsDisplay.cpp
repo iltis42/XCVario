@@ -1515,11 +1515,11 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val, bool large ){
 	int ival = rint(val*10);  // integer value in steps of 10th
 	if( last_avg != ival){  // only print if there a change in rounded numeric string
 		char s[32];
-		// if( large ) {
-		// 	ucg->setFont(eglib_font_free_sansbold_66, false );
-		// } else {
+		if( large ) {
+			ucg->setFont(eglib_font_free_sansbold_66, false );
+		} else {
 			ucg->setFont(ucg_font_fub35_hn, false );
-		// }j
+		}
 		ucg->setFontPosCenter();
 		static const char* format[2] = {"%2.1f","%2.0f"};
 		sprintf(s, format[std::abs(ival)>100], float(ival/10.) );

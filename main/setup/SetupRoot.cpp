@@ -48,7 +48,7 @@ void SetupRoot::begin(MenuEntry *setup)
 
     _childs.front()->enter();
 
-    // initGearWarning(); fixme
+    SetupMenu::initGearWarning();
 }
 
 void SetupRoot::exit(int levels)

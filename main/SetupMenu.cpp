@@ -175,7 +175,7 @@ gpio_num_t SetupMenu::getGearWarningIO() {
 	return io;
 }
 
-void initGearWarning() {
+void SetupMenu::initGearWarning() {
 	gpio_num_t io = SetupMenu::getGearWarningIO();
 	if (io != GPIO_NUM_0) {
 		gpio_reset_pin(io);
@@ -187,7 +187,7 @@ void initGearWarning() {
 }
 
 int config_gear_warning(SetupMenuSelect *p) {
-	initGearWarning();
+	SetupMenu::initGearWarning();
 	return 0;
 }
 

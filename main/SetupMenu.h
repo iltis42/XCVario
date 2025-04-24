@@ -52,6 +52,8 @@ public:
 	static SetupMenu* createTopSetup();
 	static SetupMenuValFloat *createQNHMenu();
 	static SetupMenuValFloat *createVoltmeterAdjustMenu();
+	static void initGearWarning();
+
 
 protected:
 	SetupMenuCreator_t populateMenu;

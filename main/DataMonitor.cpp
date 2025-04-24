@@ -146,7 +146,7 @@ void DataMonitor::press(){
 void DataMonitor::longPress()
 {
 	ESP_LOGI(FNAME,"stop");
-	DEVMAN->stopDM();
+	DEVMAN->stopMonitoring();
 	paused = true;
 	delay(100); // streaming and controlling tasks are different ones ..
 	MYUCG->scrollLines( 0 );
@@ -177,7 +177,7 @@ void DataMonitor::start(SetupAction *p, ItfTarget ch)
 		MYUCG->scrollSetMargins( SCROLL_TOP, 0 );
 	}
 	paused = false; // will resume with press()
-	bin_mode = DEVMAN->startDM(channel);
+	bin_mode = DEVMAN->startMonitoring(channel);
 	ESP_LOGI(FNAME,"started");
 }
 

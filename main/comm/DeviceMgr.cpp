@@ -637,7 +637,7 @@ void DeviceManager::dumpMap() const
     }
 }
 
-bool DeviceManager::startDM(ItfTarget iid)
+bool DeviceManager::startMonitoring(ItfTarget iid)
 {
     bool ret = false;
     for ( auto dev : _device_map ) {
@@ -659,7 +659,7 @@ bool DeviceManager::startDM(ItfTarget iid)
     return ret;
 }
 
-void DeviceManager::stopDM()
+void DeviceManager::stopMonitoring()
 {
     monitor_target = ItfTarget();
     for ( auto dev : _device_map ) {

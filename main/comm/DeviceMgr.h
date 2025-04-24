@@ -113,8 +113,8 @@ public:
     static void undoReserveCANId(int prio);
     // debugging
     void dumpMap() const;
-    bool startDM(ItfTarget iid); // Data Monitor
-    void stopDM();
+    bool startMonitoring(ItfTarget iid); // Data Monitor
+    void stopMonitoring();
 
     // Setup access
     static const DeviceAttributes* getDevAttr(DeviceId did, InterfaceId via=NO_PHY);

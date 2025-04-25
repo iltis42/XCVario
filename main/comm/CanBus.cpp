@@ -220,9 +220,18 @@ CANbus::CANbus()
     // }
 }
 
+CANbus *CANbus::createCAN()
+{
+    if ( ! CAN ) {
+        CAN = new CANbus();
+    }
+    return CAN;
+}
 
 void CANbus::ConfigureIntf(int cfg)
 {
+    // just set the default speed
+    can_speed.set(CAN_SPEED_1MBIT);
 }
 
 // install/reinstall CAN driver in corresponding mode
@@ -350,9 +359,7 @@ bool CANbus::begin()
         terminate_receiver = false;
         xTaskCreate(&canRxTask, "canRxTask", 4096, this, 22, &rxTask);
     }
-    else {
-        driverUninstall();
-    }
+
     return _initialized;
 }
 
@@ -420,6 +427,7 @@ bool CANbus::selfTest()
     }
     driverUninstall();
     ESP_LOGW(FNAME, "Final Result: CAN bus selftest %s, slope support: %d", res ? "OKAY" : "FAILED", _slope_support );
+    _functional = res;
     return res;
 }
 

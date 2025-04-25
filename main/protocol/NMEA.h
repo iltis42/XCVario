@@ -72,11 +72,13 @@ typedef std::map<Key, MapValue> ParserMap;
 class NmeaPlugin
 {
 public:
-    explicit NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp) : _nmeaRef(nr), _pid(ptyp) {}
+    explicit NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp, bool as=true) : _nmeaRef(nr), _pid(ptyp), _auto(as) {}
     virtual ~NmeaPlugin() = default;
     ProtocolType getPtyp() const { return _pid; }
     ProtocolType belongsPtyp() const;
     NmeaPrtcl &getNMEA() const { return _nmeaRef; }
+    void setExplicit() { _auto = false; }
+    bool getAuto() const { return _auto; }
 
     // API
     virtual const ParserEntry* getPT() const = 0;
@@ -85,6 +87,8 @@ protected:
     // access to state machine and buffers for the parse routines
     NmeaPrtcl &_nmeaRef;
     ProtocolType _pid;
+private:
+    bool _auto; // most plugins get installed together with the principal NMEA parser
 };
 
 // generic mnea message parser

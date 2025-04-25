@@ -13,7 +13,7 @@
 class CambridgeMsg final : public NmeaPlugin
 {
 public:
-    CambridgeMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, CAMBRIDGE_P) {};
+    CambridgeMsg(NmeaPrtcl &nr, bool as) : NmeaPlugin(nr, CAMBRIDGE_P, as) {};
     virtual ~CambridgeMsg() = default;
     const ParserEntry* getPT() const override { return _pt; }
 

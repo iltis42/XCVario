@@ -126,9 +126,10 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     case XCVARIO_P:
     {
         ESP_LOGI(FNAME, "New XCVario");
+        bool auto_setup = _nmea == nullptr;
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
         nmea->addPlugin(new XCVarioMsg(*nmea));
-        nmea->addPlugin(new CambridgeMsg(*nmea));
+        nmea->addPlugin(new CambridgeMsg(*nmea, auto_setup));
         tmp = nmea;
         break;
     }
@@ -145,24 +146,27 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     case OPENVARIO_P:
     {
         ESP_LOGI(FNAME, "New OpenVario");
+        bool auto_setup = _nmea == nullptr;
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new OpenVarioMsg(*nmea));
+        nmea->addPlugin(new OpenVarioMsg(*nmea, auto_setup));
         tmp = nmea;
         break;
     }
     case BORGELT_P:
     {
         ESP_LOGI(FNAME, "New Borgelt");
+        bool auto_setup = _nmea == nullptr;
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new BorgeltMsg(*nmea));
+        nmea->addPlugin(new BorgeltMsg(*nmea, auto_setup));
         tmp = nmea;
         break;
     }
     case CAMBRIDGE_P:
     {
         ESP_LOGI(FNAME, "New Cambridge");
+        bool auto_setup = _nmea == nullptr;
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new CambridgeMsg(*nmea));
+        nmea->addPlugin(new CambridgeMsg(*nmea, auto_setup));
         tmp = nmea;
         break;
     }
@@ -336,8 +340,9 @@ void DataLink::dumpProto()
 {
     ESP_LOGI(FNAME, "    listen port %d", getPort());
     if ( _nmea ) {
+        ESP_LOGI(FNAME, "       nm did%d\tpid%d\tsp%d", _nmea->getDeviceId(), _nmea->getProtocolId(), _nmea->getSendPort());
         for (auto it : static_cast<NmeaPrtcl*>(_nmea)->getAllPlugs() ) {
-            ESP_LOGI(FNAME, "       nm did%d\tpid%d\tsp%d", it->getNMEA().getDeviceId(), it->getPtyp(), it->getNMEA().getSendPort());
+            ESP_LOGI(FNAME, "       nm plugin %d%d", it->getPtyp(), it->getAuto()?'a':'x');
         }
     }
     if ( _binary ) {

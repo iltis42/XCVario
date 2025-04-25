@@ -1053,14 +1053,6 @@ void system_startup(void *args){
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
-	char id[16] = { 0 };
-	strcpy( id, custom_wireless_id.get().id );
-	ESP_LOGI(FNAME,"Custom Wirelss-ID from Flash: %s len: %d", id, strlen(id) );
-	if( strlen( id ) == 0 ){
-		custom_wireless_id.set( SetupCommon::getDefaultID() ); // Default ID created from MAC address CRC
-		ESP_LOGI(FNAME,"Empty ID: Initialize empty Wirelss-ID: %s", custom_wireless_id.get().id );
-	}
-	ESP_LOGI(FNAME,"Custom Wirelss-ID: %s", custom_wireless_id.get().id );
 
 	// Create serial interfaces
 	S1 = new SerialLine((uart_port_t)1, GPIO_NUM_16, GPIO_NUM_17);

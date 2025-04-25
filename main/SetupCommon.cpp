@@ -194,6 +194,10 @@ bool SetupCommon::factoryReset(){
 			}
 		}
 	}
+	// Take care of some dynamically created default values
+	// wireless id
+	custom_wireless_id.set(getDefaultID()); // Default ID created from MAC address CRC
+
 	if( retsum ) {
 		ESP_LOGI(FNAME,"Factory reset SUCCESS");
 	} else {
@@ -202,14 +206,14 @@ bool SetupCommon::factoryReset(){
 	return retsum;
 }
 
-bool SetupCommon::initSetup( bool& present ) {
+bool SetupCommon::initSetup( bool& ahrs_lic_present ) {
 	bool ret=true;
 	ESP_LOGI(FNAME,"SetupCommon::initSetup()");
 	NVS.begin();
 	if( ahrs_licence_dig1.exists() ) {
-		present = true;
+		ahrs_lic_present = true;
 	} else {
-		present = false;
+		ahrs_lic_present = false;
 	}
 
 	for(int i = 0; i < instances.size(); i++ ) {

@@ -42,33 +42,13 @@ struct Device
     DataLink *getDLforProtocol(ProtocolType p) const;
     PortList getPortList() const;
     bool isAlive() const { return true; } // fixme
-    std::vector<DeviceNVS> getNvsData() const;
+    DeviceNVS getNvsData() const;
     // Attributes
     const DeviceId      _id;
     std::set<DataLink*> _dlink;
     InterfaceCtrl      *_itf;
+    bool                _auto = false; // automatically set-up
 };
-    // InterfaceId                 _default_config; // RS232, Baudrate, etc.
-
-// Information to first hand preconfigure an interface at the moment a device gets added to the system
-// struct InterfaceConfig
-// {
-//     InterfaceId     _id;
-//     // BaudRate        _xxx;
-//     // etc
-// };
-
-
-// Device configuration options
-// This describes all selectable options in terms of device connectivity for this system.
-// struct DevConfigItem
-// {
-//     DeviceId        _id;
-//     ProtocolType    _prtcl;
-//     int             _port; // can be 0 for devices that register each time
-//     InterfaceId     _intfId;
-//     InterfaceConfig _intfConfig;
-// };
 
 
 // A centeral for holding the device info at run time.
@@ -93,7 +73,7 @@ public:
     ~DeviceManager();
     static DeviceManager* Instance();
     // API
-    ProtocolItf* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid);
+    Device* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid, bool ato=false);
     Device* getDevice(DeviceId did);
     Device* getXCVPeer();
     ProtocolItf *getProtocol(DeviceId dev, ProtocolType proto);
@@ -108,6 +88,8 @@ public:
     DataLink *getFlarmHost();
     static int nrDevs() { return (DEVMAN) ? DEVMAN->getNrDevs() : 0; }
     int getNrDevs() const { return _device_map.size(); }
+    // void makePersistent();
+    void reserectFromNvs();
     // Search for the next free CAN id, organized in chunks of four in 5 prio categories.
     static int reserveCANId(int prio);
     static void undoReserveCANId(int prio);
@@ -117,7 +99,7 @@ public:
     void stopMonitoring();
 
     // Setup access
-    static const DeviceAttributes* getDevAttr(DeviceId did, InterfaceId via=NO_PHY);
+    static const DeviceAttributes& getDevAttr(DeviceId did, InterfaceId via=NO_PHY);
     static std::string_view getDevName(DeviceId did);
     static std::vector<DeviceId> allKnownDevs();
     static std::string_view getItfName(InterfaceId iid);

@@ -398,4 +398,16 @@ SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", {} );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", {} );
 SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)
 SetupNG<int> 			xcv_role("XCVROLE", MASTER_ROLE, true);
-SetupNG<DeviceNVS>		connected_devices("DEV0", {{FLARM_DEV, S1_RS232, 0}, {FLARM_P, FLARMBIN_P}, 0});
+// Those device entries are serving as factory reset minimum configuration
+SetupNG<DeviceNVS>		anemoi_devsetup("ANEMOIN", DeviceNVS() );
+SetupNG<DeviceNVS>		flarm_devsetup("FLARM", {{FLARM_DEV, S1_RS232, 0}, {{FLARMBIN_P, FLARM_P}, 0}, 0, 0});
+SetupNG<DeviceNVS>		master_devsetup("MASTER", DeviceNVS() );
+SetupNG<DeviceNVS>		second_devsetup("SECOND", DeviceNVS() );
+SetupNG<DeviceNVS>		magsens_devsetup("MAGSENS", DeviceNVS() );
+SetupNG<DeviceNVS>		navi_devsetup("NAVI", DeviceNVS() );
+SetupNG<DeviceNVS>		navi_flarm_setup("NAVIFLARM", DeviceNVS() );
+SetupNG<DeviceNVS>		navi_radio_etup("NAVIRADIO", DeviceNVS() );
+SetupNG<DeviceNVS>		krt_devsetup("KRTRADIO", DeviceNVS() );
+SetupNG<DeviceNVS>		atr_devsetup("ATRIRADIO", DeviceNVS() );
+
+template class SetupNG<DeviceNVS>;

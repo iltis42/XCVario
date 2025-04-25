@@ -22,7 +22,7 @@ struct t_setup_flags {
 
 class SetupCommon {
 public:
-	SetupCommon();
+	SetupCommon(const char *k);
 	virtual ~SetupCommon();
 
 	// virtual methods to be implemented in derived class
@@ -66,7 +66,7 @@ public:
 	static XCVSyncMsg *syncProto;
 
 protected:
-	std::string_view _key; // unique identification TAG
+	const std::string_view _key; // unique identification TAG
 	t_setup_flags flags = {false, false, 0, 0, false};
 	void (*_action)(); // action on a value change
 

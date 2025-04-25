@@ -13,10 +13,12 @@
 #include "comm/CanBus.h"
 #include "comm/WifiAP.h"
 #include "comm/BTspp.h"
+#include "BLESender.h"
 #include "SerialLine.h"
 #include "protocol/ProtocolItf.h"
 #include "protocol/NMEA.h"
 #include "DataMonitor.h"
+#include "SetupNG.h"
 
 #include "sensor.h"
 #include "logdef.h"
@@ -75,57 +77,52 @@ static const RoutingTarget* findRoute(const RoutingTarget& target) {
 //   + a list of protocol, first N are the by default configured ones
 //   + an interface profile enum, if needed
 // - 
-constexpr std::pair<DeviceId, DeviceAttributes> DAVATTR[] = {
-    {DeviceId::ANEMOI_DEV, {"Anemoi", {{S2_RS232, S1_RS232, CAN_BUS}}, {{ANEMOI_P}, 1}, 0, IS_REAL }},
-    {DeviceId::MASTER_DEV, {"Auto-connect", {{CAN_BUS}}, {{REGISTRATION_P}, 1}, CAN_REG_PORT, IS_REAL }},
-    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232, CAN_BUS}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL }},
-    {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}}, {{JUMBOCMD_P}, 1} }},
-    {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, CAN_BUS, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL }},
-    {DeviceId::XCVARIO_DEV, {"Master finder", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT }},
-    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL }},
-    {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C, CAN_BUS}}, {{MAGSENSBIN_P}, 1}, 31, IS_REAL }},
+constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
+    {DeviceId::ANEMOI_DEV, {"Anemoi", {{S2_RS232, S1_RS232, CAN_BUS}}, {{ANEMOI_P}, 1}, 0, IS_REAL, &anemoi_devsetup}},
+    {DeviceId::MASTER_DEV, {"Auto-connect", {{CAN_BUS}}, {{REGISTRATION_P}, 1}, CAN_REG_PORT, IS_REAL, nullptr}}, // no nvs link, start allways
+    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232, CAN_BUS}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL, &flarm_devsetup}},
+    {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}}, {{JUMBOCMD_P}, 1} , 0, 0, nullptr}}, // auto dev
+    {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL, &master_devsetup}},
+    {DeviceId::XCVARIO_DEV, {"Master finder", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT, nullptr}}, // auto through XCV role
+    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL, &second_devsetup}},
+    {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C}}, {{MAGSENSBIN_P}, 1}, 31, IS_REAL, nullptr}},
     {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
                                     {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
-                                    8880, IS_REAL|MULTI_CONF}},
-    {DeviceId::NAVI_DEV,   {"Flarm host", {{WIFI_AP, CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, IS_VARIANT}},
-    {DeviceId::NAVI_DEV,   {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, IS_VARIANT}},
-    {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL }},
-    {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL }},
+                                    8880, IS_REAL|MULTI_CONF, &navi_devsetup}},
+    {DeviceId::NAVI_DEV,   {"Flarm host", {{WIFI_AP, CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, IS_VARIANT, &navi_flarm_setup}},
+    {DeviceId::NAVI_DEV,   {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, IS_VARIANT, &navi_radio_etup}},
+    {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL, &krt_devsetup}},
+    {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL, &atr_devsetup}}
 };
 
-constexpr const DeviceAttributes NullDev("Null", {{NO_PHY}}, {{NO_ONE}}, 0, 0);
 // Lookup functions
-const DeviceAttributes* DeviceManager::getDevAttr(DeviceId did, InterfaceId via) {
+constexpr const DeviceAttributes NullDev("Null", {{NO_PHY}}, {{NO_ONE}}, 0, 0, nullptr);
+const DeviceAttributes& DeviceManager::getDevAttr(DeviceId did, InterfaceId via) {
     // retrieve first attribute entry
-    const DeviceAttributes *ret = &NullDev;
-    for (const auto& entry : DAVATTR) {
-        if (entry.first == did && ret == &NullDev) {
-            ret = &entry.second;
+    for (const auto& entry : DEVATTR) {
+        if (entry.first == did) {
             if (via == NO_PHY) {
-                return ret;
+                return entry.second;
+            }
+            if (via == entry.second.itfs.get(0)) {
+                return entry.second;
             }
         }
-        if (entry.first == did && via == entry.second.itfs.get(0)) {
-            return &entry.second;
-        }
     }
-    return ret;
+    return NullDev;
 }
-
 std::string_view DeviceManager::getDevName(DeviceId did) {
-    for (const auto& entry : DAVATTR) {
-        if (entry.first == did) {
-            return entry.second.name; // first hit rules
-        }
+    auto da = getDevAttr(did);
+    if ( &da != &NullDev) {
+        return da.name; // first hit rules
     }
     return "";
 }
-
 std::vector<DeviceId> DeviceManager::allKnownDevs()
 {
     std::vector<DeviceId> ret;
-    for (const auto& entry : DAVATTR) {
-        if (! entry.second.name.empty()  && ! entry.second.isVariant()) {
+    for (const auto& entry : DEVATTR) {
+        if (! entry.second.name.empty()  && ! entry.second.isVariant()) { // fixme empty()?
             ret.push_back(entry.first);
         }
     }
@@ -357,8 +354,8 @@ DeviceManager* DeviceManager::Instance()
 }
 
 // Do all it needs to prepare comm with device and route data
-// It returns the pointer to the protocol as handle to send messages
-ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_port, int send_port, InterfaceId iid)
+// It returns the pointer to the device
+Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_port, int send_port, InterfaceId iid, bool ato)
 {
     // On first device a send task needs to be created
     if ( ! SendTask ) {
@@ -367,13 +364,13 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     InterfaceCtrl *itf = &dummy_itf;
     if ( iid == CAN_BUS ) {
         if ( CAN ) {
-            if(!CAN->isInitialized()) {
-                CAN->begin();
-            }
             itf = CAN;
         }
     }
     else if ( iid == WIFI_AP) {
+        if ( ! Wifi ) {
+            Wifi = new WifiAP();
+        }
         if ( Wifi ) {
             Wifi->ConfigureIntf(listen_port);
             itf = Wifi;
@@ -392,11 +389,19 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
         }
     }
     else if ( iid == BT_SPP) {
+        if ( ! BTspp ) {
+            BTspp = new BTSender();
+        }
         if ( BTspp && ! BTspp->isRunning() ) {
             BTspp->ConfigureIntf(0);
             BTspp->start();
         }
         itf = BTspp;
+    }
+    else if ( iid == BT_LE) {
+        // if ( ) .. fixme
+        // blesender.begin();
+        // itf = BT_..;
     }
     else if ( iid == NO_PHY ) {
         // Device might exist already
@@ -406,11 +411,12 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     Device *dev = getDevice(did);
     if ( ! dev ) {
         dev = new Device(did);
+        dev->_auto = ato;
         is_new = true;
     }
     // Retrieve, or create a new data link
     DataLink *dl = itf->newDataLink(listen_port);
-    ProtocolItf* ret = dl->addProtocol(proto, did, send_port); // Add proto, if not yet there
+    dl->addProtocol(proto, did, send_port); // Add proto, if not yet there
 
     if ( is_new ) {
         // Add only if new
@@ -423,7 +429,7 @@ ProtocolItf* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int list
     ESP_LOGI(FNAME, "After add device %d.", did);
     dumpMap();
 
-    return ret;
+    return dev;
 }
 
 Device *DeviceManager::getDevice(DeviceId did)
@@ -486,6 +492,9 @@ void DeviceManager::removeDevice(DeviceId did)
         }
     }
     refreshRouteCache();
+
+    ESP_LOGI(FNAME, "After remove device %d.", did);
+    dumpMap();
 }
 
 // routing lookup table
@@ -590,6 +599,69 @@ DataLink *DeviceManager::getFlarmHost()
         if ( dl ) return dl;
     }
     return nullptr;
+}
+
+// DeviceNVS DeviceManager::makePersistent()
+// {
+//     std::string token_base(flarm_devsetup.key(), 3); // first entry used as template
+//     int nvs_idx = 0;
+//     for ( auto &d : _device_map )
+//     {
+//         for ( auto nvs_item : d.second->getNvsData() ) {
+//             std::string token = token_base + std::to_string(nvs_idx++);
+//             ESP_LOGI(FNAME, "NVS for did%d %s", d.second->_id, token.c_str());
+//             ESP_LOGI(FNAME, "NvsData: t%x - s%x (%d/%d)", (unsigned)nvs_item.target.raw, (unsigned)nvs_item.setup.data, nvs_item.bin_sp, nvs_item.nmea_sp);
+//             SetupNG<DeviceNVS> nvs(token.c_str(), {});
+//             nvs.set(nvs_item, false, false);
+//             nvs.commit();
+//         }
+//     }
+//     ESP_LOGI(FNAME, "Wrote %d dev entries to NVS", nvs_idx);
+//     // Remove trailing empty entries
+//     while ( nvs_idx < 30 ) {
+//         std::string token = token_base + std::to_string(nvs_idx++);
+//         SetupNG<DeviceNVS> nvs(token.c_str(), {});
+//         if ( ! nvs.exists() ) {
+//             break;
+//         };
+//         nvs.erase();
+//     }
+// }
+
+void DeviceManager::reserectFromNvs()
+{
+    // go through all possible setup entries and see if there is some thing valid
+    int nr_set_up = 0;
+    for (const auto& entry : DEVATTR) {
+        if ( entry.second.nvsetup ) {
+            nr_set_up++;
+            // setup device
+            DeviceNVS &nvs = entry.second.nvsetup->getRef();
+            ESP_LOGI(FNAME, "Entry: t%x - s%x (%d/%d)", (unsigned)nvs.target.raw, (unsigned)nvs.setup.data, nvs.bin_sp, nvs.nmea_sp);
+            DeviceId did = nvs.target.getDeviceId();
+            int listen_port = nvs.target.getItfTarget().port;
+            InterfaceId iid = nvs.target.getItfTarget().iid;
+            ESP_LOGI(FNAME, "Reserect: did%d p%d iid%d", did, listen_port, iid);
+            // bin proto option
+            if ( nvs.setup.getProto(0) ) {
+                ESP_LOGI(FNAME, "BinP: pid%d sp%d", nvs.setup.getProto(0), nvs.getBinSPort());
+                addDevice(did, nvs.setup.getProto(0), listen_port, nvs.getBinSPort(), iid);
+            }
+            // principle nmea proto option
+            if ( nvs.setup.getProto(1) ) {
+                ESP_LOGI(FNAME, "NmP: pid%d sp%d", nvs.setup.getProto(1), nvs.getNmeaSPort());
+                addDevice(did, nvs.setup.getProto(1), listen_port, nvs.getNmeaSPort(), iid);
+            }
+            // more nmea plug options
+            for ( int i=2; i<ProtocolList::maxProto; i++ ) {
+                if ( nvs.setup.getProto(i) ) {
+                    ESP_LOGI(FNAME, "plugin: %d", nvs.setup.getProto(i));
+                    addDevice(did, nvs.setup.getProto(i), listen_port, nvs.getNmeaSPort(), iid);
+                }
+            }
+        }
+    }
+    ESP_LOGI(FNAME, "Reserected %d dev entries from NVS", nr_set_up);
 }
 
 // prio - 0,..,4 0:low prio data stream, .. 5: important high prio commanding
@@ -729,32 +801,70 @@ PortList Device::getPortList() const
     return pl;
 }
 
-std::vector<DeviceNVS> Device::getNvsData() const
+// get all setup lines to write into nvs for this device
+DeviceNVS Device::getNvsData() const
 {
-    std::vector<DeviceNVS> NL;
-    NL.reserve(_dlink.size());
-    for (DataLink* dl : _dlink) {
-        DeviceNVS dev;
-        DeviceId did = NO_DEVICE;
+    ESP_LOGI(FNAME, "NvsData #ld%d", _dlink.size());
+    DeviceNVS entry;
+    if ( !_dlink.empty() ) {
+        DataLink* dl = *_dlink.begin();
+        entry.target = RoutingTarget(_id, dl->getTarget());
+        int idx = 0;
+        ProtocolItf *bn = dl->getBinary(); // binary option
+        if ( bn ) {
+            entry.bin_sp = bn->getSendPort();
+            entry.setup.set(idx++, bn->getProtocolId());
+            ESP_LOGI(FNAME, "NvsData t%x bsp%d pid%d", (unsigned)entry.target.raw, entry.bin_sp, entry.setup.get(0));
+        }
         NmeaPrtcl *nm = static_cast<NmeaPrtcl*>(dl->getNmea());
-        int i = 0;
         if ( nm ) {
-            did = nm->getDeviceId();
+            entry.nmea_sp = nm->getSendPort();
+            entry.setup.set(idx++, nm->getProtocolId()); // principal entry
             for (auto it : nm->getAllPlugs() ) {
-                dev.proto.set(i, it->getPtyp());
-                i++;
+                if ( ! it->getAuto() ) {
+                    entry.setup.set(idx++, it->getPtyp()); // plugins
+                }
             }
         }
-        ProtocolItf *bn = dl->getBinary();
-        if ( bn ) {
-            did = bn->getDeviceId();
-            dev.proto.set(i, bn->getProtocolId());
-        }
-        dev.target = RoutingTarget(did, dl->getTarget());
-        NL.push_back(dev);
+        entry.setup.flags=1; // set valid
     }
-    return {};
+    return entry;
 }
+// std::vector<DeviceNVS> Device::getNvsData() const
+// {
+//     std::vector<DeviceNVS> NL;
+//     if ( ! _auto ) {
+//         NL.reserve(_dlink.size());
+//         ESP_LOGI(FNAME, "NvsData #ld%d", _dlink.size());
+//         for (DataLink* dl : _dlink) {
+//             DeviceNVS entry;
+//             entry.target = RoutingTarget(_id, dl->getTarget());
+//             int idx = 0;
+//             ProtocolItf *bn = dl->getBinary(); // binary option
+//             if ( bn ) {
+//                 entry.bin_sp = bn->getSendPort();
+//                 entry.setup.set(idx++, bn->getProtocolId());
+//                 ESP_LOGI(FNAME, "NvsData t%x bsp%d pid%d", (unsigned)entry.target.raw, entry.bin_sp, entry.setup.get(0));
+//             }
+//             NmeaPrtcl *nm = static_cast<NmeaPrtcl*>(dl->getNmea());
+//             if ( nm ) {
+//                 entry.nmea_sp = nm->getSendPort();
+//                 entry.setup.set(idx++, nm->getProtocolId()); // principal entry
+//                 for (auto it : nm->getAllPlugs() ) {
+//                     if ( ! it->getAuto() ) {
+//                         entry.setup.set(idx++, it->getPtyp()); // plugins
+//                     }
+//                 }
+//             }
+//             NL.push_back(entry);
+//         }
+//     }
+//     else {
+//         ESP_LOGI(FNAME, "NvsData AUTO");
+//     }
+//     return NL;
+// }
+
 
 int Device::getSendPort(ProtocolType p) const
 {

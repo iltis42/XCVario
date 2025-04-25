@@ -10,14 +10,7 @@
 #include "SetupNG.h"
 #include "sdkconfig.h"
 #include "ESP32NVS.h"
-#include "ESPAudio.h"
-#include "BMPVario.h"
-#include "glider/Polars.h"
 #include "sensor.h"
-#include "Switch.h"
-#include "CircleWind.h"
-#include "Protocols.h"
-#include "ESPAudio.h"
 #include "comm/DeviceMgr.h"
 #include "comm/CanBus.h"
 #include "logdef.h"
@@ -30,8 +23,6 @@
 #include <esp_mac.h>
 
 #include <cstdio>
-#include <cmath>
-#include <iostream>
 #include <string>
 #include <sstream>
 
@@ -41,14 +32,16 @@ std::vector<SetupCommon *> SetupCommon::instances;
 XCVSyncMsg *SetupCommon::syncProto = nullptr;
 
 
-SetupCommon::SetupCommon() {
+SetupCommon::SetupCommon(const char *k) :
+	_key(k)
+{
 	instances.push_back( this );  // add into vector of setup vars
 }
 
 SetupCommon::~SetupCommon() {
-	for ( auto it : instances ) {
-		if ( it == this ) {
-			it->erase();
+	for (auto it = instances.begin(); it != instances.end(); ++it) {
+		if ( *it == this ) {
+			instances.erase(it);
 			break;
 		}
 	}
@@ -63,7 +56,7 @@ bool SetupCommon::erase() {
 		return false;
 	}
 	else {
-		// ESP_LOGI(FNAME,"NVS erased key  %s", _key );
+		// ESP_LOGI(FNAME,"NVS erased key  %s", _key.data());
 		setDefault();
 		return true;
 	}
@@ -79,7 +72,7 @@ bool SetupCommon::exists() const {
 }
 
 bool SetupCommon::commit() {
-	// ESP_LOGI(FNAME,"NVS commit(): %s ", _key );
+	// ESP_LOGI(FNAME,"NVS commit(): %s ", _key.data());
 	if( flags._volatile != PERSISTENT ){
 			return true;
 	}
@@ -92,14 +85,14 @@ bool SetupCommon::commit() {
 	return true;
 }
 
-SetupCommon * SetupCommon::getMember( const char * key ){
+SetupCommon *SetupCommon::getMember( const char * key ){
 	for(int i = 0; i < instances.size(); i++ ) {
 		if( std::string(key) == instances[i]->key() ){
 			// ESP_LOGI(FNAME,"found key %s", instances[i]->key() );
 			return instances[i];
 		}
 	}
-	return 0;
+	return nullptr;
 }
 
 // at time of connection establishment

@@ -8,7 +8,6 @@
 #pragma once
 
 #include "glider/Polars.h"
-#include "MPU.hpp"
 #include "comm/Configuration.h"
 #include "Compass.h"
 #include "SetupCommon.h"
@@ -16,18 +15,16 @@
 #include "quaternion.h"
 #include "logdef.h"
 
+#include <MPU.hpp>
+
 
 #include <freertos/FreeRTOS.h>
-// #include <freertos/queue.h>
-// #include <esp_timer.h>
 #include <esp_system.h>
 
-// #include <esp_partition.h>
 #include <esp_err.h>
 #include <nvs_flash.h>
 #include <nvs.h>
 #include <cstdio>
-// #include <cstring>
 #include <string>
 #include <iostream>
 #include <vector>
@@ -149,15 +146,15 @@ public:
 			return 'U';
 	}
 
-	SetupNG( const char * akey, T adefault, bool reset=true, e_sync_t sync=SYNC_NONE, e_volatility vol=PERSISTENT,
-			void (* action)()=0, e_unit_type_t unit = UNIT_NONE)
+	SetupNG( const char *akey, T adefault, bool reset=true, e_sync_t sync=SYNC_NONE, e_volatility vol=PERSISTENT,
+			void (* action)()=0, e_unit_type_t unit = UNIT_NONE) :
+		SetupCommon(akey),
+		_default(adefault)
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		// if( strlen( akey ) > 15 ) {
 		// 	ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
 		// }
-		_key = akey;
-		_default = adefault;
 		flags._reset = reset;
 		flags._sync = sync;
 		flags._volatile = vol;
@@ -188,10 +185,10 @@ public:
 				sscanf( str,"%hd/%hd/%hd", &_value.x, &_value.y, &_value.z );
 			}
 			else if constexpr (std::is_same_v<T, DeviceNVS>) {
-				uint32_t t;
-				uint64_t p;
-				if (sscanf(str ,"%x/%lx", (unsigned*)&t, (long unsigned*)&p) == 2) {
-					_value = DeviceNVS(t, p);
+				uint32_t t, s;
+				int16_t bp, np;
+				if (sscanf(str ,"%x/%x/%hd/%hd", (unsigned*)&t, (unsigned*)&s, &bp, &np) == 4) {
+					_value = DeviceNVS(t, s, bp, np);
 				}
 			}
 			setDirty();
@@ -266,7 +263,7 @@ public:
 			( (!syncProto->isMaster() && flags._sync == SYNC_FROM_CLIENT) 
 				|| (syncProto->isMaster() && flags._sync == SYNC_FROM_MASTER) 
 				|| flags._sync == SYNC_BIDIR ) ) {
-			// ESP_LOGI( FNAME,"Now sync %s", _key );
+			// ESP_LOGI( FNAME,"Now sync %s", _key.data());
 			syncProto->sendItem(_key.data(), typeName(), (void *)(&_value), sizeof( _value ) );
 			return true;
 		
@@ -337,8 +334,8 @@ public:
 	T getDefault() const { return _default; }
 
 private:
-	T _value;         // the value
-	T _default;       // value applied with a factory reset
+	T       _value;   // the value
+	const T _default; // value applied with a factory reset
 };
 
 extern SetupNG<float> 		QNH;
@@ -593,8 +590,16 @@ extern uint8_t g_col_highlight;
 extern SetupNG<int> 		logging;
 extern SetupNG<float>      	display_clock_adj;
 extern SetupNG<int> 		xcv_role;
-extern SetupNG<DeviceNVS>	connected_devices;
-
+extern SetupNG<DeviceNVS>	anemoi_devsetup;
+extern SetupNG<DeviceNVS>	flarm_devsetup;
+extern SetupNG<DeviceNVS>	master_devsetup;
+extern SetupNG<DeviceNVS>	second_devsetup;
+extern SetupNG<DeviceNVS>	magsens_devsetup;
+extern SetupNG<DeviceNVS>	navi_devsetup;
+extern SetupNG<DeviceNVS>	navi_flarm_setup;
+extern SetupNG<DeviceNVS>	navi_radio_etup;
+extern SetupNG<DeviceNVS>	krt_devsetup;
+extern SetupNG<DeviceNVS>	atr_devsetup;
 
 extern float last_volume;   // is this used?
 

@@ -22,7 +22,7 @@ typedef enum
     MAGSENS_DEV,
     MASTER_DEV,  // CAN id registry
     NAVI_DEV,
-    RADIO_ATR833_DEV,
+    RADIO_ATR833_DEV, // <- 10
     RADIO_KRT2_DEV,
     XCVARIO_DEV,
     XCVARIOCLIENT_DEV,
@@ -44,7 +44,7 @@ typedef enum
     FLARMHOST_P,
     GARMIN_P,
     JUMBOCMD_P,
-    KRT2_REMOTE_P,
+    KRT2_REMOTE_P, // <- 10
     MAGSENS_P,
     MAGSENSBIN_P,
     NMEASTD_P,

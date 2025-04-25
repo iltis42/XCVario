@@ -451,6 +451,10 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 	return 0;
 }
 
+static int role_change_action(SetupMenuSelect *p) {
+	return 0;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // SetupMenu
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1932,9 +1936,17 @@ void system_menu_create(SetupMenu *sye) {
 	SetupMenu *ad = new SetupMenu("Audio", audio_menu_create);
 	sye->addEntry(ad);
 
+	// XCV role
+	SetupMenuSelect *role = new SetupMenuSelect("XCV device role", RST_NONE, role_change_action, true, &xcv_role);
+	role->setHelp("Set the intended role of this device first");
+	role->addEntry("None");
+	role->addEntry("Master");
+	role->addEntry("Second");
+	sye->addEntry(role);
+
 	// Devices menu
 	SetupMenu *devices = new SetupMenu("Connected Devices", system_menu_connected_devices);
-	devices->setHelp("Devices, Interfaces, Protocols", 240);
+	devices->setHelp("Devices, Interf.s, Protocols");
 	devices->setDynContent();
 	sye->addEntry(devices);
 

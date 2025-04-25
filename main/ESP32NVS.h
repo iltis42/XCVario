@@ -10,10 +10,12 @@ extern "C" {
 #include <string>
 
 
-class ESP32NVS {
+class ESP32NVS
+{
+private:
+	ESP32NVS();
 
 public:
-	ESP32NVS();
 	static ESP32NVS& instance(){
 		if( Instance == 0 )
 			Instance = new ESP32NVS();
@@ -29,7 +31,7 @@ public:
 	bool    getBlob(const char *key, void* object, size_t *length);
 
 private:
-	static ESP32NVS * Instance;
+	static ESP32NVS *Instance;
 };
 
 #define NVS ESP32NVS::instance()

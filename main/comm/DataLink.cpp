@@ -75,6 +75,9 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         ESP_LOGI(FNAME, "New CANMasterReg");
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
         nmea->addPlugin(new CANMasterRegMsg(*nmea));
+        if ( xcv_role.get() == SECOND_ROLE ) {
+            nmea->addPlugin(new CANClientQueryMsg(*nmea));
+        }
         tmp = nmea;
         break;
     }
@@ -126,14 +129,6 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
         nmea->addPlugin(new XCVarioMsg(*nmea));
         nmea->addPlugin(new CambridgeMsg(*nmea));
-        tmp = nmea;
-        break;
-    }
-    case XCVQUERY_P:
-    {
-        ESP_LOGI(FNAME, "New XCVquery");
-        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new CANClientQueryMsg(*nmea));
         tmp = nmea;
         break;
     }

@@ -12,6 +12,7 @@
 #include "protocol/Clock.h"
 #include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
+#include "SetupNG.h"
 
 #include "logdefnone.h"
 
@@ -104,7 +105,7 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
     } else if ( protocol.compare("MAGSENS") == 0 ) {
         ndev = MAGSENS_DEV;
         nproto = MAGSENS_P;
-    } else if ( protocol.compare("XCVCLIENT") == 0 ) {
+    } else if ( protocol.compare("XCVCLIENT") == 0 && xcv_role.get() == MASTER_ROLE ) {
         ndev = XCVARIOCLIENT_DEV;
         nproto = XCVSYNC_P;
         prio = 4;

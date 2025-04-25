@@ -296,7 +296,7 @@ bool SetupCommon::haveWLAN(){
 
 bool SetupCommon::isClient()
 {
-	return syncProto && ! syncProto->isMaster();
+	return xcv_role.get() == SECOND_ROLE;
 }
 
 bool SetupCommon::isWired()

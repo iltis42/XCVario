@@ -79,7 +79,9 @@ public:
     NmeaPrtcl &getNMEA() const { return _nmeaRef; }
     void setExplicit() { _auto = false; }
     bool getAuto() const { return _auto; }
-
+    bool operator==(const NmeaPlugin& other) const {
+        return _pid == other._pid;
+    }
     // API
     virtual const ParserEntry* getPT() const = 0;
 

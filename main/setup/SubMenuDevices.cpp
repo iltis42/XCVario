@@ -302,10 +302,17 @@ static int remove_device(SetupMenuSelect *p)
     if ( p->getSelect() == 1 ) {
         DeviceId did = (DeviceId)p->getParent()->getContId(); // dev id to remove
         ESP_LOGI(FNAME, "remove %d", did);
-        DeviceManager *dm = DeviceManager::Instance();
-        dm->removeDevice(did);
+        DEVMAN->removeDevice(did);
+        // clear nvs
+        const DeviceAttributes &da = DeviceManager::getDevAttr(did);
+        if ( da.nvsetup ) {
+            // save it to nvs
+            da.nvsetup->set(DeviceNVS(), false, false);
+            da.nvsetup->commit();
+        }
         p->getParent()->getParent()->setDirty();
     }
+
     p->setTerminateMenu();
     return 0;
 }
@@ -315,13 +322,19 @@ static int create_device(SetupMenuSelect *p)
 {
     if ( p->getSelect() == 1 ) {
         // Confirmed; default protocols and port
-        const DeviceAttributes *da = DeviceManager::getDevAttr(new_device, new_interface);
-        for (int i=0; i<da->prcols.getExtra(); ++i) {
-            ProtocolType pid = da->prcols.proto(i);
+        const DeviceAttributes &da = DeviceManager::getDevAttr(new_device, new_interface);
+        Device *dev = nullptr;
+        for (int i=0; i<da.prcols.getExtra(); ++i) {
+            ProtocolType pid = da.prcols.proto(i);
             if ( pid != NO_ONE ) {
                 ESP_LOGI(FNAME,"add protocol %d for device id %d", pid, new_device);
-                DEVMAN->addDevice(new_device, pid, da->port, da->port, new_interface);
+                dev = DEVMAN->addDevice(new_device, pid, da.port, da.port, new_interface);
             }
+        }
+        if ( da.nvsetup && dev ) {
+            // save it to nvs
+            da.nvsetup->set(dev->getNvsData());
+            da.nvsetup->commit();
         }
     
     }
@@ -352,9 +365,9 @@ static int select_device_action(SetupMenuSelect *p)
     new_device = (DeviceId)p->getValue();
 
     SetupMenuSelect *interface = static_cast<SetupMenuSelect*>(top->getEntry(2));
-    const DeviceAttributes *dattr = DeviceManager::getDevAttr(new_device);
+    const DeviceAttributes &dattr = DeviceManager::getDevAttr(new_device);
     interface->delAllEntries();
-    const PackedInt5Array &tmp = dattr->itfs;
+    const PackedInt5Array &tmp = dattr.itfs;
     ESP_LOGI(FNAME,"List Itfs raw %x", (unsigned)tmp.data);
     for (int i=0; i<tmp.maxSize; ++i) {
         InterfaceId iid = tmp.itf(i);
@@ -392,9 +405,9 @@ static void system_menu_add_device(SetupMenu *top)
     }
     for ( auto did : DeviceManager::allKnownDevs() ) {
         ESP_LOGI(FNAME,"Dev %d", did);
-        const DeviceAttributes *da = DeviceManager::getDevAttr(did);
-        ESP_LOGI(FNAME,"Itf %lx Prot %lx", (unsigned long)(da->itfs.data), (unsigned long)(da->prcols.data));
-        if ( da->isSelectable() && (!DEVMAN->getDevice(did) || da->multipleConf) ) {
+        const DeviceAttributes &da = DeviceManager::getDevAttr(did);
+        ESP_LOGI(FNAME,"Itf %lx Prot %lx", (unsigned long)(da.itfs.data), (unsigned long)(da.prcols.data));
+        if ( da.isSelectable() && (!DEVMAN->getDevice(did) || da.multipleConf) ) {
             ndev->addEntry(DeviceManager::getDevName(did).data(), did);
         }
     }
@@ -461,7 +474,7 @@ static void system_menu_device(SetupMenu *top)
         cptr += 7;
     }
 
-    SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE,remove_device, false, nullptr, false, false);
+    SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE, remove_device, false, nullptr, false, false);
     remove->mkConfirm();
     top->addEntry(remove);
 }
@@ -490,4 +503,5 @@ void system_menu_connected_devices(SetupMenu *top)
             top->addEntry(devmenu);
         }
     }
+
 }

@@ -56,7 +56,6 @@ void SetupRoot::exit(int levels)
     ESP_LOGI(FNAME,"End Setup Menu");
 
     screens_init = INIT_DISPLAY_NULL;
-    _display->doMenu(false);
     if (_restart) {
         reBoot();
     }

@@ -50,7 +50,6 @@ public:
 	static SetupCommon * getMember( const char * key );
 	static bool syncEntry( int entry );
 	static int numEntries();
-	static bool factoryReset();
 	static void giveConfigChanges( httpd_req *req, bool log_only=false );
 	static int restoreConfigChanges( int len, char *data );
 
@@ -61,6 +60,7 @@ public:
     static bool isWired();
 	static bool haveWLAN();
     static void commitDirty();
+    static void prepareFactoryReset();
 
     // variables
 	static XCVSyncMsg *syncProto;
@@ -71,6 +71,7 @@ protected:
 	void (*_action)(); // action on a value change
 
 private:
+	static bool factoryReset();
 	static std::vector<SetupCommon *> instances;
 	static char _ID[16];
 	static char default_id[6];

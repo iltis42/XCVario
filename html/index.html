@@ -460,11 +460,10 @@
         }
     });
 
-    // Reset
+    // Factory reset
     document.getElementById('factoryResetButton').addEventListener('click', function(e) {
-        var r = window.confirm("Warning, Factory Reset will clear all your settings. Do you really want to clear all settings to Factory Default ?");
+        var r = window.confirm("Warning, the Factory Reset will clear all your settings. Do you really want to reset all settings to Factory Default ?");
         if (r == true) {
-            window.alert('Press OK to clear all settings to factory default, this takes a couple of seconds, then wait for response...');
             var xhr = new XMLHttpRequest();
                 xhr.open('DELETE', "/reset", true );
                 xhr.onreadystatechange = function() {
@@ -472,16 +471,12 @@
                     var status = xhr.status;
                     if (status == 0 || (status >= 200 && status < 400)) {
                         // The request has been completed successfully
-                        window.alert( "Factory Reset status: " + xhr.response );
-                    } else {
-                        window.alert( "There has been an error with the status request for factory reset" );
+                        window.alert( "This takes a couple of seconds, wait for XCV to reboot ... ");
                     }
                 }
             }
             xhr.send();
-        } else {
-            window.alert('Abort clear');
-        }    
+        }
     });
     
     // Coredump

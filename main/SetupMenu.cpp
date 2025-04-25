@@ -1911,10 +1911,8 @@ void system_menu_create(SetupMenu *sye) {
 	SetupMenu *soft = new SetupMenu("Software Update", system_menu_create_software);
 	sye->addEntry(soft);
 
-	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, 0,
-			false, &factory_reset);
-	fa->setHelp(
-			"Option to reset all settings to factory defaults, means metric system, 5 m/s vario range and more");
+	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, 0, false, &factory_reset);
+	fa->setHelp("Option to reset all settings to factory defaults, means metric system, 5 m/s vario range and more");
 	fa->addEntry("Cancel");
 	fa->addEntry("ResetAll");
 	sye->addEntry(fa);

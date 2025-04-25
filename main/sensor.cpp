@@ -206,10 +206,6 @@ AnalogInput* getBattery() { return &Battery;}
 
 float getTAS() { return tas; }
 
-bool do_factory_reset() {
-	return( SetupCommon::factoryReset() );
-}
-
 void drawDisplay(void *arg)
 {
 	ESPRotary &knob = *static_cast<ESPRotary*>(arg);

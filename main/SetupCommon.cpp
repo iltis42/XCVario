@@ -175,6 +175,11 @@ void SetupCommon::commitDirty(){
 	}
 }
 
+void SetupCommon::prepareFactoryReset(){
+	factory_reset.set(1);
+	factory_reset.commit();
+}
+
 bool SetupCommon::factoryReset(){
 	ESP_LOGI(FNAME,"\n\n******  FACTORY RESET ******");
 	bool retsum = true;
@@ -188,11 +193,6 @@ bool SetupCommon::factoryReset(){
 			}
 			ret = instances[i]->init();
 			if( ret != true ) {
-				for(int i = 0; i < instances.size(); i++ ) {
-					if( instances[i]->dirty() )
-						instances[i]->commit();
-				}
-				return true;
 				ESP_LOGE(FNAME,"Error init with default %s", instances[i]->key() );
 				retsum = false;
 			}
@@ -220,32 +220,15 @@ bool SetupCommon::initSetup( bool& present ) {
 	}
 
 	for(int i = 0; i < instances.size(); i++ ) {
-			bool ret = instances[i]->init();
-			if( ret != true ) {
-				ESP_LOGE(FNAME,"Error init with default NVS: %s", instances[i]->key() );
-			}
+		if( ! instances[i]->init() ) {
+			ret = false;
+			ESP_LOGE(FNAME,"Error init with default NVS: %s", instances[i]->key() );
+		}
 	}
 
 	if( factory_reset.get() ) {
-		ESP_LOGI(FNAME,"\n\n******  FACTORY RESET ******");
-		for(int i = 0; i < instances.size(); i++ ) {
-			ESP_LOGI(FNAME,"i=%d %s erase", i, instances[i]->key() );
-			if( instances[i]->mustReset() ){
-				bool ret = instances[i]->erase();
-				if( ret != true ) {
-					ESP_LOGE(FNAME,"Error erasing %s", instances[i]->key() );
-					ret = false;
-				}
-				ret = instances[i]->init();
-				if( ret != true ) {
-					ESP_LOGE(FNAME,"Error init with default %s", instances[i]->key() );
-					ret = false;
-				}
-				else {
-					ESP_LOGI(FNAME,"%s successfully initialized with default", instances[i]->key() );
-				}
-			}
-		}
+		ret = factoryReset();
+		commitDirty();
 	}
 	last_volume = (int)default_volume.get();
 	giveConfigChanges( 0, true );

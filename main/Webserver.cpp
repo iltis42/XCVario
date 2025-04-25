@@ -433,18 +433,12 @@ static esp_err_t POST_restore_handler(httpd_req_t *req)
 static esp_err_t DELETE_reset_handler(httpd_req_t *req)
 {
     ESP_LOGI(FNAME, "Clear Settings Requested");
-	// bool success = SetupCommon::factoryReset();
-    bool success = do_factory_reset();
 
 	httpd_resp_set_type(req, "text/html");
-	if( success ) {
-		httpd_resp_send(req, "Okay", 5 );
-	}
-	else {
-		httpd_resp_send(req, "Error", 6 );
-	}
+	httpd_resp_send(req, "Okay", 5 );
+	SetupCommon::prepareFactoryReset();
 
-	vTaskDelay(5000 / portTICK_PERIOD_MS);
+	vTaskDelay(3000 / portTICK_PERIOD_MS);
 	esp_restart();
 
 	return ESP_OK;

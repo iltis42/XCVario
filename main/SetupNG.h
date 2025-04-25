@@ -289,43 +289,41 @@ public:
 
 	bool init() override {
 		if( flags._volatile != PERSISTENT ){
-			ESP_LOGI(FNAME,"NVS volatile set default");
+			// ESP_LOGI(FNAME,"NVS volatile set default");
 			set( _default );
 			return true;
 		}
 		size_t required_size;
 		bool ret = NVS.getBlob(_key.data(), NULL, &required_size);
 		if ( !ret ){
-			ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error", _key.data() );
+			// ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error", _key.data() );
 			set( _default );  // try to init
-			commit();
+			setDirty();
 		}
 		else {
-			ESP_LOGI(FNAME,"NVS %s size: %d", _key.data(), required_size );
+			// ESP_LOGI(FNAME,"NVS %s size: %d", _key.data(), required_size );
 			if( required_size > sizeof( T ) ) {
-				ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , sizeof( T ) );
+				// ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , sizeof( T ) );
 				erase();
 				set( _default );  // try to init
-				return false;
+				ret = false;
 			}
 			else {
-				ESP_LOGI(FNAME,"NVS size okay");
+				// ESP_LOGI(FNAME,"NVS size okay");
 				ret = NVS.getBlob(_key.data(), &_value, &required_size);
 
 				if ( !ret || !isValid() ){
-					ESP_LOGE(FNAME, "NVS nvs_get_blob error");
+					// ESP_LOGE(FNAME, "NVS nvs_get_blob error");
 					erase();
 					set( _default );  // try to init
-					commit();
+					setDirty();
 				}
 				// else {
-					// char val[30];
-					// value_str(val);
-					// ESP_LOGI(FNAME,"NVS key %s exists len: %d, value: %s", _key, required_size, val );
+				// 	ESP_LOGD(FNAME,"NVS key %s(%c) exists len: %d, expected: %d", _key.data(), typeName(), required_size, sizeof( _value ));
 				// }
 			}
 		}
-		return true;
+		return ret;
 	}
 
 

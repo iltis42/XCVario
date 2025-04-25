@@ -174,7 +174,8 @@ uint8_t g_col_header_light_b=g_col_highlight;
 uint16_t gear_warning_holdoff = 0;
 uint8_t gyro_flash_savings=0;
 
-t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false };
+// boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.
+t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -900,7 +901,8 @@ void register_coredump() {
 	}
 }
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
 // Sensor board init method. Herein all functions that make the XCVario are launched and tested.
 void system_startup(void *args){
 
@@ -982,22 +984,24 @@ void system_startup(void *args){
 	Display->writeText(1, ver.c_str() );
 	BootUpScreen *boot_screen = new BootUpScreen();
 	MessageBox::createMessageBox();
+	if ( gflags.schedule_reboot ) {
+		MBOX->newMessage(3, "Detecting XCV hardware");
+	}
 	Rotary->begin();
-	sleep(1);
 	if( software_update.get() || Rotary->readBootupStatus() ) {
 		software_update.set( 0 ); // only one shot, then boot normal
 
-		if( true ) { // have CAN?
+		if( hardwareRevision.get() >= XCVARIO_22 ) {
 			// Give CAN MagSens a chance for an update
-			CAN = new CANbus();
-			DeviceManager* dm = DeviceManager::Instance();
-			dm->addDevice(MASTER_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-			dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
+			CANbus::createCAN();
+			CAN->begin();
+			DEVMAN->addDevice(MASTER_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+			DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
 		}
 		delete boot_screen; // screen now belongs to OTA
 		ota = new OTA();
 		ota->begin();
-		ota->doSoftwareUpdate( Display );
+		ota->doSoftwareUpdate( Display ); // fixme -> missing the drawDisplay to process button at this point in time
 	}
 	if( hardwareRevision.get() >= XCVARIO_21 ){
 		gflags.haveMPU = true;
@@ -1353,32 +1357,36 @@ void system_startup(void *args){
 	audio_volume.set(default_volume.get());
 
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	if( AUDIO->haveCAT5171() ) // todo && CAN configured
+	// do not move the chack unless you know the sequence of HW detection
+	if ( gflags.schedule_reboot && AUDIO->haveCAT5171() ) {
+		// check on CAN available
+		ESP_LOGI(FNAME,"probing CAN");
+		CANbus::createCAN();
+		if( CAN->selfTest() ){
+			// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
+			if ( CAN->hasSlopeSupport() ) {
+				if( hardwareRevision.get() < XCVARIO_22)
+					hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
+			} else {
+				ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision (XCV-23)");
+				if( hardwareRevision.get() < XCVARIO_23)
+					hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
+			}
+		}
+		delete CAN;
+		CAN = nullptr;
+	}
+	// CAN is enabled based on known HW revision
+	if ( CAN )
 	{
 		ESP_LOGI(FNAME,"NOW add/test CAN");
-		CAN = new CANbus();
 		logged_tests += "CAN Interface: ";
-		DeviceManager* dm = DeviceManager::Instance();
-		if( CAN->selfTest() ){
-			if( dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS) ) {
-				// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
-				ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
-				// Add the legacs MagSens CAN receiver, would be deleted if a MagSens V2 is found
-				// dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
-				// dm->removeDevice(DeviceId::MASTER_DEV);
-				// ESP_LOGI(FNAME,"Removetest");
-				// delay(1000);
-				// dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-				logged_tests += "OK\n";
-				if ( CAN->hasSlopeSupport() ) {
-					if( hardwareRevision.get() < XCVARIO_22)
-						hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
-				} else {
-					ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision (XCV-23)");
-					if( hardwareRevision.get() < XCVARIO_23)
-						hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
-				}
-			}
+		if( CAN->getUpAndOk() || CAN->selfTest() ) {
+			CAN->begin();
+			// just allways, devman respects the XCV role setting
+			DEVMAN->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+			ESP_LOGI(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
+			logged_tests += "OK\n";
 		}
 		else {
 			MBOX->newMessage(1, "CAN bus: Fail");
@@ -1467,6 +1475,12 @@ void system_startup(void *args){
 			selftestPassed = false;
 		}
 		compass->start();  // start task
+	}
+
+	// hardware components now got all detected
+	if ( gflags.schedule_reboot ) {
+		SetupCommon::commitDirty();
+		esp_restart();
 	}
 
 	Speed2Fly.begin();
@@ -1657,6 +1671,8 @@ extern "C" void  app_main(void)
 	if( hardwareRevision.get() == HW_UNKNOWN ){  // per default we assume there is XCV-20
 		ESP_LOGI( FNAME, "Hardware Revision unknown, set revision 2 (XCV-20)");
 		hardwareRevision.set(XCVARIO_20);
+		// Schedule a reboot after hardware revision got clarified
+		gflags.schedule_reboot = true;
 	}
 
 	// start i2c bus

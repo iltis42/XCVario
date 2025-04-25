@@ -43,6 +43,7 @@ typedef struct global_flags{
 	bool validTemperature :1 ;
 	bool mpu_pwm_initalized: 1;
 	bool gear_warn_external :1;
+	bool schedule_reboot :1;
 } t_global_flags;
 
 class CANbus;

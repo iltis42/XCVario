@@ -363,13 +363,15 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
     }
     InterfaceCtrl *itf = &dummy_itf;
     if ( iid == CAN_BUS ) {
+        // CAN is special and not on all HW versions. 
+        // Do not try to create it
         if ( CAN ) {
             itf = CAN;
         }
     }
     else if ( iid == WIFI_AP) {
         if ( ! Wifi ) {
-            Wifi = new WifiAP();
+            WifiAP::createWifiAP();
         }
         if ( Wifi ) {
             Wifi->ConfigureIntf(listen_port);

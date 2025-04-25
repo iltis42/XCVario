@@ -33,10 +33,11 @@ typedef struct xcv_sock_server {
 class WifiAP final : public InterfaceCtrl
 {
 	friend class WIFI_EVENT_HANDLER;
-	friend void socket_server(void *setup);
 
-public:
+private:
 	WifiAP();
+public:
+	static WifiAP *createWifiAP();
 	~WifiAP();
 
 public:

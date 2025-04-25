@@ -189,11 +189,21 @@ public:
 }; // WIFI_EVENT_HANDLER
 
 
-WifiAP::WifiAP(): InterfaceCtrl()
+WifiAP::WifiAP() :
+	InterfaceCtrl()
 {
+	// todo create sockets as needed and for other ports
 	for(int i=0; i<NUM_TCP_PORTS; i++) {
 		_socks[i] = nullptr;
 	}
+}
+
+WifiAP *WifiAP::createWifiAP()
+{
+	if ( ! Wifi ) {
+		Wifi = new WifiAP();
+	}
+	return Wifi;
 }
 
 WifiAP::~WifiAP()

@@ -318,7 +318,7 @@ static int remove_device(SetupMenuSelect *p)
 }
 
 
-static int create_device(SetupMenuSelect *p)
+static int create_device_action(SetupMenuSelect *p)
 {
     if ( p->getSelect() == 1 ) {
         // Confirmed; default protocols and port
@@ -418,7 +418,7 @@ static void system_menu_add_device(SetupMenu *top)
     if ( ! interface ) {
         interface = new SetupMenuSelect("Interface", RST_NONE, select_interface_action);
         top->addEntry(interface);
-        confirm = new SetupMenuSelect("Create it", RST_NONE, create_device);
+        confirm = new SetupMenuSelect("Create it", RST_NONE, create_device_action);
         confirm->mkConfirm();
         top->addEntry(confirm);
     }

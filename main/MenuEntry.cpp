@@ -60,7 +60,8 @@ void MenuEntry::reBoot(){
 	clear();
 	MYUCG->setPrintPos( 10, 50 );
 	MYUCG->print("...rebooting now" );
-	delay(2000);
+	SetupCommon::commitDirty();
+	delay(1000);
 	esp_restart();
 }
 

@@ -10,10 +10,12 @@
 #include "ClockIntf.h"
 
 #include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include <esp_attr.h>
 
 #include <set>
 esp_timer_handle_t Clock::_clock_timer = nullptr;
+static SemaphoreHandle_t mutex = nullptr;
 
 static volatile unsigned long msec_counter = 0;
 
@@ -26,6 +28,7 @@ static void IRAM_ATTR clock_timer_sr(std::set<Clock_I*> *registry)
     // be in sync with millis, but sparse
     msec_counter = esp_timer_get_time() / 1000;
     // tick callbacks
+    xSemaphoreTake(mutex, portMAX_DELAY);
     for (auto it = registry->begin(); it != registry->end(); ) {
         if ((*it)->myTurn()) {
             if ((*it)->tick()) {
@@ -35,6 +38,7 @@ static void IRAM_ATTR clock_timer_sr(std::set<Clock_I*> *registry)
         }
         it++;
     }
+    xSemaphoreGive(mutex);
 }
 
 
@@ -49,8 +53,8 @@ Clock::Clock()
             .dispatch_method = ESP_TIMER_TASK,
             .name = "clock",
             .skip_unhandled_events = true,
-
         };
+        mutex = xSemaphoreCreateMutex();
         esp_timer_create(&t_args, &_clock_timer);
         esp_timer_start_periodic(_clock_timer, TICK_ATOM * 1000); // the timers API is on usec
         clock_registry.clear();
@@ -61,19 +65,23 @@ Clock::Clock()
 void Clock::start(Clock_I *cb)
 {
     esp_timer_stop(_clock_timer);
+    xSemaphoreTake(mutex, portMAX_DELAY);
     auto it = clock_registry.find(cb);
     if ( it == clock_registry.end() ) {
         clock_registry.insert(cb);
     }
+    xSemaphoreGive(mutex);
     esp_timer_start_periodic(_clock_timer, TICK_ATOM * 1000);
 }
 void Clock::stop(Clock_I *cb)
 {
     esp_timer_stop(_clock_timer);
+    xSemaphoreTake(mutex, portMAX_DELAY);
     auto it = clock_registry.find(cb);
     if ( it != clock_registry.end() ) {
         clock_registry.erase(it);
     }
+    xSemaphoreGive(mutex);
     esp_timer_start_periodic(_clock_timer, TICK_ATOM * 1000);
 }
 

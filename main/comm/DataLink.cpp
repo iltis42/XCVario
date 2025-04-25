@@ -67,7 +67,6 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
 
 
     // Create a new one
-    // bool nmea_plugin = false;
     switch (ptyp)
     {
     case REGISTRATION_P:
@@ -139,6 +138,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
         // The SyncMsg serves on both side, need to know it's role
         // connect to a client -> you are master
+        if ( xcv_role.get() == NO_ROLE && did==XCVARIOCLIENT_DEV ) { xcv_role.set(MASTER_ROLE); }
         nmea->addPlugin(new XCVSyncMsg(*nmea, did==XCVARIOCLIENT_DEV)); // true when on master (!!)
         tmp = nmea;
         break;
@@ -266,7 +266,7 @@ void DataLink::process(const char *packet, int len)
         // Special use, "no data" timeout, might be expected and normal
         // We just reset the protocol state machine then
         goNMEA();
-        ESP_LOGW(FNAME, "timeout Itf/Port %d/%d", _itf_id.iid, _itf_id.port);
+        // ESP_LOGW(FNAME, "timeout Itf/Port %d/%d", _itf_id.iid, _itf_id.port);
         return;
     }
     
@@ -342,7 +342,7 @@ void DataLink::dumpProto()
     if ( _nmea ) {
         ESP_LOGI(FNAME, "       nm did%d\tpid%d\tsp%d", _nmea->getDeviceId(), _nmea->getProtocolId(), _nmea->getSendPort());
         for (auto it : static_cast<NmeaPrtcl*>(_nmea)->getAllPlugs() ) {
-            ESP_LOGI(FNAME, "       nm plugin %d%d", it->getPtyp(), it->getAuto()?'a':'x');
+            ESP_LOGI(FNAME, "       nm plugin %d%c", it->getPtyp(), it->getAuto()?'a':'x');
         }
     }
     if ( _binary ) {

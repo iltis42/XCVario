@@ -424,9 +424,12 @@ static void system_menu_add_device(SetupMenu *top)
         ESP_LOGI(FNAME,"Dev %d", did);
         const DeviceAttributes &da = DeviceManager::getDevAttr(did);
         ESP_LOGI(FNAME,"Itf %lx Prot %lx", (unsigned long)(da.itfs.data), (unsigned long)(da.prcols.data));
-        if ( da.isSelectable() && (!DEVMAN->getDevice(did) || da.multipleConf) ) {
-            ndev->addEntry(DeviceManager::getDevName(did).data(), did);
+        if ( da.isSelectable() && da.roleFit(xcv_role.get()) && (!DEVMAN->getDevice(did) || da.multipleConf) ) {
+            ndev->addEntry(da.name.data(), did);
         }
+    }
+    if ( ndev->numEntries() == 0 ) {
+        ndev->addEntry("---", NO_DEVICE);
     }
 
     // empty interfaces list

@@ -195,6 +195,16 @@ static int update_s1_txena(SetupMenuSelect *p)
     return 0;
 }
 
+static int refresh_nrbreaks_action(SetupAction *p)
+{
+    int nb = S1->getBreakCount();
+    if ( p->getCode() == 2 ) {
+        nb = S2->getBreakCount();
+    }
+    p->display(nb);
+    return 0;
+}
+
 void system_menu_create_interfaceS1(SetupMenu *top)
 {
     SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s1_baud, true, &serial1_speed);
@@ -223,6 +233,10 @@ void system_menu_create_interfaceS1(SetupMenu *top)
     stxdis1->setHelp("Option to listen only on the RX line, disables TX line to receive only data");
     stxdis1->mkEnable();
     top->addEntry(stxdis1);
+
+    SetupAction *nrbreaks = new SetupAction("Nr of breaks", refresh_nrbreaks_action, 1);
+    nrbreaks->setHelp("Press the button to re-read the nr of breaks from the interface");
+    top->addEntry(nrbreaks);
 }
 
 static int update_s2_baud(SetupMenuSelect *p)
@@ -281,6 +295,10 @@ void system_menu_create_interfaceS2(SetupMenu *top)
     stxdis2->setHelp("Option to listen only on the RX line, disables TX line to receive only data");
     stxdis2->mkEnable();
     top->addEntry(stxdis2);
+
+    SetupAction *nrbreaks = new SetupAction("Nr of breaks", refresh_nrbreaks_action, 2);
+    nrbreaks->setHelp("Press the button to re-read the nr of breaks from the interface");
+    top->addEntry(nrbreaks);
 }
 
 void system_menu_create_interfaceCAN(SetupMenu *top)

@@ -37,23 +37,23 @@ union ItfTarget {
 
     // Convenience
     constexpr ItfTarget(InterfaceId iid, int port=0)
-        : raw((static_cast<InterfaceId>(iid) & 0xf) | ((static_cast<int>(port) & 0x1fffff) << 4)) {}
+        : raw((static_cast<InterfaceId>(iid) & 0xf) | ((port & 0x1fffff) << 4)) {}
     constexpr ItfTarget(int r = 0) : raw(r) {}
-    constexpr bool operator<(const ItfTarget& other) const {
-        return raw < other.raw;
-    }
-    constexpr bool operator==(const ItfTarget& other) const {
-        return raw == other.raw;
-    }
-    constexpr bool operator!=(const ItfTarget& other) const {
-        return raw != other.raw;
-    }
+    constexpr bool operator<(const ItfTarget& other) const { return raw < other.raw; }
+    constexpr bool operator==(const ItfTarget& other) const { return raw == other.raw; }
+    constexpr bool operator!=(const ItfTarget& other) const { return raw != other.raw; }
     constexpr bool matchNoPhy(const ItfTarget& other) const {
         return ( (iid == NO_PHY && port == 0)               // both wildcards
                 || (iid == NO_PHY && port == other.port)    // interface as wildcard
                 || (iid == other.iid && port == 0)          // port as wildcard
                 || raw == other.raw );
     }
+    // getter
+    constexpr InterfaceId getItfId() const { return iid; }
+    constexpr int getPort() const { return port; }
+    // setter
+    constexpr void setItfId(InterfaceId id) { iid = id; }
+    constexpr void setPort(int p) { port = p; }
 };
 
 // ISO/OSI 1..n relation from interface to data link layer.

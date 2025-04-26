@@ -590,6 +590,7 @@ extern SetupNG<int> 		logging;
 extern SetupNG<float>      	display_clock_adj;
 extern SetupNG<int> 		xcv_role;
 extern SetupNG<DeviceNVS>	anemoi_devsetup;
+extern SetupNG<DeviceNVS>	auto_connect;
 extern SetupNG<DeviceNVS>	flarm_devsetup;
 extern SetupNG<DeviceNVS>	master_devsetup;
 extern SetupNG<DeviceNVS>	second_devsetup;

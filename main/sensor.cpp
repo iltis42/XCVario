@@ -1371,12 +1371,12 @@ void system_startup(void *args){
 		delete CAN;
 		CAN = nullptr;
 	}
-	// CAN is enabled based on known HW revision
+	// CAN is created based on known HW revision
 	if ( CAN )
 	{
 		ESP_LOGI(FNAME,"NOW add/test CAN");
 		logged_tests += "CAN Interface: ";
-		if( CAN->getUpAndOk() || CAN->selfTest() ) {
+		if( CAN->getTestOk() || CAN->selfTest() ) {
 			CAN->begin();
 			// just allways, devman respects the XCV role setting
 			DEVMAN->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);

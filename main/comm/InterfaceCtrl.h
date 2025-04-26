@@ -80,7 +80,7 @@ public:
     void DeleteAllDataLinks();
     int getNrDLinks() const { return _dlink.size(); }
     int isOneToOne() const { return _one_to_one; }
-    bool getUpAndOk() const { return _functional; }
+    bool getTestOk() const { return _functional; }
 
 protected:
     std::map<int, DataLink*> _dlink;

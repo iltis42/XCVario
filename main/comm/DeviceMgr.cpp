@@ -365,7 +365,10 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
     if ( iid == CAN_BUS ) {
         // CAN is special and not on all HW versions. 
         // Do not try to create it
-        if ( CAN ) {
+        if ( CAN && CAN->getTestOk() ) {
+            if ( ! CAN->isInitialized() ) {
+                CAN->begin();
+            }
             itf = CAN;
         }
     }
@@ -488,8 +491,26 @@ void DeviceManager::removeDevice(DeviceId did)
         delete dev;
         // is it the last device on this interface
         if ( itf->getNrDLinks() == 0 ) {
-            if ( itf->getId() == CAN_BUS ) {
+            if ( itf == CAN ) {
+                ESP_LOGI(FNAME, "stopping CAN");
                 CAN->stop();
+            }
+            else if ( itf == Wifi ) {
+                ESP_LOGI(FNAME, "stopping Wifi");
+                delete Wifi;
+                Wifi = nullptr;
+            }
+            else if ( itf == BTspp ) {
+                ESP_LOGI(FNAME, "stopping BTspp");
+                BTspp->stop();
+            }
+            else if ( itf == S1 ) {
+                ESP_LOGI(FNAME, "stopping S1");
+                S1->stop();
+            }
+            else if ( itf == S2 ) {
+                ESP_LOGI(FNAME, "stopping S2");
+                S2->stop();
             }
         }
     }

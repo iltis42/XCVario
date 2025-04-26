@@ -125,7 +125,7 @@ void options_menu_create_wifi(SetupMenu *top)
 
     SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
     top->addEntry(cusid);
-    cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate", 215);
+    cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate");
 }
 
 void options_menu_create_bluetooth(SetupMenu *top)
@@ -331,6 +331,7 @@ static int remove_device(SetupMenuSelect *p)
     }
 
     p->setTerminateMenu();
+    p->setSelect(0);
     return 0;
 }
 
@@ -356,6 +357,7 @@ static int create_device_action(SetupMenuSelect *p)
     
     }
     p->setTerminateMenu();
+    p->setSelect(0); // reset to cancel
     p->getParent()->getParent()->setDirty();
     return 0;
 }

@@ -25,36 +25,33 @@ union RoutingTarget {
     };
     uint32_t raw = 0; // Access the packed 32-bit value
 
-    // Convenience
+    // Default constructor for initialization
+    constexpr RoutingTarget(int r = 0) : raw(r) {}
+    // Convenience ctor's
     constexpr RoutingTarget(DeviceId did, ItfTarget itfp=0)
         : raw((did & 0x7f) | (itfp.raw & 0x1ffffff) << 7) {}
     constexpr RoutingTarget(DeviceId did, InterfaceId itf, int port)
         : raw((did & 0x7f) | ItfTarget(itf, port).raw << 7) {}
     constexpr RoutingTarget(uint32_t r)
         : raw(r) {}
-
-    constexpr DeviceId getDeviceId() const {
-        return did;
-    }
-    constexpr ItfTarget getItfTarget() const {
-        return static_cast<ItfTarget>(raw>>7);
-    }
-
-    // Default constructor for initialization
-    constexpr RoutingTarget(int r = 0) : raw(r) {}
+    // getter
+    constexpr DeviceId getDeviceId() const { return did; }
+    constexpr ItfTarget getItfTarget() const { return static_cast<ItfTarget>(raw>>7); }
+    constexpr InterfaceId getItfId() const { return static_cast<ItfTarget>(raw>>7).iid; }
+    constexpr int getPort() const { return static_cast<ItfTarget>(raw>>7).port; }
+    //setter
+    constexpr void setDeviceId(DeviceId d) { did = d; }
+    constexpr void setItfTarget(ItfTarget i) { intf_port = static_cast<int>(i.raw); }
+    constexpr void setItfId(InterfaceId id) { intf_port &= ~0x3f; intf_port |= (id & 0x3f); } // knowing ItfTarget
+    constexpr void setItfPort(int p) { intf_port &= ~(0x1fffff << 4); intf_port |= ((p & 0x1fffff) << 4); }
 
     // Comparison operator for std::map (based on raw)
-    constexpr bool operator<(const RoutingTarget& other) const {
-        return raw < other.raw;
-    }
+    constexpr bool operator<(const RoutingTarget& other) const { return raw < other.raw; }
     // Comparison operator for SetupNG
-    constexpr bool operator==(const RoutingTarget& other) const {
-        return raw == other.raw;
-    }
+    constexpr bool operator==(const RoutingTarget& other) const { return raw == other.raw; }
     // For the route search
-    bool match(const RoutingTarget& target) const {
-        return ( did == target.did && getItfTarget().matchNoPhy(target.getItfTarget()) );
-    }
+    bool match(const RoutingTarget& target) const { return ( did == target.did && getItfTarget().matchNoPhy(target.getItfTarget()) ); }
+
 };
 
 using RoutingList = std::vector<RoutingTarget>;
@@ -172,8 +169,8 @@ union ProtocolList {
     // Set value at runtime
     void set(int index, int datum) {
         if ( index < maxProto ) {
-            data &= ~(0x1f << (index*5));
-            data |= (static_cast<uint32_t>(datum) & 0x1f) << (index*5);
+            data &= ~((uint32_t)0x1f << (index*5));
+            data |= ((uint32_t)(datum) & 0x1f) << (index*5);
         }
     }
 
@@ -210,7 +207,7 @@ struct DeviceNVS
     // getter
     constexpr int getBinSPort() const { return bin_sp; }
     constexpr int getNmeaSPort() const { return nmea_sp; }
-    constexpr bool isValid() const { return setup.flags&1; }
+    constexpr bool isValid() const { return setup.flags&1; } // a default ctor will always set to zero
     
     // compare
     constexpr bool operator==(const DeviceNVS& other) const {
@@ -262,5 +259,6 @@ struct DeviceAttributes
     bool hasProfile() const { return (bool)profileConf; }
     bool isVariant() const { return (bool)aVariant; }
     int  getRoleDep() const { return roleDepndent; }
+    bool roleFit(int role) const { return ( !roleDepndent || !role || (roleDepndent == role) ); }
 };
 

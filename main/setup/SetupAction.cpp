@@ -21,7 +21,7 @@ SetupAction::SetupAction(const char *title, int (*action)(SetupAction *), int co
     _end_menu(end_menu)
 {
     ESP_LOGI(FNAME, "SetupAction( %s ) ", title);
-    _title = title;
+    _title.assign(title);
     // helptext = action_help;
 }
 
@@ -40,7 +40,7 @@ void SetupAction::display(int mode)
 {
     ESP_LOGI(FNAME, "display() instance=%p mode=%d", this, mode);
     int line = _parent->getHighlight()+1;
-    int indent = MYUCG->getStrWidth(_title) + 12;
+    int indent = MYUCG->getStrWidth(_title.c_str()) + 12;
     MYUCG->setPrintPos(indent, (line + 1) * 25);
     MYUCG->printf( " %3d  ", mode );
     showhelp();

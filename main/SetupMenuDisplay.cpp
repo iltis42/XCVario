@@ -27,7 +27,7 @@ Last update: 2021-02-25
 SetupMenuDisplay::SetupMenuDisplay( const char* title, int (*action)(SetupMenuDisplay *p) ) :
 	MenuEntry()
 {
-	_title = title;
+	_title.assign(title);
 	_action = action;
 }
 

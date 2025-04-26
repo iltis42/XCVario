@@ -25,7 +25,6 @@
 
 static DeviceId new_device;
 static InterfaceId new_interface;
-static char tmp_title[50];
 // static SetupNG<float> tmp_value( "TMP_VAL", 0.0, SYNC_NONE, VOLATILE);
 
 //
@@ -457,15 +456,6 @@ static int start_dm_action(SetupAction* p)
     return 0;
 }
 
-static void system_menu_datalink(SetupMenu *top)
-{
-    SetupAction *monitor = new SetupAction("Start data monitor", start_dm_action, top->getContId());
-    top->addEntry(monitor);
-    // SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE,remove_device, false, nullptr, false, false);
-    // remove->mkConfirm();
-    // top->addEntry(remove);
-}
-
 static void system_menu_device(SetupMenu *top)
 {
     DeviceId did = (DeviceId)top->getContId();
@@ -473,24 +463,27 @@ static void system_menu_device(SetupMenu *top)
     // Interface
     SetupMenu *itf = new SetupMenu(DEVMAN->getItfName(dev->_itf->getId()).data(), get_itf_menu_creator(dev->_itf->getId()));
     top->addEntry(itf);
-    SetupMenuSelect *text;
-    if ( dev->_itf->isOneToOne() ) {
-        text = new SetupMenuSelect(" -- one data layer --", RST_NONE);
-    }
-    else {
-        text = new SetupMenuSelect("with port's:", RST_NONE);
-    }
-    text->lock();
-    top->addEntry(text);
 
-    // Datalinks
-    char *cptr = tmp_title;
+    // all data links
+    std::string tmp;
     for (DataLink* dl : dev->_dlink) {
-        sprintf(cptr, "%d", dl->getPort());
-        SetupMenu *port  = new SetupMenu(cptr, system_menu_datalink, (int)dl->getTarget().raw);
-        top->addEntry(port);
-        cptr += 7;
+        int lport = dl->getPort();
+        tmp = "Listen(/Send) port: " + std::to_string(lport);
+        if ( dev->_itf->isOneToOne() ) {
+            tmp = "One data layer";
+        }
+        SetupAction *monitor = new SetupAction(tmp.c_str(), start_dm_action, (int)dl->getTarget().raw);
+        top->addEntry(monitor);
+        for ( int sp : dl->getAllSendPorts() ) {
+            if ( sp != lport ) {
+                tmp = "Send port: " + std::to_string(sp);
+                SetupAction *monitor = new SetupAction(tmp.c_str(), start_dm_action, (int)ItfTarget(dev->_itf->getId(), sp).raw);
+                top->addEntry(monitor);
+            }
+        }
     }
+
+    // list protocols
 
     SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE, remove_device, false, nullptr, false, false);
     remove->mkConfirm();
@@ -516,7 +509,9 @@ void system_menu_connected_devices(SetupMenu *top)
     for ( auto dev : DEVMAN->allDevs() ) {
         std::string_view dnam = DeviceManager::getDevName(dev->_id);
         if ( ! dnam.empty() ) {
-            SetupMenu *devmenu = new SetupMenu(dnam.data(), system_menu_device, dev->_id);
+            std::string tmp(dnam);
+            tmp += " - " + std::string(dev->_itf->getStringId());
+            SetupMenu *devmenu = new SetupMenu(tmp.c_str(), system_menu_device, dev->_id);
             devmenu->setHelp("Device details.");
             top->addEntry(devmenu);
         }

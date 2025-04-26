@@ -28,7 +28,7 @@ SetupRoot::~SetupRoot()
 
 void SetupRoot::begin(MenuEntry *setup)
 {
-    ESP_LOGI(FNAME,"SetupMenu %s", _title);
+    ESP_LOGI(FNAME,"SetupMenu %s", _title.c_str());
     // root will always own only one child
     if ( !_childs.empty() ) {
         ESP_LOGW(FNAME,"Found root menu not empty.");

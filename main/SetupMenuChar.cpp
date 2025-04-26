@@ -21,7 +21,7 @@ SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (
 	_action(action)
 {
 	ESP_LOGI(FNAME,"SetupMenuChar( %s ), char: %c", title, *achar );
-	_title = title;
+	_title.assign(title);
 	if( achar ) {
 		_mychar = achar+_char_index;
 	}
@@ -33,7 +33,7 @@ SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (
 
 void SetupMenuChar::display(int mode)
 {
-    ESP_LOGI(FNAME,"display title:%s action: %x", _title, (int)(_action));
+    ESP_LOGI(FNAME,"display title:%s action: %x", _title.c_str(), (int)(_action));
 	if ( _values.size() > 9 || canInline() ) {
 		indentHighlight(_parent->getHighlight());
 	}
@@ -42,9 +42,9 @@ void SetupMenuChar::display(int mode)
 	}
 	else
 	{
-		ESP_LOGI(FNAME,"Title: %s ", _title );
+		ESP_LOGI(FNAME,"Title: %s ", _title.c_str() );
 		menuPrintLn("<<", 0);
-		menuPrintLn(_title, 0, 30);
+		menuPrintLn(_title.c_str(), 0, 30);
 		ESP_LOGI(FNAME,"select=%d numval=%d size=%d val=%s", _select, _values.size(), _values.size(), _values[_select] );
 		for( int i=0; i<_values.size() && i<10; i++ )	{
 			menuPrintLn(_values[i], i+1);

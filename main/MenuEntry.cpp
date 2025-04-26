@@ -41,7 +41,7 @@ MenuEntry::MenuEntry()
 const MenuEntry* MenuEntry::findMenu(const char *title) const
 {
 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title, this );
-	if( std::strcmp(_title, title) == 0 ) {
+	if( _title == title ) {
 		ESP_LOGI(FNAME,"Menu entry found for start %s", title );
 		return this;
 	}
@@ -136,7 +136,7 @@ void MenuEntry::unHighlight(int sel) const
 
 void MenuEntry::indentHighlight(int sel)
 {
-	cur_indent = MYUCG->getStrWidth(_title) + 4;
+	cur_indent = MYUCG->getStrWidth(_title.c_str()) + 4;
 	cur_row = sel+1;
 	MYUCG->setColor(COLOR_BLACK);
 	MYUCG->drawFrame(1, cur_row*25 + 3, dwidth-2, 25);

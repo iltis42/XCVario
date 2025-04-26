@@ -42,7 +42,7 @@ void ShowCirclingWind::display(int mode)
 		clear();
 	}
 	MYUCG->setFont( ucg_font_ncenR14_hr  );
-	menuPrintLn(_title, 0);
+	menuPrintLn(_title.c_str(), 0);
 
 	// uint16_t y = 55;
 	char buffer[32];

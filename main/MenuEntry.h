@@ -9,6 +9,7 @@
 
 #include "ESPRotary.h"
 #include "SetupNG.h"
+#include <string>
 
 class PressureSensor;
 class SetupMenu;
@@ -36,7 +37,7 @@ public:
 	virtual const char* value() const = 0; // content as string
 
 	// helper
-	const char* getTitle() const { return _title; }
+	const char* getTitle() const { return _title.c_str(); }
 	SetupMenu* getParent() const { return _parent; }
 	void regParent(SetupMenu* p);
 	bool isRoot() const;
@@ -67,7 +68,7 @@ protected:
 
 protected:
 	SetupMenu  *_parent = nullptr;
-	const char *_title = nullptr;
+	std::string _title;
 	const char *helptext = nullptr;
 	bool        is_inline = false;
 	int16_t     hypos = DEFAULT_HELP_Y_POS;

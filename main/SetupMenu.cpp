@@ -464,12 +464,12 @@ SetupMenu::SetupMenu(const char *title, SetupMenuCreator_t menu_create, int cont
 	content_id(cont_id)
 {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
-	_title = title;
+	_title.assign(title);
 	setRotDynamic(1.f);
 }
 
 SetupMenu::~SetupMenu() {
-	ESP_LOGI(FNAME,"del SetupMenu( %s ) ", _title );
+	ESP_LOGI(FNAME,"del SetupMenu( %s ) ", _title.c_str() );
 	for (auto *c : _childs) {
 		delete c;
 	}
@@ -494,17 +494,17 @@ void SetupMenu::enter()
 void SetupMenu::display(int mode)
 {
 	xSemaphoreTake(display_mutex, portMAX_DELAY);
-	ESP_LOGI(FNAME,"SetupMenu display(%s-%d)", _title, highlight );
+	ESP_LOGI(FNAME,"SetupMenu display(%s-%d)", _title.c_str(), highlight );
 	if ( highlight >= (int)(_childs.size()) ) {
 		highlight = _childs.size()-1;
 	}
 	ESP_LOGI(FNAME,"SetupMenu display %d", highlight );
 	clear();
-	ESP_LOGI(FNAME,"Title: %s child size:%d", _title, _childs.size());
+	ESP_LOGI(FNAME,"Title: %s child size:%d", _title.c_str(), _childs.size());
 	MYUCG->setFont(ucg_font_ncenR14_hr);
 	MYUCG->setFontPosBottom();
 	menuPrintLn("<<", 0);
-	menuPrintLn(_title, 0, 30);
+	menuPrintLn(_title.c_str(), 0, 30);
 	doHighlight(highlight);
 	for (int i = 0; i < _childs.size(); i++) {
 		MenuEntry *child = _childs[i];
@@ -561,7 +561,7 @@ void SetupMenu::delEntry( MenuEntry * item ) {
 const MenuEntry* SetupMenu::findMenu(const char *title) const
 {
 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title, this );
-	if( std::strcmp(_title, title) == 0 ) {
+	if( _title == title ) {
 		ESP_LOGI(FNAME,"Menu entry found for start %s", title );
 		return this;
 	}
@@ -1935,8 +1935,8 @@ void system_menu_create(SetupMenu *sye) {
 	sye->addEntry(ad);
 
 	// XCV role
-	SetupMenuSelect *role = new SetupMenuSelect("XCV device role", RST_NONE, role_change_action, true, &xcv_role);
-	role->setHelp("Set the intended role of this device first");
+	SetupMenuSelect *role = new SetupMenuSelect("XCV device role", RST_IMMEDIATE, role_change_action, true, &xcv_role);
+	role->setHelp("Set the intended role of this device first (needs a reboot)");
 	role->addEntry("None");
 	role->addEntry("Master");
 	role->addEntry("Second");

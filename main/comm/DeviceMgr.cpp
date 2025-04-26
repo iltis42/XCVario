@@ -42,23 +42,23 @@ static TaskHandle_t SendTask = nullptr;
 //
 // entries with zero termination, entirely as ro flash data
 static constexpr RoutingTarget flarm_routes[] = { 
-    {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, 
-    {XCVARIO_DEV, CAN_BUS, 20}, {} };
+    {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
+    {XCVARIO_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget krt2_routes[] = { 
-    {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8882}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 20}, 
-    {XCVARIO_DEV, CAN_BUS, 20}, {} };
+    {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8882}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
+    {XCVARIO_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget navi_routes[] = { 
-    {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {RADIO_KRT2_DEV, S2_RS232, 0}, {FLARM_DEV, CAN_BUS, 20}, {} };
+    {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {RADIO_KRT2_DEV, S2_RS232, 0}, {FLARM_DEV, CAN_BUS, 0}, {} };
 static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(FLARM_DEV, NO_PHY, 0), flarm_routes },
     { RoutingTarget(RADIO_KRT2_DEV, NO_PHY, 0), krt2_routes },
     { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes }
 };
 // Search the flash data table
-static const RoutingTarget* findRoute(const RoutingTarget& target) {
+static const RoutingTarget* findRoute(const RoutingTarget& source) {
     // Search through Routes and find a match to the source device
     for (const auto& entry : Routes) {
-        if (entry.first.match(target)) {
+        if (entry.first.match(source)) {
             return entry.second; // Return the matched routing list
         }
     }
@@ -564,18 +564,17 @@ bool DeviceManager::isAvail(InterfaceId iid) const
 
 
 // Result should be cashed for performance purpose.
-RoutingList DeviceManager::getRouting(RoutingTarget target)
+RoutingList DeviceManager::getRouting(RoutingTarget source)
 {
     // find routing entry, respect NO_PHY wildcards
-    const RoutingTarget *route_it = findRoute(target);
-    ESP_LOGI(FNAME, "Search route: %x(%d:%d:%d)", (unsigned)target.raw, target.getDeviceId(), target.getItfTarget().iid, target.getItfTarget().port);
-    if ( route_it )
+    const RoutingTarget *route_list = findRoute(source);
+    ESP_LOGI(FNAME, "Search route: %x(%d:%d:%d)", (unsigned)source.raw, source.getDeviceId(), source.getItfTarget().iid, source.getItfTarget().port);
+    if ( route_list )
     {
         RoutingList activeList;
 
-        ESP_LOGD(FNAME, "Found route: %x", (unsigned)route_it->raw);
         // look for existing devices and push only those to the routing list
-        for (const RoutingTarget* entry = route_it; entry->raw != 0; ++entry)
+        for (const RoutingTarget* entry = route_list; entry->raw != 0; ++entry)
         {
             ESP_LOGD(FNAME, "Try match: %x", (unsigned)entry->raw);
             // is dev configured, are itf and port identical
@@ -584,10 +583,18 @@ RoutingList DeviceManager::getRouting(RoutingTarget target)
                 // check itf and  port
                 Device *dev = devit->second;
                 ESP_LOGD(FNAME, "Found dev %d on itf: %d", devit->first, dev->_itf->getId());
-                if ( dev->_itf->getId() == entry->getItfTarget().iid ) {
+                if ( dev->_itf->getId() == entry->getItfId() ) {
                     ESP_LOGD(FNAME, "Itfmatch: %d==%d", dev->_itf->getId(), dev->_itf->getId());
-                    PortList pl = dev->getPortList();
-                    if ( pl.find(entry->getItfTarget().port) != pl.end() ) {
+                    PortList pl = dev->getSendPortList();
+                    if ( entry->getPort()==0 && pl.size()==1) {
+                        // Take this joker port one
+                        RoutingTarget merget = *entry;
+                        ESP_LOGI(FNAME, "Take port %d", *pl.begin());
+                        merget.setItfPort(*pl.begin());
+                        ESP_LOGI(FNAME, "Take joker %d/%d/%d", merget.did, merget.getItfId(), merget.getPort());
+                        activeList.push_back(merget);
+                    }
+                    else if ( pl.find(entry->getItfTarget().port) != pl.end() ) {
                         ESP_LOGI(FNAME, "Take dev %d from routing list.", entry->did);
                         activeList.push_back(*entry); // Ok, take this route
                     }
@@ -656,7 +663,11 @@ void DeviceManager::reserectFromNvs()
     // go through all possible setup entries and see if there is some thing valid
     int nr_set_up = 0;
     for (const auto& entry : DEVATTR) {
-        if ( entry.second.nvsetup ) {
+        // check nvsetup exists - otherwise a reserection is not desired (auto setup)
+        // check if store data has the valid tag
+        // check on role compatibility
+        if ( entry.second.nvsetup && entry.second.nvsetup->get().isValid() 
+            && ( !entry.second.getRoleDep() || entry.second.getRoleDep() == xcv_role.get()) ) {
             nr_set_up++;
             // setup device
             DeviceNVS &nvs = entry.second.nvsetup->getRef();
@@ -725,7 +736,7 @@ void DeviceManager::dumpMap() const
     ESP_LOGI(FNAME, "Device map dump:");
     for ( auto &it : _device_map ) {
         Device* d = it.second;
-        ESP_LOGI(FNAME, "%d: %p (did%d/iid%s/dl*%d)", it.first, d, d->_id, d->_itf->getStringId(), d->_dlink.size());
+        ESP_LOGI(FNAME, "%d: %p (did%d/%s(%d)/dl*%d)", it.first, d, d->_id, d->_itf->getStringId(), d->_itf->getId(), d->_dlink.size());
         for ( auto &l : d->_dlink ) {
             l->dumpProto();
         }
@@ -813,7 +824,7 @@ DataLink *Device::getDLforProtocol(ProtocolType p) const
     return nullptr;
 }
 
-PortList Device::getPortList() const
+PortList Device::getSendPortList() const
 {
     PortList pl;
     for (DataLink* dl : _dlink) {
@@ -824,6 +835,13 @@ PortList Device::getPortList() const
     return pl;
 }
 
+int Device::getListenPort() const
+{
+    // !!! Assuming we have just one data link per devices fixme
+    DataLink* dl = *_dlink.begin();
+    return dl->getPort();
+}
+
 // get all setup lines to write into nvs for this device
 DeviceNVS Device::getNvsData() const
 {
@@ -832,20 +850,24 @@ DeviceNVS Device::getNvsData() const
     if ( !_dlink.empty() ) {
         DataLink* dl = *_dlink.begin();
         entry.target = RoutingTarget(_id, dl->getTarget());
-        int idx = 0;
         ProtocolItf *bn = dl->getBinary(); // binary option
         if ( bn ) {
             entry.bin_sp = bn->getSendPort();
-            entry.setup.set(idx++, bn->getProtocolId());
+            entry.setup.set(0, bn->getProtocolId());
             ESP_LOGI(FNAME, "NvsData t%x bsp%d pid%d", (unsigned)entry.target.raw, entry.bin_sp, entry.setup.get(0));
         }
         NmeaPrtcl *nm = static_cast<NmeaPrtcl*>(dl->getNmea());
+        int idx = 1;
         if ( nm ) {
             entry.nmea_sp = nm->getSendPort();
-            entry.setup.set(idx++, nm->getProtocolId()); // principal entry
+            entry.setup.set(idx, nm->getProtocolId()); // first principal entry
+            idx++;
+            ESP_LOGI(FNAME, "NvsData t%x nmsp%d pid%d", (unsigned)entry.target.raw, entry.nmea_sp, entry.setup.get(idx));
             for (auto it : nm->getAllPlugs() ) {
-                if ( ! it->getAuto() ) {
-                    entry.setup.set(idx++, it->getPtyp()); // plugins
+                if ( ! it->getAuto() && it->getPtyp() != nm->getProtocolId() ) {
+                    entry.setup.set(idx, it->getPtyp()); // plugins
+                    ESP_LOGI(FNAME, "NvsExtra %d: pid%d", idx, entry.setup.get(idx));
+                    idx++;
                 }
             }
         }

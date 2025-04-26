@@ -24,8 +24,11 @@ typedef enum
     NAVI_DEV,
     RADIO_ATR833_DEV, // <- 10
     RADIO_KRT2_DEV,
+    RADIO_REMOTE_DEV,
     XCVARIO_DEV,
     XCVARIOCLIENT_DEV,
+    FLARM_PROXY,
+    RADIO_PROXY,
     TEST_DEV,
     TEST_DEV2
 } DeviceId;

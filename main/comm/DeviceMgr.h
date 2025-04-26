@@ -40,7 +40,8 @@ struct Device
     int getSendPort(ProtocolType p) const;
     ProtocolItf* getProtocol(ProtocolType p) const;
     DataLink *getDLforProtocol(ProtocolType p) const;
-    PortList getPortList() const;
+    PortList getSendPortList() const;
+    int getListenPort() const;
     bool isAlive() const { return true; } // fixme
     DeviceNVS getNvsData() const;
     // Attributes

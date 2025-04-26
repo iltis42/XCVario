@@ -375,7 +375,6 @@ extern SetupNG<int>  		chopping_style;
 extern SetupNG<int>  		amplifier_shutdown;
 extern SetupNG<int>         audio_equalizer;
 
-extern SetupNG<int>  		wireless_type;
 extern SetupNG<float>  		wifi_max_power;
 extern SetupNG<int>  		factory_reset;
 extern SetupNG<int>  		audio_range;

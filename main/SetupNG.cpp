@@ -24,6 +24,7 @@
 #include "comm/DeviceMgr.h"
 #include "comm/CanBus.h"
 #include "comm/Configuration.h"
+#include "comm/SerialLine.h"
 #include "protocol/NMEA.h"
 #include "logdef.h"
 
@@ -205,7 +206,6 @@ SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
 SetupNG<int>  			amplifier_shutdown( "AMP_DIS", AMP_STAY_ON );
 SetupNG<int>            audio_equalizer( "AUD_EQ", AUDIO_EQ_DISABLE, false );
 
-SetupNG<int>  			wireless_type( "BT_ENABLE" ,  WL_BLUETOOTH );
 SetupNG<float>  		wifi_max_power( "WIFI_MP" ,  50);
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
 SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS );
@@ -253,13 +253,13 @@ SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS );
 SetupNG<int>  			dst_unit( "DST_UNIT", DST_UNIT_M );
 SetupNG<int>  			qnh_unit("QNH_UNIT", QNH_HPA );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
-SetupNG<int>  			serial1_speed( "SERIAL1_SPEED", 2 );
+SetupNG<int>  			serial1_speed( "SERIAL1_SPEED", BAUD_19200 );
 SetupNG<int>  			serial1_pins_twisted( "SERIAL1_PINS", 0 );
 SetupNG<int>  			serial1_rxloop( "SERIAL1_RXLOOP", 0 ); // fixme, not used any more
 SetupNG<int>  			serial1_tx_inverted( "SERIAL1_TX_INV", RS232_INVERTED );
 SetupNG<int>  			serial1_rx_inverted( "SERIAL1_RX_INV", RS232_INVERTED );
 SetupNG<int>  			serial1_tx_enable( "SER1_TX_ENA", 1 );
-SetupNG<int>  			serial2_speed( "SERIAL2_SPEED", 2 );
+SetupNG<int>  			serial2_speed( "SERIAL2_SPEED", BAUD_19200 );
 SetupNG<int>  			serial2_pins_twisted( "SERIAL2_PINS", 0 );
 SetupNG<int>  			serial2_tx_inverted( "SERIAL2_TX_INV", RS232_INVERTED );
 SetupNG<int>  			serial2_rx_inverted( "SERIAL2_RX_INV", RS232_INVERTED );

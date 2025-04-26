@@ -70,8 +70,6 @@ extern PressureSensor *baroSensor;
 // extern SetupRoot Menu;
 extern SemaphoreHandle_t display_mutex;
 
-extern e_wireless_type wireless;
-
 extern float getTAS();
 
 extern I2C_t& i2c;

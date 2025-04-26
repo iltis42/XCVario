@@ -122,8 +122,6 @@ TaskHandle_t bpid = NULL;
 TaskHandle_t tpid = NULL;
 TaskHandle_t dpid = NULL;
 
-e_wireless_type wireless;
-
 PressureSensor *baroSensor = nullptr;
 PressureSensor *teSensor = nullptr;
 
@@ -928,7 +926,6 @@ void system_startup(void *args){
 	Polars::begin();
 
 	// menu_screens.set(0);
-	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
 	stall_alarm_off_kmh = stall_speed.get()/3;
 
@@ -1060,15 +1057,15 @@ void system_startup(void *args){
 		S2 = new SerialLine((uart_port_t)2, GPIO_NUM_18, GPIO_NUM_4);
 	}
 
+	// Create CAN
 	if ( hardwareRevision.get() >= XCVARIO_22 ) {
 		CANbus::createCAN();
 	}
-	// DEVMAN serialization read in of all configured devices.
+	// DEVMAN serialization, read in all configured devices.
 	DEVMAN->reserectFromNvs();
 
+	ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
 	std::string wireless_id("BT ID: ");
-	ESP_LOGI(FNAME,"Wirelss-Type: %d", wireless );
-
 	if( DEVMAN->isIntf(BT_SPP) ) {
 		ESP_LOGI(FNAME,"Start BT");
 	}
@@ -1082,6 +1079,7 @@ void system_startup(void *args){
 	}
 	wireless_id += SetupCommon::getID();
 	MBOX->newMessage(2, wireless_id.c_str() );
+
 	Cipher::begin();
 	if( Cipher::checkKeyAHRS() ){
 		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );

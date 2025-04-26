@@ -918,9 +918,9 @@ void IpsDisplay::drawBT() {
 	if( _menu )
 		return;
 	int btq=0;
-	if( wireless == WL_BLUETOOTH && BTspp )
+	if( DEVMAN->isIntf(BT_SPP) && BTspp ) // fixme
 		btq = BTspp->isConnected() ? 0 : 1;
-	else if( wireless == WL_BLUETOOTH_LE )
+	else if( DEVMAN->isIntf(BT_LE) )
 		btq=BLESender::queueFull();
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){
 		int16_t btx=DISPLAY_W-20;
@@ -1006,14 +1006,15 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		return;
 	int btq=1;
 	// ESP_LOGI(FNAME,"wireless %d", wireless );
-	if( wireless == WL_WLAN_CLIENT ){
-		if( WifiClient::isConnected(8884) )
+	if ( DEVMAN->isIntf(WIFI_CLIENT) ) {
+		if( WifiClient::isConnected(8884) ) // fixme
 			btq=0;
 	}
-	else if( wireless == WL_WLAN_STANDALONE || wireless == WL_WLAN_MASTER  )
+	else if ( xcv_role.get() <= 1 && DEVMAN->isIntf(WIFI_AP) ) {
 		btq=WifiAP::queueFull();
-	else
+	} else {
 		return;
+	}
 	if( btq != btqueue || Flarm::connected() != flarm_connected ){
 		ESP_LOGD(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,btq);
 		if( btq )
@@ -1037,9 +1038,9 @@ void IpsDisplay::drawWifi( int x, int y ) {
 
 void IpsDisplay::drawConnection( int16_t x, int16_t y )
 {
-	if( wireless == WL_BLUETOOTH || wireless == WL_BLUETOOTH_LE )
+	if ( DEVMAN->isIntf(BT_SPP) || DEVMAN->isIntf(BT_LE) ) // fixme
 		drawBT();
-	else if( wireless != WL_DISABLE )
+	else if( DEVMAN->isIntf(WIFI_AP) || DEVMAN->isIntf(WIFI_CLIENT) )
 		drawWifi(x, y);
 	else if( SetupCommon::isWired() )
 		drawCable(DISPLAY_W-20, y);

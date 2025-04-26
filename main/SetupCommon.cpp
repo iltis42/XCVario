@@ -271,7 +271,7 @@ bool SetupCommon::isMaster()
 }
 
 bool SetupCommon::haveWLAN(){
-	return( (wireless == WL_WLAN_MASTER) ||  (wireless == WL_WLAN_STANDALONE) ||  (wireless == WL_WLAN_CLIENT ) );
+	return DEVMAN->isIntf(WIFI_AP) || DEVMAN->isIntf(WIFI_CLIENT);
 }
 
 bool SetupCommon::isClient()

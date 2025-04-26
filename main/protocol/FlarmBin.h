@@ -30,7 +30,7 @@ public:
 private:
     void send_chunk();
     // binary mode peer
-    FlarmBinary *_binpeer;
+    FlarmBinary *_binpeer = nullptr;
     // frame counter monitor
     int _frame_counter = 0;
 };

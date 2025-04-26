@@ -46,6 +46,10 @@ dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
     // _esc is used as ESCAPE flag
     // _opt is used to cope with telegrams larger than the serial line buffers.
     // _crc holds the last received frame type (!)
+    if ( ! _binpeer ) {
+        // Oops
+        return dl_control_t(GO_NMEA, count);
+    }
 
     for (int i = 0; i < count; i++)
     {
@@ -116,9 +120,10 @@ dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
                 if ( _sm._crc == 0x12 ) { // exit BP msg
                     ESP_LOGI(FNAME, "0x12 BP end <---------------- switch to nmea");
                     _binpeer->getDL()->goNMEA();
+                    _binpeer = nullptr;
                     InterfaceCtrl *itf = DEVMAN->getIntf(FLARM_DEV);
-                    vTaskDelay(pdMS_TO_TICKS(10));
-                    itf->ConfigureIntf(SM_FLARM);
+                    // vTaskDelay(pdMS_TO_TICKS(10));
+                    // itf->ConfigureIntf(SM_FLARM); baud rate change not intended
                     last_action = GO_NMEA;
                 }
             }

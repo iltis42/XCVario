@@ -199,8 +199,9 @@ bool MenuEntry::showhelp(bool inln)
 		int y=hypos;
 		if ( inln ) {
 			int nr_lines = freeBottomLines();
-			if (nr_lines > 0 ) {
-				if ( nr_lines > 5 ) { nr_lines -= 1; }
+			int needed_ln = nrOfHelpLines();
+			if (nr_lines >= needed_ln ) {
+				nr_lines = std::min(nr_lines, needed_ln+2);
 				y = dheight - (nr_lines-1)*25;
 			}
 			else {

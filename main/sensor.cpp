@@ -1373,10 +1373,10 @@ void system_startup(void *args){
 
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
 	// do not move the check unless you know the sequence of HW detection
-	if ( AUDIO->haveCAT5171() ) // keep trying? would only be necessary the very first time
+	if ( !CAN && AUDIO->haveCAT5171() )
 	{
 		// fixme, shouldnt be the HW increased to 22 based on audio poti??
-		// check on CAN available
+		// check on CAN available, if 100% reliable this would only be a one shot need.
 		ESP_LOGI(FNAME,"probing CAN");
 		CANbus::createCAN();
 		if( CAN->selfTest() ){

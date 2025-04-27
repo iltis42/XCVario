@@ -13,6 +13,9 @@
 #include "Messages.h"
 #include "InterfaceCtrl.h"
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+
 #include <set>
 #include <map>
 #include <vector>
@@ -114,5 +117,6 @@ private:
     // Restriction: It can only contain one element of one device type
     // Hash table for routing purpose
     DevMap _device_map;
+    mutable SemaphoreHandle_t _mutex;
 };
 

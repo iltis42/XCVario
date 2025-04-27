@@ -609,8 +609,8 @@ void readSensors(void *pvParameters){
 		bool tok=false;
 		float tp = teSensor->readPressure(tok);  // TE Pressure
 		xSemaphoreGive(xMutex);
-		// ESP_LOGI(FNAME,"TE, Delta: %d", (int)(millis() - m));
-		if( logging.get() == LOG_SENSOR_RAW ){
+		// ESP_LOGI(FNAME,"TE, Delta: %d - log%d", (int)(millis() - _millis));
+		if( logging.get() ){
 			char log[ProtocolItf::MAX_LEN];
 			sprintf( log, "$SENS;");
 			int pos = strlen(log);
@@ -1059,12 +1059,27 @@ void system_startup(void *args){
 		S2 = new SerialLine((uart_port_t)2, GPIO_NUM_18, GPIO_NUM_4);
 	}
 
-	// Create CAN
+	// Create CAN based on known HW revision (not the very first boot)
 	if ( hardwareRevision.get() >= XCVARIO_22 ) {
+		ESP_LOGI(FNAME,"NOW add/test CAN");
 		CANbus::createCAN();
+		logged_tests += "CAN Interface: ";
+		if( CAN->selfTest() ) {
+			logged_tests += "OK\n";
+		}
+		else {
+			MBOX->newMessage(1, "CAN bus: Fail");
+			logged_tests += "CAN Bus selftest: FAILED\n";
+			ESP_LOGE(FNAME,"Error: CAN Interface failed");
+		}
 	}
+
 	// DEVMAN serialization, read in all configured devices.
 	DEVMAN->reserectFromNvs();
+	if ( CAN ) {
+		// just allways, it respects the XCV role setting
+		DEVMAN->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+	}
 
 	ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
 	std::string wireless_id("BT ID: ");
@@ -1354,8 +1369,10 @@ void system_startup(void *args){
 	audio_volume.set(default_volume.get());
 
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	// do not move the chack unless you know the sequence of HW detection
-	if ( gflags.schedule_reboot && AUDIO->haveCAT5171() ) {
+	// do not move the check unless you know the sequence of HW detection
+	if ( AUDIO->haveCAT5171() ) // keep trying? would only be necessary the very first time
+	{
+		// fixme, shouldnt be the HW increased to 22 based on audio poti??
 		// check on CAN available
 		ESP_LOGI(FNAME,"probing CAN");
 		CANbus::createCAN();
@@ -1373,24 +1390,7 @@ void system_startup(void *args){
 		delete CAN;
 		CAN = nullptr;
 	}
-	// CAN is created based on known HW revision
-	if ( CAN )
-	{
-		ESP_LOGI(FNAME,"NOW add/test CAN");
-		logged_tests += "CAN Interface: ";
-		if( CAN->getTestOk() || CAN->selfTest() ) {
-			CAN->begin();
-			// just allways, devman respects the XCV role setting
-			DEVMAN->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-			ESP_LOGI(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
-			logged_tests += "OK\n";
-		}
-		else {
-			MBOX->newMessage(1, "CAN bus: Fail");
-			logged_tests += "CAN Bus selftest: FAILED\n";
-			ESP_LOGE(FNAME,"Error: CAN Interface failed");
-		}
-	}
+
 
 	if( gflags.haveMPU ){
 		if( MPU.whoAmI() == 0x12 ){

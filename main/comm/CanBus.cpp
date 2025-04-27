@@ -379,19 +379,17 @@ bool CANbus::selfTest()
     ESP_LOGI(FNAME, "CAN bus selftest");
 
     // Pretend slope control off and probe the reaction on GPIO 2 here
-    _slope_support = true;
-    gpio_set_direction(_slope_ctrl, GPIO_MODE_OUTPUT);
-    // in case of GPIO 2 wired to CAN this would inhibit sending and cause a failing test
-
+    _slope_support = true; // this controles the driver installation
     driverInstall(TWAI_MODE_NO_ACK);
     bool res = false;
     int id = CANTEST_ID;
     delay(100);
     _slope_support = false;
-    for (int slope = 0; slope <=1; slope++)
+    for (int gpio_level = 0; gpio_level <=1; gpio_level++)
     {
-        ESP_LOGI(FNAME,"slope support %s.", (slope==0) ? "on" : "off");
-        gpio_set_level(_slope_ctrl, slope);
+        ESP_LOGI(FNAME,"slope pin level %s.", (gpio_level==0) ? "low" : "hogh");
+        // in case of GPIO 2 wired to CAN this would inhibit sending and cause a failing test
+        gpio_set_level(_slope_ctrl, gpio_level);
         for (int i = 0; i < 3; i++)
         {
             // repeat test 3x
@@ -415,9 +413,9 @@ bool CANbus::selfTest()
             }
             else
             {	// we can only detect this if it fails
-            	if( slope == 1 ){
+            	if( gpio_level == 1 ){
             		_slope_support = true;
-            		ESP_LOGI(FNAME, "CAN HW supports slope !");
+            		ESP_LOGI(FNAME, "CAN HW connected to slope !");
             	}
                 std::string msg((char*)rx.data, rx.data_length_code);
                 ESP_LOGW(FNAME, "RX FAILED:  bytes:%d rxid:%x rxmsg:%s", rx.data_length_code, (unsigned int)rx.identifier, msg.c_str());

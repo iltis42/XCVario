@@ -149,7 +149,7 @@ void SerialLine::ConfigureIntf(int profile)
 // returns 0: sucess; or retry wait time in msec 
 int SerialLine::Send(const char *msg, int &len, int port)
 {
-	int count = uart_tx_chars(uart_nr, msg, len);
+	int count = uart_write_bytes(uart_nr, msg, len);
 	ESP_LOGI(FNAME,"Send UART%d, len %d/%d", uart_nr, len, count);
 	if ( count == len ) {
 		return 0;
@@ -178,8 +178,6 @@ void SerialLine::applyPins()
 
 	gpio_num_t tx_pin = cfg.pin_swp ? rx_gpio : tx_gpio;
 	gpio_num_t rx_pin = cfg.pin_swp ? tx_gpio : rx_gpio;
-	gpio_pullup_en(tx_pin);
-	gpio_pullup_en(rx_pin);
 
 	if ( uart_is_driver_installed(uart_nr) ) {
 		// pause it
@@ -207,9 +205,18 @@ void SerialLine::applyLineInverse()
 	}
 	if( cfg.polarity ) {
 		uart_set_line_inverse(uart_nr, UART_SIGNAL_RXD_INV | UART_SIGNAL_TXD_INV);
+		gpio_pulldown_dis(tx_gpio);
+		gpio_pulldown_dis(rx_gpio);
+		gpio_pullup_en(tx_gpio);
+		gpio_pullup_en(rx_gpio);
+			
 	}
 	else {
 		uart_set_line_inverse(uart_nr, 0);
+		gpio_pulldown_en(tx_gpio);
+		gpio_pulldown_en(rx_gpio);
+		gpio_pullup_dis(tx_gpio);
+		gpio_pullup_dis(rx_gpio);
 	}
 }
 

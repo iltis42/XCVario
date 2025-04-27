@@ -235,7 +235,8 @@ bool SetupCommon::initSetup( bool& ahrs_lic_present ) {
 
 char * SetupCommon::getID()
 {
-	sprintf( _ID, "%s%s", getFixedID(), custom_wireless_id.get().id );
+	snprintf( _ID, 16, "%s%s", getFixedID(), custom_wireless_id.get().id );
+	_ID[15] = '\0';
 	return _ID;
 }
 

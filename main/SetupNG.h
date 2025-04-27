@@ -108,23 +108,24 @@ typedef enum e_tek_compensation { TE_TEK_PROBE, TE_TEK_EPOT, TE_TEK_PRESSURE } e
 
 constexpr int NOTSET_ELEVATION = -30;
 
-typedef struct str_tenchar_id {
+struct t_tenchar_id {
 	char id[10];
-	str_tenchar_id() {};
-	str_tenchar_id( const char *val ) { strcpy( id, val ); };
-	str_tenchar_id(  const str_tenchar_id &val ) { strcpy( id, val.id ); };
-	bool operator == ( const struct str_tenchar_id &other ) const {
+	t_tenchar_id() {};
+	t_tenchar_id( const char *val ) { strcpy( id, val ); };
+	t_tenchar_id(  const t_tenchar_id &val ) { strcpy( id, val.id ); };
+	bool operator == ( const t_tenchar_id &other ) const {
 		return( strcmp( id, other.id ) == 0 );
 	};
-	struct str_tenchar_id operator = ( const struct str_tenchar_id &other ) {
+	t_tenchar_id operator = ( const t_tenchar_id &other ) {
 		strcpy( id, other.id );
 		return *this;
 	};
-	struct str_tenchar_id operator = ( const char * other ) {
-		strcpy( id, other );
+	t_tenchar_id operator = ( const char *other ) {
+		strncpy( id, other, 10 );
+		id[9] = '\0';
 		return *this;
 	};
-}t_tenchar_id;
+};
 
 template<typename T>
 class SetupNG: public SetupCommon

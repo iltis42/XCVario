@@ -64,7 +64,7 @@ static int update_id(SetupMenuChar *p) {
 	const char *c = p->value();
 	ESP_LOGI(FNAME,"New Letter %c Index: %d", *c, (int)p->getCharIndex() );
 	char id[10] = { 0 };
-	strcpy(id, custom_wireless_id.get().id);
+	strncpy(id, custom_wireless_id.get().id, 10);
 	id[p->getCharIndex()] = *c;
 	ESP_LOGI(FNAME,"New ID %s", id );
 	custom_wireless_id.set(id);

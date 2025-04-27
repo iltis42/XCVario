@@ -1094,6 +1094,9 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Start WiFi");
 		wireless_id.assign("WLAN SID: ");
 	}
+	if ( ! gflags.schedule_reboot && custom_wireless_id.get().id[0] == '\0' ) {
+		custom_wireless_id.set(SetupCommon::getDefaultID()); // Default ID created from MAC address CRC
+	}
 	wireless_id += SetupCommon::getID();
 	MBOX->newMessage(2, wireless_id.c_str() );
 

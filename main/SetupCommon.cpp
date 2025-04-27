@@ -259,9 +259,6 @@ bool SetupCommon::factoryReset(){
 			}
 		}
 	}
-	// Take care of some dynamically created default values
-	// wireless id
-	custom_wireless_id.set(getDefaultID()); // Default ID created from MAC address CRC
 
 	if( retsum ) {
 		ESP_LOGI(FNAME,"Factory reset SUCCESS");

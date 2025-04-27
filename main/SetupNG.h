@@ -107,6 +107,8 @@ typedef enum e_equalizer_type {  AUDIO_EQ_DISABLE, AUDIO_EQ_LS4, AUDIO_EQ_LS8, A
 typedef enum e_logging { LOG_DISABLE, LOG_SENSOR_RAW } e_logging_t;
 typedef enum e_tek_compensation { TE_TEK_PROBE, TE_TEK_EPOT, TE_TEK_PRESSURE } e_tek_compensation_t;
 
+constexpr int NOTSET_ELEVATION = -30;
+
 typedef struct str_tenchar_id {
 	char id[10];
 	str_tenchar_id() {};

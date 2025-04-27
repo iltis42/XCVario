@@ -1498,7 +1498,7 @@ void system_startup(void *args){
 		float qnh_best = QNH.get();
 		bool ok;
 		baroP = baroSensor->readPressure(ok);
-		if( ae > 0 ) {
+		if( ae > NOTSET_ELEVATION ) {
 			float step=10.0; // 80 m
 			float min=1000.0;
 			for( float qnh = 870; qnh< 1085; qnh+=step ) {
@@ -1569,7 +1569,7 @@ void system_startup(void *args){
 					dev = DEVMAN->getDevice(XCVARIO_DEV);
 					if( dev ) {
 						Display->writeText( 3, "Master XCVario found" );
-						Display->writeText( 4, "start synchronization .." );
+						Display->writeText( 4, "start synchronization ..." );
 						delay( 3000 );
 						break;
 					}

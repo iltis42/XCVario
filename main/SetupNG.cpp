@@ -226,7 +226,7 @@ SetupNG<float>  		core_climb_period( "CORE_CLIMB_P" , 60, true, SYNC_FROM_MASTER
 SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45, true, SYNC_FROM_MASTER  );
 SetupNG<float>  		mean_climb_major_change( "MEAN_CLMC", 0.5, true, SYNC_FROM_MASTER );
-SetupNG<float>  		elevation( "ELEVATION", -1, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_ALT );
+SetupNG<float>  		elevation( "ELEVATION", NOTSET_ELEVATION, true, SYNC_BIDIR, PERSISTENT, 0, UNIT_ALT );
 SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0 );
 SetupNG<float>  		max_volume( "MAXI_VOL", 60.0, true, SYNC_NONE, PERSISTENT, change_max_volume );
 SetupNG<float>  		frequency_response( "FREQ_RES", 30.0 );

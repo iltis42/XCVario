@@ -2312,7 +2312,7 @@ void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sin
 		return;
 
 	if ( alt_display_mode.get() == MODE_QFE ) {
-		altitude -= elevation.get();
+		altitude -= elevation.get(); // fixme, what is elevation is not set?
 	}
 	xSemaphoreTake(display_mutex,portMAX_DELAY);
 	if( display_style.get() == DISPLAY_AIRLINER )

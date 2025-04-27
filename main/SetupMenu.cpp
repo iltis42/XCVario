@@ -2000,7 +2000,7 @@ void setup_create_root(SetupMenu *top) {
 	SetupMenuValFloat *qnh_menu = SetupMenu::createQNHMenu();
 	top->addEntry(qnh_menu);
 
-	SetupMenuValFloat *afe = new SetupMenuValFloat("Airfield Elevation", "", -1,
+	SetupMenuValFloat *afe = new SetupMenuValFloat("Airfield Elevation", "", NOTSET_ELEVATION,
 			3000, 1, 0, true, &elevation);
 	afe->setHelp(
 			"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");

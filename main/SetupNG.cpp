@@ -389,7 +389,7 @@ SetupNG<bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
 SetupNG<t_tenchar_id>	custom_wireless_id("WLID", t_tenchar_id("") );
 SetupNG<int> 			drawing_prio("DRAWP", DP_NEEDLE );
-SetupNG<int> 			logging("LOGGING", LOG_DISABLE );
+SetupNG<int> 			logging("LOGGING", 0 );
 SetupNG<float>      	display_clock_adj("DSCLADHJ", 0 );
 
 SetupNG<float>				glider_ground_aa("GLD_GND_AA", 12.0, true, SYNC_FROM_MASTER);

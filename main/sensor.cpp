@@ -625,8 +625,10 @@ void readSensors(void *pvParameters){
 			}
 			pos=strlen(log);
 			sprintf( log+pos, "\n");
-			// Router::sendXCV( log ); fixme
-			ESP_LOGI(FNAME,"%s", log );
+			const NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
+			if ( prtcl ) {
+				prtcl->sendXCV(log);
+			}
 		}
 		if( tok )
 			teP = tp;

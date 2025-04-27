@@ -33,7 +33,7 @@ public:
     void goNMEA();
     void switchProtocol();
     ProtocolItf *getBinary() const { return _binary; };
-    ProtocolItf *getNmea() const { return _nmea; };
+    NmeaPrtcl *getNmea() const { return _nmea; };
     void updateRoutes();
     int getPort() const { return _itf_id.port; } // the listen port
     InterfaceId getItfId() const { return _itf_id.iid; }
@@ -47,11 +47,11 @@ public:
 private:
     // helpers
     void doForward(DeviceId src_dev);
-    NmeaPrtcl *enforceNmea(DeviceId did, int sendport, ProtocolType ptyp);
+    void enforceNmea(DeviceId did, int sendport, ProtocolType ptyp);
 
 private:
     ProtocolItf *_active = nullptr; // the currently used one
-    ProtocolItf *_nmea   = nullptr; // the nmea protocoll shell
+    NmeaPrtcl   *_nmea   = nullptr; // the nmea protocoll shell
     ProtocolItf *_binary = nullptr; // if set it will be the priority parser
     ProtocolState _sm; // The message buffer for all protocol parser
     // Listen on

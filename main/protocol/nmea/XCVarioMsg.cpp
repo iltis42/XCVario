@@ -242,3 +242,13 @@ void NmeaPrtcl::sendXCVNmeaHDT( float heading )
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
     DEV::Send(msg);
 }
+
+// send a prepared nmea telegram
+void NmeaPrtcl::sendXCV(const char *str) const
+{
+    Message *msg = newMessage();
+
+    msg->buffer.assign(str);
+    ESP_LOGI(FNAME,"Preped %s", str);
+    DEV::Send(msg);
+}

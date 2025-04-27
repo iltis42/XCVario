@@ -474,6 +474,18 @@ ProtocolItf *DeviceManager::getProtocol(DeviceId did, ProtocolType proto)
     return nullptr;
 }
 
+NmeaPrtcl *DeviceManager::getNMEA(DeviceId did)
+{
+    Device *d = getDevice(did);
+    if ( d ) {
+        DataLink *dl = *d->_dlink.begin();
+        if ( dl ) {
+            return dl->getNmea();
+        }
+    }
+    return nullptr;
+}
+
 // convenience
 int DeviceManager::getSendPort(DeviceId did, ProtocolType proto)
 {

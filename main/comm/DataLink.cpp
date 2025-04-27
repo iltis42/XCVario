@@ -40,13 +40,12 @@ DataLink::~DataLink()
     }
 }
 
-NmeaPrtcl *DataLink::enforceNmea(DeviceId did, int sendport, ProtocolType ptyp)
+void DataLink::enforceNmea(DeviceId did, int sendport, ProtocolType ptyp)
 {
     if ( !_nmea ) {
         // Create an NMEA protocol first
-        return new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
+        _nmea = new NmeaPrtcl(did, sendport, ptyp, _sm, *this);
     }
-    return static_cast<NmeaPrtcl*>( _nmea);
 }
 
 // protocol factory
@@ -70,54 +69,44 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     switch (ptyp)
     {
     case REGISTRATION_P:
-    {
         ESP_LOGI(FNAME, "New CANMasterReg");
-        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new CANMasterRegMsg(*nmea));
+        enforceNmea(did, sendport, ptyp);
+        _nmea->addPlugin(new CANMasterRegMsg(*_nmea));
         if ( xcv_role.get() == SECOND_ROLE ) {
-            nmea->addPlugin(new CANClientQueryMsg(*nmea));
+            _nmea->addPlugin(new CANClientQueryMsg(*_nmea));
         }
-        tmp = nmea;
+        tmp = _nmea;
         break;
-    }
     case JUMBOCMD_P:
-    {
         ESP_LOGI(FNAME, "New JumboCmd");
-        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new JumboCmdMsg(*nmea));
-        tmp = nmea;
+        enforceNmea(did, sendport, ptyp);
+        _nmea->addPlugin(new JumboCmdMsg(*_nmea));
+        tmp = _nmea;
         break;
-    }
     case FLARM_P:
-    {
         ESP_LOGI(FNAME, "New Flarm");
-        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new GpsMsg(*nmea));
-        nmea->addPlugin(new GarminMsg(*nmea));
-        nmea->addPlugin(new FlarmMsg(*nmea));
-        tmp = nmea;
+        enforceNmea(did, sendport, ptyp);
+        _nmea->addPlugin(new GpsMsg(*_nmea));
+        _nmea->addPlugin(new GarminMsg(*_nmea));
+        _nmea->addPlugin(new FlarmMsg(*_nmea));
+        tmp = _nmea;
         break;
-    }
     case FLARMHOST_P:
-    {
         ESP_LOGI(FNAME, "New FlarmHost");
-        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new FlarmHostMsg(*nmea));
-        tmp = nmea;
+         enforceNmea(did, sendport, ptyp);
+        _nmea->addPlugin(new FlarmHostMsg(*_nmea));
+        tmp = _nmea;
         break;
-    }
     case FLARMBIN_P:
         ESP_LOGI(FNAME, "New FlarmBinary");
         tmp = new FlarmBinary(did, sendport, _sm, *this);
         break;
     case MAGSENS_P:
-    {
         ESP_LOGI(FNAME, "New CAN MagSens");
-        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new MagSensMsg(*nmea));
-        tmp = nmea;
+        enforceNmea(did, sendport, ptyp);
+        _nmea->addPlugin(new MagSensMsg(*_nmea));
+        tmp = _nmea;
         break;
-    }
     case MAGSENSBIN_P:
         ESP_LOGI(FNAME, "New MAGCANBinary");
         tmp = new MagSensBinary(sendport, _sm, *this);
@@ -126,48 +115,46 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     {
         ESP_LOGI(FNAME, "New XCVario");
         bool auto_setup = _nmea == nullptr;
-        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new XCVarioMsg(*nmea));
-        nmea->addPlugin(new CambridgeMsg(*nmea, auto_setup));
-        tmp = nmea;
+        enforceNmea(did, sendport, ptyp);
+        _nmea->addPlugin(new XCVarioMsg(*_nmea));
+        _nmea->addPlugin(new CambridgeMsg(*_nmea, auto_setup));
+        tmp = _nmea;
         break;
     }
     case XCVSYNC_P:
-    {
         ESP_LOGI(FNAME, "New XCVsync");
-        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
+        enforceNmea(did, sendport, ptyp);
         // The SyncMsg serves on both side, need to know it's role
         // connect to a client -> you are master
         if ( xcv_role.get() == NO_ROLE && did==XCVARIOCLIENT_DEV ) { xcv_role.set(MASTER_ROLE); }
-        nmea->addPlugin(new XCVSyncMsg(*nmea, did==XCVARIOCLIENT_DEV)); // true when on master (!!)
-        tmp = nmea;
+        _nmea->addPlugin(new XCVSyncMsg(*_nmea, did==XCVARIOCLIENT_DEV)); // true when on master (!!)
+        tmp = _nmea;
         break;
-    }
     case OPENVARIO_P:
     {
         ESP_LOGI(FNAME, "New OpenVario");
         bool auto_setup = _nmea == nullptr;
-        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new OpenVarioMsg(*nmea, auto_setup));
-        tmp = nmea;
+        enforceNmea(did, sendport, ptyp);
+        _nmea->addPlugin(new OpenVarioMsg(*_nmea, auto_setup));
+        tmp = _nmea;
         break;
     }
     case BORGELT_P:
     {
         ESP_LOGI(FNAME, "New Borgelt");
         bool auto_setup = _nmea == nullptr;
-        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new BorgeltMsg(*nmea, auto_setup));
-        tmp = nmea;
+        enforceNmea(did, sendport, ptyp);
+        _nmea->addPlugin(new BorgeltMsg(*_nmea, auto_setup));
+        tmp = _nmea;
         break;
     }
     case CAMBRIDGE_P:
     {
         ESP_LOGI(FNAME, "New Cambridge");
         bool auto_setup = _nmea == nullptr;
-        NmeaPrtcl *nmea = enforceNmea(did, sendport, ptyp);
-        nmea->addPlugin(new CambridgeMsg(*nmea, auto_setup));
-        tmp = nmea;
+        enforceNmea(did, sendport, ptyp);
+        _nmea->addPlugin(new CambridgeMsg(*_nmea, auto_setup));
+        tmp = _nmea;
         break;
     }
     case KRT2_REMOTE_P:
@@ -198,7 +185,6 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
             _binary = tmp;
             if ( !_nmea ) { _active = tmp; }
         } else {
-            _nmea = tmp;
             _active = tmp;
         }
     }

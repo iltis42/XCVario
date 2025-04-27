@@ -110,7 +110,7 @@ public:
     const std::vector<NmeaPlugin*>& getAllPlugs() const { return _plugs; }
 
 
-    // XCV transmitter routines
+    // XCVario transmitter routines
     void sendStdXCVario(float baro, float dp, float te, float temp, float ias, float tas,
         float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, 
         float acc_x, float acc_y, float acc_z, float gx, float gy, float gz);
@@ -123,6 +123,7 @@ public:
     void sendXCVVersion(int v);
     void sendXCVNmeaHDM(float heading);
     void sendXCVNmeaHDT(float heading);
+    void sendXCV(const char *str) const;
 
     // XCV client
 

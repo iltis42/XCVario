@@ -648,33 +648,6 @@ DataLink *DeviceManager::getFlarmHost()
     return nullptr;
 }
 
-// DeviceNVS DeviceManager::makePersistent()
-// {
-//     std::string token_base(flarm_devsetup.key(), 3); // first entry used as template
-//     int nvs_idx = 0;
-//     for ( auto &d : _device_map )
-//     {
-//         for ( auto nvs_item : d.second->getNvsData() ) {
-//             std::string token = token_base + std::to_string(nvs_idx++);
-//             ESP_LOGI(FNAME, "NVS for did%d %s", d.second->_id, token.c_str());
-//             ESP_LOGI(FNAME, "NvsData: t%x - s%x (%d/%d)", (unsigned)nvs_item.target.raw, (unsigned)nvs_item.setup.data, nvs_item.bin_sp, nvs_item.nmea_sp);
-//             SetupNG<DeviceNVS> nvs(token.c_str(), {});
-//             nvs.set(nvs_item, false, false);
-//             nvs.commit();
-//         }
-//     }
-//     ESP_LOGI(FNAME, "Wrote %d dev entries to NVS", nvs_idx);
-//     // Remove trailing empty entries
-//     while ( nvs_idx < 30 ) {
-//         std::string token = token_base + std::to_string(nvs_idx++);
-//         SetupNG<DeviceNVS> nvs(token.c_str(), {});
-//         if ( ! nvs.exists() ) {
-//             break;
-//         };
-//         nvs.erase();
-//     }
-// }
-
 void DeviceManager::reserectFromNvs()
 {
     // go through all possible setup entries and see if there is some thing valid
@@ -687,27 +660,27 @@ void DeviceManager::reserectFromNvs()
             && ( !entry.second.getRoleDep() || entry.second.getRoleDep() == xcv_role.get()) ) {
             nr_set_up++;
             // setup device
-            DeviceNVS &nvs = entry.second.nvsetup->getRef();
-            ESP_LOGI(FNAME, "Entry: t%x - s%x (%d/%d)", (unsigned)nvs.target.raw, (unsigned)nvs.setup.data, nvs.bin_sp, nvs.nmea_sp);
-            DeviceId did = nvs.target.getDeviceId();
-            int listen_port = nvs.target.getItfTarget().port;
-            InterfaceId iid = nvs.target.getItfTarget().iid;
+            DeviceNVS *nvs = static_cast<DeviceNVS*>(entry.second.nvsetup->getPtr());
+            ESP_LOGI(FNAME, "Entry: t%x - s%x (%d/%d)", (unsigned)nvs->target.raw, (unsigned)nvs->setup.data, nvs->bin_sp, nvs->nmea_sp);
+            DeviceId did = nvs->target.getDeviceId();
+            int listen_port = nvs->target.getItfTarget().port;
+            InterfaceId iid = nvs->target.getItfTarget().iid;
             ESP_LOGI(FNAME, "Reserect: did%d p%d iid%d", did, listen_port, iid);
             // bin proto option
-            if ( nvs.setup.getProto(0) ) {
-                ESP_LOGI(FNAME, "BinP: pid%d sp%d", nvs.setup.getProto(0), nvs.getBinSPort());
-                addDevice(did, nvs.setup.getProto(0), listen_port, nvs.getBinSPort(), iid);
+            if ( nvs->setup.getProto(0) ) {
+                ESP_LOGI(FNAME, "BinP: pid%d sp%d", nvs->setup.getProto(0), nvs->getBinSPort());
+                addDevice(did, nvs->setup.getProto(0), listen_port, nvs->getBinSPort(), iid);
             }
             // principle nmea proto option
-            if ( nvs.setup.getProto(1) ) {
-                ESP_LOGI(FNAME, "NmP: pid%d sp%d", nvs.setup.getProto(1), nvs.getNmeaSPort());
-                addDevice(did, nvs.setup.getProto(1), listen_port, nvs.getNmeaSPort(), iid);
+            if ( nvs->setup.getProto(1) ) {
+                ESP_LOGI(FNAME, "NmP: pid%d sp%d", nvs->setup.getProto(1), nvs->getNmeaSPort());
+                addDevice(did, nvs->setup.getProto(1), listen_port, nvs->getNmeaSPort(), iid);
             }
             // more nmea plug options
             for ( int i=2; i<ProtocolList::maxProto; i++ ) {
-                if ( nvs.setup.getProto(i) ) {
-                    ESP_LOGI(FNAME, "plugin: %d", nvs.setup.getProto(i));
-                    addDevice(did, nvs.setup.getProto(i), listen_port, nvs.getNmeaSPort(), iid);
+                if ( nvs->setup.getProto(i) ) {
+                    ESP_LOGI(FNAME, "plugin: %d", nvs->setup.getProto(i));
+                    addDevice(did, nvs->setup.getProto(i), listen_port, nvs->getNmeaSPort(), iid);
                 }
             }
         }

@@ -1637,12 +1637,14 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 void system_menu_create_hardware_rotary_screens(SetupMenu *top)
 {
 	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens);
-	scrgmet->mkEnable("enable", SCREEN_GMETER);
+	scrgmet->addEntry("disable");
+	scrgmet->addEntry("enable", SCREEN_GMETER);
 	top->addEntry(scrgmet);
 
 	if (gflags.ahrsKeyValid) {
 		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens);
-		horizon->mkEnable("enable", SCREEN_HORIZON);
+		horizon->addEntry("disable");
+		horizon->addEntry("enable", SCREEN_HORIZON);
 		top->addEntry(horizon);
 	}
 }
@@ -1948,8 +1950,7 @@ void system_menu_create(SetupMenu *sye) {
 	devices->setDynContent();
 	sye->addEntry(devices);
 
-	SetupMenuSelect *logg = new SetupMenuSelect("Logging", RST_NONE, 0, true,
-			&logging);
+	SetupMenuSelect *logg = new SetupMenuSelect("Logging", RST_NONE, 0, true, &logging);
 	logg->setHelp("R&D option, do not use!\n Collect raw sensor data with NMEA logger in XCSoar");
 	logg->mkEnable("Sensor RAW Data");
 	sye->addEntry(logg);

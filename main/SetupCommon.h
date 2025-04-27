@@ -26,20 +26,24 @@ public:
 	virtual ~SetupCommon();
 
 	// virtual methods to be implemented in derived class
-	virtual bool init() = 0;
+	virtual char typeName() const = 0;
+	virtual std::string getValueAsStr() const = 0;
+	virtual void setValueFromStr( const char * val ) = 0;
+	virtual void* getPtr() = 0;
+	virtual int getSize() = 0;
+	virtual bool isDefault() = 0;
+	virtual void setDefault() = 0;
+	virtual bool isValid() const = 0;
+
+	bool init();
 	bool erase();
-	virtual bool write() = 0;
+	bool write();
 	bool exists() const ;
 	bool commit();
-	virtual void setDefault() = 0;
-	virtual void setValueFromStr( const char * val ) = 0;
 	bool mustReset() const { return flags._reset; }
-	virtual bool isDefault() = 0;
-	virtual std::string valueAsStr() const = 0;
 	const char* key() const { return _key.data(); }
-	virtual char typeName() const = 0;
-	virtual bool sync() = 0;
-	bool dirty() const { return flags._dirty; }
+	bool sync();
+	bool getDirty() const { return flags._dirty; }
 	void setDirty() { flags._dirty = true; }
 	uint8_t getSync() const { return flags._sync; }
 
@@ -63,7 +67,6 @@ public:
     static void prepareFactoryReset();
 
     // variables
-	static XCVSyncMsg *syncProto;
 
 protected:
 	const std::string_view _key; // unique identification TAG
@@ -71,6 +74,7 @@ protected:
 	void (*_action)(); // action on a value change
 
 private:
+	static XCVSyncMsg *syncProto;
 	static bool factoryReset();
 	static std::vector<SetupCommon *> instances;
 	static char _ID[16];

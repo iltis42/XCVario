@@ -131,7 +131,24 @@ template<typename T>
 class SetupNG: public SetupCommon
 {
 public:
-	char typeName(void) const {
+	SetupNG( const char *akey, T adefault, bool reset=true, e_sync_t sync=SYNC_NONE, e_volatility vol=PERSISTENT,
+			void (* action)()=0, e_unit_type_t unit = UNIT_NONE) :
+		SetupCommon(akey),
+		_default(adefault)
+	{
+		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
+		// if( strlen( akey ) > 15 ) {
+		// 	ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
+		// }
+		flags._reset = reset;
+		flags._sync = sync;
+		flags._volatile = vol;
+		flags._unit = unit;
+		_action = action;
+	}
+	virtual ~SetupNG() = default;
+
+	char typeName(void) const override {
 		if constexpr (std::is_same_v<T, float>)
 			return 'F';
 		else if constexpr (std::is_same_v<T, int>)
@@ -148,23 +165,32 @@ public:
 			return 'U';
 	}
 
-	SetupNG( const char *akey, T adefault, bool reset=true, e_sync_t sync=SYNC_NONE, e_volatility vol=PERSISTENT,
-			void (* action)()=0, e_unit_type_t unit = UNIT_NONE) :
-		SetupCommon(akey),
-		_default(adefault)
-	{
-		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
-		// if( strlen( akey ) > 15 ) {
-		// 	ESP_LOGE(FNAME,"SetupNG(%s) key > 15 char !", akey );
-		// }
-		flags._reset = reset;
-		flags._sync = sync;
-		flags._volatile = vol;
-		flags._unit = unit;
-		_action = action;
+	std::string getValueAsStr() const override {
+		std::string str("volatile");
+		if( flags._volatile != VOLATILE ){
+			if constexpr (std::is_same_v<T, float>) {
+				str = std::to_string(_value);
+			}
+			else if constexpr (std::is_same_v<T, int>) {
+				str = std::to_string(_value);
+			}
+			else if constexpr (std::is_same_v<T, Quaternion>) {
+				str = std::to_string(_value.a) + '/' + std::to_string(_value.b) + '/' + std::to_string(_value.c) + '/' + std::to_string(_value.d);
+			}
+			else if constexpr (std::is_same_v<T, bitfield_compass>) {
+				uint8_t as_byte = *reinterpret_cast<const uint8_t*>(&_value);
+				str = std::to_string(as_byte);
+			}
+			else if constexpr (std::is_same_v<T, mpud::raw_axes_t>) {
+				str = std::to_string(_value.x) + '/' +std::to_string(_value.y) + '/' +std::to_string(_value.z);
+			}
+			else if constexpr (std::is_same_v<T, DeviceNVS>) {
+				str = std::to_string(_value.target.raw) + '/' +std::to_string(_value.setup.data) + 
+					'/' +std::to_string(_value.bin_sp) + '/' +std::to_string(_value.nmea_sp);
+			}
+		}
+		return str;
 	}
-
-	void setDefault() override { set( _default ); }
 
 	void setValueFromStr( const char * str ) override {
 		if( flags._volatile != VOLATILE ){
@@ -189,7 +215,7 @@ public:
 			else if constexpr (std::is_same_v<T, DeviceNVS>) {
 				uint32_t t, s;
 				int16_t bp, np;
-				if (sscanf(str ,"%x/%x/%hd/%hd", (unsigned*)&t, (unsigned*)&s, &bp, &np) == 4) {
+				if (sscanf(str ,"%d/%d/%hd/%hd", (unsigned*)&t, (unsigned*)&s, &bp, &np) == 4) {
 					_value = DeviceNVS(t, s, bp, np);
 				}
 			}
@@ -198,45 +224,20 @@ public:
 
 	}
 
-	T* getPtr() {
-		return &_value;
-	}
-	T& getRef() {
-		return _value;
-	}
-	T get() const {
-		return _value;
-	}
+	void* getPtr() override { return &_value; }
+	int getSize() override { return sizeof(_value); }
+	bool isDefault() override { return _default == _value; }
+	void setDefault() override { set( _default ); }
+	bool isValid() const override; // check on nan for <float>
 
 	// virtual T getGui() const { return get(); } // tb. overloaded for blackboard fixme
 	// virtual const char* unit() const { return ""; } // tb. overloaded for blackboard
 
-	std::string valueAsStr() const override {
-		std::string str;
-		if( flags._volatile != VOLATILE ){
-			if constexpr (std::is_same_v<T, float>) {
-				str = std::to_string(_value);
-			}
-			else if constexpr (std::is_same_v<T, int>) {
-				str = std::to_string(_value);
-			}
-			else if constexpr (std::is_same_v<T, Quaternion>) {
-				str = std::to_string(_value.a) + '/' + std::to_string(_value.b) + '/' + std::to_string(_value.c) + '/' + std::to_string(_value.d);
-			}
-			else if constexpr (std::is_same_v<T, bitfield_compass>) {
-				uint8_t as_byte = *reinterpret_cast<const uint8_t*>(&_value);
-				str = std::to_string(as_byte);
-			}
-			else if constexpr (std::is_same_v<T, mpud::raw_axes_t>) {
-				str = std::to_string(_value.x) + '/' +std::to_string(_value.y) + '/' +std::to_string(_value.z);
-			}
-		}
-		return str;
-	}
+	T get() const { return _value; }
 
 	bool set( T aval, bool dosync=true, bool doAct=true ) {
 		if( _value == aval ){
-			// ESP_LOGI(FNAME,"Value already in config: %s", _key );
+			ESP_LOGI(FNAME,"Value already in config: %s-%s", _key.data(), getValueAsStr().c_str() );
 			return( true );
 		}
 		_value = aval;
@@ -252,85 +253,12 @@ public:
 			return true;
 		}
 		setDirty();
-		// ESP_LOGI(FNAME,"set() %s", _key );
+		ESP_LOGI(FNAME,"set_%s(%s)", _key.data(), getValueAsStr().c_str() );
 		return true;
 	}
 
 	e_unit_type_t unitType() {
 		return (e_unit_type_t)flags._unit;
-	}
-
-	bool sync(){
-		if( syncProto &&
-			( (!syncProto->isMaster() && flags._sync == SYNC_FROM_CLIENT) 
-				|| (syncProto->isMaster() && flags._sync == SYNC_FROM_MASTER) 
-				|| flags._sync == SYNC_BIDIR ) ) {
-			// ESP_LOGI( FNAME,"Now sync %s", _key.data());
-			syncProto->sendItem(_key.data(), typeName(), (void *)(&_value), sizeof( _value ) );
-			return true;
-		
-		}
-		return false;
-	}
-
-	bool write() override { // do the set blob that actually seems to write to the flash either
-		// ESP_LOGI(FNAME,"NVS write(): ");
-		ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s, len:%d )", _key.data(), valueAsStr().c_str(), sizeof( _value ) );
-		portDISABLE_INTERRUPTS();
-		bool ret = NVS.setBlob( _key.data(), (void *)(&_value), sizeof( _value ) );
-		portENABLE_INTERRUPTS();
-		if( !ret )
-			return false;
-		return true;
-	}
-
-	bool isValid() const; // check on nan for <float>
-
-	bool init() override {
-		if( flags._volatile != PERSISTENT ){
-			// ESP_LOGI(FNAME,"NVS volatile set default");
-			set( _default );
-			return true;
-		}
-		size_t required_size;
-		bool ret = NVS.getBlob(_key.data(), NULL, &required_size);
-		if ( !ret ){
-			// ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error", _key.data() );
-			set( _default );  // try to init
-			setDirty();
-		}
-		else {
-			// ESP_LOGI(FNAME,"NVS %s size: %d", _key.data(), required_size );
-			if( required_size > sizeof( T ) ) {
-				// ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , sizeof( T ) );
-				erase();
-				set( _default );  // try to init
-				ret = false;
-			}
-			else {
-				// ESP_LOGI(FNAME,"NVS size okay");
-				ret = NVS.getBlob(_key.data(), &_value, &required_size);
-
-				if ( !ret || !isValid() ){
-					// ESP_LOGE(FNAME, "NVS nvs_get_blob error");
-					erase();
-					set( _default );  // try to init
-					setDirty();
-				}
-				// else {
-				// 	ESP_LOGD(FNAME,"NVS key %s(%c) exists len: %d, expected: %d", _key.data(), typeName(), required_size, sizeof( _value ));
-				// }
-			}
-		}
-		return ret;
-	}
-
-
-	bool isDefault() override {
-		if( _default == _value )
-			return true;
-		else
-			return false;
 	}
 
 	T getDefault() const { return _default; }

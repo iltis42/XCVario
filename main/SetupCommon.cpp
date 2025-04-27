@@ -47,6 +47,46 @@ SetupCommon::~SetupCommon() {
 	}
 }
 
+bool SetupCommon::init()
+{
+	if( flags._volatile != PERSISTENT ){
+		// ESP_LOGI(FNAME,"NVS volatile set default");
+		setDefault();
+		return true;
+	}
+	size_t required_size;
+	bool ret = NVS.getBlob(_key.data(), nullptr, &required_size);
+	if ( !ret ){
+		ESP_LOGE(FNAME, "%s: NVS nvs_get_blob error", _key.data() );
+		setDefault();  // try to init
+		setDirty();
+	}
+	else {
+		// ESP_LOGI(FNAME,"NVS %s size: %d", _key.data(), required_size );
+		if( required_size > getSize() ) {
+			ESP_LOGE(FNAME,"NVS error: size too big: %d > %d", required_size , getSize() );
+			erase();
+			setDefault();  // try to init
+			ret = false;
+		}
+		else {
+			// ESP_LOGI(FNAME,"NVS size okay");
+			ret = NVS.getBlob(_key.data(), getPtr(), &required_size);
+
+			if ( !ret || !isValid() ){
+				ESP_LOGE(FNAME, "NVS nvs_get_blob error");
+				erase();
+				setDefault();  // try to init
+				setDirty();
+			}
+			else {
+				ESP_LOGD(FNAME,"NVS key %s(%c) exists len: %d, expected: %d - %s", _key.data(), typeName(), required_size, getSize(), getValueAsStr().c_str());
+			}
+		}
+	}
+	return ret;
+}
+
 bool SetupCommon::erase() {
 	if( flags._volatile != PERSISTENT ){
 		return true;
@@ -62,13 +102,25 @@ bool SetupCommon::erase() {
 	}
 }
 
+// do the set blob that actually does not write to the flash either
+bool SetupCommon::write()
+{
+	// ESP_LOGI(FNAME,"NVS write(): ");
+	ESP_LOGI(FNAME,"NVS set blob(key:%s, val: %s, len:%d )", _key.data(), getValueAsStr().c_str(), getSize() );
+	portDISABLE_INTERRUPTS();
+	bool ret = NVS.setBlob( _key.data(), getPtr(), getSize() );
+	portENABLE_INTERRUPTS();
+	if( !ret )
+		return false;
+	return true;
+}
+
 bool SetupCommon::exists() const {
 	if( flags._volatile != PERSISTENT ) {
 		return true;
 	}
 	size_t size;
-	bool ret = NVS.getBlob(_key.data(), nullptr, &size);
-	return ret;
+	return NVS.getBlob(_key.data(), nullptr, &size);
 }
 
 bool SetupCommon::commit() {
@@ -83,6 +135,19 @@ bool SetupCommon::commit() {
 	}
 	flags._dirty = false;
 	return true;
+}
+
+bool SetupCommon::sync(){
+	if( syncProto &&
+		( (!syncProto->isMaster() && flags._sync == SYNC_FROM_CLIENT) 
+			|| (syncProto->isMaster() && flags._sync == SYNC_FROM_MASTER) 
+			|| flags._sync == SYNC_BIDIR ) ) {
+		// ESP_LOGI( FNAME,"Now sync %s", _key.data());
+		syncProto->sendItem(_key.data(), typeName(), getPtr(), getSize() );
+		return true;
+	
+	}
+	return false;
 }
 
 SetupCommon *SetupCommon::getMember( const char * key ){
@@ -108,7 +173,7 @@ void SetupCommon::giveConfigChanges( httpd_req *req, bool log_only ){
 	ESP_LOGI(FNAME,"giveConfigChanges");
 	for(int i = 0; i < instances.size(); i++ ) {
 		if( instances[i]->isDefault() == false ) {
-			std::string val = instances[i]->valueAsStr();
+			std::string val = instances[i]->getValueAsStr();
 			if( ! val.empty() ){
 				std::string cfg(instances[i]->key());
 				cfg += ',' + val + '\n';
@@ -163,7 +228,7 @@ int SetupCommon::restoreConfigChanges( int len, char *data ){
 
 void SetupCommon::commitDirty(){
 	for(int i = 0; i < instances.size(); i++ ) {
-		if( instances[i]->dirty() )
+		if( instances[i]->getDirty() )
 			instances[i]->commit();
 	}
 }

@@ -16,7 +16,6 @@
 #endif
 #define ESP_LOGI(l, fmt, ...) // Do nothing
 
-#if defined(CONFIG_LOG_DISABLED)
 # if defined(ESP_LOGW)
 #  undef ESP_LOGW
 # endif
@@ -26,4 +25,3 @@
 #  undef ESP_LOGE
 # endif
 # define ESP_LOGE(l, fmt, ...) // Do nothing
-#endif

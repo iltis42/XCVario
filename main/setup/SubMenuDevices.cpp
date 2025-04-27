@@ -215,14 +215,14 @@ void system_menu_create_interfaceS1(SetupMenu *top)
     s1sp2->addEntry("115200 baud");
     top->addEntry(s1sp2);
 
-    SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE, update_s1_pol, true, &serial1_tx_inverted);
+    SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE, update_s1_pol, true, &serial1_ttl_signals);
     stxi2->setHelp("A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL "
                     "uses a positive voltage");
     stxi2->addEntry("RS232 Standard");
     stxi2->addEntry("RS232 TTL");
     top->addEntry(stxi2);
 
-    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX", RST_NONE, update_s1_pin, true, &serial1_pins_twisted);
+    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX", RST_NONE, update_s1_pin, true, &serial1_pin_swap);
     srxtw2->setHelp("Option to swap RX and TX line, a Flarm needs Normal, a Navi usually swapped.");
     srxtw2->addEntry("Normal");
     srxtw2->addEntry("Swapped");
@@ -277,19 +277,20 @@ void system_menu_create_interfaceS2(SetupMenu *top)
     s2sp2->addEntry("115200 baud");
     top->addEntry(s2sp2);
 
-    SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE, update_s2_pol, true, &serial2_tx_inverted);
+    SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE, update_s2_pol, true, &serial2_ttl_signals);
     stxi2->setHelp("A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL "
                     "uses a positive voltage");
     stxi2->addEntry("RS232 Standard");
     stxi2->addEntry("RS232 TTL");
     top->addEntry(stxi2);
 
-    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX", RST_NONE, update_s2_pin, true, &serial2_pins_twisted);
+    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX", RST_NONE, update_s2_pin, true, &serial2_pin_swap);
     srxtw2->setHelp("Option to swap RX and TX line, a Flarm needs Normal, a Navi usually swapped.");
     srxtw2->addEntry("Normal");
     srxtw2->addEntry("Swapped");
     top->addEntry(srxtw2);
 
+    ESP_LOGI(FNAME,"menu creation tx_ena %d", serial2_tx_enable.get() );
     SetupMenuSelect *stxdis2 = new SetupMenuSelect("TX line", RST_NONE, update_s2_txena, true, &serial2_tx_enable);
     stxdis2->setHelp("Option to listen only on the RX line, disables TX line to receive only data");
     stxdis2->mkEnable();

@@ -33,8 +33,8 @@ static constexpr std::array<std::string_view, 3> MEMOS = { "S0", "S1", "S2" };
 // connection to nvs setup variables
 static constexpr std::array<t_serial_nvs_setup, 3> uart_setup = {{
 	{ nullptr, nullptr, nullptr, nullptr },
-	{ &serial1_speed, &serial1_tx_inverted, &serial1_pins_twisted, &serial1_tx_enable },
-	{ &serial2_speed, &serial2_tx_inverted, &serial2_pins_twisted, &serial2_tx_enable }
+	{ &serial1_speed, &serial1_ttl_signals, &serial1_pin_swap, &serial1_tx_enable },
+	{ &serial2_speed, &serial2_ttl_signals, &serial2_pin_swap, &serial2_tx_enable }
 }};
 
 static constexpr uart_event_t stop_trigger = {UART_EVENT_MAX, 0, false};

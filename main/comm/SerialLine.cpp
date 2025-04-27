@@ -1,8 +1,7 @@
 #include "SerialLine.h"
 
-#include "logdef.h"
-
 #include "SetupNG.h"
+#include "logdefnone.h"
 
 #include <soc/uart_reg.h>
 
@@ -166,6 +165,9 @@ int SerialLine::Send(const char *msg, int &len, int port)
 void SerialLine::applyBaud()
 {
 	ESP_LOGI(FNAME,"setBaud UART%d baud idx %d: %d", uart_nr, cfg.baud, baud_rate_table[cfg.baud]);
+	if ( uart_is_driver_installed(uart_nr) ) {
+		uart_flush(uart_nr);
+	}
 	uart_set_baudrate(uart_nr, baud_rate_table[cfg.baud]);
 }
 
@@ -178,8 +180,18 @@ void SerialLine::applyPins()
 	gpio_num_t rx_pin = cfg.pin_swp ? tx_gpio : rx_gpio;
 	gpio_pullup_en(tx_pin);
 	gpio_pullup_en(rx_pin);
+
+	if ( uart_is_driver_installed(uart_nr) ) {
+		// pause it
+		uart_flush(uart_nr);
+		uart_disable_rx_intr(uart_nr);
+	}
 	uart_set_pin(uart_nr, tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-	
+	if ( uart_is_driver_installed(uart_nr) ) {
+		// and restart it
+		uart_enable_rx_intr(uart_nr);
+	}
+
 	if( ! cfg.tx_ena ) {
 		// Overrule uart module and switch tx off if configured
 		gpio_set_direction(tx_pin, GPIO_MODE_INPUT);
@@ -190,6 +202,9 @@ void SerialLine::applyPins()
 void SerialLine::applyLineInverse()
 {
 	ESP_LOGI(FNAME, "setLineInverse UART%d: %d (0: Norm, 1:Invers)", uart_nr, cfg.polarity);
+	if ( uart_is_driver_installed(uart_nr) ) {
+		uart_flush(uart_nr);
+	}
 	if( cfg.polarity ) {
 		uart_set_line_inverse(uart_nr, UART_SIGNAL_RXD_INV | UART_SIGNAL_TXD_INV);
 	}
@@ -281,6 +296,7 @@ void SerialLine::stop()
 
 	if ( uart_is_driver_installed(uart_nr) ) {
 		ESP_LOGI(FNAME,"UART %d end(), pins %d %d", uart_nr, tx_gpio, rx_gpio);
+		uart_flush(uart_nr);
 		uart_driver_delete(uart_nr);
 	}
 }

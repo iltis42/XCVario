@@ -108,6 +108,7 @@ public:
     dl_control_t nextBytes(const char* c, int len) override;
     // house keeping
     const std::vector<NmeaPlugin*>& getAllPlugs() const { return _plugs; }
+    ProtocolItf* asPrtclItfPtr() { return static_cast<ProtocolItf*>(this); }
 
 
     // XCVario transmitter routines

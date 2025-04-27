@@ -609,17 +609,16 @@ RoutingList DeviceManager::getRouting(RoutingTarget source)
                         RoutingTarget merget = *entry;
                         ESP_LOGI(FNAME, "Take port %d", *pl.begin());
                         merget.setItfPort(*pl.begin());
-                        ESP_LOGI(FNAME, "Take joker %d/%d/%d", merget.did, merget.getItfId(), merget.getPort());
-                        activeList.push_back(merget);
+                        ESP_LOGI(FNAME, "Take joker d%d/i%d/p%d", merget.did, merget.getItfId(), merget.getPort());
+                        activeList.insert(merget);
                     }
                     else if ( pl.find(entry->getItfTarget().port) != pl.end() ) {
-                        ESP_LOGI(FNAME, "Take dev %d from routing list.", entry->did);
-                        activeList.push_back(*entry); // Ok, take this route
+                        ESP_LOGI(FNAME, "Take route d%d/i%d/p%d", entry->did, entry->getItfId(), entry->getPort());
+                        activeList.insert(*entry); // Ok, take this route
                     }
                 }
             }
         }
-        activeList.shrink_to_fit();
         return activeList; // will be a move by RVO
     }
     else {

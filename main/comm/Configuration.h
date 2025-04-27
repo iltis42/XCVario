@@ -12,7 +12,7 @@
 #include "InterfaceCtrl.h"
 
 #include <cinttypes>
-#include <vector>
+#include <set>
 #include <array>
 #include <string_view>
 
@@ -54,7 +54,7 @@ union RoutingTarget {
 
 };
 
-using RoutingList = std::vector<RoutingTarget>;
+using RoutingList = std::set<RoutingTarget>;
 
 
 // This stores:

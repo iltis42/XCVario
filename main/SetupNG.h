@@ -13,7 +13,7 @@
 #include "SetupCommon.h"
 #include "ESP32NVS.h"
 #include "quaternion.h"
-#include "logdef.h"
+// #include "logdef.h" // do not include this in a header file
 
 #include <MPU.hpp>
 
@@ -26,6 +26,7 @@
 #include <nvs.h>
 #include <cstdio>
 #include <string>
+#include <cstring>
 #include <iostream>
 #include <vector>
 
@@ -110,21 +111,21 @@ constexpr int NOTSET_ELEVATION = -30;
 
 struct t_tenchar_id {
 	char id[10];
-	t_tenchar_id() {};
-	t_tenchar_id( const char *val ) { strcpy( id, val ); };
-	t_tenchar_id(  const t_tenchar_id &val ) { strcpy( id, val.id ); };
+	t_tenchar_id() {}
+	t_tenchar_id( const char *val ) { strncpy( id, val, 10 ); }
+	t_tenchar_id( const t_tenchar_id &val ) { strncpy( id, val.id, 10 ); }
 	bool operator == ( const t_tenchar_id &other ) const {
 		return( strcmp( id, other.id ) == 0 );
-	};
+	}
 	t_tenchar_id operator = ( const t_tenchar_id &other ) {
-		strcpy( id, other.id );
+		strncpy( id, other.id, 10 );
 		return *this;
-	};
+	}
 	t_tenchar_id operator = ( const char *other ) {
 		strncpy( id, other, 10 );
 		id[9] = '\0';
 		return *this;
-	};
+	}
 };
 
 template<typename T>
@@ -166,7 +167,7 @@ public:
 	}
 
 	std::string getValueAsStr() const override {
-		std::string str("volatile");
+		std::string str;
 		if( flags._volatile != VOLATILE ){
 			if constexpr (std::is_same_v<T, float>) {
 				str = std::to_string(_value);
@@ -237,7 +238,7 @@ public:
 
 	bool set( T aval, bool dosync=true, bool doAct=true ) {
 		if( _value == aval ){
-			ESP_LOGI(FNAME,"Value already in config: %s-%s", _key.data(), getValueAsStr().c_str() );
+			// ESP_LOGI(FNAME,"Value already in config: %s(%s)", _key.data(), getValueAsStr().c_str() );
 			return( true );
 		}
 		_value = aval;
@@ -253,7 +254,7 @@ public:
 			return true;
 		}
 		setDirty();
-		ESP_LOGI(FNAME,"set_%s(%s)", _key.data(), getValueAsStr().c_str() );
+		// ESP_LOGI(FNAME,"set_%s(%s)", _key.data(), getValueAsStr().c_str() );
 		return true;
 	}
 

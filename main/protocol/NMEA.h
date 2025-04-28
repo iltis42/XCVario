@@ -93,6 +93,9 @@ private:
     bool _auto; // most plugins get installed together with the principal NMEA parser
 };
 
+// forward declaration
+class AliveMonitor;
+
 // generic mnea message parser
 class NmeaPrtcl final : public ProtocolItf
 {
@@ -109,6 +112,7 @@ public:
     // house keeping
     const std::vector<NmeaPlugin*>& getAllPlugs() const { return _plugs; }
     ProtocolItf* asPrtclItfPtr() { return static_cast<ProtocolItf*>(this); }
+    void addAliveMonitor(AliveMonitor *am) { _alive = am; }
 
 
     // XCVario transmitter routines
@@ -125,8 +129,6 @@ public:
     void sendXCVNmeaHDM(float heading);
     void sendXCVNmeaHDT(float heading);
     void sendXCV(const char *str) const;
-
-    // XCV client
 
     // MagSens transmitter
     bool sendHello();
@@ -155,5 +157,6 @@ private:
     Key      _mkey;     // identified message key
     MapValue _parser;   // found parser, incl. parameter for the parser
     inline void nmeaIncrCRC(int &crc, const char c) {crc ^= c;}
+    AliveMonitor *_alive = nullptr; // alive monitor for the protocol
 };
 

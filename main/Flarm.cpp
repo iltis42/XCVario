@@ -33,7 +33,6 @@ int Flarm::oldVertical = 0;
 int Flarm::oldBear = 0;
 int Flarm::alarmOld=0;
 int Flarm::_tick=0;
-int Flarm::timeout=0;
 int Flarm::ext_alt_timer=0;
 int Flarm::_numSat=0;
 int Flarm::clock_timer=0;
@@ -42,23 +41,12 @@ bool Flarm::time_sync=false;
 
 
 void Flarm::progress(){  // once per second
-	if( timeout ){
-		timeout--;
-	}
 	// ESP_LOGI(FNAME,"progress, timeout=%d", timeout );
 	clock_timer++;
 	if( !(clock_timer%3600) ){  // every hour reset sync flag to wait for next valid GPS time
 		time_sync = false;
 	}
 }
-
-bool Flarm::connected(){
-	// ESP_LOGI(FNAME,"timeout=%d", timeout );
-	if( timeout > 0 )
-		return true;
-	else
-		return false;
-};
 
 
 void Flarm::tick(){

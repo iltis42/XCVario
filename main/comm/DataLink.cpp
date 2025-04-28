@@ -27,6 +27,8 @@
 #include "Messages.h"
 #include "DeviceMgr.h"
 #include "DataMonitor.h"
+#include "protocol/AliveMonitor.h"
+#include "SetupNG.h"
 #include "logdef.h"
 
 #include <array>
@@ -92,6 +94,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     case FLARM_P:
         ESP_LOGI(FNAME, "New Flarm");
         enforceNmea(did, sendport, ptyp);
+        _nmea->addAliveMonitor(new AliveMonitor(&flarm_alive));
         _nmea->addPlugin(new GpsMsg(*_nmea));
         _nmea->addPlugin(new GarminMsg(*_nmea));
         _nmea->addPlugin(new FlarmMsg(*_nmea));
@@ -130,6 +133,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     case XCVSYNC_P:
         ESP_LOGI(FNAME, "New XCVsync");
         enforceNmea(did, sendport, ptyp);
+        _nmea->addAliveMonitor(new AliveMonitor(&xcv_alive, 800));
         // The SyncMsg serves on both side, need to know it's role
         // connect to a client -> you are master
         if ( xcv_role.get() == NO_ROLE && did==XCVARIOCLIENT_DEV ) { xcv_role.set(MASTER_ROLE); }

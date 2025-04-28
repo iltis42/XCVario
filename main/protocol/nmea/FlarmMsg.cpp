@@ -100,7 +100,6 @@ dl_action_t FlarmMsg::parsePFLAE(NmeaPlugin *plg)
     ESP_LOGD(FNAME, "parsePFLAE");
     ProtocolState *sm = plg->getNMEA().getSM();
     const std::vector<int> *word = &sm->_word_start;
-    Flarm::timeout = 10;
 
     if ( word->size() == 3
         && sm->_frame.at(word->at(0)) == 'A' 
@@ -156,7 +155,6 @@ dl_action_t FlarmMsg::parsePFLAU(NmeaPlugin *plg)
     sprintf( Flarm::ID, "%06x", atoi(s + word->at(8)));
     ESP_LOGI(FNAME,"RB: %d ALT:%d  DIST %d", Flarm::RelativeBearing, Flarm::RelativeVertical, Flarm::RelativeDistance);
     Flarm::_tick=0;
-    Flarm::timeout = 10;
     return DO_ROUTING;
 }
 
@@ -188,7 +186,6 @@ dl_action_t FlarmMsg::parsePFLAX(NmeaPlugin *plg)
             devfb->setPeer(hostfb);
             hostfb->setPeer(devfb);
         }
-        Flarm::timeout = 10;
     }
     return DO_ROUTING;
 }

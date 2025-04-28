@@ -192,6 +192,11 @@ SetupNG<float>  		altitude( "ALTI", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		ias( "IASV", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		te_vario( "TEVA", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 
+SetupNG<int>  			xcv_alive( "AL_XCV", ALIVE_NONE, RST_NONE, SYNC_NONE, VOLATILE );
+SetupNG<int>  			mags_alive( "AL_MAGS", ALIVE_NONE, RST_NONE, SYNC_NONE, VOLATILE );
+SetupNG<int>  			flarm_alive( "AL_FLARM", ALIVE_NONE, RST_NONE, SYNC_NONE, VOLATILE );
+// SetupNG<int>  			xcv_alive( "AL_XCV", ALIVE_NONE, RST_NONE, SYNC_NONE, VOLATILE );
+
 SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0, true, SYNC_FROM_MASTER, PERSISTENT, 0, UNIT_SPEED );
 SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0, true, SYNC_FROM_MASTER, PERSISTENT, 0, UNIT_SPEED  );
 SetupNG<float>  		s2f_flap_pos( "S2F_FLAP", 1, true, SYNC_FROM_MASTER, PERSISTENT, 0 );

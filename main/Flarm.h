@@ -21,7 +21,6 @@ public:
 	static void drawFlarmWarning();
 	static void initFlarmWarning();
 	static void progress();
-	static bool connected(); // returns true if Flarm is connected
 	static inline bool getGPS( float &gndSpeedKmh, float &gndTrack ) {
 		if( myGPS_OK ) {
 			gndSpeedKmh = Units::knots2kmh(gndSpeedKnots);
@@ -70,7 +69,6 @@ private:
 	static int oldBear;
 	static int alarmOld;
 	static int _tick;
-	static int timeout;
 	static int ext_alt_timer;
 	static int _numSat;
 	static int clock_timer;

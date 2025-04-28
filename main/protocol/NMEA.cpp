@@ -8,6 +8,7 @@
 
 #include "NMEA.h"
 
+#include "AliveMonitor.h"
 #include "nmea_util.h"
 #include "logdefnone.h"
 
@@ -22,6 +23,11 @@ NmeaPrtcl::~NmeaPrtcl()
     }
     _plugs.clear();
     _parsmap.clear();
+
+    if ( _alive ) {
+        delete _alive;
+        _alive = nullptr;
+    }
 }
 
 void NmeaPrtcl::addPlugin(NmeaPlugin *pm)
@@ -134,6 +140,9 @@ dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
         action = _default_action;
         if ( _parser.first ) {
             action = (_parser.first)(_parser.second);
+        }
+        if ( _alive) {
+            _alive->keepAlive();
         }
     }
     return dl_control_t(action);

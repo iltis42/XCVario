@@ -434,12 +434,19 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
         // blesender.begin();
         // itf = BT_..;
     }
-    else if ( iid == NO_PHY ) {
-        // Device might exist already
-        itf = getIntf(did);
-    }
+    // else // NO_PHY is just the hint to take the same interface
+    
     bool is_new = false;
     Device *dev = getDevice(did);
+    if (dev && itf == &dummy_itf) {
+        // Device already exists
+        itf = dev->_itf;
+    }
+    if ( dev && dev->_itf != itf ) {
+        // Device already exists, but on another interface
+        ESP_LOGW(FNAME, "Device %d already exists on another interface", did);
+        return nullptr;
+    }
     if ( ! dev ) {
         dev = new Device(did);
         dev->_auto = ato;

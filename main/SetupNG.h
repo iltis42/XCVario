@@ -372,7 +372,6 @@ extern SetupNG<int>  		temperature_unit;
 extern SetupNG<int>  		qnh_unit;
 extern SetupNG<int>  		rot_default;
 extern SetupNG<int>  		serial1_speed;
-extern SetupNG<int>  		serial1_rxloop;
 extern SetupNG<int>  		serial1_pin_swap;
 extern SetupNG<int>  		serial1_ttl_signals;
 extern SetupNG<int>  		serial1_rx_ttl;

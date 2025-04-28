@@ -255,7 +255,6 @@ SetupNG<int>  			qnh_unit("QNH_UNIT", QNH_HPA );
 SetupNG<int>  			rot_default( "ROTARY_DEFAULT", 0 );
 SetupNG<int>  			serial1_speed( "SERIAL1_SPEED", BAUD_19200 );
 SetupNG<int>  			serial1_pin_swap( "SERIAL1_PINS", 0 );
-SetupNG<int>  			serial1_rxloop( "SERIAL1_RXLOOP", 0 ); // fixme, not used any more
 SetupNG<int>  			serial1_ttl_signals( "SERIAL1_TTL", RS232_TTL );
 SetupNG<int>  			serial1_tx_enable( "SER1_TX_ENA", 1 );
 SetupNG<int>  			serial2_speed( "SERIAL2_SPEED", BAUD_38400 );

@@ -1108,6 +1108,7 @@ void system_startup(void *args){
 		if( attitude_indicator.get() )
 			attitude_indicator.set(0);
 	}
+	boot_screen->finish(0);
 
 	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );
 	int offset;
@@ -1226,6 +1227,7 @@ void system_startup(void *args){
 		else {
 			ESP_LOGI(FNAME,"air speed offset test PASSED, readout value in bounds=%d", offset );
 			logged_tests += "AS Sensor offset test: PASSED\n";
+			boot_screen->finish(1);
 		}
 	}
 	else{
@@ -1348,7 +1350,7 @@ void system_startup(void *args){
 			ESP_LOGI(FNAME,"Abs p sensor deta test PASSED, delta: %f hPa", abs(ba_p - te_p) );
 		}
 		logged_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
-
+		boot_screen->finish(2);
 	}
 	else {
 		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
@@ -1417,26 +1419,15 @@ void system_startup(void *args){
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
 	
-	// if( wireless == WL_BLUETOOTH ) {
-	// 	if( BTspp && BTspp->selfTest() ){
-	// 		DeviceManager* dm = DeviceManager::Instance();
-	// 		dm->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, BT_SPP);
-	// 		dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, BT_SPP);
-	// 		dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
-	// 		logged_tests += "Bluetooth test: PASSED\n";
-	// 	}
-	// 	else{
-	// 		MBOX->newMessage(1, "Bluetooth: FAILED");
-	// 		logged_tests += "Bluetooth test: FAILED\n";
-	// 	}
-	// }else if ( (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE)
-	// 	&& Wifi ) {
-	// 	DeviceManager* dm = DeviceManager::Instance();
-	// 	dm->addDevice(NAVI_DEV, XCVARIO_P, 8880, 8880, WIFI_AP);
-	// 	dm->addDevice(NAVI_DEV, FLARMHOST_P, 8881, 8881, WIFI_AP);
-	// 	dm->addDevice(NAVI_DEV, FLARMBIN_P, 8881, 8881, NO_PHY);
-	// 	dm->addDevice(NAVI_DEV, KRT2_REMOTE_P, 8882, 8882, WIFI_AP);
-	// }
+	if ( BTspp) {
+		if ( BTspp->selfTest() ) {
+			logged_tests += "Bluetooth test: PASSED\n";
+		}
+		else {
+			MBOX->newMessage(1, "Bluetooth: FAILED");
+			logged_tests += "Bluetooth test: FAILED\n";
+		}
+	}
 
 	if( compass_enable.get() == CS_CAN ){ // fixme ask devman
 		ESP_LOGI( FNAME, "Magnetic sensor type CAN");
@@ -1484,11 +1475,8 @@ void system_startup(void *args){
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
-		boot_screen->finish(); // signal self tests passed
+		boot_screen->finish(3); // signal self tests passed
 	}
-
-	// stop the boot logo
-	delete boot_screen;
 
 	if( Rotary->readBootupStatus() )
 	{
@@ -1497,6 +1485,11 @@ void system_startup(void *args){
 
 	// Set QNH from setup Airfiled elevation, when ! Second && ! airborn
 	if( ! SetupCommon::isClient() && ias.get() < 50.0 ) {
+
+		// remove logo immidiately
+		sleep(1);
+		delete boot_screen;
+
 		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias.get() );
 		// QNH autosetup
 		float ae = elevation.get();
@@ -1541,51 +1534,57 @@ void system_startup(void *args){
 	}
 	else
 	{
-		if ( SetupCommon::isClient() ) {
-			// Wait for master to release the vario screen
-			Device *dev = DEVMAN->getDevice(XCVARIO_DEV);
-			Display->clear();
-			if (dev && dev->_itf->getId() == WIFI_CLIENT) {
-				int line=1;
-				Display->writeText( line++, "Wait for WiFi Master" );
-				char mxcv[30] = "";
-				if( master_xcvario.get() != 0 ){
-					sprintf( mxcv+strlen(mxcv), "XCVario-%d", (int) master_xcvario.get() );
-					Display->writeText( line++, mxcv );
-				}
-				line++;
-				std::string ssid = WifiClient::scan( master_xcvario.get() );
-				if( ssid.length() ){
-					Display->writeText( line++, "Master XCVario found" );
-					char id[30];
-					sprintf( id, "Wifi ID: %s", ssid.c_str() );
-					Display->writeText( line++, id );
-					Display->writeText( line++, "Now start, sync" );
-					WifiClient::start();
-					delay( 5000 );
-				}
-				else{
-					Display->writeText( 3, "Abort Wifi Scan" );
-				}
-			}
-			else if ( !dev && CAN ) {
-				Display->writeText( 1, "Wait for CAN Master" );
-				while( ! dev ) {
-					dev = DEVMAN->getDevice(XCVARIO_DEV);
-					if( dev ) {
-						Display->writeText( 3, "Master XCVario found" );
-						Display->writeText( 4, "start synchronization ..." );
-						delay( 3000 );
-						break;
-					}
-					delay( 100 );
-					if( Rotary->readSwitch() ){
-						Display->writeText( 3, "Abort CAN bus wait" );
-						break;
-					}
-				}
-			}
-		}
+		// just sit, wait shoe a little message
+
+		// if ( SetupCommon::isClient() ) {
+		// 	// Wait for master to release the vario screen
+		// 	Device *dev = DEVMAN->getDevice(XCVARIO_DEV);
+		// 	Display->clear();
+		// 	if (dev && dev->_itf->getId() == WIFI_CLIENT) {
+		// 		int line=1;
+		// 		Display->writeText( line++, "Wait for WiFi Master" );
+		// 		char mxcv[30] = "";
+		// 		if( master_xcvario.get() != 0 ){
+		// 			sprintf( mxcv+strlen(mxcv), "XCVario-%d", (int) master_xcvario.get() );
+		// 			Display->writeText( line++, mxcv );
+		// 		}
+		// 		line++;
+		// 		std::string ssid = WifiClient::scan( master_xcvario.get() );
+		// 		if( ssid.length() ){
+		// 			Display->writeText( line++, "Master XCVario found" );
+		// 			char id[30];
+		// 			sprintf( id, "Wifi ID: %s", ssid.c_str() );
+		// 			Display->writeText( line++, id );
+		// 			Display->writeText( line++, "Now start, sync" );
+		// 			WifiClient::start();
+		// 			delay( 5000 );
+		// 		}
+		// 		else{
+		// 			Display->writeText( 3, "Abort Wifi Scan" );
+		// 		}
+		// 	}
+		// 	else if ( !dev && CAN ) {
+		// 		Display->writeText( 1, "Wait for CAN Master" );
+		// 		while( ! dev ) {
+		// 			dev = DEVMAN->getDevice(XCVARIO_DEV);
+		// 			if( dev ) {
+		// 				Display->writeText( 3, "Master XCVario found" );
+		// 				Display->writeText( 4, "start synchronization ..." );
+		// 				delay( 3000 );
+		// 				break;
+		// 			}
+		// 			delay( 100 );
+		// 			if( Rotary->readSwitch() ){
+		// 				Display->writeText( 3, "Abort CAN bus wait" );
+		// 				break;
+		// 			}
+		// 		}
+		// 	}
+		// }
+
+		MBOX->newMessage(1, "Waiting for XCV Master");
+		delete boot_screen;
+		sleep(2);
 		gflags.inSetup = false;
 		Display->clear();
 	}

@@ -33,6 +33,7 @@
 #include "sensor.h"
 #include "KalmanMPU6050.h"
 #include "vector.h"  // D2R, R2D
+#include "comm/DeviceMgr.h"
 #include "logdef.h"
 
 #include <esp_system.h>
@@ -192,8 +193,11 @@ bool StraightWind::calculateWind()
 		}
 		pos = strlen(log);
 		sprintf( log+pos, "\n");
-		// Router::sendXCV( log ); fixme
-		// ESP_LOGI( FNAME,"%s", log );
+		const NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
+		if ( prtcl ) {
+			prtcl->sendXCV(log);
+		}
+		ESP_LOGI( FNAME,"%s", log );
 	}
 
 	if( (CircleWind::getFlightMode() != straight) || lowAirspeed || !THok || !gpsStatus ){

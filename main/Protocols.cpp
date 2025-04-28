@@ -36,56 +36,7 @@ Protocols::Protocols(S2F * s2f) {
 Protocols::~Protocols() {
 }
 
-void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
-		float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
-	if( !validTemp )
-		temp=0;
-	if( proto == P_EYE_PEYA ){
-		// Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
-		// Total pressure from aircraft pneumatic system [hPA] (i.e. 1015.5)
-		// Pressure altitude [m] (i.e. 10260)
-		// Calculated local QNH [mbar] (i.e. 1013.2)
-		// Direction from were the wind blows [°] (0 - 359)
-		// Wind speed [km/h]
-		// True air speed [km/h] (i.e. 183)
-		// Vertical speed from anemometry (m/s) (i.e. +05.4)
-		// Outside Air Temperature (?C) (i.e. +15.2)
-		// Relative humidity [%] (i.e. 095)
-		float pa = alt - 8.92*( QNH.get() - 1013.25);
-
-
-		if( validTemp )
-			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, QNH.get(),tas,te,temp);
-		else
-			sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,0,,", baro, baro+(dp/100),alt, QNH.get(),tas,te);
-	}
-	else if( proto == P_EYE_PEYI ){
-		float roll = IMU::getRoll();
-		float pitch = IMU::getPitch();
-		// ESP_LOGI(FNAME,"roll %.2f pitch %.2f yaw %.2f", roll, pitch, yaw  );
-		/*
-				$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
-				lbank,         // Bank == roll    (deg)           SRC
-				lpitch,         // pItch           (deg)
-				x,
-				y,
-				z,
-				);
-		 */
-		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
-	}
-
-	else {
-		ESP_LOGW(FNAME,"Not supported protocol %d", proto );
-	}
-	int cs = calcNMEACheckSum(&str[1]);
-	int i = strlen(str);
-	sprintf( &str[i], "*%02X\r\n", cs );
-	// Router::sendXCV(str); fixme
-}
-
 // The XCVario Protocol or Cambridge CAI302 protocol to adjust MC,Ballast,Bugs.
-
 
 
 void Protocols::parseNMEA( const char *str ){
@@ -193,14 +144,4 @@ int Protocols::calcNMEACheckSum(const char *nmea) {
 		if ((c != '$') && (c != '!')) XOR ^= c;
 	}
 	return XOR;
-}
-
-int Protocols::getNMEACheckSum(const char *nmea) {
-	int i, cs, c;
-	for (i = 0; i < strlen(nmea); i++) {
-		c = (unsigned char)nmea[i];
-		if (c == '*') break;
-	}
-	sscanf( &nmea[i],"*%02x", &cs );
-	return cs;
 }

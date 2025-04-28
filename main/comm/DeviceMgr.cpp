@@ -42,17 +42,21 @@ static TaskHandle_t SendTask = nullptr;
 //
 // entries with zero termination, entirely as ro flash data
 static constexpr RoutingTarget flarm_routes[] = { 
-    {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
+    {NAVI_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
     {XCVARIO_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget krt2_routes[] = { 
-    {NAVI_DEV, S2_RS232, 0}, {NAVI_DEV, WIFI_AP, 8882}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
+    {NAVI_DEV, S2_RS232, 0}, {RADIO_REMOTE_DEV, WIFI_AP, 8882}, {RADIO_REMOTE_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
     {XCVARIO_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget navi_routes[] = { 
     {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {RADIO_KRT2_DEV, S2_RS232, 0}, {FLARM_DEV, CAN_BUS, 0}, {} };
+static constexpr RoutingTarget proxy_routes[] = { 
+    {NAVI_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
 static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(FLARM_DEV, NO_PHY, 0), flarm_routes },
     { RoutingTarget(RADIO_KRT2_DEV, NO_PHY, 0), krt2_routes },
-    { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes }
+    { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes },
+    { RoutingTarget(XCVARIO_DEV, NO_PHY, 0), proxy_routes },
+    { RoutingTarget(XCVARIOCLIENT_DEV, NO_PHY, 0), proxy_routes }
 };
 // Search the flash data table
 static const RoutingTarget* findRoute(const RoutingTarget& source) {
@@ -80,8 +84,8 @@ static const RoutingTarget* findRoute(const RoutingTarget& source) {
 constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
     {DeviceId::ANEMOI_DEV, {"Anemoi", {{S2_RS232, S1_RS232, CAN_BUS}}, {{ANEMOI_P}, 1}, 0, IS_REAL, &anemoi_devsetup}},
     {DeviceId::MASTER_DEV, {"Auto-connect", {{CAN_BUS}}, {{REGISTRATION_P}, 1}, CAN_REG_PORT, IS_REAL, &auto_connect}},
-    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232, CAN_BUS}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL, &flarm_devsetup}},
-    {DeviceId::FLARM_DEV,  {"Flarm proxy", {{CAN_BUS}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL, &flarm_devsetup}},
+    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232, XCVPROXY}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL, &flarm_devsetup}},
+    {DeviceId::FLARM_DEV,  {"Flarm proxy", {{XCVPROXY}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, 0, &flarm_devsetup}},
     {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}}, {{JUMBOCMD_P}, 1} , 0, 0, nullptr}}, // auto dev
     {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL, &master_devsetup}},
     {DeviceId::XCVARIO_DEV, {"Master finder", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT, nullptr}}, // auto through XCV role
@@ -97,8 +101,10 @@ constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
                                     0, IS_REAL|MULTI_CONF, &navi_devsetup}},
     {DeviceId::NAVI_DEV,   {"", {{BT_SPP}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
                                     0, IS_REAL|MULTI_CONF, &navi_devsetup}},
-    {DeviceId::FLARM_HOST_DEV, {"Flarm host", {{WIFI_AP, CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, 0, &navi_flarm_setup}},
-    {DeviceId::RADIO_REMOTE_DEV, {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, 0, &navi_radio_etup}},
+    {DeviceId::FLARM_HOST_DEV, {"Flarm host", {{WIFI_AP, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, 0, &flarm_host_setup}},
+    // {DeviceId::FLARM_HOST_DEV, {"FH CAN", {{CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
+    {DeviceId::FLARM_HOST_DEV, {"FH BTspp", {{BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
+    {DeviceId::RADIO_REMOTE_DEV, {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, 0, &radio_host_setup}},
     {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL, &krt_devsetup}},
     {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL, &atr_devsetup}}
 };
@@ -146,6 +152,7 @@ constexpr std::pair<InterfaceId, std::string_view> INTFCS[] = {
     {WIFI_CLIENT, "Wifi client"},
     {BT_SPP, "BT serial"},
     {BT_LE, "BT low energy"},
+    {XCVPROXY, "XCV proxy"}
 };
 
 std::string_view DeviceManager::getItfName(InterfaceId iid) {
@@ -382,6 +389,16 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
             itf = CAN;
         }
     }
+    else if ( iid == XCVPROXY) {
+        itf = &dummy_itf;
+        Device *dev = getXCVPeer();
+        if ( dev ) {
+            // XCV proxy is already there
+            itf = dev->_itf;
+            listen_port = dev->getListenPort();
+            send_port = dev->getSendPort(XCVSYNC_P);
+        }
+    }
     else if ( iid == WIFI_AP) {
         if ( ! Wifi ) {
             WifiAP::createWifiAP();
@@ -459,11 +476,7 @@ Device *DeviceManager::getDevice(DeviceId did)
 
 Device *DeviceManager::getXCVPeer()
 {
-    DevMap::iterator it = _device_map.find(XCVARIOCLIENT_DEV);
-    if ( it != _device_map.end() ) {
-        return it->second;
-    }
-    it = _device_map.find(XCVARIO_DEV);
+    DevMap::iterator it = _device_map.find((xcv_role.get()==MASTER_ROLE)?XCVARIOCLIENT_DEV:XCVARIO_DEV);
     if ( it != _device_map.end() ) {
         return it->second;
     }
@@ -874,40 +887,6 @@ DeviceNVS Device::getNvsData() const
     }
     return entry;
 }
-// std::vector<DeviceNVS> Device::getNvsData() const
-// {
-//     std::vector<DeviceNVS> NL;
-//     if ( ! _auto ) {
-//         NL.reserve(_dlink.size());
-//         ESP_LOGI(FNAME, "NvsData #ld%d", _dlink.size());
-//         for (DataLink* dl : _dlink) {
-//             DeviceNVS entry;
-//             entry.target = RoutingTarget(_id, dl->getTarget());
-//             int idx = 0;
-//             ProtocolItf *bn = dl->getBinary(); // binary option
-//             if ( bn ) {
-//                 entry.bin_sp = bn->getSendPort();
-//                 entry.setup.set(idx++, bn->getProtocolId());
-//                 ESP_LOGI(FNAME, "NvsData t%x bsp%d pid%d", (unsigned)entry.target.raw, entry.bin_sp, entry.setup.get(0));
-//             }
-//             NmeaPrtcl *nm = static_cast<NmeaPrtcl*>(dl->getNmea());
-//             if ( nm ) {
-//                 entry.nmea_sp = nm->getSendPort();
-//                 entry.setup.set(idx++, nm->getProtocolId()); // principal entry
-//                 for (auto it : nm->getAllPlugs() ) {
-//                     if ( ! it->getAuto() ) {
-//                         entry.setup.set(idx++, it->getPtyp()); // plugins
-//                     }
-//                 }
-//             }
-//             NL.push_back(entry);
-//         }
-//     }
-//     else {
-//         ESP_LOGI(FNAME, "NvsData AUTO");
-//     }
-//     return NL;
-// }
 
 
 int Device::getSendPort(ProtocolType p) const

@@ -404,8 +404,8 @@ SetupNG<DeviceNVS>		master_devsetup("MASTER", DeviceNVS() );
 SetupNG<DeviceNVS>		second_devsetup("SECOND", DeviceNVS() );
 SetupNG<DeviceNVS>		magsens_devsetup("MAGSENS", DeviceNVS() );
 SetupNG<DeviceNVS>		navi_devsetup("NAVI", DeviceNVS() );
-SetupNG<DeviceNVS>		navi_flarm_setup("NAVIFLARM", DeviceNVS() );
-SetupNG<DeviceNVS>		navi_radio_etup("NAVIRADIO", DeviceNVS() );
+SetupNG<DeviceNVS>		flarm_host_setup("NAVIFLARM", DeviceNVS() );
+SetupNG<DeviceNVS>		radio_host_setup("NAVIRADIO", DeviceNVS() );
 SetupNG<DeviceNVS>		krt_devsetup("KRTRADIO", DeviceNVS() );
 SetupNG<DeviceNVS>		atr_devsetup("ATRIRADIO", DeviceNVS() );
 

@@ -955,7 +955,7 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 	const int16_t CANW = 14;
 
 	Device *dev = DEVMAN->getXCVPeer();
-	bool CANconnectedXCV = dev && dev->isAlive();
+	bool CANconnectedXCV = dev && dev->isAlive(); // fixme
 	dev = DEVMAN->getDevice(MAGSENS_DEV);
 	bool CANconnectedMag = dev && dev->isAlive();
 	

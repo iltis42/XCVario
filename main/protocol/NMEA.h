@@ -119,6 +119,9 @@ public:
     void sendStdXCVario(float baro, float dp, float te, float temp, float ias, float tas,
         float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, 
         float acc_x, float acc_y, float acc_z, float gx, float gy, float gz);
+    void sendXcvRPYL(float roll, float pitch, float yaw, float acc_z);
+    void sendXcvAPENV1(float ias, float alt, float te);
+    void sendXcvGeneric(float te, float alt, float tas);
     void sendOpenVario(float baro, float dp, float te, float temp, bool validTemp);
     void sendBorgelt(float te, float temp, float ias, float tas, float mc, int bugs, float aballast, bool cruise, bool validTemp);
     void sendCambridge(float te, float tas, float mc, int bugs, float alt);

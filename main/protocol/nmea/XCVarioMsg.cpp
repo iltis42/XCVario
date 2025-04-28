@@ -147,6 +147,51 @@ void NmeaPrtcl::sendStdXCVario(float baro, float dp, float te, float temp, float
     DEV::Send(msg);
 }
 
+void NmeaPrtcl::sendXcvRPYL(float roll, float pitch, float yaw, float acc_z)
+{
+    Message *msg = newMessage();
+
+    // LEVIL_AHRS  $RPYL,Roll,Pitch,MagnHeading,SideSlip,YawRate,G,errorcode,
+    msg->buffer = "$RPYL,";
+    char str[50];
+    sprintf(str, "%d,%d,%d,0,0,%d,0",
+            (int)std::roundf(roll*10.f),         // Bank == roll     (deg)
+            (int)std::roundf(pitch*10.f),        // Pitch            (deg)
+            (int)std::roundf(yaw*10.f),        // Magnetic Heading (deg) ?? fixme what ??
+            (int)std::roundf(acc_z*1000.f));
+    msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+    DEV::Send(msg);
+}
+
+void NmeaPrtcl::sendXcvAPENV1(float ias, float alt, float te)
+{
+    Message *msg = newMessage();
+
+    msg->buffer = "$APENV1,";
+    char str[50];
+    std::sprintf(str, "%d,%d,0,0,0,%d", (int)std::roundf(Units::kmh2knots(ias)),(int)std::roundf(Units::meters2feet(alt)),(int)std::roundf(Units::ms2fpm(te)));
+    msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+    DEV::Send(msg);
+}
+
+/*
+ * $PTAS1,xxx,yyy,zzzzz,aaa*CS<CR><LF>
+ * xxx:   CV or current vario. =vario*10+200 range 0-400(display +/-20.0 knots)
+ * yyy:   AV or average vario. =vario*10+200 range 0-400(display +/-20.0 knots)
+ * zzzzz: Barometric altitude in feet +2000
+ * aaa:   TAS knots 0-200
+ */
+void NmeaPrtcl::sendXcvGeneric(float te, float alt, float tas)
+{
+    Message *msg = newMessage();
+
+    msg->buffer = "$PTAS1,";
+    char str[50];
+    sprintf(str, "%d,0,%d,%d", (int)std::roundf(Units::ms2knots(te)*10.f+200.), (int)std::roundf(Units::meters2feet(alt)+2000.f), (int)std::roundf(Units::kmh2knots(tas)) );
+
+    msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+    DEV::Send(msg);
+}
 
 void NmeaPrtcl::sendXCVCrewWeight(float w)
 {
@@ -159,6 +204,7 @@ void NmeaPrtcl::sendXCVCrewWeight(float w)
         DEV::Send(msg);
     }
 }
+
 
 void NmeaPrtcl::sendXCVEmptyWeight(float w)
 {

@@ -74,27 +74,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 */
 		sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
 	}
-	else if( gflags.haveMPU && attitude_indicator.get() && (proto == P_AHRS_APENV1) ) {  // LEVIL_AHRS
-		sprintf(str, "$APENV1,%d,%d,0,0,0,%d", (int)(Units::kmh2knots(ias)+0.5),(int)(Units::meters2feet(alt)+0.5),(int)(Units::ms2fpm(te)+0.5));
-	}
-	else if( gflags.haveMPU && attitude_indicator.get() && (proto == P_AHRS_RPYL) ) {   // LEVIL_AHRS  $RPYL,Roll,Pitch,MagnHeading,SideSlip,YawRate,G,errorcode,
-		sprintf(str, "$RPYL,%d,%d,%d,0,0,%d,0",
-				(int)(IMU::getRoll()*10+0.5),         // Bank == roll     (deg)
-				(int)(IMU::getPitch()*10+0.5),        // Pitch            (deg)
-				(int)(IMU::getYaw()*10+0.5),          // Magnetic Heading (deg)
-				(int)(acc_z*1000.0+0.5)
-		);
-	}
-	else if( proto == P_GENERIC ) {
-		/*
-		 * $PTAS1,xxx,yyy,zzzzz,aaa*CS<CR><LF>
-		 * xxx:   CV or current vario. =vario*10+200 range 0-400(display +/-20.0 knots)
-		 * yyy:   AV or average vario. =vario*10+200 range 0-400(display +/-20.0 knots)
-		 * zzzzz: Barometric altitude in feet +2000
-		 * aaa:   TAS knots 0-200
-		 */
-		sprintf(str, "$PTAS1,%d,%d,%d,%d", int((Units::ms2knots(te)*10)+200), 0, int(Units::meters2feet(alt)+2000), int(Units::kmh2knots(tas)+0.5) );
-	}
+
 	else {
 		ESP_LOGW(FNAME,"Not supported protocol %d", proto );
 	}

@@ -470,40 +470,37 @@ static void grabMPU()
 static void toyFeed()
 {
 	xSemaphoreTake(xMutex,portMAX_DELAY );
-	// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
-	// maybe just 1 or 2 per second
-	static char lb[150];
 
-	// fixme
-	// if( ahrs_rpyl_dataset.get() ){
-	// 	OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-	// 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
-	// 	OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-	// 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
-	// }
-	if( nmea_protocol.get() == BORGELT ) {
-		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, BORGELT_P); // Todo preliminary solution ..
+	if( ahrs_rpyl_dataset.get() ){
+		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
-			static_cast<NmeaPrtcl*>(prtcl)->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), gflags.validTemperature );
+			prtcl->sendXcvRPYL(IMU::getRoll(), IMU::getPitch(), IMU::getYaw(), IMU::getGliderAccelZ());
+			prtcl->sendXcvAPENV1( ias.get(), altitude.get(), te_vario.get() );
 		}
-		// OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, gflags.validTemperature  );
+	}
+	if( nmea_protocol.get() == BORGELT ) {
+		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
+		if ( prtcl ) {
+			prtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), gflags.validTemperature );
+			prtcl->sendXcvGeneric(te_vario.get(), altSTD, tas);
+		}
 	}
 	else if( nmea_protocol.get() == OPENVARIO ){
-		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, OPENVARIO_P); // Todo preliminary solution ..
+		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
-			static_cast<NmeaPrtcl*>(prtcl)->sendOpenVario(baroP, dynamicP, te_vario.get(), OAT.get(), gflags.validTemperature );
+			prtcl->sendOpenVario(baroP, dynamicP, te_vario.get(), OAT.get(), gflags.validTemperature );
 		}
 	}
 	if( nmea_protocol.get() == CAMBRIDGE ) {
-		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, CAMBRIDGE_P); // Todo preliminary solution ..
+		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
-			static_cast<NmeaPrtcl*>(prtcl)->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
+			prtcl->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
 		}
 	}
 	else if( nmea_protocol.get() == XCVARIO ) {
-		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P); // Todo preliminary solution ..
+		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
-			static_cast<NmeaPrtcl*>(prtcl)->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
+			prtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 		}
 	}

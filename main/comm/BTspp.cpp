@@ -1,5 +1,5 @@
 #include "BTspp.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
 #include "comm/DataLink.h"
 #include "comm/InterfaceCtrl.h"

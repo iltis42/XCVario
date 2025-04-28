@@ -19,7 +19,7 @@ Last update: 2021-02-25
 
 #pragma once
 
-#include "SetupMenuDisplay.h"
+#include "setup/SetupMenuDisplay.h"
 
 class DisplayDeviations: public SetupMenuDisplay
 {

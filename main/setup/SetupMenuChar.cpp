@@ -5,8 +5,8 @@
  *      Author: iltis
  */
 
-#include "SetupMenuChar.h"
-#include "SetupMenu.h"
+#include "setup/SetupMenuChar.h"
+#include "setup/SetupMenu.h"
 
 #include "sensor.h"
 #include "Units.h"

@@ -12,7 +12,7 @@
 #include "protocol/Clock.h"
 #include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
-#include "SetupCommon.h"
+#include "setup/SetupCommon.h"
 
 #include "logdefnone.h"
 

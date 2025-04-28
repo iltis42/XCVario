@@ -19,7 +19,7 @@ Last update: 2021-03-08
 
 #pragma once
 
-#include "SetupMenuDisplay.h"
+#include "setup/SetupMenuDisplay.h"
 
 class ShowCompassSettings: public SetupMenuDisplay
 {

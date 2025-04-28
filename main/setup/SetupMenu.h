@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include "MenuEntry.h"
+#include "setup/MenuEntry.h"
 
 constexpr const char* FORMATSTRING_AND_SPACE = "%s                ";
 

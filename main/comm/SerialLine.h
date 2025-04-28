@@ -3,7 +3,7 @@
 #include "comm/DataLink.h"
 #include "comm/InterfaceCtrl.h"
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
 #include <driver/uart.h>
 #include <driver/gpio.h>

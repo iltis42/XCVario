@@ -9,7 +9,7 @@
 #include "XCVarioMsg.h"
 #include "protocol/nmea_util.h"
 #include "comm/Messages.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
 

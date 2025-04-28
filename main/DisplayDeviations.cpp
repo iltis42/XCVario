@@ -18,7 +18,7 @@ Last update: 2021-02-25
  ****************************************************************************/
 
 #include "DisplayDeviations.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "sensor.h"
 #include "AdaptUGC.h"
 

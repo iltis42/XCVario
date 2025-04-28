@@ -25,7 +25,7 @@
 #include "protocol/ProtocolItf.h"
 #include "Compass.h"
 #include "Flarm.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "Units.h"
 #include "sensor.h"
 #include "math.h"

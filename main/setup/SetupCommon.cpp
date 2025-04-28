@@ -5,9 +5,9 @@
  *      Author: iltis
  */
 
-#include "SetupCommon.h"
+#include "setup/SetupCommon.h"
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "sdkconfig.h"
 #include "ESP32NVS.h"
 #include "sensor.h"

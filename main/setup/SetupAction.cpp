@@ -7,7 +7,7 @@
  ***********************************************************/
 
 #include "SetupAction.h"
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 #include "sensor.h"
 
 #include "logdef.h"

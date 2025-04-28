@@ -5,9 +5,9 @@
  *      Author: iltis
  */
 
-#include "SetupMenuValFloat.h"
+#include "setup/SetupMenuValFloat.h"
 
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 #include "IpsDisplay.h"
 #include "BMPVario.h"
 #include "glider/Polars.h"

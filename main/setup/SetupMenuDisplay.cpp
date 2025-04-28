@@ -17,8 +17,8 @@ Last update: 2021-02-25
 
  ****************************************************************************/
 #include "IpsDisplay.h"
-#include "SetupMenuDisplay.h"
-#include "SetupMenu.h"
+#include "setup/SetupMenuDisplay.h"
+#include "setup/SetupMenu.h"
 #include "sensor.h"
 #include "logdef.h"
 

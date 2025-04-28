@@ -1,7 +1,7 @@
 
 #include "ESPRotary.h"
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "sensor.h"
 #include "protocol/Clock.h"
 #include "logdefnone.h"

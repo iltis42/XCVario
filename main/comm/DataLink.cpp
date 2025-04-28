@@ -28,7 +28,7 @@
 #include "DeviceMgr.h"
 #include "DataMonitor.h"
 #include "protocol/AliveMonitor.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "logdef.h"
 
 #include <array>

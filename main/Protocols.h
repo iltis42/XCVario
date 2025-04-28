@@ -8,7 +8,7 @@
 #define PROTOCOLS_H_
 
 #include "S2F.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
 #include <string>
 

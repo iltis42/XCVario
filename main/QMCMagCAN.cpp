@@ -14,8 +14,8 @@
 #include "QMCMagCAN.h"
 
 #include "sensor.h"
-#include "SetupNG.h"
-#include "MenuEntry.h"
+#include "setup/SetupNG.h"
+#include "setup/MenuEntry.h"
 #include "vector.h"
 #include "comm/CanBus.h"
 #include "logdef.h"

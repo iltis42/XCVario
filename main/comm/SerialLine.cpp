@@ -1,6 +1,6 @@
 #include "SerialLine.h"
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "logdefnone.h"
 
 #include <soc/uart_reg.h>

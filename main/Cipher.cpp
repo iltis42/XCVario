@@ -1,5 +1,5 @@
 #include "Cipher.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "logdef.h"
 #include "sensor.h"
 #include <esp_mac.h>

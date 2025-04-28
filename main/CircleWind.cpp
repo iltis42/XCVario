@@ -16,7 +16,7 @@
 
 #include "CircleWind.h"
 #include "sensor.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "logdefnone.h"
 
 #include <cmath>

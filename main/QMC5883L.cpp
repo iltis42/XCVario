@@ -26,8 +26,8 @@ Last update: 2021-04-05
 
 #include "QMC5883L.h"
 #include "KalmanMPU6050.h"
-#include "SetupNG.h"
-#include "MenuEntry.h"
+#include "setup/SetupNG.h"
+#include "setup/MenuEntry.h"
 #include "vector.h"
 #include "sensor.h"
 #include "logdef.h"

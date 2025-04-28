@@ -19,7 +19,7 @@ Last update: 2021-12-30
 
 #include "CompassMenu.h"
  
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 #include "sensor.h"  // we need spiMutex
 #include "vector.h"
 #include "Colors.h"

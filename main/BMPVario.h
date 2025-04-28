@@ -4,7 +4,7 @@
 #include "ESP32NVS.h"
 #include "PressureSensor.h"
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "S2F.h"
 #include <stdio.h>
 /*

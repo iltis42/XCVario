@@ -5,9 +5,9 @@
  *      Author: iltis
  */
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
-#include "SetupMenuValCommon.h"
+#include "setup/SetupMenuValCommon.h"
 #include "quaternion.h"
 #include "ESP32NVS.h"
 #include "ESPAudio.h"

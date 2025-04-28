@@ -19,7 +19,7 @@ Last update: 2021-04-18
 
 #include "StraightWind.h"
 #include "ShowStraightWind.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "Units.h"
 #include "sensor.h"
 #include "Compass.h"

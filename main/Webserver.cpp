@@ -1,9 +1,9 @@
 
-// #include "SetupCommon.h"
+// #include "setup/SetupCommon.h"
 #include "Webserver.h"
 #include "logdef.h"
 #include "coredump_to_server.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/NMEA.h"
 

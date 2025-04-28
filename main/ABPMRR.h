@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <logdef.h>
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include <math.h>
 #include "I2Cbus.hpp"
 #include "AirspeedSensor.h"

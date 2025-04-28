@@ -528,6 +528,7 @@ extern SetupNG<DeviceNVS>	auto_connect;
 extern SetupNG<DeviceNVS>	flarm_devsetup;
 extern SetupNG<DeviceNVS>	master_devsetup;
 extern SetupNG<DeviceNVS>	second_devsetup;
+extern SetupNG<DeviceNVS>	magleg_devsetup;
 extern SetupNG<DeviceNVS>	magsens_devsetup;
 extern SetupNG<DeviceNVS>	navi_devsetup;
 extern SetupNG<DeviceNVS>	flarm_host_setup;

@@ -1,10 +1,10 @@
 #include "DataMonitor.h"
 
 #include "comm/DeviceMgr.h"
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 #include "setup/SetupAction.h"
 #include "sensor.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "Flarm.h"
 #include "logdefnone.h"
 

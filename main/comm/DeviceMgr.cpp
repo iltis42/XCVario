@@ -18,7 +18,7 @@
 #include "protocol/ProtocolItf.h"
 #include "protocol/NMEA.h"
 #include "DataMonitor.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
 #include "sensor.h"
 #include "logdef.h"

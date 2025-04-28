@@ -12,7 +12,7 @@
 #include "protocol/Clock.h"
 #include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
 #include "logdefnone.h"
 

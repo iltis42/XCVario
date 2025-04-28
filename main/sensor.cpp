@@ -14,9 +14,9 @@
 #include "comm/BTspp.h"
 #include "BLESender.h"
 #include "Protocols.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "ESPAudio.h"
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 #include "ESPRotary.h"
 #include "AnalogInput.h"
 #include "Atmosphere.h"
@@ -26,7 +26,7 @@
 #include "glider/Polars.h"
 #include "Flarm.h"
 #include "Blackboard.h"
-#include "SetupMenuValFloat.h"
+#include "setup/SetupMenuValFloat.h"
 #include "protocol/Clock.h"
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
@@ -39,7 +39,7 @@
 #include <driver/spi_master.h>
 #include <AdaptUGC.h>
 #include <OTA.h>
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "Switch.h"
 #include "AverageVario.h"
 

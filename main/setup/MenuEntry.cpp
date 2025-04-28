@@ -4,9 +4,9 @@
  *  Created on: Feb 4, 2018
  *      Author: iltis
  */
-#include "MenuEntry.h"
+#include "setup/MenuEntry.h"
 
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"

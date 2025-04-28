@@ -3,7 +3,7 @@
 
 #include "ESP32NVS.h"
 #include "mcp3221.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include <math.h>
 #include "AirspeedSensor.h"
 

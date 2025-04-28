@@ -8,7 +8,7 @@
 #include "protocol/MagSensBin.h"
 
 #include "sensor.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "Version.h"
 #include "logdef.h"
 

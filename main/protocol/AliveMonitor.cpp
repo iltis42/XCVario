@@ -8,7 +8,7 @@
 
  #include "AliveMonitor.h"
 
- #include "SetupNG.h"
+ #include "setup/SetupNG.h"
 
  #include "logdefnone.h"
  

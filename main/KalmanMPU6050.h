@@ -20,7 +20,7 @@
 #define _KalmanMPU6050_H_
 
 #include "vector_3d.h"
-#include "SetupMenuSelect.h"
+#include "setup/SetupMenuSelect.h"
 #include "quaternion.h"
 
 class Quaternion;

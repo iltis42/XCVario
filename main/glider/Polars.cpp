@@ -8,7 +8,7 @@
  */
 
 #include "Polars.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "logdef.h"
 
 #include <cinttypes>

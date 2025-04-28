@@ -6,10 +6,10 @@
  ***       Copyright (C) Rohs Engineering Design         ***
  ***********************************************************/
 
-#include "SetupMenu.h"
-#include "SetupMenuSelect.h"
-#include "SetupMenuChar.h"
-#include "SetupMenuValFloat.h"
+#include "setup/SetupMenu.h"
+#include "setup/SetupMenuSelect.h"
+#include "setup/SetupMenuChar.h"
+#include "setup/SetupMenuValFloat.h"
 #include "SetupAction.h"
 #include "comm/DeviceMgr.h"
 #include "comm/SerialLine.h"

@@ -12,7 +12,7 @@
 #include "Switch.h"
 #include "I2Cbus.hpp"
 #include "sensor.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "protocol/Clock.h"
 #include "logdefnone.h"
 

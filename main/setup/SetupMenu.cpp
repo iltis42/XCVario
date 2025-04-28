@@ -5,7 +5,7 @@
  *      Author: iltis
  */
 
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 #include "setup/SubMenuDevices.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
@@ -17,9 +17,9 @@
 #include "Units.h"
 #include "Switch.h"
 #include "Flap.h"
-#include "SetupMenuSelect.h"
-#include "SetupMenuValFloat.h"
-#include "SetupMenuChar.h"
+#include "setup/SetupMenuSelect.h"
+#include "setup/SetupMenuValFloat.h"
+#include "setup/SetupMenuChar.h"
 #include "setup/SetupAction.h"
 #include "DisplayDeviations.h"
 #include "ShowCompassSettings.h"
@@ -34,7 +34,7 @@
 #include "Blackboard.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
 #include "comm/DeviceMgr.h"
 #include "protocol/NMEA.h"

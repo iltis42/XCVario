@@ -8,7 +8,7 @@
 #pragma once
 
 #include "ESPRotary.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include <string>
 
 class PressureSensor;

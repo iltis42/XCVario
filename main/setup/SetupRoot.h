@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 
 class IpsDisplay;
 

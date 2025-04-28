@@ -15,7 +15,7 @@
 #include "driver/gpio.h"
 #include "Switch.h"
 #include <logdef.h>
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "sensor.h"
 #include "Flap.h"
 #include "KalmanMPU6050.h"

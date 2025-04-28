@@ -6,10 +6,10 @@
  */
 #pragma once
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "AdaptUGC.h"
 #include "ESPRotary.h"
-#include "MenuEntry.h"
+#include "setup/MenuEntry.h"
 #include "comm/InterfaceCtrl.h"
 
 class SetupAction;

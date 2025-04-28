@@ -20,7 +20,7 @@ Copyright_License {
 }
 */
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "Units.h"
 
 class Vario : public SetupNG<float>

@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "sensor.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "math.h"
 #include "S2F.h"
 #include <logdef.h>
@@ -24,7 +24,7 @@
 #include "Flap.h"
 #include "Switch.h"
 #include "Blackboard.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "CircleWind.h"
 
 S2F *   Protocols::_s2f = 0;

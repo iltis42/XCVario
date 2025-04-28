@@ -9,7 +9,7 @@
 #include "InterfaceCtrl.h"
 
 #include "DataLink.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
 // 1..n relation from interface to data link layer
 // Ability to set interface details through a common cotrol interface

@@ -141,9 +141,13 @@ public:
 						if (sizeRead > 0) {
 							ESP_LOGI(FNAME, "FD socket recv: client %d, port %d, read:%d bytes", client_rec.client, config->port, sizeRead );
 							WifiAP *wifi = static_cast<WifiAP *>(config->mywifi);
+							xSemaphoreTake(wifi->_dlink_mutex, portMAX_DELAY);
 							auto dl = wifi->_dlink.find(config->port);
 							if (dl != wifi->_dlink.end()) {
+								xSemaphoreGive(wifi->_dlink_mutex);
 								dl->second->process(r, sizeRead);
+							} else {
+								xSemaphoreGive(wifi->_dlink_mutex);
 							}
 						}else if (sizeRead == 0) {
 							// Client closed the connection

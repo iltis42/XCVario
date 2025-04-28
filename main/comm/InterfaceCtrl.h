@@ -8,6 +8,9 @@
 
 #pragma once
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+
 #include <cstdint>
 #include <map>
 
@@ -64,7 +67,7 @@ union ItfTarget {
 class InterfaceCtrl
 {
 public:
-    InterfaceCtrl(bool oto=false) : _one_to_one(oto) {}
+    InterfaceCtrl(bool oto=false);
     virtual ~InterfaceCtrl();
 
     virtual InterfaceId getId() const { return NO_PHY; }
@@ -85,6 +88,7 @@ public:
 
 protected:
     std::map<int, DataLink*> _dlink;
+    mutable SemaphoreHandle_t _dlink_mutex;
     bool _functional = false; // to be flipped from self tests
 private:
     bool _one_to_one;

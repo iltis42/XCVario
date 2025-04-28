@@ -351,7 +351,7 @@ void TransmitTask(void *arg)
 DeviceManager::DeviceManager()
 {
     ItfSendQueue = xQueueCreate( MSG_POOL_SIZE+1, sizeof(Message*) );
-    _mutex = xSemaphoreCreateMutex();
+    _devmap_mutex = xSemaphoreCreateMutex();
 
 }
 
@@ -373,7 +373,6 @@ DeviceManager* DeviceManager::Instance()
 // It returns the pointer to the device
 Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_port, int send_port, InterfaceId iid, bool ato)
 {
-    xSemaphoreTake(_mutex, portMAX_DELAY);
     // On first device a send task needs to be created
     if ( ! SendTask ) {
         xTaskCreate(TransmitTask, "genTx", 3000, ItfSendQueue, 21, &SendTask);
@@ -448,15 +447,16 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
     }
     // Retrieve, or create a new data link
     DataLink *dl = itf->newDataLink(listen_port);
-    dl->addProtocol(proto, did, send_port); // Add proto, if not yet there
 
+    dl->addProtocol(proto, did, send_port); // Add proto, if not yet there
+    xSemaphoreTake(_devmap_mutex, portMAX_DELAY);
     dev->_dlink.insert(dl);
     if ( is_new ) {
         // Add only if new
         _device_map[did] = dev; // and add, in case this dev is new
         dev->_itf = itf;
     }
-    xSemaphoreGive(_mutex);
+    xSemaphoreGive(_devmap_mutex);
     refreshRouteCache();
 
     ESP_LOGI(FNAME, "After add device %d.", did);
@@ -517,7 +517,7 @@ int DeviceManager::getSendPort(DeviceId did, ProtocolType proto)
 // Remove device from map, delete device and all resources
 void DeviceManager::removeDevice(DeviceId did)
 {
-    xSemaphoreTake(_mutex, portMAX_DELAY);
+    xSemaphoreTake(_devmap_mutex, portMAX_DELAY);
     DevMap::iterator it = _device_map.find(did);
     Device* dev = nullptr;
     if ( it != _device_map.end() ) {
@@ -551,7 +551,7 @@ void DeviceManager::removeDevice(DeviceId did)
             }
         }
     }
-    xSemaphoreGive(_mutex);
+    xSemaphoreGive(_devmap_mutex);
     refreshRouteCache();
 
     ESP_LOGI(FNAME, "After remove device %d.", did);
@@ -561,9 +561,9 @@ void DeviceManager::removeDevice(DeviceId did)
 // routing lookup table
 InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
 {
-    xSemaphoreTake(_mutex, portMAX_DELAY);
+    xSemaphoreTake(_devmap_mutex, portMAX_DELAY);
     DevMap::iterator it = _device_map.find(did);
-    xSemaphoreGive(_mutex);
+    xSemaphoreGive(_devmap_mutex);
     if ( it != _device_map.end() ) {
         return it->second->_itf;
     }

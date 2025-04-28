@@ -117,6 +117,6 @@ private:
     // Restriction: It can only contain one element of one device type
     // Hash table for routing purpose
     DevMap _device_map;
-    mutable SemaphoreHandle_t _mutex;
+    mutable SemaphoreHandle_t _devmap_mutex;
 };
 

@@ -31,6 +31,12 @@
 
 #include <array>
 
+DataLink::DataLink(int listen_port, int itfid) :
+    _itf_id(ItfTarget((InterfaceId)itfid,listen_port))
+{
+    _route_mutex = xSemaphoreCreateMutex();
+}
+
 DataLink::~DataLink()
 {
     for (ProtocolItf* it : std::array<ProtocolItf*, 2>{_nmea, _binary}) {
@@ -305,10 +311,13 @@ void DataLink::switchProtocol()
     }
 }
 
+// called from different contexts
 void DataLink::updateRoutes()
 {
     ESP_LOGD(FNAME, "get routing for %d/%d", _did, _itf_id.port);
+    xSemaphoreTake(_route_mutex, portMAX_DELAY);
     _routes = DEVMAN->getRouting(RoutingTarget(_did, ItfTarget(_itf_id.iid, _itf_id.port)));
+    xSemaphoreGive(_route_mutex);
 }
 
 PortList DataLink::getAllSendPorts() const
@@ -336,17 +345,20 @@ void DataLink::dumpProto()
     }
 }
 
+// called only from one and always same itf receiver context
 void DataLink::doForward(DeviceId src_dev)
 {
     // consider forwarding
     // std::string log("route ");
     // log += std::to_string(src_dev) + "/" + std::to_string(_itf_id.port) + " to ";
+    xSemaphoreTake(_route_mutex, portMAX_DELAY);
     for ( auto &target : _routes ) {
         Message* msg = DEV::acqMessage(target.did, target.getItfTarget().port);
         // log += std::to_string(target.did) + "/" + std::to_string(target.getItfTarget().port) + ", ";
         msg->buffer = _sm._frame;
         DEV::Send(msg);
     }
+    xSemaphoreGive(_route_mutex);
     // if ( _routes.size() > 0 ) {
     //     ESP_LOGI(FNAME, "%s", log.c_str());
     // }

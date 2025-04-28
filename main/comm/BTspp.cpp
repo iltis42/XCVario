@@ -71,9 +71,13 @@ static void spp_event_handler(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 		{
 			rxBuf[count] = '\0';
 
+			xSemaphoreTake(BTspp->_dlink_mutex, portMAX_DELAY);
 			auto dlit = BTspp->_dlink.begin();
 			if ( dlit != BTspp->_dlink.end() ) {
+				xSemaphoreGive(BTspp->_dlink_mutex);
 				dlit->second->process(rxBuf, count);
+			} else {
+				xSemaphoreGive(BTspp->_dlink_mutex);
 			}
 		}
 		// esp_spp_write(param->data_ind.handle, param->data_ind.len, param->data_ind.data);

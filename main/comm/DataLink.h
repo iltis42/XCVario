@@ -12,17 +12,20 @@
 #include "protocol/ProtocolItf.h"
 #include "InterfaceCtrl.h"
 
-#include <vector>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+
 #include <set>
 
 using PortList = std::set<int>;
 class NmeaPrtcl;
+class ProtocolItf;
 
 // Data link layer to multiplex data stream to proper protocol parser.
 class DataLink
 {
 public:
-    DataLink(int listen_port, int itfid) : _itf_id(ItfTarget((InterfaceId)itfid,listen_port)) {}
+    DataLink(int listen_port, int itfid);
     ~DataLink();
     ProtocolItf* addProtocol(ProtocolType ptyp, DeviceId did, int sendport=0);
     ProtocolItf* getProtocol(ProtocolType ptyp=NO_ONE) const;
@@ -61,4 +64,6 @@ private:
     DeviceId    _did = NO_DEVICE;
     // Routing
     RoutingList _routes;
+    mutable SemaphoreHandle_t _route_mutex;
+
 };

@@ -67,9 +67,13 @@ void uartTask(SerialLine* s)
 				if ( count > 0 ) {
 					rx_buf[count] = '\0';
 					// ESP_LOGI(FNAME, "Data received from UART%d: %dc", un, count);
+					xSemaphoreTake(s->_dlink_mutex, portMAX_DELAY);
 					auto dlit = s->_dlink.begin();
 					if ( dlit != s->_dlink.end() ) {
+						xSemaphoreGive(s->_dlink_mutex);
 						dlit->second->process(rx_buf, count); // SX interfaces do have only one data link
+					} else {
+						xSemaphoreGive(s->_dlink_mutex);
 					}
 				}
 				break;

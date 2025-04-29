@@ -590,7 +590,7 @@ static int modulo(int a, int b) {
 
 void SetupMenu::rot(int count)
 {
-	ESP_LOGI(FNAME,"select %d: %d/%d", count, highlight, _childs.size() );
+	// ESP_LOGI(FNAME,"select %d: %d/%d", count, highlight, _childs.size() );
 	unHighlight(highlight);
 	highlight = modulo(highlight+1+count, _childs.size()+1) - 1;
 	doHighlight(highlight);

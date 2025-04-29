@@ -212,23 +212,23 @@ void drawDisplay(void *arg)
 		}
 		if (xQueueReceive(buton_event_queue, &event, pdMS_TO_TICKS(20)) == pdTRUE) {
 			if (event == SHORT_PRESS) {
-				ESP_LOGI(FNAME,"Button short press detected");
+				// ESP_LOGI(FNAME,"Button short press detected");
 				knob.sendPress();
 			} else if (event == LONG_PRESS) {
-				ESP_LOGI(FNAME,"Button long press detected");
+				// ESP_LOGI(FNAME,"Button long press detected");
 				knob.sendLongPress();
 			} else if (event == BUTTON_RELEASED) {
-				ESP_LOGI(FNAME, "Button released");
+				// ESP_LOGI(FNAME, "Button released");
 				knob.sendRelease();
 			} else if (event == ESCAPE) {
-				ESP_LOGI(FNAME, "Escape event");
+				// ESP_LOGI(FNAME, "Escape event");
 				knob.sendEscape();
 			} else if (event & ROTARY_EVTMASK) {
 				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
-				ESP_LOGI(FNAME, "Rotation step %d", step);
+				// ESP_LOGI(FNAME, "Rotation step %d", step);
 				knob.sendRot(step);
 			} else {
-				ESP_LOGI(FNAME, "Unknown button event %x", event);
+				// ESP_LOGI(FNAME, "Unknown button event %x", event);
 			}
 		}
 		

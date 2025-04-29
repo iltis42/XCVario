@@ -41,9 +41,11 @@ static TaskHandle_t SendTask = nullptr;
 // A routing table that contains the static connected devices relation.
 //
 // entries with zero termination, entirely as ro flash data
-static constexpr RoutingTarget flarm_routes[] = { 
-    {NAVI_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
+static constexpr RoutingTarget flarm_routes_synch[] = { 
+    {NAVI_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {NAVI_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
     {XCVARIO_DEV, CAN_BUS, 0}, {} };
+static constexpr RoutingTarget flarm_routes[] = { 
+    {NAVI_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {NAVI_DEV, BT_SPP, 0}, {} };
 static constexpr RoutingTarget krt2_routes[] = { 
     {NAVI_DEV, S2_RS232, 0}, {RADIO_REMOTE_DEV, WIFI_AP, 8882}, {RADIO_REMOTE_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
     {XCVARIO_DEV, CAN_BUS, 0}, {} };
@@ -52,7 +54,8 @@ static constexpr RoutingTarget navi_routes[] = {
 static constexpr RoutingTarget proxy_routes[] = { 
     {NAVI_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
 static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
-    { RoutingTarget(FLARM_DEV, NO_PHY, 0), flarm_routes },
+    { RoutingTarget(FLARM_DEV, S1_RS232, 0), flarm_routes_synch },
+    { RoutingTarget(FLARM_DEV, CAN_BUS, 0), flarm_routes },
     { RoutingTarget(RADIO_KRT2_DEV, NO_PHY, 0), krt2_routes },
     { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes },
     { RoutingTarget(XCVARIO_DEV, NO_PHY, 0), proxy_routes },

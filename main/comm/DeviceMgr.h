@@ -49,7 +49,7 @@ struct Device
     DeviceNVS getNvsData() const;
     // Attributes
     const DeviceId      _id;
-    std::set<DataLink*> _dlink;
+    std::set<DataLink*> _dlset;
     InterfaceCtrl      *_itf;
     bool                _auto = false; // automatically set-up
 };

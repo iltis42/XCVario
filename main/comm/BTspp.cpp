@@ -178,7 +178,20 @@ bool BTSender::start()
 void BTSender::stop()
 {
 	if ( _initialized ) {
+		if ( _client_handle ) {
+			ESP_LOGI(FNAME, "Disconnecting SPP client");
+			esp_spp_disconnect(_client_handle);
+
+			// Wait for the disconnection event
+			while (_client_handle != 0) {
+				vTaskDelay(100 / portTICK_PERIOD_MS);
+			}
+			ESP_LOGI(FNAME, "SPP client disconnected");
+		}
 		esp_spp_deinit();
+		esp_bluedroid_disable();
+		esp_bluedroid_deinit();
+		esp_bt_controller_disable();
 		esp_bt_controller_deinit();
 		_initialized = false;
 		_server_running = false;

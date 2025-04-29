@@ -472,7 +472,7 @@ static void system_menu_device(SetupMenu *top)
 
     // all data links
     std::string tmp;
-    for (DataLink* dl : dev->_dlink) {
+    for (DataLink* dl : dev->_dlset) {
         int lport = dl->getPort();
         tmp = "Listen(/Send) port: " + std::to_string(lport);
         if ( dev->_itf->isOneToOne() ) {

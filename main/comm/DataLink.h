@@ -42,6 +42,9 @@ public:
     InterfaceId getItfId() const { return _itf_id.iid; }
     ItfTarget getTarget() const { return _itf_id; }
     PortList getAllSendPorts() const;
+    // house keeping
+    void incrDeviceCount() { _dev_count++; }
+    int decrDeviceCount() { return --_dev_count; }
     // dbg
     void dumpProto();
     bool isBinActive() const { return _active->isBinary(); }
@@ -60,10 +63,12 @@ private:
     // Listen on
     const ItfTarget _itf_id;
     bool _monitoring = false;
-    // All protocols attached to this data linnk should have the same device id, here just for opt. checks
+    // All protocols attached to this data link should have the same device id, here just for opt. checks
     DeviceId    _did = NO_DEVICE;
     // Routing
     RoutingList _routes;
     mutable SemaphoreHandle_t _route_mutex;
+    // number of devices refering to this data link
+    int _dev_count = 0; // only the last removed devices can delete the data link
 
 };

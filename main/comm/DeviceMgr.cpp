@@ -104,9 +104,8 @@ constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
                                     0, IS_REAL|MULTI_CONF, &navi_devsetup}},
     {DeviceId::NAVI_DEV,   {"", {{BT_SPP}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
                                     0, IS_REAL|MULTI_CONF, &navi_devsetup}},
-    {DeviceId::FLARM_HOST_DEV, {"Flarm host", {{WIFI_AP, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, 0, &flarm_host_setup}},
+    {DeviceId::FLARM_HOST_DEV, {"Flarm host", {{WIFI_AP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, 0, &flarm_host_setup}},
     // {DeviceId::FLARM_HOST_DEV, {"FH CAN", {{CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
-    {DeviceId::FLARM_HOST_DEV, {"FH BTspp", {{BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
     {DeviceId::RADIO_REMOTE_DEV, {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, 0, &radio_host_setup}},
     {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL, &krt_devsetup}},
     {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL, &atr_devsetup}}
@@ -441,7 +440,7 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
     
     bool is_new = false;
     Device *dev = getDevice(did);
-    if (dev && itf == &dummy_itf) {
+    if (dev && itf == &dummy_itf) { // that means NO_PHY -> "take the same" was requeset
         // Device already exists
         itf = dev->_itf;
     }
@@ -460,7 +459,8 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
 
     dl->addProtocol(proto, did, send_port); // Add proto, if not yet there
     xSemaphoreTake(_devmap_mutex, portMAX_DELAY);
-    dev->_dlink.insert(dl);
+    dev->_dlset.insert(dl);
+    dl->incrDeviceCount();
     if ( is_new ) {
         // Add only if new
         _device_map[did] = dev; // and add, in case this dev is new
@@ -506,7 +506,7 @@ NmeaPrtcl *DeviceManager::getNMEA(DeviceId did)
 {
     Device *d = getDevice(did);
     if ( d ) {
-        DataLink *dl = *d->_dlink.begin();
+        DataLink *dl = *d->_dlset.begin();
         if ( dl ) {
             return dl->getNmea();
         }
@@ -529,7 +529,7 @@ void DeviceManager::removeDevice(DeviceId did)
 {
     xSemaphoreTake(_devmap_mutex, portMAX_DELAY);
     DevMap::iterator it = _device_map.find(did);
-    Device* dev = nullptr;
+    Device* dev;
     if ( it != _device_map.end() ) {
         dev = it->second;
         ESP_LOGI(FNAME, "Delete device %d", did);
@@ -573,12 +573,12 @@ InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
 {
     xSemaphoreTake(_devmap_mutex, portMAX_DELAY);
     DevMap::iterator it = _device_map.find(did);
-    xSemaphoreGive(_devmap_mutex);
+    InterfaceCtrl* tmp = nullptr;
     if ( it != _device_map.end() ) {
-        return it->second->_itf;
+        tmp = it->second->_itf;
     }
-    ESP_LOGW(FNAME, "No device %d found", did);
-    return nullptr;
+    xSemaphoreGive(_devmap_mutex);
+    return tmp;
 }
 
 bool DeviceManager::isIntf(ItfTarget iid) const
@@ -663,7 +663,7 @@ void DeviceManager::refreshRouteCache()
 {
     for ( auto dev : _device_map ) {
         // all devices
-        for ( auto dl : dev.second->_dlink ) {
+        for ( auto dl : dev.second->_dlset ) {
             // all data  links
             dl->updateRoutes();
         }
@@ -758,8 +758,8 @@ void DeviceManager::dumpMap() const
     ESP_LOGI(FNAME, "Device map dump:");
     for ( auto &it : _device_map ) {
         Device* d = it.second;
-        ESP_LOGI(FNAME, "%d: %p (did%d/%s(%d)/dl*%d)", it.first, d, d->_id, d->_itf->getStringId(), d->_itf->getId(), d->_dlink.size());
-        for ( auto &l : d->_dlink ) {
+        ESP_LOGI(FNAME, "%d: %p (did%d/%s(%d)/dl*%d)", it.first, d, d->_id, d->_itf->getStringId(), d->_itf->getId(), d->_dlset.size());
+        for ( auto &l : d->_dlset ) {
             l->dumpProto();
         }
     }
@@ -770,7 +770,7 @@ bool DeviceManager::startMonitoring(ItfTarget iid)
     bool ret = false;
     for ( auto dev : _device_map ) {
         // all devices
-        for (DataLink* dl : dev.second->_dlink) {
+        for (DataLink* dl : dev.second->_dlset) {
             ESP_LOGI(FNAME, "DM %x<>%x", (unsigned)dl->getTarget().raw, (unsigned)iid.raw );
             if ( dl->getTarget() == iid ) {
                 ESP_LOGI(FNAME, "DM activate");
@@ -792,7 +792,7 @@ void DeviceManager::stopMonitoring()
     monitor_target = ItfTarget();
     for ( auto dev : _device_map ) {
         // all devices
-        for (DataLink* dl : dev.second->_dlink) {
+        for (DataLink* dl : dev.second->_dlset) {
             dl->setMonitor(false);
         }
     }
@@ -816,17 +816,23 @@ Device::~Device()
 {
     ESP_LOGI(FNAME, "Dtor device %d.", _id);
     // Detach data links from interface
-    for (DataLink* dl : _dlink) {
-        _itf->DeleteDataLink(dl->getPort());
+    for (DataLink* dl : _dlset) {
+        if ( dl->decrDeviceCount() == 0 ) {
+            // last device on this link
+            ESP_LOGI(FNAME, "Last device on %s", _itf->getStringId());
+            _itf->DeleteDataLink(dl->getPort());
+        }
+        // In a perfect world the protocols related to this device should be removed
+        // even when data link is not deleted entirely.
     }
     // Clear the set
-    _dlink.clear();
+    _dlset.clear();
 }
 
 ProtocolItf *Device::getProtocol(ProtocolType p) const
 {
     // Find protocol
-    for (DataLink* dl : _dlink) {
+    for (DataLink* dl : _dlset) {
         ProtocolItf *tmp = dl->getProtocol(p);
         if ( tmp ) {
             return tmp;
@@ -838,7 +844,7 @@ ProtocolItf *Device::getProtocol(ProtocolType p) const
 DataLink *Device::getDLforProtocol(ProtocolType p) const
 {
     // Find protocol
-    for (DataLink* dl : _dlink) {
+    for (DataLink* dl : _dlset) {
         if ( dl->getProtocol(p) ) {
             return dl;
         }
@@ -849,7 +855,7 @@ DataLink *Device::getDLforProtocol(ProtocolType p) const
 PortList Device::getSendPortList() const
 {
     PortList pl;
-    for (DataLink* dl : _dlink) {
+    for (DataLink* dl : _dlset) {
         for ( int p : dl->getAllSendPorts()) {
             pl.insert(p);
         }
@@ -860,17 +866,17 @@ PortList Device::getSendPortList() const
 int Device::getListenPort() const
 {
     // !!! Assuming we have just one data link per devices fixme
-    DataLink* dl = *_dlink.begin();
+    DataLink* dl = *_dlset.begin();
     return dl->getPort();
 }
 
 // get all setup lines to write into nvs for this device
 DeviceNVS Device::getNvsData() const
 {
-    ESP_LOGI(FNAME, "NvsData #ld%d", _dlink.size());
+    ESP_LOGI(FNAME, "NvsData #ld%d", _dlset.size());
     DeviceNVS entry;
-    if ( !_dlink.empty() ) {
-        DataLink* dl = *_dlink.begin();
+    if ( !_dlset.empty() ) {
+        DataLink* dl = *_dlset.begin();
         entry.target = RoutingTarget(_id, dl->getTarget());
         ProtocolItf *bn = dl->getBinary(); // binary option
         if ( bn ) {

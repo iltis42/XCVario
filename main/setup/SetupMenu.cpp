@@ -485,7 +485,7 @@ void SetupMenu::enter()
 {
 	ESP_LOGI(FNAME,"enter inSet %d, mptr: %p", gflags.inSetup, populateMenu );
 	if ((_childs.empty() || dyn_content) && populateMenu) {
-		(populateMenu)(this);
+		dirty = true; // force to create child list
 		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
 	}
 	MenuEntry::enter();
@@ -493,6 +493,12 @@ void SetupMenu::enter()
 
 void SetupMenu::display(int mode)
 {
+	if ( dirty && populateMenu) {
+		ESP_LOGI(FNAME,"SetupMenu display() dirty %d", dirty );
+		dirty = false;
+		(populateMenu)(this);
+		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
+	}
 	xSemaphoreTake(display_mutex, portMAX_DELAY);
 	ESP_LOGI(FNAME,"SetupMenu display(%s-%d)", _title.c_str(), highlight );
 	if ( highlight >= (int)(_childs.size()) ) {

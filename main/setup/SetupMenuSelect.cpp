@@ -41,7 +41,7 @@ void SetupMenuSelect::enter()
 
 	_select_save = _select;
 	_select = (_select > _values.size()-1) ? _values.size()-1 : _select;
-	_show_inline = _values.size() > 9 || canInline();
+	_show_inline = _values.size() > 9 || (canInline() && ! bits._ext_handler);
 	MenuEntry::enter();
 }
 

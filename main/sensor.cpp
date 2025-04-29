@@ -35,10 +35,7 @@
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
-#include <driver/spi_master.h>
-#include <AdaptUGC.h>
-#include <OTA.h>
-#include "setup/SetupNG.h"
+#include "OTA.h"
 #include "Switch.h"
 #include "AverageVario.h"
 
@@ -55,37 +52,33 @@
 #include "SPL06-007.h"
 #include "StraightWind.h"
 #include "CircleWind.h"
-#include <coredump_to_server.h>
 #include "comm/SerialLine.h"
 #include "comm/CanBus.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/TestQuery.h"
+#include "AdaptUGC.h"
+#include "CenterAid.h"
+#include "OneWireESP32.h"
+#include "logdef.h"
 
-#include "sdkconfig.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+
+#include <coredump_to_server.h>
+#include <driver/spi_master.h>
 #include <esp_task_wdt.h>
 #include <esp_task.h>
-#include <esp_log.h>
-#include <miniz.h>
 #include <soc/sens_reg.h> // needed for adc pin reset
 #include <esp_sleep.h>
-#include <esp_wifi.h>
 #include <esp_system.h>
-#include <esp_timer.h>
 #include <esp_flash.h>
 #include <esp_chip_info.h>
-#include <nvs_flash.h>
 #include <driver/gpio.h>
 
 #include <string>
 #include <cstdio>
 #include <cstring>
-#include "AdaptUGC.h"
-#include "CenterAid.h"
-#include "OneWireESP32.h"
 
-// #include "sound.h"
 
 /*
 BMP:
@@ -224,9 +217,12 @@ void drawDisplay(void *arg)
 			} else if (event == LONG_PRESS) {
 				ESP_LOGI(FNAME,"Button long press detected");
 				knob.sendLongPress();
-			}else if (event == BUTTON_RELEASED) {
+			} else if (event == BUTTON_RELEASED) {
 				ESP_LOGI(FNAME, "Button released");
 				knob.sendRelease();
+			} else if (event == ESCAPE) {
+				ESP_LOGI(FNAME, "Escape event");
+				knob.sendEscape();
 			} else if (event & ROTARY_EVTMASK) {
 				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
 				ESP_LOGI(FNAME, "Rotation step %d", step);

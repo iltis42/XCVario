@@ -25,12 +25,11 @@
 #include "comm/Configuration.h"
 #include "comm/SerialLine.h"
 #include "protocol/NMEA.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-#include <esp_log.h>
 #include <esp32/rom/uart.h>
 #include <esp_system.h>
 #include <esp_http_server.h>

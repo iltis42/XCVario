@@ -5,10 +5,11 @@
  *      Author: iltis
  */
 
-#ifndef MAIN_SWITCH_H_
-#define MAIN_SWITCH_H_
+#pragma once
 
 #include "average.h"
+
+#include <driver/gpio.h>
 
 #define GYRO_FILTER_SAMPLES 20
 
@@ -43,4 +44,3 @@ private:
 	static bool initial;
 };
 
-#endif /* MAIN_SWITCH_H_ */

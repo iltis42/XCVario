@@ -9,7 +9,6 @@
 #include <freertos/semphr.h>
 #include <algorithm>
 #include <driver/uart.h>
-#include "Protocols.h"
 #include <logdef.h>
 #include "Switch.h"
 #include "sensor.h"

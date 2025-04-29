@@ -2,7 +2,6 @@
 
 #include "MPU.hpp"        // main file, provides the class itself
 #include "AnalogInput.h"
-#include "Protocols.h"
 #include "MP5004DP.h"
 #include "MS4525DO.h"
 #include "IpsDisplay.h"

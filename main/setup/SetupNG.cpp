@@ -405,6 +405,7 @@ SetupNG<DeviceNVS>		auto_connect("AUTOCON", DeviceNVS() );
 SetupNG<DeviceNVS>		flarm_devsetup("FLARM", {{FLARM_DEV, S1_RS232, 0}, {{FLARMBIN_P, FLARM_P}, 0}, 0, 0});
 SetupNG<DeviceNVS>		master_devsetup("MASTER", DeviceNVS() );
 SetupNG<DeviceNVS>		second_devsetup("SECOND", DeviceNVS() );
+SetupNG<DeviceNVS>		magleg_devsetup("MAGLEG", DeviceNVS() );
 SetupNG<DeviceNVS>		magsens_devsetup("MAGSENS", DeviceNVS() );
 SetupNG<DeviceNVS>		navi_devsetup("NAVI", DeviceNVS() );
 SetupNG<DeviceNVS>		flarm_host_setup("NAVIFLARM", DeviceNVS() );

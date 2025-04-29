@@ -95,7 +95,8 @@ constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
     {DeviceId::XCVARIO_DEV, {"Master S2", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|SECOND_ONLY, &master_devsetup}},
     {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL|MASTER_ONLY, &second_devsetup}},
     {DeviceId::XCVARIOCLIENT_DEV, {"Second S2", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|MASTER_ONLY, &second_devsetup}},
-    {DeviceId::MAGSENS_DEV, {"Magnetic Sensor", {{I2C}}, {{MAGSENSBIN_P}, 1}, 31, IS_REAL, nullptr}}, // fixme
+    {DeviceId::MAGLEG_DEV, {"Magnetic Sensor", {{I2C}}, {{MAGSENSBIN_P}, 1}, 0, IS_REAL, &magleg_devsetup}},
+    {DeviceId::MAGLEG_DEV, {"MagSens legacy", {{CAN_BUS}}, {{MAGSENS_P}, 1}, 31, IS_REAL, nullptr}}, // auto start
     {DeviceId::MAGSENS_DEV, {"CAN MagSens", {{CAN_BUS}}, {{MAGSENS_P}, 1}, 0, IS_REAL, nullptr}}, // auto start
     {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
                                     {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 

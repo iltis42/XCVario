@@ -20,9 +20,10 @@ typedef enum
     JUMBO_DEV,
     KRT2_HOST_DEV,
     MAGSENS_DEV,
+    MAGLEG_DEV,
     MASTER_DEV,  // CAN id registry
-    NAVI_DEV,
-    RADIO_ATR833_DEV, // <- 10
+    NAVI_DEV, // <- 10
+    RADIO_ATR833_DEV,
     RADIO_KRT2_DEV,
     RADIO_REMOTE_DEV,
     XCVARIO_DEV,
@@ -56,8 +57,10 @@ typedef enum
     XCVARIO_P,
     XCVQUERY_P,
     XCVSYNC_P,
+    XCNAV_P,
     TEST_P
 } ProtocolType;
+// old ones .. P_EYE_PEYA, P_EYE_PEYI, P_AHRS_RPYL, P_AHRS_APENV1, P_GENERIC,
 
 
 constexpr int CAN_REG_PORT = 0x7f0;

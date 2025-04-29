@@ -20,7 +20,7 @@ class DataMonitor: public MenuEntry
 {
 public:
 	DataMonitor();
-	void monitorString(e_dir_t dir, const char *s, int len );
+	void monitorString(e_dir_t dir, bool binary, const char *s, int len );
 	void start(SetupAction *p, ItfTarget ch);
 	void display(int) override {}
 	const char* value() const override { return ""; }

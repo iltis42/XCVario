@@ -82,6 +82,8 @@ public:
     DataLink* MoveDataLink(int port);
     void DeleteDataLink(int port);
     void DeleteAllDataLinks();
+    void startMonitoring(ItfTarget tgt);
+    void stopMonitoring();
     int getNrDLinks() const { return _dlink.size(); }
     int isOneToOne() const { return _one_to_one; }
     bool getTestOk() const { return _functional; }

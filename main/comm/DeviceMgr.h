@@ -100,7 +100,7 @@ public:
     static void undoReserveCANId(int prio);
     // debugging
     void dumpMap() const;
-    bool startMonitoring(ItfTarget iid); // Data Monitor
+    void startMonitoring(ItfTarget iid); // Data Monitor
     void stopMonitoring();
 
     // Setup access

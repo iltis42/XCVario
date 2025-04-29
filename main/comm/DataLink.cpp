@@ -250,7 +250,7 @@ void DataLink::process(const char *packet, int len)
 {
     // Feed the data monitor
     if (_monitoring) {
-        DM->monitorString(DIR_RX, packet, len);
+        DM->monitorString(DIR_RX, _binary, packet, len);
     }
 
     if (_active == nullptr) {

@@ -6,7 +6,7 @@
 #include "sensor.h"
 #include "setup/SetupNG.h"
 #include "Flarm.h"
-#include "logdefnone.h"
+#include "logdef.h"
 
 #define SCROLL_TOP      20
 #define SCROLL_BOTTOM  320
@@ -66,9 +66,10 @@ void DataMonitor::header( int len, e_dir_t dir )
 	MYUCG->printf( "%s%s: RX:%d TX:%d %s  ", b, what, rx_total, tx_total, paused?"hold":"bytes" );
 }
 
-void DataMonitor::monitorString(e_dir_t dir, const char *str, int len)
+void DataMonitor::monitorString(e_dir_t dir, bool binary, const char *str, int len)
 {
 	ESP_LOGI(FNAME,"dir %d, len %d", (int)dir, len );
+	bin_mode = binary;
 	if( paused )
 	{
 		// ESP_LOGI(FNAME,"not active, return started:%d paused:%d", mon_started, paused );
@@ -177,7 +178,7 @@ void DataMonitor::start(SetupAction *p, ItfTarget ch)
 		MYUCG->scrollSetMargins( SCROLL_TOP, 0 );
 	}
 	paused = false; // will resume with press()
-	bin_mode = DEVMAN->startMonitoring(channel);
+	DEVMAN->startMonitoring(channel);
 	ESP_LOGI(FNAME,"started");
 }
 

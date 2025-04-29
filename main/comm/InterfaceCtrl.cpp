@@ -10,6 +10,7 @@
 
 #include "DataLink.h"
 #include "setup/SetupNG.h"
+#include "logdef.h"
 
 // 1..n relation from interface to data link layer
 // Ability to set interface details through a common cotrol interface
@@ -121,4 +122,25 @@ void InterfaceCtrl::DeleteAllDataLinks()
         delete it.second;
     }
     _dlink.clear();
+}
+
+void InterfaceCtrl::startMonitoring(ItfTarget tgt)
+{
+    // all data links
+    for ( auto dl : _dlink ) {
+        ESP_LOGI(FNAME, "Mdl %x<>%x", (unsigned)dl.second->getTarget().raw, (unsigned)tgt.raw );
+        if ( dl.second->getTarget() == tgt ) {
+            dl.second->setMonitor(true);
+        }
+        else {
+            dl.second->setMonitor(false);
+        }
+    }
+}
+void InterfaceCtrl::stopMonitoring()
+{
+    // all data links
+    for ( auto dl : _dlink ) {
+        dl.second->setMonitor(false);
+    }
 }

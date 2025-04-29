@@ -336,7 +336,58 @@ static int remove_device(SetupMenuSelect *p)
     return 0;
 }
 
+///////////////////////////
+// Add Devices
+static int select_device_action(SetupMenuSelect *p)
+{
+    ESP_LOGI(FNAME,"action did %d", p->getValue());
+    SetupMenu *top = p->getParent();
+    // memorize and lock the device selector
+    new_device = (DeviceId)p->getValue();
+    p->lock();
 
+    SetupMenuSelect *interface = static_cast<SetupMenuSelect*>(top->getEntry(3));
+    const DeviceAttributes &dattr = DeviceManager::getDevAttr(new_device);
+    interface->delAllEntries();
+    const PackedInt5Array &tmp = dattr.itfs;
+    ESP_LOGI(FNAME,"List Itfs raw %x", (unsigned)tmp.data);
+    for (int i=0; i<tmp.maxSize; ++i) {
+        InterfaceId iid = tmp.itf(i);
+        ESP_LOGI(FNAME,"Itf id %d", iid);
+        if ( iid != NO_PHY && DEVMAN->isAvail(iid) ) {
+            interface->addEntry(DeviceManager::getItfName(iid).data(), iid);
+        }
+    }
+    interface->unlock();
+    // if ( new_device > 0 && new_interface > 0) {
+    //     SetupMenuSelect *confirm = static_cast<SetupMenuSelect*>(top->getEntry(3));
+    //     confirm->unlock();
+    //     top->highlightLast();
+    // }
+    // else 
+    {
+        top->setHighlight(interface);
+    }
+    return 0;
+}
+static int select_flavor_action(SetupMenuSelect *p)
+{
+    return 0;
+}
+static int select_interface_action(SetupMenuSelect *p)
+{
+    SetupMenu *top = p->getParent();
+    // memorize interface
+    new_interface = (InterfaceId)p->getValue();
+    ESP_LOGI(FNAME, "nr childs %s: %d", top->getTitle(), top->getNrChilds());
+    if ( new_device > 0 && new_interface > 0) {
+        SetupMenuSelect *confirm = static_cast<SetupMenuSelect*>(top->getEntry(4));
+        p->lock();
+        confirm->unlock();
+        top->highlightLast();
+    }
+    return 0;
+}
 static int create_device_action(SetupMenuSelect *p)
 {
     if ( p->getSelect() == 1 ) {
@@ -362,52 +413,6 @@ static int create_device_action(SetupMenuSelect *p)
     p->getParent()->getParent()->setDirty();
     return 0;
 }
-
-static int select_interface_action(SetupMenuSelect *p)
-{
-    SetupMenu *top = p->getParent();
-    // memorize interface
-    new_interface = (InterfaceId)p->getValue();
-    ESP_LOGI(FNAME, "nr childs %s: %d", top->getTitle(), top->getNrChilds());
-    if ( new_device > 0 && new_interface > 0) {
-        SetupMenuSelect *confirm = static_cast<SetupMenuSelect*>(top->getEntry(3));
-        confirm->unlock();
-        top->highlightLast();
-    }
-    return 0;
-}
-
-static int select_device_action(SetupMenuSelect *p)
-{
-    ESP_LOGI(FNAME,"action did %d", p->getValue());
-    SetupMenu *top = p->getParent();
-    // memorize and lock the device selector
-    new_device = (DeviceId)p->getValue();
-
-    SetupMenuSelect *interface = static_cast<SetupMenuSelect*>(top->getEntry(2));
-    const DeviceAttributes &dattr = DeviceManager::getDevAttr(new_device);
-    interface->delAllEntries();
-    const PackedInt5Array &tmp = dattr.itfs;
-    ESP_LOGI(FNAME,"List Itfs raw %x", (unsigned)tmp.data);
-    for (int i=0; i<tmp.maxSize; ++i) {
-        InterfaceId iid = tmp.itf(i);
-        ESP_LOGI(FNAME,"Itf id %d", iid);
-        if ( iid != NO_PHY && DEVMAN->isAvail(iid) ) {
-            interface->addEntry(DeviceManager::getItfName(iid).data(), iid);
-        }
-    }
-    if ( new_device > 0 && new_interface > 0) {
-        SetupMenuSelect *confirm = static_cast<SetupMenuSelect*>(top->getEntry(3));
-        confirm->unlock();
-        top->highlightLast();
-    }
-    else {
-        top->setHighlight(interface);
-    }
-
-    return 0;
-}
-
 static void system_menu_add_device(SetupMenu *top)
 {
     ESP_LOGI(FNAME,"Create new device menu");
@@ -415,8 +420,13 @@ static void system_menu_add_device(SetupMenu *top)
     if ( ! ndev ) {
         ndev = new SetupMenuSelect("Device", RST_NONE, select_device_action, false);
         top->addEntry(ndev);
+        // flavor
+        SetupMenuSelect *text = new SetupMenuSelect("Flavor", RST_NONE, select_flavor_action, false);
+        text->addEntry("---", 0);
+        text->lock();
+        top->addEntry(text);
         // text
-        SetupMenuSelect *text = new SetupMenuSelect("connected to", RST_NONE);
+        text = new SetupMenuSelect("connected to", RST_NONE);
         text->lock();
         top->addEntry(text);
     }
@@ -434,10 +444,11 @@ static void system_menu_add_device(SetupMenu *top)
     if ( ndev->numEntries() == 0 ) {
         ndev->addEntry("---", NO_DEVICE);
     }
+    ndev->unlock();
 
     // empty interfaces list
-    SetupMenuSelect *interface = static_cast<SetupMenuSelect*>(top->getEntry(2));
-    SetupMenuSelect *confirm = static_cast<SetupMenuSelect*>(top->getEntry(3));
+    SetupMenuSelect *interface = static_cast<SetupMenuSelect*>(top->getEntry(3));
+    SetupMenuSelect *confirm = static_cast<SetupMenuSelect*>(top->getEntry(4));
     if ( ! interface ) {
         interface = new SetupMenuSelect("Interface", RST_NONE, select_interface_action);
         top->addEntry(interface);
@@ -449,19 +460,21 @@ static void system_menu_add_device(SetupMenu *top)
         interface->delAllEntries();
     }
     interface->addEntry("---", NO_PHY);
+    interface->lock();
     // confirmation
     confirm->lock();
     new_device = NO_DEVICE;
     new_interface = NO_PHY;
 }
 
+/////////////////////////////////
+// Dvice Details
 static int start_dm_action(SetupAction* p)
 {
     DataMonitor *dm = new DataMonitor();
     dm->start(p, (ItfTarget)p->getCode());
     return 0;
 }
-
 static void system_menu_device(SetupMenu *top)
 {
     DeviceId did = (DeviceId)top->getContId();
@@ -496,6 +509,8 @@ static void system_menu_device(SetupMenu *top)
     top->addEntry(remove);
 }
 
+///////////////////////////////////
+// Connected Devices
 void system_menu_connected_devices(SetupMenu *top)
 {
     SetupMenu *adddev = static_cast<SetupMenu*>(top->getEntry(0));

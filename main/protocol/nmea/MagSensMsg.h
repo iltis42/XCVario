@@ -13,10 +13,6 @@
 class MagSensMsg final : public NmeaPlugin
 {
 public:
-    // static constexpr int MAGCTRL_ID = 0x30;
-    // static constexpr int MAGSTREAM_ID = 0x31;
-
-public:
     MagSensMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, MAGSENS_P) {};
     virtual ~MagSensMsg() = default;
     const ParserEntry* getPT() const override { return _pt; }
@@ -29,4 +25,5 @@ private:
     // The receiver
     static dl_action_t magsensVersion(NmeaPlugin *plg);
     static dl_action_t magsensConfirmation(NmeaPlugin *plg);
+    static dl_action_t streamData(NmeaPlugin *plg);
 };

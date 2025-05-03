@@ -8,14 +8,14 @@
 
 
 SemaphoreHandle_t nvMutex=NULL;
-ESP32NVS * ESP32NVS::Instance = 0;
+ESP32NVS *ESP32NVS::Instance = 0;
 
 ESP32NVS::ESP32NVS(){
+	nvMutex=xSemaphoreCreateMutex();
 }
 
 bool ESP32NVS::begin(){
 	ESP_LOGI(FNAME,"ESP32NVS::begin()");
-	nvMutex=xSemaphoreCreateMutex();
 	esp_err_t _err = nvs_flash_init();
 	if (_err == ESP_ERR_NVS_NO_FREE_PAGES) {
 		const esp_partition_t* nvs_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, NULL);
@@ -60,8 +60,7 @@ bool ESP32NVS::setBlob(const char * key, void* value, size_t length){
 	bool ret=true;
 	xSemaphoreTake(nvMutex,portMAX_DELAY );
 	nvs_handle_t h = open();
-	if( !h )
-		return false;
+	if( !h ) { return false; }
 	esp_err_t _err = nvs_set_blob(h, (char*)key, value, length);
 	if(_err != ESP_OK) {
 		ESP_LOGE(FNAME,"set blob error %d", _err );
@@ -77,8 +76,7 @@ bool ESP32NVS::eraseAll(){
 	bool ret=true;
 	xSemaphoreTake(nvMutex,portMAX_DELAY );
 	nvs_handle_t h = open();
-	if( !h )
-		return false;
+	if( !h ) { return false; }
 	esp_err_t _err = nvs_erase_all(h);
 	if(_err != ESP_OK){
 		ret = false;
@@ -92,8 +90,7 @@ bool ESP32NVS::erase(const char * key){
 	xSemaphoreTake(nvMutex,portMAX_DELAY );
 	bool ret=true;
 	nvs_handle_t h = open();
-	if( !h )
-		return false;
+	if( !h ) { return false; }
 	esp_err_t _err =  nvs_erase_key(h, key);
 	if(_err != ESP_OK){
 		ret = false;
@@ -107,8 +104,7 @@ bool ESP32NVS::getBlob(const char * key, void *blob, size_t *length){
 	xSemaphoreTake(nvMutex,portMAX_DELAY );
 	bool ret=true;
 	nvs_handle_t h = open();
-	if( !h )
-		return false;
+	if( !h ) { return false; }
 	esp_err_t err = nvs_get_blob(h, key, blob, length);
 	if( err != ESP_OK ){
 		ESP_LOGE(FNAME,"Error getting blob!");

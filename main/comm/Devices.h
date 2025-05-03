@@ -13,19 +13,23 @@
 typedef enum
 {
     NO_DEVICE,
-    JUMBO_DEV,
     ANEMOI_DEV,
+    ATR833_HOST_DEV,
+    FLARM_DEV,
+    FLARM_HOST_DEV,
+    JUMBO_DEV,
+    KRT2_HOST_DEV,
+    MAGSENS_DEV,
+    MAGLEG_DEV,
+    MASTER_DEV,  // CAN id registry
+    NAVI_DEV, // <- 10
+    RADIO_ATR833_DEV,
+    RADIO_KRT2_DEV,
+    RADIO_REMOTE_DEV,
     XCVARIO_DEV,
     XCVARIOCLIENT_DEV,
-    MASTER_DEV,  // CAN id registry
-    FLARM_DEV,
-    NAVI_DEV,
-    MAGSENS_DEV,
-    RADIO_KRT2_DEV,
-    RADIO_ATR833_DEV,
-    FLARM_HOST_DEV,
-    KRT2_HOST_DEV,
-    ATR833_HOST_DEV,
+    FLARM_PROXY,
+    RADIO_PROXY,
     TEST_DEV,
     TEST_DEV2
 } DeviceId;
@@ -34,25 +38,29 @@ typedef enum
 // Supported protocol id's
 typedef enum
 {
-    NO_ONE = 0, // Disable
-    REGISTRATION_P, // CAN id registration
-    XCVSYNC_P,
-    JUMBOCMD_P,
+    NO_ONE = 0, // not a protocol
     ANEMOI_P,
-    FLARM_P,
-    FLARMHOST_P,
-    FLARMBIN_P,
-    MAGSENS_P,
-    MAGSENSBIN_P,
-    XCVARIO_P,
-    OPENVARIO_P,
+    ATR833_REMOTE_P,
     BORGELT_P,
     CAMBRIDGE_P,
+    FLARM_P,
+    FLARMBIN_P,
+    FLARMHOST_P,
+    GARMIN_P,
+    JUMBOCMD_P,
+    KRT2_REMOTE_P, // <- 10
+    MAGSENS_P,
+    MAGSENSBIN_P,
+    NMEASTD_P,
+    OPENVARIO_P,
+    REGISTRATION_P, // CAN id registration
+    XCVARIO_P,
     XCVQUERY_P,
-    KRT2_REMOTE_P,
-    ATR833_REMOTE_P,
+    XCVSYNC_P,
+    XCNAV_P,
     TEST_P
 } ProtocolType;
+// old ones .. P_EYE_PEYA, P_EYE_PEYI, P_AHRS_RPYL, P_AHRS_APENV1, P_GENERIC,
 
 
 constexpr int CAN_REG_PORT = 0x7f0;

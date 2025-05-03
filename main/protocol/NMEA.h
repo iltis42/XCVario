@@ -51,7 +51,7 @@ union Key {
                 rev.push_back(str[last]);
             }
         }
-        return rev.c_str(); // Null termination
+        return rev;
     }
 
     // comparator for the std::map
@@ -72,19 +72,29 @@ typedef std::map<Key, MapValue> ParserMap;
 class NmeaPlugin
 {
 public:
-    explicit NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp) : _nmeaRef(nr), _belongs(ptyp) {}
+    explicit NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp, bool as=true) : _nmeaRef(nr), _pid(ptyp), _auto(as) {}
     virtual ~NmeaPlugin() = default;
-    ProtocolType getPtyp() const { return _belongs; }
+    ProtocolType getPtyp() const { return _pid; }
+    ProtocolType belongsPtyp() const;
     NmeaPrtcl &getNMEA() const { return _nmeaRef; }
-
+    void setExplicit() { _auto = false; }
+    bool getAuto() const { return _auto; }
+    bool operator==(const NmeaPlugin& other) const {
+        return _pid == other._pid;
+    }
     // API
     virtual const ParserEntry* getPT() const = 0;
 
 protected:
     // access to state machine and buffers for the parse routines
     NmeaPrtcl &_nmeaRef;
-    ProtocolType _belongs;
+    ProtocolType _pid;
+private:
+    bool _auto; // most plugins get installed together with the principal NMEA parser
 };
+
+// forward declaration
+class AliveMonitor;
 
 // generic mnea message parser
 class NmeaPrtcl final : public ProtocolItf
@@ -99,12 +109,19 @@ public:
     void addPlugin(NmeaPlugin *pm); // one way addition
     bool hasProtocol(ProtocolType p);
     dl_control_t nextBytes(const char* c, int len) override;
+    // house keeping
+    const std::vector<NmeaPlugin*>& getAllPlugs() const { return _plugs; }
+    ProtocolItf* asPrtclItfPtr() { return static_cast<ProtocolItf*>(this); }
+    void addAliveMonitor(AliveMonitor *am) { _alive = am; }
 
 
-    // XCV transmitter routines
+    // XCVario transmitter routines
     void sendStdXCVario(float baro, float dp, float te, float temp, float ias, float tas,
         float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, 
         float acc_x, float acc_y, float acc_z, float gx, float gy, float gz);
+    void sendXcvRPYL(float roll, float pitch, float yaw, float acc_z);
+    void sendXcvAPENV1(float ias, float alt, float te);
+    void sendXcvGeneric(float te, float alt, float tas);
     void sendOpenVario(float baro, float dp, float te, float temp, bool validTemp);
     void sendBorgelt(float te, float temp, float ias, float tas, float mc, int bugs, float aballast, bool cruise, bool validTemp);
     void sendCambridge(float te, float tas, float mc, int bugs, float alt);
@@ -114,8 +131,7 @@ public:
     void sendXCVVersion(int v);
     void sendXCVNmeaHDM(float heading);
     void sendXCVNmeaHDT(float heading);
-
-    // XCV client
+    void sendXCV(const char *str) const;
 
     // MagSens transmitter
     bool sendHello();
@@ -144,5 +160,6 @@ private:
     Key      _mkey;     // identified message key
     MapValue _parser;   // found parser, incl. parameter for the parser
     inline void nmeaIncrCRC(int &crc, const char c) {crc ^= c;}
+    AliveMonitor *_alive = nullptr; // alive monitor for the protocol
 };
 

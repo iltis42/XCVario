@@ -13,6 +13,9 @@
 #include "Messages.h"
 #include "InterfaceCtrl.h"
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+
 #include <set>
 #include <map>
 #include <vector>
@@ -32,7 +35,6 @@ extern DeviceManager* DEVMAN;
 // Static parts of a supported device are id, protocol type(s), ..
 // Runtime relevant info is the link it is connected to, the port(s) it is using for communication.
 //
-// Additionally a routing table that contains all the connected devices relation.
 
 struct Device
 {
@@ -41,33 +43,15 @@ struct Device
     int getSendPort(ProtocolType p) const;
     ProtocolItf* getProtocol(ProtocolType p) const;
     DataLink *getDLforProtocol(ProtocolType p) const;
-    PortList getPortList() const;
+    PortList getSendPortList() const;
+    int getListenPort() const;
     bool isAlive() const { return true; } // fixme
+    DeviceNVS getNvsData() const;
     // Attributes
     const DeviceId      _id;
-    std::set<DataLink*> _dlink;
+    std::set<DataLink*> _dlset;
     InterfaceCtrl      *_itf;
-};
-    // InterfaceId                 _default_config; // RS232, Baudrate, etc.
-
-// Information to first hand preconfigure an interface at the moment a device gets added to the system
-struct InterfaceConfig
-{
-    InterfaceId     _id;
-    // BaudRate        _xxx;
-    // etc
-};
-
-
-// Device configuration options
-// This describes all selectable options in terms of device connectivity for this system.
-struct DevConfigItem
-{
-    DeviceId        _id;
-    ProtocolType    _prtcl;
-    int             _port; // can be 0 for devices that register each time
-    InterfaceId     _intfId;
-    InterfaceConfig _intfConfig;
+    bool                _auto = false; // automatically set-up
 };
 
 
@@ -93,10 +77,11 @@ public:
     ~DeviceManager();
     static DeviceManager* Instance();
     // API
-    ProtocolItf* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid);
+    Device* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid, bool ato=false);
     Device* getDevice(DeviceId did);
     Device* getXCVPeer();
     ProtocolItf *getProtocol(DeviceId dev, ProtocolType proto);
+    NmeaPrtcl *getNMEA(DeviceId did);
     int getSendPort(DeviceId did, ProtocolType proto);
     // Remove device of this type
     void removeDevice(DeviceId did);
@@ -108,16 +93,18 @@ public:
     DataLink *getFlarmHost();
     static int nrDevs() { return (DEVMAN) ? DEVMAN->getNrDevs() : 0; }
     int getNrDevs() const { return _device_map.size(); }
+    // void makePersistent();
+    void reserectFromNvs();
     // Search for the next free CAN id, organized in chunks of four in 5 prio categories.
-    static int getFreeCANId(int prio);
-    static void undoFreeCANId(int prio);
+    static int reserveCANId(int prio);
+    static void undoReserveCANId(int prio);
     // debugging
     void dumpMap() const;
-    bool startDM(ItfTarget iid); // Data Monitor
-    void stopDM();
+    void startMonitoring(ItfTarget iid); // Data Monitor
+    void stopMonitoring();
 
     // Setup access
-    static const DeviceAttributes* getDevAttr(DeviceId did, InterfaceId via=NO_PHY);
+    static const DeviceAttributes& getDevAttr(DeviceId did, InterfaceId via=NO_PHY);
     static std::string_view getDevName(DeviceId did);
     static std::vector<DeviceId> allKnownDevs();
     static std::string_view getItfName(InterfaceId iid);
@@ -130,5 +117,6 @@ private:
     // Restriction: It can only contain one element of one device type
     // Hash table for routing purpose
     DevMap _device_map;
+    mutable SemaphoreHandle_t _devmap_mutex;
 };
 

@@ -9,7 +9,7 @@
 #include "XCVarioMsg.h"
 #include "protocol/nmea_util.h"
 #include "comm/Messages.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
 
@@ -147,6 +147,51 @@ void NmeaPrtcl::sendStdXCVario(float baro, float dp, float te, float temp, float
     DEV::Send(msg);
 }
 
+void NmeaPrtcl::sendXcvRPYL(float roll, float pitch, float yaw, float acc_z)
+{
+    Message *msg = newMessage();
+
+    // LEVIL_AHRS  $RPYL,Roll,Pitch,MagnHeading,SideSlip,YawRate,G,errorcode,
+    msg->buffer = "$RPYL,";
+    char str[50];
+    sprintf(str, "%d,%d,%d,0,0,%d,0",
+            (int)std::roundf(roll*10.f),         // Bank == roll     (deg)
+            (int)std::roundf(pitch*10.f),        // Pitch            (deg)
+            (int)std::roundf(yaw*10.f),        // Magnetic Heading (deg) ?? fixme what ??
+            (int)std::roundf(acc_z*1000.f));
+    msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+    DEV::Send(msg);
+}
+
+void NmeaPrtcl::sendXcvAPENV1(float ias, float alt, float te)
+{
+    Message *msg = newMessage();
+
+    msg->buffer = "$APENV1,";
+    char str[50];
+    std::sprintf(str, "%d,%d,0,0,0,%d", (int)std::roundf(Units::kmh2knots(ias)),(int)std::roundf(Units::meters2feet(alt)),(int)std::roundf(Units::ms2fpm(te)));
+    msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+    DEV::Send(msg);
+}
+
+/*
+ * $PTAS1,xxx,yyy,zzzzz,aaa*CS<CR><LF>
+ * xxx:   CV or current vario. =vario*10+200 range 0-400(display +/-20.0 knots)
+ * yyy:   AV or average vario. =vario*10+200 range 0-400(display +/-20.0 knots)
+ * zzzzz: Barometric altitude in feet +2000
+ * aaa:   TAS knots 0-200
+ */
+void NmeaPrtcl::sendXcvGeneric(float te, float alt, float tas)
+{
+    Message *msg = newMessage();
+
+    msg->buffer = "$PTAS1,";
+    char str[50];
+    sprintf(str, "%d,0,%d,%d", (int)std::roundf(Units::ms2knots(te)*10.f+200.), (int)std::roundf(Units::meters2feet(alt)+2000.f), (int)std::roundf(Units::kmh2knots(tas)) );
+
+    msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+    DEV::Send(msg);
+}
 
 void NmeaPrtcl::sendXCVCrewWeight(float w)
 {
@@ -159,6 +204,7 @@ void NmeaPrtcl::sendXCVCrewWeight(float w)
         DEV::Send(msg);
     }
 }
+
 
 void NmeaPrtcl::sendXCVEmptyWeight(float w)
 {
@@ -242,3 +288,65 @@ void NmeaPrtcl::sendXCVNmeaHDT( float heading )
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
     DEV::Send(msg);
 }
+
+// send a prepared nmea telegram
+void NmeaPrtcl::sendXCV(const char *str) const
+{
+    Message *msg = newMessage();
+
+    msg->buffer.assign(str);
+    ESP_LOGI(FNAME,"Preped %s", str);
+    DEV::Send(msg);
+}
+
+
+//
+// seemingly unused code remains from Protocols.cpp
+//
+// void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
+//     float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, float acc_x, float acc_y, float acc_z, float gx, float gy, float gz ){
+// if( !validTemp )
+//     temp=0;
+// if( proto == P_EYE_PEYA ){
+//     // Static pressure from aircraft pneumatic system [hPa] (i.e. 1015.5)
+//     // Total pressure from aircraft pneumatic system [hPA] (i.e. 1015.5)
+//     // Pressure altitude [m] (i.e. 10260)
+//     // Calculated local QNH [mbar] (i.e. 1013.2)
+//     // Direction from were the wind blows [°] (0 - 359)
+//     // Wind speed [km/h]
+//     // True air speed [km/h] (i.e. 183)
+//     // Vertical speed from anemometry (m/s) (i.e. +05.4)
+//     // Outside Air Temperature (?C) (i.e. +15.2)
+//     // Relative humidity [%] (i.e. 095)
+//     float pa = alt - 8.92*( QNH.get() - 1013.25);
+
+
+//     if( validTemp )
+//         sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,%.2f,,", baro, baro+(dp/100),pa, QNH.get(),tas,te,temp);
+//     else
+//         sprintf(str, "$PEYA,%.2f,%.2f,%.2f,%.2f,,,%.2f,%.2f,0,,", baro, baro+(dp/100),alt, QNH.get(),tas,te);
+// }
+// else if( proto == P_EYE_PEYI ){
+//     float roll = IMU::getRoll();
+//     float pitch = IMU::getPitch();
+//     // ESP_LOGI(FNAME,"roll %.2f pitch %.2f yaw %.2f", roll, pitch, yaw  );
+//     /*
+//             $PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,%.2f,
+//             lbank,         // Bank == roll    (deg)           SRC
+//             lpitch,         // pItch           (deg)
+//             x,
+//             y,
+//             z,
+//             );
+//      */
+//     sprintf(str, "$PEYI,%.2f,%.2f,,,,%.2f,%.2f,%.2f,,", roll, pitch,acc_x,acc_y,acc_z );
+// }
+
+// else {
+//     ESP_LOGW(FNAME,"Not supported protocol %d", proto );
+// }
+// int cs = calcNMEACheckSum(&str[1]);
+// int i = strlen(str);
+// sprintf( &str[i], "*%02X\r\n", cs );
+// // Router::sendXCV(str); fixme
+// }

@@ -8,7 +8,7 @@
  */
 
 #include "Polars.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "logdef.h"
 
 #include <cinttypes>
@@ -195,7 +195,7 @@ t_polar::t_polar(const compressed_polar *cp)
 	index = cp->index;
 	type = cp->type.data();
 	wingload = (float)(cp->wingload) / 100.f;
-	speed1 = (float)(speed1);
+	speed1 = (float)(cp->speed1);
 	sink1 = (float)(cp->sink1) / 100.f;
 	speed2 = (float)(cp->speed2);
 	sink2 = (float)(cp->sink2) / 100.f;

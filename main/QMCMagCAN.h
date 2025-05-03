@@ -63,7 +63,7 @@ public:
 	// If device is connected via CAN, just get X,Y,Z data from there
 	// Todo, needs better organization
     void fromCAN(const t_magn_axes *magaxes);
-	void fromCAN(const char * msg, int len);
+	// void fromCAN(const char * msg, int len);
 
 	int curX() { return (int)can.x; }
 	int curY() { return (int)can.y; }

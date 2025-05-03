@@ -148,6 +148,9 @@ BootUpScreen::BootUpScreen() :
     // offset to pic
     x_offset = width-LOGO_WIDTH/2;
     y_offset = height-LOGO_HEIGHT/2;
+    yline = LOGO_HEIGHT-1;
+    yline_to = LOGO_HEIGHT*3/4;
+    fini_part = 0;
     srand(time(NULL)); // seed for randomness
     MYUCG->setColor(COLOR_WHITE);
 
@@ -164,41 +167,50 @@ BootUpScreen::~BootUpScreen()
     free(logo_bitmap);
 }
 
-void BootUpScreen::finish()
+// call 1, 1, 2, ..  (DIVIDER-1) for the parts that got positivly finished
+// otherwise skip a part
+void BootUpScreen::finish(int part)
 {
-    Clock::stop(this);
-
-    for (int y = LOGO_HEIGHT-1; y >= 0; y--) {
-        for (int xi = 0; xi < LOGO_WIDTH; xi+=8) {
-            int byte = logo_bitmap[y*LOGO_WIDTH/8 + xi/8];
-            if ( byte == 0 ) { continue; }
-
-            int bit = 0x80;
-            int bitcount = 0;
-            while (bitcount < 8) { // && xi+bitcount < LOGO_WIDTH (for all LOGO_WIDTH%8 != 0)
-                if (byte & bit) {
-                    MYUCG->drawPixel(xi + bitcount + x_offset, y + y_offset);
-                }
-                bitcount++;
-                bit >>=1;
-            }
-        }
+    if ( fini_part < part-1 ) { 
+        yline = LOGO_HEIGHT*(DIVIDER-part)/4;
     }
+    yline_to = std::max(0, LOGO_HEIGHT*(DIVIDER-part-1)/2);
+    fini_part = part;
 }
 
 bool BootUpScreen::tick()
 {
 	xSemaphoreTake(display_mutex,portMAX_DELAY);
     MYUCG->setColor(COLOR_WHITE);
-    for (int i = 0; i < MAX_PIXELS_PER_FRAME; ) {
-        int x = rand() % LOGO_WIDTH;
-        int y = rand() % LOGO_HEIGHT;
+    if ( ! fini_part ) {
+        for (int i = 0; i < MAX_PIXELS_PER_FRAME; ) {
+            int x = rand() % LOGO_WIDTH;
+            int y = rand() % LOGO_HEIGHT;
 
-        int byte = logo_bitmap[y*LOGO_WIDTH/8 + x/8];
-        int bit = 7 - (x % 8);
-        if ((byte >> bit) & 1) {
-            MYUCG->drawPixel(x + x_offset, y + y_offset); // adjust position
-            i++;
+            int byte = logo_bitmap[y*LOGO_WIDTH/8 + x/8];
+            int bit = 7 - (x % 8);
+            if ((byte >> bit) & 1) {
+                MYUCG->drawPixel(x + x_offset, y + y_offset); // adjust position
+                i++;
+            }
+        }
+    } else {
+        for (int y = yline; y >= std::max(yline_to, yline-MAX_PIXELS_PER_FRAME); y--) {
+            for (int xi = 0; xi < LOGO_WIDTH; xi+=8) {
+                int byte = logo_bitmap[y*LOGO_WIDTH/8 + xi/8];
+                if ( byte == 0 ) { continue; }
+    
+                int bit = 0x80;
+                int bitcount = 0;
+                while (bitcount < 8) { // && xi+bitcount < LOGO_WIDTH (for all LOGO_WIDTH%8 != 0)
+                    if (byte & bit) {
+                        MYUCG->drawPixel(xi + bitcount + x_offset, y + y_offset);
+                    }
+                    bitcount++;
+                    bit >>=1;
+                }
+            }
+            yline--;
         }
     }
     xSemaphoreGive(display_mutex);

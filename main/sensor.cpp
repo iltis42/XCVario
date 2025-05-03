@@ -13,10 +13,9 @@
 #include "BMPVario.h"
 #include "comm/BTspp.h"
 #include "BLESender.h"
-#include "Protocols.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "ESPAudio.h"
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 #include "ESPRotary.h"
 #include "AnalogInput.h"
 #include "Atmosphere.h"
@@ -26,7 +25,7 @@
 #include "glider/Polars.h"
 #include "Flarm.h"
 #include "Blackboard.h"
-#include "SetupMenuValFloat.h"
+#include "setup/SetupMenuValFloat.h"
 #include "protocol/Clock.h"
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
@@ -36,10 +35,7 @@
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
-#include <driver/spi_master.h>
-#include <AdaptUGC.h>
-#include <OTA.h>
-#include "SetupNG.h"
+#include "OTA.h"
 #include "Switch.h"
 #include "AverageVario.h"
 
@@ -56,37 +52,33 @@
 #include "SPL06-007.h"
 #include "StraightWind.h"
 #include "CircleWind.h"
-#include <coredump_to_server.h>
 #include "comm/SerialLine.h"
 #include "comm/CanBus.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/TestQuery.h"
+#include "AdaptUGC.h"
+#include "CenterAid.h"
+#include "OneWireESP32.h"
+#include "logdef.h"
 
-#include "sdkconfig.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+
+#include <coredump_to_server.h>
+#include <driver/spi_master.h>
 #include <esp_task_wdt.h>
 #include <esp_task.h>
-#include <esp_log.h>
-#include <miniz.h>
 #include <soc/sens_reg.h> // needed for adc pin reset
 #include <esp_sleep.h>
-#include <esp_wifi.h>
 #include <esp_system.h>
-#include <esp_timer.h>
 #include <esp_flash.h>
 #include <esp_chip_info.h>
-#include <nvs_flash.h>
 #include <driver/gpio.h>
 
 #include <string>
 #include <cstdio>
 #include <cstring>
-#include "AdaptUGC.h"
-#include "CenterAid.h"
-#include "OneWireESP32.h"
 
-// #include "sound.h"
 
 /*
 BMP:
@@ -121,8 +113,6 @@ TaskHandle_t apid = NULL;
 TaskHandle_t bpid = NULL;
 TaskHandle_t tpid = NULL;
 TaskHandle_t dpid = NULL;
-
-e_wireless_type wireless;
 
 PressureSensor *baroSensor = nullptr;
 PressureSensor *teSensor = nullptr;
@@ -174,7 +164,8 @@ uint8_t g_col_header_light_b=g_col_highlight;
 uint16_t gear_warning_holdoff = 0;
 uint8_t gyro_flash_savings=0;
 
-t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false };
+// boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.
+t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -205,10 +196,6 @@ AnalogInput* getBattery() { return &Battery;}
 
 float getTAS() { return tas; }
 
-bool do_factory_reset() {
-	return( SetupCommon::factoryReset() );
-}
-
 void drawDisplay(void *arg)
 {
 	ESPRotary &knob = *static_cast<ESPRotary*>(arg);
@@ -225,20 +212,23 @@ void drawDisplay(void *arg)
 		}
 		if (xQueueReceive(buton_event_queue, &event, pdMS_TO_TICKS(20)) == pdTRUE) {
 			if (event == SHORT_PRESS) {
-				ESP_LOGI(FNAME,"Button short press detected");
+				// ESP_LOGI(FNAME,"Button short press detected");
 				knob.sendPress();
 			} else if (event == LONG_PRESS) {
-				ESP_LOGI(FNAME,"Button long press detected");
+				// ESP_LOGI(FNAME,"Button long press detected");
 				knob.sendLongPress();
-			}else if (event == BUTTON_RELEASED) {
-				ESP_LOGI(FNAME, "Button released");
+			} else if (event == BUTTON_RELEASED) {
+				// ESP_LOGI(FNAME, "Button released");
 				knob.sendRelease();
+			} else if (event == ESCAPE) {
+				// ESP_LOGI(FNAME, "Escape event");
+				knob.sendEscape();
 			} else if (event & ROTARY_EVTMASK) {
 				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
-				ESP_LOGI(FNAME, "Rotation step %d", step);
+				// ESP_LOGI(FNAME, "Rotation step %d", step);
 				knob.sendRot(step);
 			} else {
-				ESP_LOGI(FNAME, "Unknown button event %x", event);
+				// ESP_LOGI(FNAME, "Unknown button event %x", event);
 			}
 		}
 		
@@ -475,40 +465,37 @@ static void grabMPU()
 static void toyFeed()
 {
 	xSemaphoreTake(xMutex,portMAX_DELAY );
-	// reduce also messages from 10 per second to 5 per second to reduce load in XCSoar
-	// maybe just 1 or 2 per second
-	static char lb[150];
 
-	// fixme
-	// if( ahrs_rpyl_dataset.get() ){
-	// 	OV.sendNMEA( P_AHRS_RPYL, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-	// 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
-	// 	OV.sendNMEA( P_AHRS_APENV1, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-	// 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
-	// }
-	if( nmea_protocol.get() == BORGELT ) {
-		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, BORGELT_P); // Todo preliminary solution ..
+	if( ahrs_rpyl_dataset.get() ){
+		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
-			static_cast<NmeaPrtcl*>(prtcl)->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), gflags.validTemperature );
+			prtcl->sendXcvRPYL(IMU::getRoll(), IMU::getPitch(), IMU::getYaw(), IMU::getGliderAccelZ());
+			prtcl->sendXcvAPENV1( ias.get(), altitude.get(), te_vario.get() );
 		}
-		// OV.sendNMEA( P_GENERIC, lb, baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altSTD, gflags.validTemperature  );
+	}
+	if( nmea_protocol.get() == BORGELT ) {
+		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
+		if ( prtcl ) {
+			prtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), gflags.validTemperature );
+			prtcl->sendXcvGeneric(te_vario.get(), altSTD, tas);
+		}
 	}
 	else if( nmea_protocol.get() == OPENVARIO ){
-		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, OPENVARIO_P); // Todo preliminary solution ..
+		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
-			static_cast<NmeaPrtcl*>(prtcl)->sendOpenVario(baroP, dynamicP, te_vario.get(), OAT.get(), gflags.validTemperature );
+			prtcl->sendOpenVario(baroP, dynamicP, te_vario.get(), OAT.get(), gflags.validTemperature );
 		}
 	}
 	if( nmea_protocol.get() == CAMBRIDGE ) {
-		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, CAMBRIDGE_P); // Todo preliminary solution ..
+		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
-			static_cast<NmeaPrtcl*>(prtcl)->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
+			prtcl->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
 		}
 	}
 	else if( nmea_protocol.get() == XCVARIO ) {
-		ProtocolItf *prtcl = DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P); // Todo preliminary solution ..
+		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
-			static_cast<NmeaPrtcl*>(prtcl)->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
+			prtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 		}
 	}
@@ -614,8 +601,8 @@ void readSensors(void *pvParameters){
 		bool tok=false;
 		float tp = teSensor->readPressure(tok);  // TE Pressure
 		xSemaphoreGive(xMutex);
-		// ESP_LOGI(FNAME,"TE, Delta: %d", (int)(millis() - m));
-		if( logging.get() == LOG_SENSOR_RAW ){
+		// ESP_LOGI(FNAME,"TE, Delta: %d - log%d", (int)(millis() - _millis));
+		if( logging.get() ){
 			char log[ProtocolItf::MAX_LEN];
 			sprintf( log, "$SENS;");
 			int pos = strlen(log);
@@ -630,8 +617,10 @@ void readSensors(void *pvParameters){
 			}
 			pos=strlen(log);
 			sprintf( log+pos, "\n");
-			// Router::sendXCV( log ); fixme
-			ESP_LOGI(FNAME,"%s", log );
+			const NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
+			if ( prtcl ) {
+				prtcl->sendXCV(log);
+			}
 		}
 		if( tok )
 			teP = tp;
@@ -773,18 +762,18 @@ void readSensors(void *pvParameters){
 		}
 
 		// Check on new clients connecting
-		if ( CAN && CAN->GotNewClient() ) { // fixme hook to registration protocol
-			while( client_sync_dataIdx < SetupCommon::numEntries() ) {
-				if ( SetupCommon::syncEntry(client_sync_dataIdx++) ) {
-					break; // Hit entry to actually sync and send data
-				}
-			}
-			if ( client_sync_dataIdx >= SetupCommon::numEntries() ) {
-				// Synch complete
-				client_sync_dataIdx = 0;
-				CAN->ResetNewClient();
-			}
-		}
+		// if ( CAN && CAN->GotNewClient() ) { // fixme hook to registration protocol
+		// 	while( client_sync_dataIdx < SetupCommon::numEntries() ) {
+		// 		if ( SetupCommon::syncEntry(client_sync_dataIdx++) ) {
+		// 			break; // Hit entry to actually sync and send data
+		// 		}
+		// 	}
+		// 	if ( client_sync_dataIdx >= SetupCommon::numEntries() ) {
+		// 		// Synch complete
+		// 		client_sync_dataIdx = 0;
+		// 		CAN->ResetNewClient();
+		// 	}
+		// }
 		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
 			MPU.temp_control( count, xcvTemp );
@@ -900,7 +889,8 @@ void register_coredump() {
 	}
 }
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
 // Sensor board init method. Herein all functions that make the XCVario are launched and tested.
 void system_startup(void *args){
 
@@ -930,7 +920,6 @@ void system_startup(void *args){
 	Polars::begin();
 
 	// menu_screens.set(0);
-	wireless = (e_wireless_type)(wireless_type.get()); // we cannot change this on the fly, so get that on boot
 	AverageVario::begin();
 	stall_alarm_off_kmh = stall_speed.get()/3;
 
@@ -982,22 +971,24 @@ void system_startup(void *args){
 	Display->writeText(1, ver.c_str() );
 	BootUpScreen *boot_screen = new BootUpScreen();
 	MessageBox::createMessageBox();
+	if ( gflags.schedule_reboot ) {
+		MBOX->newMessage(3, "Detecting XCV hardware");
+	}
 	Rotary->begin();
-	sleep(1);
 	if( software_update.get() || Rotary->readBootupStatus() ) {
 		software_update.set( 0 ); // only one shot, then boot normal
 
-		if( true ) { // have CAN?
+		if( hardwareRevision.get() >= XCVARIO_22 ) {
 			// Give CAN MagSens a chance for an update
-			CAN = new CANbus();
-			DeviceManager* dm = DeviceManager::Instance();
-			dm->addDevice(MASTER_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-			dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
+			CANbus::createCAN();
+			CAN->begin();
+			DEVMAN->addDevice(MASTER_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+			DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
 		}
 		delete boot_screen; // screen now belongs to OTA
 		ota = new OTA();
 		ota->begin();
-		ota->doSoftwareUpdate( Display );
+		ota->doSoftwareUpdate( Display ); // fixme -> missing the drawDisplay to process button at this point in time
 	}
 	if( hardwareRevision.get() >= XCVARIO_21 ){
 		gflags.haveMPU = true;
@@ -1053,34 +1044,54 @@ void system_startup(void *args){
 			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
-	char id[16] = { 0 };
-	strcpy( id, custom_wireless_id.get().id );
-	ESP_LOGI(FNAME,"Custom Wirelss-ID from Flash: %s len: %d", id, strlen(id) );
-	if( strlen( id ) == 0 ){
-		custom_wireless_id.set( SetupCommon::getDefaultID() ); // Default ID created from MAC address CRC
-		ESP_LOGI(FNAME,"Empty ID: Initialize empty Wirelss-ID: %s", custom_wireless_id.get().id );
-	}
-	ESP_LOGI(FNAME,"Custom Wirelss-ID: %s", custom_wireless_id.get().id );
 
-	// todo place here the DEVMAN serialization read in of all configured devices.
+	// Create serial interfaces
+	S1 = new SerialLine((uart_port_t)1, GPIO_NUM_16, GPIO_NUM_17);
+	if ( hardwareRevision.get() >= XCVARIO_21 ) {
+		S2 = new SerialLine((uart_port_t)2, GPIO_NUM_18, GPIO_NUM_4);
+	}
+
+	// Create CAN based on known HW revision (not the very first boot)
+	if ( hardwareRevision.get() >= XCVARIO_22 ) {
+		ESP_LOGI(FNAME,"NOW add/test CAN");
+		CANbus::createCAN();
+		logged_tests += "CAN Interface: ";
+		if( CAN->selfTest() ) {
+			logged_tests += "OK\n";
+		}
+		else {
+			MBOX->newMessage(1, "CAN bus: Fail");
+			logged_tests += "CAN Bus selftest: FAILED\n";
+			ESP_LOGE(FNAME,"Error: CAN Interface failed");
+		}
+	}
+
+	// DEVMAN serialization, read in all configured devices.
+	DEVMAN->reserectFromNvs();
+	if ( CAN ) {
+		// just allways, it respects the XCV role setting
+		DEVMAN->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+	}
+
+	ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
 	std::string wireless_id("BT ID: ");
-	ESP_LOGI(FNAME,"Wirelss-Type: %d", wireless );
-	if( wireless == WL_BLUETOOTH ) {
+	if( DEVMAN->isIntf(BT_SPP) ) {
 		ESP_LOGI(FNAME,"Start BT");
-		BTspp = new BTSender();
-		BTspp->start();
 	}
-	else if( wireless == WL_BLUETOOTH_LE ) {
+	else if( DEVMAN->isIntf(BT_LE) ) {
 		ESP_LOGI(FNAME,"Start BLE");
-		blesender.begin();
+		// blesender.begin(); fixme
 	}
-	else  if( wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE) {
+	else  if( DEVMAN->isIntf(WIFI_AP) ) {
 		ESP_LOGI(FNAME,"Start WiFi");
 		wireless_id.assign("WLAN SID: ");
-		Wifi = new WifiAP();
+	}
+	if ( ! gflags.schedule_reboot && custom_wireless_id.get().id[0] == '\0' ) {
+		custom_wireless_id.set(SetupCommon::getDefaultID()); // Default ID created from MAC address CRC
 	}
 	wireless_id += SetupCommon::getID();
 	MBOX->newMessage(2, wireless_id.c_str() );
+
 	Cipher::begin();
 	if( Cipher::checkKeyAHRS() ){
 		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
@@ -1089,6 +1100,7 @@ void system_startup(void *args){
 		if( attitude_indicator.get() )
 			attitude_indicator.set(0);
 	}
+	boot_screen->finish(0);
 
 	ESP_LOGI(FNAME,"Airspeed sensor init..  type configured: %d", airspeed_sensor_type.get() );
 	int offset;
@@ -1207,6 +1219,7 @@ void system_startup(void *args){
 		else {
 			ESP_LOGI(FNAME,"air speed offset test PASSED, readout value in bounds=%d", offset );
 			logged_tests += "AS Sensor offset test: PASSED\n";
+			boot_screen->finish(1);
 		}
 	}
 	else{
@@ -1329,7 +1342,7 @@ void system_startup(void *args){
 			ESP_LOGI(FNAME,"Abs p sensor deta test PASSED, delta: %f hPa", abs(ba_p - te_p) );
 		}
 		logged_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
-
+		boot_screen->finish(2);
 	}
 	else {
 		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
@@ -1353,39 +1366,28 @@ void system_startup(void *args){
 	audio_volume.set(default_volume.get());
 
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
-	if( AUDIO->haveCAT5171() ) // todo && CAN configured
+	// do not move the check unless you know the sequence of HW detection
+	if ( !CAN && AUDIO->haveCAT5171() )
 	{
-		ESP_LOGI(FNAME,"NOW add/test CAN");
-		CAN = new CANbus();
-		logged_tests += "CAN Interface: ";
-		DeviceManager* dm = DeviceManager::Instance();
+		// fixme, shouldnt be the HW increased to 22 based on audio poti??
+		// check on CAN available, if 100% reliable this would only be a one shot need.
+		ESP_LOGI(FNAME,"probing CAN");
+		CANbus::createCAN();
 		if( CAN->selfTest() ){
-			if( dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS) ) {
-				// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
-				ESP_LOGE(FNAME,"CAN Bus selftest (%sRS): OK", CAN->hasSlopeSupport() ? "" : "no ");
-				// Add the legacs MagSens CAN receiver, would be deleted if a MagSens V2 is found
-				// dm->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS);
-				// dm->removeDevice(DeviceId::MASTER_DEV);
-				// ESP_LOGI(FNAME,"Removetest");
-				// delay(1000);
-				// dm->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-				logged_tests += "OK\n";
-				if ( CAN->hasSlopeSupport() ) {
-					if( hardwareRevision.get() < XCVARIO_22)
-						hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
-				} else {
-					ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision (XCV-23)");
-					if( hardwareRevision.get() < XCVARIO_23)
-						hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
-				}
+			// series 2023 has fixed slope control, prior slope bit for AHRS temperature control
+			if ( CAN->hasSlopeSupport() ) {
+				if( hardwareRevision.get() < XCVARIO_22)
+					hardwareRevision.set(XCVARIO_22);  // XCV-22, CAN but no AHRS temperature control
+			} else {
+				ESP_LOGI(FNAME,"CAN Bus selftest without RS control OK: set hardwareRevision (XCV-23)");
+				if( hardwareRevision.get() < XCVARIO_23)
+					hardwareRevision.set(XCVARIO_23);  // XCV-23, including AHRS temperature control
 			}
 		}
-		else {
-			MBOX->newMessage(1, "CAN bus: Fail");
-			logged_tests += "CAN Bus selftest: FAILED\n";
-			ESP_LOGE(FNAME,"Error: CAN Interface failed");
-		}
+		delete CAN;
+		CAN = nullptr;
 	}
+
 
 	if( gflags.haveMPU ){
 		if( MPU.whoAmI() == 0x12 ){
@@ -1397,6 +1399,7 @@ void system_startup(void *args){
 	}
 
 	float bat = Battery.get(true);
+	logged_tests += "Battery Voltage Sensor: ";
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
 		MBOX->newMessage(1, "Bat Meter: Fail");
@@ -1408,41 +1411,17 @@ void system_startup(void *args){
 		logged_tests += "Battery Voltage Sensor: PASSED\n";
 	}
 	
-	{
-		S1 = new SerialLine((uart_port_t)1,GPIO_NUM_16,GPIO_NUM_17);
-		DeviceManager* dm = DeviceManager::Instance();
-		dm->addDevice(FLARM_DEV, FLARM_P, 0, 0, S1_RS232);
-		dm->addDevice(FLARM_DEV, FLARMBIN_P, 0, 0, NO_PHY);
-		S2 = new SerialLine((uart_port_t)2,GPIO_NUM_18,GPIO_NUM_4);
-		dm->addDevice(RADIO_KRT2_DEV, KRT2_REMOTE_P, 0, 0, S2_RS232);
-		// dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
-		// dm->addDevice(TEST_DEV, TEST_P, 0, 0, S2_RS232);
-		// S2 = new SerialLine(2,GPIO_NUM_18,GPIO_NUM_4);
-		// dm->addDevice(TEST_DEV2, TEST_P, 2, 0, S2_RS232);
-	}
-
-	if( wireless == WL_BLUETOOTH ) {
-		if( BTspp && BTspp->selfTest() ){
-			DeviceManager* dm = DeviceManager::Instance();
-			dm->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, BT_SPP);
-			dm->addDevice(NAVI_DEV, FLARMHOST_P, 0, 0, BT_SPP);
-			dm->addDevice(NAVI_DEV, FLARMBIN_P, 0, 0, NO_PHY);
+	if ( BTspp) {
+		if ( BTspp->selfTest() ) {
 			logged_tests += "Bluetooth test: PASSED\n";
 		}
-		else{
+		else {
 			MBOX->newMessage(1, "Bluetooth: FAILED");
 			logged_tests += "Bluetooth test: FAILED\n";
 		}
-	}else if ( (wireless == WL_WLAN_MASTER || wireless == WL_WLAN_STANDALONE)
-		&& Wifi ) {
-		DeviceManager* dm = DeviceManager::Instance();
-		dm->addDevice(NAVI_DEV, XCVARIO_P, 8880, 8880, WIFI_AP);
-		dm->addDevice(NAVI_DEV, FLARMHOST_P, 8881, 8881, WIFI_AP);
-		dm->addDevice(NAVI_DEV, FLARMBIN_P, 8881, 8881, NO_PHY);
-		dm->addDevice(NAVI_DEV, KRT2_REMOTE_P, 8882, 8882, WIFI_AP);
 	}
 
-	if( compass_enable.get() == CS_CAN ){
+	if( compass_enable.get() == CS_CAN ){ // fixme ask devman
 		ESP_LOGI( FNAME, "Magnetic sensor type CAN");
 		compass = new Compass( 0 );  // I2C addr 0 -> instantiate without I2C bus and local sensor
 	}
@@ -1469,6 +1448,12 @@ void system_startup(void *args){
 		compass->start();  // start task
 	}
 
+	// hardware components now got all detected
+	if ( gflags.schedule_reboot ) {
+		SetupCommon::commitDirty();
+		esp_restart();
+	}
+
 	Speed2Fly.begin();
 	Version myVersion;
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
@@ -1482,29 +1467,28 @@ void system_startup(void *args){
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
-		boot_screen->finish(); // signal self tests passed
+		boot_screen->finish(3); // signal self tests passed
 	}
-
-	// stop the boot logo
-	delete boot_screen;
 
 	if( Rotary->readBootupStatus() )
 	{
 		LeakTest::start( baroSensor, teSensor, asSensor );
 	}
 
+	// Set QNH from setup Airfiled elevation, when ! Second && ! airborn
+	if( ! SetupCommon::isClient() && ias.get() < 50.0 ) {
 
-	if ( SetupCommon::isClient() ){
-		ESP_LOGI(FNAME,"Client Mode");
-	}
-	else if( ias.get() < 50.0 ){
+		// remove logo immidiately
+		sleep(1);
+		delete boot_screen;
+
 		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias.get() );
 		// QNH autosetup
 		float ae = elevation.get();
 		float qnh_best = QNH.get();
 		bool ok;
 		baroP = baroSensor->readPressure(ok);
-		if( ae > 0 ) {
+		if( ae > NOTSET_ELEVATION ) {
 			float step=10.0; // 80 m
 			float min=1000.0;
 			for( float qnh = 870; qnh< 1085; qnh+=step ) {
@@ -1542,6 +1526,57 @@ void system_startup(void *args){
 	}
 	else
 	{
+		// just sit, wait shoe a little message
+
+		// if ( SetupCommon::isClient() ) {
+		// 	// Wait for master to release the vario screen
+		// 	Device *dev = DEVMAN->getDevice(XCVARIO_DEV);
+		// 	Display->clear();
+		// 	if (dev && dev->_itf->getId() == WIFI_CLIENT) {
+		// 		int line=1;
+		// 		Display->writeText( line++, "Wait for WiFi Master" );
+		// 		char mxcv[30] = "";
+		// 		if( master_xcvario.get() != 0 ){
+		// 			sprintf( mxcv+strlen(mxcv), "XCVario-%d", (int) master_xcvario.get() );
+		// 			Display->writeText( line++, mxcv );
+		// 		}
+		// 		line++;
+		// 		std::string ssid = WifiClient::scan( master_xcvario.get() );
+		// 		if( ssid.length() ){
+		// 			Display->writeText( line++, "Master XCVario found" );
+		// 			char id[30];
+		// 			sprintf( id, "Wifi ID: %s", ssid.c_str() );
+		// 			Display->writeText( line++, id );
+		// 			Display->writeText( line++, "Now start, sync" );
+		// 			WifiClient::start();
+		// 			delay( 5000 );
+		// 		}
+		// 		else{
+		// 			Display->writeText( 3, "Abort Wifi Scan" );
+		// 		}
+		// 	}
+		// 	else if ( !dev && CAN ) {
+		// 		Display->writeText( 1, "Wait for CAN Master" );
+		// 		while( ! dev ) {
+		// 			dev = DEVMAN->getDevice(XCVARIO_DEV);
+		// 			if( dev ) {
+		// 				Display->writeText( 3, "Master XCVario found" );
+		// 				Display->writeText( 4, "start synchronization ..." );
+		// 				delay( 3000 );
+		// 				break;
+		// 			}
+		// 			delay( 100 );
+		// 			if( Rotary->readSwitch() ){
+		// 				Display->writeText( 3, "Abort CAN bus wait" );
+		// 				break;
+		// 			}
+		// 		}
+		// 	}
+		// }
+
+		MBOX->newMessage(1, "Waiting for XCV Master");
+		delete boot_screen;
+		sleep(2);
 		gflags.inSetup = false;
 		Display->clear();
 	}
@@ -1549,7 +1584,6 @@ void system_startup(void *args){
 	if ( flap_enable.get() ) {
 		Flap::init(MYUCG);
 	}
-
 	if( hardwareRevision.get() != XCVARIO_20 ){
 		gpio_pullup_en( GPIO_NUM_34 );
 		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL && !gflags.mpu_pwm_initalized  )
@@ -1559,61 +1593,14 @@ void system_startup(void *args){
 			gflags.mpu_pwm_initalized = true;
 		}
 	}
-	delay( 100 );
-	Rotary->flushQueue();
-
-	if ( SetupCommon::isClient() ){
-		Device *dev = DEVMAN->getDevice(XCVARIO_DEV);
-		if (dev->_itf->getId() == WIFI_CLIENT) {
-			Display->clear();
-
-			int line=1;
-			Display->writeText( line++, "Wait for WiFi Master" );
-			char mxcv[30] = "";
-			if( master_xcvario.get() != 0 ){
-				sprintf( mxcv+strlen(mxcv), "XCVario-%d", (int) master_xcvario.get() );
-				Display->writeText( line++, mxcv );
-			}
-			line++;
-			std::string ssid = WifiClient::scan( master_xcvario.get() );
-			if( ssid.length() ){
-				Display->writeText( line++, "Master XCVario found" );
-				char id[30];
-				sprintf( id, "Wifi ID: %s", ssid.c_str() );
-				Display->writeText( line++, id );
-				Display->writeText( line++, "Now start, sync" );
-				WifiClient::start();
-				delay( 5000 );
-				gflags.inSetup = false;
-				Display->clear();
-			}
-			else{
-				Display->writeText( 3, "Abort Wifi Scan" );
-			}
-		}
-		else if (dev->_itf->getId() == CAN_BUS) {
-			Display->clear();
-			Display->writeText( 1, "Wait for CAN Master" );
-			while( 1 ) {
-				if( CAN && CAN->connectedXCV() ){
-					Display->writeText( 3, "Master XCVario found" );
-					Display->writeText( 4, "Now start, sync" );
-					delay( 5000 );
-					gflags.inSetup = false;
-					Display->clear();
-					break;
-				}
-				delay( 100 );
-				if( Rotary->readSwitch() ){
-					Display->writeText( 3, "Abort CAN bus wait" );
-					break;
-				}
-			}
-		}
-	}
 	if( screen_centeraid.get() ){
 		centeraid = new CenterAid( MYUCG );
 	}
+
+	// enter normal operation
+	// empty the button queue before starting the task listening to it
+	Rotary->flushQueue();
+
 	if( SetupCommon::isClient() ){
 		xTaskCreate(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid);
 	}
@@ -1657,6 +1644,8 @@ extern "C" void  app_main(void)
 	if( hardwareRevision.get() == HW_UNKNOWN ){  // per default we assume there is XCV-20
 		ESP_LOGI( FNAME, "Hardware Revision unknown, set revision 2 (XCV-20)");
 		hardwareRevision.set(XCVARIO_20);
+		// Schedule a reboot after hardware revision got clarified
+		gflags.schedule_reboot = true;
 	}
 
 	// start i2c bus

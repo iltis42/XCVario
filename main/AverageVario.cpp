@@ -1,6 +1,5 @@
 #include "AverageVario.h"
-#include "SetupNG.h"
-#include "Protocols.h"
+#include "setup/SetupNG.h"
 #include "sensor.h"
 
 float AverageVario::averageClimbSec;

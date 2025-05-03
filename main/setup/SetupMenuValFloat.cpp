@@ -5,9 +5,9 @@
  *      Author: iltis
  */
 
-#include "SetupMenuValFloat.h"
+#include "setup/SetupMenuValFloat.h"
 
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 #include "IpsDisplay.h"
 #include "BMPVario.h"
 #include "glider/Polars.h"
@@ -26,7 +26,7 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float
 	_nvs(anvs)
 {
 	// ESP_LOGI(FNAME,"SetupMenuValFloat( %s ) ", title.c_str() );
-	_title = title;
+	_title.assign(title);
 	if( unit != 0 && *unit != '\0' ) {
 		_unit = unit;
 	}
@@ -65,12 +65,12 @@ void SetupMenuValFloat::setPrecision( int prec ){
 
 void SetupMenuValFloat::display(int mode)
 {
-	ESP_LOGI(FNAME,"display %s", _title);
+	ESP_LOGI(FNAME,"display %s", _title.c_str());
 	if ( is_inline ) {
 		indentHighlight(_parent->getHighlight());
 	}
 	else {
-		menuPrintLn(_title, 0, 5 );
+		menuPrintLn(_title.c_str(), 0, 5 );
 		displayVal();
 	}
 	if( _action != 0 ) {

@@ -22,6 +22,7 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 #include "QMC5883L.h"
 #include "quaternion.h"
 #include "sensor.h"
+#include "comm/DeviceMgr.h"
 #include "logdef.h"
 
 #include <esp_system.h>
@@ -321,7 +322,7 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 		delete avgZ;
 	}else{
 		ESP_LOGI( FNAME, "Show Calibration");
-		t_bitfield_compass b = calibration_bits.get();
+		bitfield_compass b = calibration_bits.get();
 		reporter( magRaw, scale, bias, b, true );
 		while( Rotary->readSwitch() == true  )
 			delay(100);
@@ -498,7 +499,10 @@ float Compass::heading( bool *ok )
 	if( wind_logging.get() ){
 		char log[120];
 		sprintf( log, "$COMPASS;%d;%d;%d;%.1f;%.1f;%.1f;%d\n", magRaw.x, magRaw.y, magRaw.z, IMU::getPitch(), IMU::getRoll(),  _heading,  totalReadErrors );
-		// Router::sendXCV( log ); fixme
+		const NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
+		if ( prtcl ) {
+			prtcl->sendXCV(log);
+		}
 	}
 #endif
 

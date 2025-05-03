@@ -19,7 +19,7 @@ Last update: 2021-04-18
 
 #include "ShowCompassSettings.h"
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "QMC5883L.h"
 #include "sensor.h"
 
@@ -48,7 +48,7 @@ void ShowCompassSettings::display(int mode)
 
 	clear();
 	MYUCG->setFont( ucg_font_ncenR14_hr );
-	menuPrintLn(_title, 0, 5 );
+	menuPrintLn(_title.c_str(), 0, 5 );
 
 	uint16_t y = 75;
 	uint16_t y1 = 75;
@@ -61,8 +61,8 @@ void ShowCompassSettings::display(int mode)
 	y += 25;
 
 	MYUCG->setPrintPos( 0, y );
-	t_bitfield_compass state = calibration_bits.get();
-	t_bitfield_compass target = { 1,1,1,1,1,1 };
+	bitfield_compass state = calibration_bits.get();
+	bitfield_compass target = { 1,1,1,1,1,1 };
 	bool all_green = false;
 	if( state == target )
 		all_green = true;

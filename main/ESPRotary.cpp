@@ -1,7 +1,7 @@
 
 #include "ESPRotary.h"
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "sensor.h"
 #include "protocol/Clock.h"
 #include "logdefnone.h"
@@ -35,10 +35,10 @@ bool IRAM_ATTR ESPRotary::tick()
 		if ( holdCount > lp_duration ) {
 			gotEvent = LONG_PRESS;
 			holdCount = -1; // go for a "release"
-			xQueueSendFromISR(buttonQueue, &gotEvent, 0);
+			xQueueSend(buttonQueue, &gotEvent, 0);
 		}
 	}
-	if ( debounceCount < 3 || (buttonRead == state) ) {
+	if ( debounceCount < 2 || (buttonRead == state) ) {
 		return false;
 	}
 
@@ -50,11 +50,11 @@ bool IRAM_ATTR ESPRotary::tick()
 	else { // Button released
 		if( holdCount < 0 ) {
 			gotEvent = BUTTON_RELEASED;
-			xQueueSendFromISR(buttonQueue, &gotEvent, 0);
+			xQueueSend(buttonQueue, &gotEvent, 0);
 		}
 		else {
 			gotEvent = SHORT_PRESS;
-			xQueueSendFromISR(buttonQueue, &gotEvent, 0);
+			xQueueSend(buttonQueue, &gotEvent, 0);
 		}
 		holdCount = 0; // stop counting
 	}

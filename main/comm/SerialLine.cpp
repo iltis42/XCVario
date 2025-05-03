@@ -1,8 +1,7 @@
 #include "SerialLine.h"
 
+#include "setup/SetupNG.h"
 #include "logdefnone.h"
-
-#include "SetupNG.h"
 
 #include <soc/uart_reg.h>
 
@@ -15,10 +14,10 @@ constexpr int UARTRXFIFO_LEN = 256;
 constexpr int UARTTXFIFO_LEN = 1024;
 constexpr int UARTEVENTQ_LEN = 10;
 
-const int baud[] = { 4800, 9600, 19200, 38400, 57600, 115200 };
+static constexpr std::array<int, 6> baud_rate_table = { 4800, 9600, 19200, 38400, 57600, 115200 };
 
 
-t_serial_cfg sm_serial_config[] = {
+static constexpr std::array<t_serial_cfg, 6>  sm_serial_config = {{
 		// enumerator,    baud,    polarity, pin swp, tx enable
 		{ SM_FLARM,       BAUD_19200, true, false, true },
 		{ SM_RADIO,       BAUD_9600,  true, false, true },
@@ -26,18 +25,18 @@ t_serial_cfg sm_serial_config[] = {
 		{ SM_OPENVARIO,   BAUD_19200, true, false, true },
 		{ SM_XCFLARMBIN,  BAUD_38400, true, false, true },
 		{ SM_XCFLARMVIEW, BAUD_57600, true, false, true }
-};
+}};
 
-static const char *MEMOS[3] = { "S0", "S1", "S2" };
+static constexpr std::array<std::string_view, 3> MEMOS = { "S0", "S1", "S2" };
 
 // connection to nvs setup variables
-static const t_serial_nvs_setup uart_setup[3] = {
-	{ 0,0,0,0 },
-	{ &serial1_speed, &serial1_tx_inverted, &serial1_pins_twisted, &serial1_tx_enable },
-	{ &serial2_speed, &serial2_tx_inverted, &serial2_pins_twisted, &serial2_tx_enable }
-};
+static constexpr std::array<t_serial_nvs_setup, 3> uart_setup = {{
+	{ nullptr, nullptr, nullptr, nullptr },
+	{ &serial1_speed, &serial1_ttl_signals, &serial1_pin_swap, &serial1_tx_enable },
+	{ &serial2_speed, &serial2_ttl_signals, &serial2_pin_swap, &serial2_tx_enable }
+}};
 
-static uart_event_t stop_trigger = {UART_EVENT_MAX, 0, false};
+static constexpr uart_event_t stop_trigger = {UART_EVENT_MAX, 0, false};
 
 // Thread body to handle UART events
 void uartTask(SerialLine* s)
@@ -68,27 +67,32 @@ void uartTask(SerialLine* s)
 				if ( count > 0 ) {
 					rx_buf[count] = '\0';
 					// ESP_LOGI(FNAME, "Data received from UART%d: %dc", un, count);
+					xSemaphoreTake(s->_dlink_mutex, portMAX_DELAY);
 					auto dlit = s->_dlink.begin();
 					if ( dlit != s->_dlink.end() ) {
+						xSemaphoreGive(s->_dlink_mutex);
 						dlit->second->process(rx_buf, count); // SX interfaces do have only one data link
+					} else {
+						xSemaphoreGive(s->_dlink_mutex);
 					}
 				}
 				break;
 			}
 			case UART_BREAK:
-				ESP_LOGI(FNAME, "Break detected on UART%d", un);
+				s->break_count++;
+				// ESP_LOGI(FNAME, "Break detected on UART%d", un);
 				break;
 			case UART_BUFFER_FULL:
-				ESP_LOGI(FNAME, "Full detected on UART%d", un);
+				// ESP_LOGI(FNAME, "Full detected on UART%d", un);
 				break;
 			case UART_FIFO_OVF:
-				ESP_LOGI(FNAME, "OVF detected on UART%d", un);
+				// ESP_LOGI(FNAME, "OVF detected on UART%d", un);
 				break;
 			case UART_DATA_BREAK:
-				ESP_LOGI(FNAME, "DataBreak detected on UART%d ", un);
+				// ESP_LOGI(FNAME, "DataBreak detected on UART%d ", un);
 				break;
 			default:
-				ESP_LOGI(FNAME, "UART%d caught event %d", un, event.type);
+				// ESP_LOGI(FNAME, "UART%d caught event %d", un, event.type);
 				break;
 		}
 	}
@@ -98,54 +102,50 @@ void uartTask(SerialLine* s)
 
 SerialLine::SerialLine(uart_port_t uart, gpio_num_t rx, gpio_num_t tx ) :
 	InterfaceCtrl(true),
+	cfg(0),
 	uart_nr(uart),
 	tx_gpio(tx),
 	rx_gpio(rx),
 	_intfid(InterfaceId((int)S0_RS232+(int)uart)),
-	_id_memo(MEMOS[uart]),
+	_id_memo(MEMOS[uart].data()),
 	_setup(uart_setup[uart])
 {
 	loadSetupDefaults();
-	ESP_LOGI(FNAME,"CONSTR. UART:%d (new) RX:%d TX:%d baud:%d pol:%d swap:%d tx:%d", uart_nr, rx_gpio, tx_gpio, baud[cfg.baud], cfg.polarity, cfg.pin_swp, cfg.tx_ena );
+	ESP_LOGI(FNAME,"CONSTR. UART:%d (new) RX:%d TX:%d baud:%d pol:%d swap:%d tx:%d", uart_nr, rx_gpio, tx_gpio, baud_rate_table[cfg.baud], cfg.polarity, cfg.pin_swp, cfg.tx_ena );
 }
 
 SerialLine::~SerialLine()
 {
-	if ( _iotask ) {
-		// Last chance to use the queue to terminate the receiver task
-		xQueueSend((QueueHandle_t)_event_queue, (void *)&stop_trigger, (TickType_t)0);
-	}
-	if ( uart_is_driver_installed(uart_nr) ) {
-		ESP_LOGI(FNAME,"UART %d end(), pins %d %d", uart_nr, tx_gpio, rx_gpio);
-		uart_driver_delete(uart_nr);
-	}
+	stop();
 }
 
 // 0,1,2,3..: load profile
 void SerialLine::ConfigureIntf(int profile)
 {
+	ESP_LOGI(FNAME,"configure UART S%d: %d", uart_nr, profile );
 	if ( ! uart_is_driver_installed(uart_nr) ) {
-		ESP_LOGI(FNAME,"configure UART S%d: %d", uart_nr, profile );
 		if ( profile >= 0 ) {
 			loadProfile( e_profile(profile) );
 		}
 		start();
 	}
 	else {
-		t_serial_cfg *newcfg = &sm_serial_config[profile];
-		if ( cfg.baud != newcfg->baud ) {
-			cfg.baud = newcfg->baud;
-			applyBaud();
-		}
-		if ( cfg.polarity != newcfg->polarity ) {
-			cfg.polarity = newcfg->polarity;
-			applyLineInverse();
-		}
-		if ( cfg.tx_ena != newcfg->tx_ena 
-			|| cfg.pin_swp != newcfg->pin_swp ) {
-			cfg.tx_ena = newcfg->tx_ena;
-			cfg.pin_swp = newcfg->pin_swp;
-			applyPins();
+		if ( profile >= 0 && profile < 6 ) {
+			const t_serial_cfg *newcfg = &sm_serial_config[profile];
+			if ( cfg.baud != newcfg->baud ) {
+				cfg.baud = newcfg->baud;
+				applyBaud();
+			}
+			if ( cfg.polarity != newcfg->polarity ) {
+				cfg.polarity = newcfg->polarity;
+				applyLineInverse();
+			}
+			if ( cfg.tx_ena != newcfg->tx_ena 
+				|| cfg.pin_swp != newcfg->pin_swp ) {
+				cfg.tx_ena = newcfg->tx_ena;
+				cfg.pin_swp = newcfg->pin_swp;
+				applyPins();
+			}
 		}
 	}
 }
@@ -153,13 +153,13 @@ void SerialLine::ConfigureIntf(int profile)
 // returns 0: sucess; or retry wait time in msec 
 int SerialLine::Send(const char *msg, int &len, int port)
 {
-	int count = uart_tx_chars(uart_nr, msg, len);
+	int count = uart_write_bytes(uart_nr, msg, len);
 	ESP_LOGI(FNAME,"Send UART%d, len %d/%d", uart_nr, len, count);
 	if ( count == len ) {
 		return 0;
 	}
 	count = (count>=0) ? count : 0; // enforce count >= 0
-	int dur = rint( (len-count)*12000.0/baud[cfg.baud] + 1 );  // [msec] ; byte/sec = baudrate / 12 bits/char
+	int dur = rint( (len-count)*12000.0/baud_rate_table[cfg.baud] + 1 );  // [msec] ; byte/sec = baudrate / 12 bits/char
 	ESP_LOGI(FNAME,"Send UART%d, ETA for free buf in %d msec", uart_nr, dur);
 	len = count; // buffered chars
 	return dur;  // rough ETA for telegram of len bytes
@@ -168,8 +168,11 @@ int SerialLine::Send(const char *msg, int &len, int port)
 
 void SerialLine::applyBaud()
 {
-	ESP_LOGI(FNAME,"setBaud UART%d baud:%d", uart_nr, baud[cfg.baud]);
-	uart_set_baudrate(uart_nr, baud[cfg.baud]);
+	ESP_LOGI(FNAME,"setBaud UART%d baud idx %d: %d", uart_nr, cfg.baud, baud_rate_table[cfg.baud]);
+	if ( uart_is_driver_installed(uart_nr) ) {
+		uart_flush(uart_nr);
+	}
+	uart_set_baudrate(uart_nr, baud_rate_table[cfg.baud]);
 }
 
 // configures ESP32 matrix, here also the line polartity (inverting) is handled
@@ -179,8 +182,18 @@ void SerialLine::applyPins()
 
 	gpio_num_t tx_pin = cfg.pin_swp ? rx_gpio : tx_gpio;
 	gpio_num_t rx_pin = cfg.pin_swp ? tx_gpio : rx_gpio;
+
+	if ( uart_is_driver_installed(uart_nr) ) {
+		// pause it
+		uart_flush(uart_nr);
+		uart_disable_rx_intr(uart_nr);
+	}
 	uart_set_pin(uart_nr, tx_pin, rx_pin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-	
+	if ( uart_is_driver_installed(uart_nr) ) {
+		// and restart it
+		uart_enable_rx_intr(uart_nr);
+	}
+
 	if( ! cfg.tx_ena ) {
 		// Overrule uart module and switch tx off if configured
 		gpio_set_direction(tx_pin, GPIO_MODE_INPUT);
@@ -191,11 +204,23 @@ void SerialLine::applyPins()
 void SerialLine::applyLineInverse()
 {
 	ESP_LOGI(FNAME, "setLineInverse UART%d: %d (0: Norm, 1:Invers)", uart_nr, cfg.polarity);
+	if ( uart_is_driver_installed(uart_nr) ) {
+		uart_flush(uart_nr);
+	}
 	if( cfg.polarity ) {
 		uart_set_line_inverse(uart_nr, UART_SIGNAL_RXD_INV | UART_SIGNAL_TXD_INV);
+		gpio_pulldown_dis(tx_gpio);
+		gpio_pulldown_dis(rx_gpio);
+		gpio_pullup_en(tx_gpio);
+		gpio_pullup_en(rx_gpio);
+			
 	}
 	else {
 		uart_set_line_inverse(uart_nr, 0);
+		gpio_pulldown_en(tx_gpio);
+		gpio_pulldown_en(rx_gpio);
+		gpio_pullup_dis(tx_gpio);
+		gpio_pullup_dis(rx_gpio);
 	}
 }
 
@@ -229,13 +254,9 @@ void SerialLine::start()
 	{
 		ESP_LOGI(FNAME, "start UART%d baud:%d, rx:%d, tx:%d, TTL:%d ", uart_nr, cfg.baud, rx_gpio, tx_gpio, cfg.polarity );
 
-		// Setup UART buffered IO with event queue
-		// Install UART driver creating an event queue here
-		uart_driver_install(uart_nr, UARTRXFIFO_LEN, UARTTXFIFO_LEN, UARTEVENTQ_LEN, (QueueHandle_t*)&_event_queue, ESP_INTR_FLAG_IRAM);
-
 		// all the details and baudrate
 		uart_config_t uart_config = {
-			.baud_rate = baud[cfg.baud],
+			.baud_rate = baud_rate_table[cfg.baud],
 			.data_bits = UART_DATA_8_BITS,
 			.parity = UART_PARITY_DISABLE,
 			.stop_bits = UART_STOP_BITS_1,
@@ -251,6 +272,10 @@ void SerialLine::start()
 		// line logic levels and pins
 		applyLineInverse();
 		applyPins();
+
+		// Setup UART buffered IO with event queue
+		// Install UART driver creating an event queue here
+		uart_driver_install(uart_nr, UARTRXFIFO_LEN, UARTTXFIFO_LEN, UARTEVENTQ_LEN, (QueueHandle_t*)&_event_queue, ESP_INTR_FLAG_IRAM);
 
 		// Set UART pattern detect function
 		uart_enable_pattern_det_baud_intr(uart_nr, '\n', 1, 5, 0, 0);
@@ -272,5 +297,18 @@ void SerialLine::start()
 	}
 }
 
+void SerialLine::stop()
+{
+	if ( _iotask ) {
+		// Last chance to use the queue to terminate the receiver task
+		xQueueSend((QueueHandle_t)_event_queue, (void *)&stop_trigger, (TickType_t)0);
+	}
+	_iotask = nullptr;
 
+	if ( uart_is_driver_installed(uart_nr) ) {
+		ESP_LOGI(FNAME,"UART %d end(), pins %d %d", uart_nr, tx_gpio, rx_gpio);
+		uart_flush(uart_nr);
+		uart_driver_delete(uart_nr);
+	}
+}
 

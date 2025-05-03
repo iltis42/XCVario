@@ -58,10 +58,14 @@ void canRxTask(void *arg)
         {
             msg.assign((char *)rx.data, rx.data_length_code);
             ESP_LOGD(FNAME, "CAN RX NMEA chunk, id:0x%x, len:%d msg: %s", (unsigned int)rx.identifier, rx.data_length_code, msg.c_str());
+            xSemaphoreTake(can->_dlink_mutex, portMAX_DELAY);;
             auto dl = can->_dlink.find(rx.identifier);
             if ( dl != can->_dlink.end() ) {
+                xSemaphoreGive(can->_dlink_mutex);
                 dl->second->process(msg.data(), msg.size());
                 to_once = true;
+            } else {
+                xSemaphoreGive(can->_dlink_mutex);
             }
 
             // bool xcv_came = false;
@@ -103,9 +107,12 @@ void canRxTask(void *arg)
         {
             // protocol state machine may want to react on no traffic
             if ( to_once ) { 
-            	for (auto &dl : can->_dlink ) {
-                	dl.second->process(nullptr, 0);
-                }
+                // not yet used
+                // xSemaphoreTake(_dlink_mutex, portMAX_DELAY);
+            	// for (auto &dl : can->_dlink ) {
+                // 	dl.second->process(nullptr, 0);
+                // }
+                // xSemaphoreGive(_dlink_mutex);
                 to_once = false;
             }
         }
@@ -220,9 +227,18 @@ CANbus::CANbus()
     // }
 }
 
+CANbus *CANbus::createCAN()
+{
+    if ( ! CAN ) {
+        CAN = new CANbus();
+    }
+    return CAN;
+}
 
 void CANbus::ConfigureIntf(int cfg)
 {
+    // just set the default speed
+    can_speed.set(CAN_SPEED_1MBIT);
 }
 
 // install/reinstall CAN driver in corresponding mode
@@ -350,9 +366,7 @@ bool CANbus::begin()
         terminate_receiver = false;
         xTaskCreate(&canRxTask, "canRxTask", 4096, this, 22, &rxTask);
     }
-    else {
-        driverUninstall();
-    }
+
     return _initialized;
 }
 
@@ -372,19 +386,17 @@ bool CANbus::selfTest()
     ESP_LOGI(FNAME, "CAN bus selftest");
 
     // Pretend slope control off and probe the reaction on GPIO 2 here
-    _slope_support = true;
-    gpio_set_direction(_slope_ctrl, GPIO_MODE_OUTPUT);
-    // in case of GPIO 2 wired to CAN this would inhibit sending and cause a failing test
-
+    _slope_support = true; // this controles the driver installation
     driverInstall(TWAI_MODE_NO_ACK);
     bool res = false;
     int id = CANTEST_ID;
     delay(100);
     _slope_support = false;
-    for (int slope = 0; slope <=1; slope++)
+    for (int gpio_level = 0; gpio_level <=1; gpio_level++)
     {
-        ESP_LOGI(FNAME,"slope support %s.", (slope==0) ? "on" : "off");
-        gpio_set_level(_slope_ctrl, slope);
+        ESP_LOGI(FNAME,"slope pin level %s.", (gpio_level==0) ? "low" : "hogh");
+        // in case of GPIO 2 wired to CAN this would inhibit sending and cause a failing test
+        gpio_set_level(_slope_ctrl, gpio_level);
         for (int i = 0; i < 3; i++)
         {
             // repeat test 3x
@@ -408,9 +420,9 @@ bool CANbus::selfTest()
             }
             else
             {	// we can only detect this if it fails
-            	if( slope == 1 ){
+            	if( gpio_level == 1 ){
             		_slope_support = true;
-            		ESP_LOGI(FNAME, "CAN HW supports slope !");
+            		ESP_LOGI(FNAME, "CAN HW connected to slope !");
             	}
                 std::string msg((char*)rx.data, rx.data_length_code);
                 ESP_LOGW(FNAME, "RX FAILED:  bytes:%d rxid:%x rxmsg:%s", rx.data_length_code, (unsigned int)rx.identifier, msg.c_str());
@@ -420,6 +432,7 @@ bool CANbus::selfTest()
     }
     driverUninstall();
     ESP_LOGW(FNAME, "Final Result: CAN bus selftest %s, slope support: %d", res ? "OKAY" : "FAILED", _slope_support );
+    _functional = res;
     return res;
 }
 

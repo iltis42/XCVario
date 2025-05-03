@@ -101,7 +101,6 @@ dl_action_t GpsMsg::parseGPRMC(NmeaPlugin *plg)
             }
         }
     }
-    Flarm::timeout = 10;
     // ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", myGPS_OK, gndSpeedKnots, gndCourse );
     return DO_ROUTING;
 }
@@ -143,7 +142,6 @@ dl_action_t GpsMsg::parseGPGGA(NmeaPlugin *plg)
             Flarm::_numSat = numSat;
             CircleWind::newConstellation(numSat);
         }
-        Flarm::timeout = 10;
     }
     return DO_ROUTING;
 }

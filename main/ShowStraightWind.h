@@ -18,7 +18,7 @@ Author: Eckhard Völlm, May 2021
 
 #pragma once
 
-#include "SetupMenuDisplay.h"
+#include "setup/SetupMenuDisplay.h"
 
 class ShowStraightWind: public SetupMenuDisplay
 {

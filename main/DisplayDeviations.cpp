@@ -18,7 +18,7 @@ Last update: 2021-02-25
  ****************************************************************************/
 
 #include "DisplayDeviations.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "sensor.h"
 #include "AdaptUGC.h"
 
@@ -44,7 +44,7 @@ void DisplayDeviations::display( int mode )
   ESP_LOGI(FNAME, "display()");
   clear();
   MYUCG->setFont( ucg_font_ncenR14_hr );
-  menuPrintLn(_title, 0, 5);
+  menuPrintLn(_title.c_str(), 0, 5);
   const char* skydirdev[8] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
   uint16_t y = 25;
   for( int i = 0; i < 8; i++ )

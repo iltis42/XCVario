@@ -5,8 +5,8 @@
  *      Author: iltis
  */
 
-#include "SetupMenuSelect.h"
-#include "SetupMenu.h"
+#include "setup/SetupMenuSelect.h"
+#include "setup/SetupMenu.h"
 
 #include "sensor.h"
 #include "Units.h"
@@ -21,7 +21,7 @@ SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, i
 	_nvs(anvs)
 {
 	// ESP_LOGI(FNAME,"SetupMenuSelect( %s ) action: %x", title, (int)action );
-	_title = title;
+	_title.assign(title);
 	bits._ext_handler = ext_handler;
 	bits._end_setup = end_menu;
 	bits._restart = restart;
@@ -41,13 +41,13 @@ void SetupMenuSelect::enter()
 
 	_select_save = _select;
 	_select = (_select > _values.size()-1) ? _values.size()-1 : _select;
-	_show_inline = _values.size() > 9 || canInline();
+	_show_inline = _values.size() > 9 || (canInline() && ! bits._ext_handler);
 	MenuEntry::enter();
 }
 
 void SetupMenuSelect::display(int mode)
 {
-    ESP_LOGI(FNAME,"display title:%s action: %x", _title, (int)(_action));
+    ESP_LOGI(FNAME,"display title:%s action: %x", _title.c_str(), (int)(_action));
 	if ( _show_inline ) {
 		indentHighlight(_parent->getHighlight());
 	}
@@ -56,9 +56,9 @@ void SetupMenuSelect::display(int mode)
 	}
 	else
 	{
-		ESP_LOGI(FNAME,"Title: %s ", _title );
+		ESP_LOGI(FNAME,"Title: %s ", _title.c_str() );
 		menuPrintLn("<<", 0);
-		menuPrintLn(_title, 0, 30);
+		menuPrintLn(_title.c_str(), 0, 30);
 		if( _select > _values.size() )
 			_select = _values.size()-1;
 		ESP_LOGI(FNAME,"select=%d size=%d val=%s", _select, _values.size(), _values[_select].first );
@@ -192,12 +192,12 @@ void SetupMenuSelect::delAllEntries()
 	_select = 0;
 }
 
-void SetupMenuSelect::mkEnable(const char *what, int val)
+void SetupMenuSelect::mkEnable(const char *what)
 {
 	// precondition: _values is empty
 	// val can be read out to know "what" to en/disable
-	addEntry("disable", val);
-	addEntry(what? what : "enable", val);
+	addEntry("disable");
+	addEntry(what? what : "enable");
 }
 
 void SetupMenuSelect::mkConfirm()

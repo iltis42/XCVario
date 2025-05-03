@@ -20,7 +20,7 @@ Copyright_License {
 }
 */
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "Units.h"
 
 class Vario : public SetupNG<float>
@@ -29,8 +29,8 @@ public:
 	Vario( const char* akey, float adefault, e_sync_t sync, void (* action)() )
 		: SetupNG(akey, adefault, true, sync, VOLATILE, action) {}
 
-	virtual float getGui() const override { return Units::Vario(get()); }
-	virtual const char* unit() const override { return Units::VarioUnit(); }
+	// virtual float getGui() const override { return Units::Vario(get()); } fixme
+	// virtual const char* unit() const override { return Units::VarioUnit(); }
 };
 
 extern Vario MC;

@@ -10,11 +10,12 @@
 
 #include "protocol/nmea_util.h"
 #include "comm/Messages.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
 #include "logdefnone.h"
 
 #include <cstring>
+#include "XCVarioMsg.h"
 
 // The XCV sync messages to synchronize a client vario.
 
@@ -24,6 +25,8 @@ XCVSyncMsg::XCVSyncMsg(NmeaPrtcl &nr, bool master) :
 {
     // tell the only user of this
     SetupCommon::setSyncProto(this);
+    // route diverse protocols further (e.g. Flarm to master-second-BT...)
+    _nmeaRef.setDefaultAction(DO_ROUTING);
 }
 
 XCVSyncMsg::~XCVSyncMsg()
@@ -87,7 +90,7 @@ dl_action_t XCVSyncMsg::parseExcl_xsX(NmeaPlugin *plg)
         ESP_LOGW(FNAME,"Setup item with key %s not found", key.c_str() );
     }
 
-    return NOACTION;
+    return NOACTION; // never forward the XCV internal blabla
 }
 
 const ParserEntry XCVSyncMsg::_pt[] = {

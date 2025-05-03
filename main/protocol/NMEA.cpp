@@ -8,6 +8,7 @@
 
 #include "NMEA.h"
 
+#include "AliveMonitor.h"
 #include "nmea_util.h"
 #include "logdefnone.h"
 
@@ -22,12 +23,23 @@ NmeaPrtcl::~NmeaPrtcl()
     }
     _plugs.clear();
     _parsmap.clear();
+
+    if ( _alive ) {
+        delete _alive;
+        _alive = nullptr;
+    }
 }
 
 void NmeaPrtcl::addPlugin(NmeaPlugin *pm)
 {
     ESP_LOGI(FNAME, "Add plugin %d", pm->getPtyp());
-    _plugs.push_back(pm); // multiples are allowed
+    // check if plugin already there
+    for ( auto it = _plugs.begin(); it != _plugs.end(); it++ ) {
+        if ( *(*it) == *pm ) {
+            return; // do not add it
+        }
+    }
+    _plugs.push_back(pm);
     // copy the parser table
     for (const ParserEntry* entry = pm->getPT(); entry->second != nullptr; ++entry) {
         Key key = entry->first;
@@ -129,8 +141,15 @@ dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
         if ( _parser.first ) {
             action = (_parser.first)(_parser.second);
         }
+        if ( _alive) {
+            _alive->keepAlive();
+        }
     }
     return dl_control_t(action);
 }
 
-
+// some basic nmea plugin caps
+ProtocolType NmeaPlugin::belongsPtyp() const
+{
+    return _nmeaRef.getProtocolId();
+}

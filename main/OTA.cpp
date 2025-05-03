@@ -16,7 +16,7 @@
 #include "freertos/event_groups.h"
 #include "MyWiFi.h"
 #include "IpsDisplay.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "OTA.h"
 #include <logdef.h>
 #include "ESPAudio.h"

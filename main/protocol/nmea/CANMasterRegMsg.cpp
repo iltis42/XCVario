@@ -12,6 +12,7 @@
 #include "protocol/Clock.h"
 #include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
+#include "setup/SetupNG.h"
 
 #include "logdefnone.h"
 
@@ -104,7 +105,7 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
     } else if ( protocol.compare("MAGSENS") == 0 ) {
         ndev = MAGSENS_DEV;
         nproto = MAGSENS_P;
-    } else if ( protocol.compare("XCVCLIENT") == 0 ) {
+    } else if ( protocol.compare("XCVCLIENT") == 0 && xcv_role.get() == MASTER_ROLE ) {
         ndev = XCVARIOCLIENT_DEV;
         nproto = XCVSYNC_P;
         prio = 4;
@@ -114,7 +115,7 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
         if ( client_ch > 0 ) {
             ESP_LOGI(FNAME, "reuse port %d", client_ch);
         } else {
-            client_ch = DeviceManager::getFreeCANId(prio);
+            client_ch = DeviceManager::reserveCANId(prio);
             ESP_LOGI(FNAME, "new port %d", client_ch);
         }
 
@@ -125,7 +126,7 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
 
             ESP_LOGI(FNAME, "use port %d", client_ch);
             int master_ch = client_ch + 1;
-            if ( DEVMAN->addDevice(ndev, nproto, master_ch, client_ch, CAN_BUS) ) {
+            if ( DEVMAN->addDevice(ndev, nproto, master_ch, client_ch, CAN_BUS, true) ) {
                 // all good
                 msg->buffer.clear();
                 msg->buffer = "$PJMACC, " + token + ", " + std::to_string(client_ch) + ", " + std::to_string(master_ch);
@@ -133,7 +134,7 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
             }
             else {
                 // Something went wrong, undo port reservation, send NAC
-                DeviceManager::undoFreeCANId(prio);
+                DeviceManager::undoReserveCANId(prio);
             }
         }
         DEV::Send(msg);

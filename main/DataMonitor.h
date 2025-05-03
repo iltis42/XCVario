@@ -6,10 +6,10 @@
  */
 #pragma once
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "AdaptUGC.h"
 #include "ESPRotary.h"
-#include "MenuEntry.h"
+#include "setup/MenuEntry.h"
 #include "comm/InterfaceCtrl.h"
 
 class SetupAction;
@@ -20,7 +20,7 @@ class DataMonitor: public MenuEntry
 {
 public:
 	DataMonitor();
-	void monitorString(e_dir_t dir, const char *s, int len );
+	void monitorString(e_dir_t dir, bool binary, const char *s, int len );
 	void start(SetupAction *p, ItfTarget ch);
 	void display(int) override {}
 	const char* value() const override { return ""; }

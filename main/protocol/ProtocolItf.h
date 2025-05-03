@@ -127,5 +127,5 @@ public:
     int         _opt = 0; // some space to carry an optional datum
     int         _esc = 0; // another optional container
     int         _header_len; // for NMEA e.g. $PFL... this will be 4, pointing to the message id start
-    std::vector<int> _word_start; // Indices of all the found "," chars
+    std::vector<int> _word_start; // Indices of all the found "," + 1 char position
 };

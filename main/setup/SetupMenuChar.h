@@ -7,9 +7,9 @@
 
 #pragma once
 
-#include "SetupNG.h"
-#include "MenuEntry.h"
-#include "SetupMenuValCommon.h"
+#include "setup/SetupNG.h"
+#include "setup/MenuEntry.h"
+#include "setup/SetupMenuValCommon.h"
 
 class SetupMenuChar:  public MenuEntry
 {

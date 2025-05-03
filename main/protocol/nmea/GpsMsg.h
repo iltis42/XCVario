@@ -13,7 +13,7 @@
 class GpsMsg final : public NmeaPlugin
 {
 public:
-    GpsMsg(NmeaPrtcl &nr, ProtocolType p) : NmeaPlugin(nr, p) {};
+    GpsMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, NMEASTD_P) {};
     virtual ~GpsMsg() = default;
     const ParserEntry* getPT() const override { return _pt; }
 

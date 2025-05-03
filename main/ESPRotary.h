@@ -18,6 +18,7 @@
 constexpr const int SHORT_PRESS     = 1;
 constexpr const int LONG_PRESS      = 2;
 constexpr const int BUTTON_RELEASED = 3;
+constexpr const int ESCAPE          = 4;
 constexpr const int ROTARY_EVTMASK  = 0xf0;
 
 union KnobEvent {
@@ -25,7 +26,7 @@ union KnobEvent {
 		int ButtonEvent : 4; // 1,2,3
 		int RotaryEvent : 4; // -3,-2,-1, 1,2,3
 	};
-	int raw;
+	int raw = 0;
 	KnobEvent() = default;
 	constexpr KnobEvent(const int v) : raw(v) {}
 };

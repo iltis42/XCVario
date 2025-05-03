@@ -4,9 +4,9 @@
  *  Created on: Feb 4, 2018
  *      Author: iltis
  */
-#include "MenuEntry.h"
+#include "setup/MenuEntry.h"
 
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"
@@ -41,7 +41,7 @@ MenuEntry::MenuEntry()
 const MenuEntry* MenuEntry::findMenu(const char *title) const
 {
 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title, this );
-	if( std::strcmp(_title, title) == 0 ) {
+	if( _title == title ) {
 		ESP_LOGI(FNAME,"Menu entry found for start %s", title );
 		return this;
 	}
@@ -60,7 +60,8 @@ void MenuEntry::reBoot(){
 	clear();
 	MYUCG->setPrintPos( 10, 50 );
 	MYUCG->print("...rebooting now" );
-	delay(2000);
+	SetupCommon::commitDirty();
+	delay(1000);
 	esp_restart();
 }
 
@@ -135,7 +136,7 @@ void MenuEntry::unHighlight(int sel) const
 
 void MenuEntry::indentHighlight(int sel)
 {
-	cur_indent = MYUCG->getStrWidth(_title) + 4;
+	cur_indent = MYUCG->getStrWidth(_title.c_str()) + 4;
 	cur_row = sel+1;
 	MYUCG->setColor(COLOR_BLACK);
 	MYUCG->drawFrame(1, cur_row*25 + 3, dwidth-2, 25);
@@ -198,8 +199,9 @@ bool MenuEntry::showhelp(bool inln)
 		int y=hypos;
 		if ( inln ) {
 			int nr_lines = freeBottomLines();
-			if (nr_lines > 0 ) {
-				if ( nr_lines > 5 ) { nr_lines -= 1; }
+			int needed_ln = nrOfHelpLines();
+			if (nr_lines >= needed_ln ) {
+				nr_lines = std::min(nr_lines, needed_ln+2);
 				y = dheight - (nr_lines-1)*25;
 			}
 			else {

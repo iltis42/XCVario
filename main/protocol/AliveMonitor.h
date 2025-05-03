@@ -8,18 +8,28 @@
 
 #pragma once
 
-#include "protocol/NMEA.h"
+#include "WatchDog.h"
 
-class BorgeltMsg final : public NmeaPlugin
+
+template<typename T>
+class SetupNG;
+
+// Watchdog based on esp_timer
+class AliveMonitor :  public WDBark_I
 {
 public:
-    BorgeltMsg(NmeaPrtcl &nr, bool as) : NmeaPlugin(nr, BORGELT_P, as) {};
-    virtual ~BorgeltMsg() = default;
-    const ParserEntry* getPT() const override { return _pt; }
+    explicit AliveMonitor(SetupNG<int>* flag, int to_ms = 1000);
+    ~AliveMonitor() = default;
 
-    // Declare send routines in NmeaPrtcl class !
+    // API
+    void setTimeout(int to_ms) { _alive_wd.setTimeout(to_ms); }
+    void keepAlive();
+
+protected:
+    // alive timeout
+    void barked() override;
 
 private:
-    // Received messages
-    static const ParserEntry _pt[];
+    WatchDog_C    _alive_wd;
+    SetupNG<int>* _alive_flag = nullptr;
 };

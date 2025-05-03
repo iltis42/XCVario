@@ -10,22 +10,18 @@
 
 #include "protocol/NMEA.h"
 
-class XCVarioMsg final : public NmeaPlugin
+class XCNavMsg final : public NmeaPlugin
 {
 public:
-    XCVarioMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, XCVSYNC_P) {};
-    virtual ~XCVarioMsg() = default;
+XCNavMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, XCNAV_P) {};
+    virtual ~XCNavMsg() = default;
     const ParserEntry* getPT() const override { return _pt; }
-
-    static int getXcvProtocolVersion() { return _protocol_version; };
 
     // Declare send routines in NmeaPrtcl class !
 
 private:
     // Received messages
-    static dl_action_t parseExcl_xsX(NmeaPlugin *plg);
-    static dl_action_t parseExcl_xcs(NmeaPlugin *plg);
+    static dl_action_t parseDollar_g(NmeaPlugin *plg);
 
     static const ParserEntry _pt[];
-    static uint8_t _protocol_version;
 };

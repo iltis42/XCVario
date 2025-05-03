@@ -19,7 +19,7 @@ public:
     float b;
     float c;
     float d;
-    Quaternion() : a(1.), b(0), c(0), d(0) {};
+    constexpr Quaternion() : a(1.), b(0), c(0), d(0) {};
     Quaternion(float a, float b, float c, float d);
     Quaternion(const float angle, const vector_ijk& axis);
     Quaternion(Quaternion &&) = default; // Allow std::move

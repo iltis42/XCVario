@@ -5,7 +5,7 @@
  *      Author: iltis
  */
 
-#include "SetupMenu.h"
+#include "setup/SetupMenu.h"
 #include "setup/SubMenuDevices.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
@@ -17,9 +17,9 @@
 #include "Units.h"
 #include "Switch.h"
 #include "Flap.h"
-#include "SetupMenuSelect.h"
-#include "SetupMenuValFloat.h"
-#include "SetupMenuChar.h"
+#include "setup/SetupMenuSelect.h"
+#include "setup/SetupMenuValFloat.h"
+#include "setup/SetupMenuChar.h"
 #include "setup/SetupAction.h"
 #include "DisplayDeviations.h"
 #include "ShowCompassSettings.h"
@@ -34,7 +34,7 @@
 #include "Blackboard.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
 #include "comm/DeviceMgr.h"
 #include "protocol/NMEA.h"
@@ -451,6 +451,10 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 	return 0;
 }
 
+static int role_change_action(SetupMenuSelect *p) {
+	return 0;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // SetupMenu
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -460,12 +464,12 @@ SetupMenu::SetupMenu(const char *title, SetupMenuCreator_t menu_create, int cont
 	content_id(cont_id)
 {
 	// ESP_LOGI(FNAME,"SetupMenu::SetupMenu( %s ) ", title );
-	_title = title;
+	_title.assign(title);
 	setRotDynamic(1.f);
 }
 
 SetupMenu::~SetupMenu() {
-	ESP_LOGI(FNAME,"del SetupMenu( %s ) ", _title );
+	ESP_LOGI(FNAME,"del SetupMenu( %s ) ", _title.c_str() );
 	for (auto *c : _childs) {
 		delete c;
 	}
@@ -481,7 +485,7 @@ void SetupMenu::enter()
 {
 	ESP_LOGI(FNAME,"enter inSet %d, mptr: %p", gflags.inSetup, populateMenu );
 	if ((_childs.empty() || dyn_content) && populateMenu) {
-		(populateMenu)(this);
+		dirty = true; // force to create child list
 		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
 	}
 	MenuEntry::enter();
@@ -489,18 +493,24 @@ void SetupMenu::enter()
 
 void SetupMenu::display(int mode)
 {
+	if ( dirty && populateMenu) {
+		ESP_LOGI(FNAME,"SetupMenu display() dirty %d", dirty );
+		dirty = false;
+		(populateMenu)(this);
+		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
+	}
 	xSemaphoreTake(display_mutex, portMAX_DELAY);
-	ESP_LOGI(FNAME,"SetupMenu display(%s-%d)", _title, highlight );
+	ESP_LOGI(FNAME,"SetupMenu display(%s-%d)", _title.c_str(), highlight );
 	if ( highlight >= (int)(_childs.size()) ) {
 		highlight = _childs.size()-1;
 	}
 	ESP_LOGI(FNAME,"SetupMenu display %d", highlight );
 	clear();
-	ESP_LOGI(FNAME,"Title: %s child size:%d", _title, _childs.size());
+	ESP_LOGI(FNAME,"Title: %s child size:%d", _title.c_str(), _childs.size());
 	MYUCG->setFont(ucg_font_ncenR14_hr);
 	MYUCG->setFontPosBottom();
 	menuPrintLn("<<", 0);
-	menuPrintLn(_title, 0, 30);
+	menuPrintLn(_title.c_str(), 0, 30);
 	doHighlight(highlight);
 	for (int i = 0; i < _childs.size(); i++) {
 		MenuEntry *child = _childs[i];
@@ -557,7 +567,7 @@ void SetupMenu::delEntry( MenuEntry * item ) {
 const MenuEntry* SetupMenu::findMenu(const char *title) const
 {
 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title, this );
-	if( std::strcmp(_title, title) == 0 ) {
+	if( _title == title ) {
 		ESP_LOGI(FNAME,"Menu entry found for start %s", title );
 		return this;
 	}
@@ -586,7 +596,7 @@ static int modulo(int a, int b) {
 
 void SetupMenu::rot(int count)
 {
-	ESP_LOGI(FNAME,"select %d: %d/%d", count, highlight, _childs.size() );
+	// ESP_LOGI(FNAME,"select %d: %d/%d", count, highlight, _childs.size() );
 	unHighlight(highlight);
 	highlight = modulo(highlight+1+count, _childs.size()+1) - 1;
 	doHighlight(highlight);
@@ -1633,12 +1643,14 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 void system_menu_create_hardware_rotary_screens(SetupMenu *top)
 {
 	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens);
-	scrgmet->mkEnable("enable", SCREEN_GMETER);
+	scrgmet->addEntry("disable");
+	scrgmet->addEntry("enable", SCREEN_GMETER);
 	top->addEntry(scrgmet);
 
 	if (gflags.ahrsKeyValid) {
 		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens);
-		horizon->mkEnable("enable", SCREEN_HORIZON);
+		horizon->addEntry("disable");
+		horizon->addEntry("enable", SCREEN_HORIZON);
 		top->addEntry(horizon);
 	}
 }
@@ -1907,10 +1919,8 @@ void system_menu_create(SetupMenu *sye) {
 	SetupMenu *soft = new SetupMenu("Software Update", system_menu_create_software);
 	sye->addEntry(soft);
 
-	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, 0,
-			false, &factory_reset);
-	fa->setHelp(
-			"Option to reset all settings to factory defaults, means metric system, 5 m/s vario range and more");
+	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, 0, false, &factory_reset);
+	fa->setHelp("Option to reset all settings to factory defaults, means metric system, 5 m/s vario range and more");
 	fa->addEntry("Cancel");
 	fa->addEntry("ResetAll");
 	sye->addEntry(fa);
@@ -1932,14 +1942,21 @@ void system_menu_create(SetupMenu *sye) {
 	SetupMenu *ad = new SetupMenu("Audio", audio_menu_create);
 	sye->addEntry(ad);
 
+	// XCV role
+	SetupMenuSelect *role = new SetupMenuSelect("XCV device role", RST_IMMEDIATE, role_change_action, true, &xcv_role);
+	role->setHelp("Set the intended role of this device first (needs a reboot)");
+	role->addEntry("None");
+	role->addEntry("Master");
+	role->addEntry("Second");
+	sye->addEntry(role);
+
 	// Devices menu
 	SetupMenu *devices = new SetupMenu("Connected Devices", system_menu_connected_devices);
-	devices->setHelp("Devices, Interfaces, Protocols", 240);
+	devices->setHelp("Devices, Interf.s, Protocols");
 	devices->setDynContent();
 	sye->addEntry(devices);
 
-	SetupMenuSelect *logg = new SetupMenuSelect("Logging", RST_NONE, 0, true,
-			&logging);
+	SetupMenuSelect *logg = new SetupMenuSelect("Logging", RST_NONE, 0, true, &logging);
 	logg->setHelp("R&D option, do not use!\n Collect raw sensor data with NMEA logger in XCSoar");
 	logg->mkEnable("Sensor RAW Data");
 	sye->addEntry(logg);
@@ -1990,7 +2007,7 @@ void setup_create_root(SetupMenu *top) {
 	SetupMenuValFloat *qnh_menu = SetupMenu::createQNHMenu();
 	top->addEntry(qnh_menu);
 
-	SetupMenuValFloat *afe = new SetupMenuValFloat("Airfield Elevation", "", -1,
+	SetupMenuValFloat *afe = new SetupMenuValFloat("Airfield Elevation", "", NOTSET_ELEVATION,
 			3000, 1, 0, true, &elevation);
 	afe->setHelp(
 			"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");

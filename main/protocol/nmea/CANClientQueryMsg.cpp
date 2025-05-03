@@ -12,7 +12,7 @@
 #include "protocol/Clock.h"
 #include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
-#include "SetupCommon.h"
+#include "setup/SetupCommon.h"
 
 #include "logdefnone.h"
 
@@ -112,7 +112,7 @@ dl_action_t CANClientQueryMsg::registration(NmeaPlugin *plg)
         && m_id > 0 && m_id < 0x7ff ) {
         // success
         ESP_LOGI(FNAME, "Client registered (ID=%d)", c_id);
-        DEVMAN->addDevice(XCVARIO_DEV, XCVSYNC_P, c_id, m_id, CAN_BUS);
+        DEVMAN->addDevice(XCVARIO_DEV, XCVSYNC_P, c_id, m_id, CAN_BUS, true);
 
         Clock::stop(me);
     }

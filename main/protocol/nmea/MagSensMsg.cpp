@@ -6,9 +6,11 @@
 #include "comm/Messages.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/MagSensBin.h"
+#include "Compass.h"
+#include "QMCMagCAN.h"
 
 #include "sensor.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 #include "Version.h"
 #include "logdef.h"
 
@@ -35,7 +37,9 @@ static int Conf_Pack_Nr = 0;
 // - Anounce firmware update:
 //   $PMSU,  <length>, <packet_size>*<CRC>\r\n
 //   response: $PMSC, <enum>\r\n
-
+//
+// - Stream data:
+//   $PMMD, <stream_type>, <data>\r\n
 
 dl_action_t MagSensMsg::magsensVersion(NmeaPlugin *plg)
 {
@@ -62,10 +66,40 @@ dl_action_t MagSensMsg::magsensConfirmation(NmeaPlugin *plg)
     return NOACTION;
 }
 
+dl_action_t MagSensMsg::streamData(NmeaPlugin *plg)
+{
+    // $PMMD,r/c,x,y,z\r\n
+    ProtocolState *sm = plg->getNMEA().getSM();
+    const std::vector<int> *word = &sm->_word_start;
+
+    if ( word->size() != 4 ) {
+        ESP_LOGI(FNAME,"PMMD stream data incomplete");
+        return NOACTION;
+    }
+    ESP_LOGI(FNAME,"PMMD stream data %s", sm->_frame.c_str());
+    QMCMagCAN* magsens = static_cast<QMCMagCAN*>(Compass::getSensInst());
+    if ( sm->_frame.at(6) == 'r' ) {
+        t_magn_axes tmp;
+        tmp.x = atoi(sm->_frame.c_str() + word->at(1));
+        tmp.y = atoi(sm->_frame.c_str() + word->at(2)); 
+        tmp.z = atoi(sm->_frame.c_str() + word->at(3));
+        magsens->fromCAN(&tmp);
+    }
+    else if ( sm->_frame.at(6) == 'c' ) {
+        // later
+    }
+    return NOACTION;
+}
+
+
+
+
+
 // NMEA plugin table
 const ParserEntry MagSensMsg::_pt[] = {
     { Key("PMSV"), MagSensMsg::magsensVersion },
     { Key("PMSC"), MagSensMsg::magsensConfirmation },
+    { Key("PMMD"), MagSensMsg::streamData },
     {}
 };
 

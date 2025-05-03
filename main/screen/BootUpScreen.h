@@ -18,11 +18,13 @@
 class BootUpScreen final : public Clock_I
 {
 public:
+    static constexpr int DIVIDER = 4;
+
     BootUpScreen();
     ~BootUpScreen();
 
     // this will fill the logo completely
-    void finish();
+    void finish(int part);
 
     // Clock tick callback
     bool tick() override;
@@ -34,4 +36,7 @@ private:
     int radius;
     int x_offset;
     int y_offset;
+    int fini_part;
+    int yline;
+    int yline_to;
 };

@@ -19,6 +19,7 @@
 #include "CircleWind.h"
 #include "comm/WifiAP.h"
 #include "comm/BTspp.h"
+#include "comm/CanBus.h"
 #include "Blackboard.h"
 
 #include "freertos/FreeRTOS.h"
@@ -917,11 +918,11 @@ void IpsDisplay::drawBT() {
 	if( _menu )
 		return;
 	int btq=0;
-	if( wireless == WL_BLUETOOTH && BTspp )
+	if( DEVMAN->isIntf(BT_SPP) && BTspp ) // fixme
 		btq = BTspp->isConnected() ? 0 : 1;
-	else if( wireless == WL_BLUETOOTH_LE )
+	else if( DEVMAN->isIntf(BT_LE) )
 		btq=BLESender::queueFull();
-	if( btq != btqueue || Flarm::connected() != flarm_connected ){
+	if( btq != btqueue || flarm_alive.get() > ALIVE_NONE ){
 		int16_t btx=DISPLAY_W-20;
 		int16_t bty=(BTH/2) + 8;
 		if( btq )
@@ -931,7 +932,7 @@ void IpsDisplay::drawBT() {
 
 		ucg->drawRBox( btx-BTW/2, bty-BTH/2, BTW, BTH, BTW/2-1);
 		// inner symbol
-		if( Flarm::connected() )
+		if( flarm_alive.get() == ALIVE_OK )
 			ucg->setColor( COLOR_GREEN );
 		else
 			ucg->setColor( COLOR_WHITE );
@@ -941,7 +942,7 @@ void IpsDisplay::drawBT() {
 		ucg->drawLine( btx, bty, btx-BTSIZE, bty+BTSIZE );
 
 		btqueue = btq;
-		flarm_connected = Flarm::connected();
+		flarm_connected = flarm_alive.get();
 	}
 	if( SetupCommon::isWired() ) {
 		drawCable(DISPLAY_W-20, BTH + 22);
@@ -953,25 +954,24 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 	const int16_t CANH = 8;
 	const int16_t CANW = 14;
 
-	Device *dev = DEVMAN->getXCVPeer();
-	bool CANconnectedXCV = dev && dev->isAlive();
-	dev = DEVMAN->getDevice(MAGSENS_DEV);
-	bool CANconnectedMag = dev && dev->isAlive();
+	int connectedXCV = xcv_alive.get(); // fixme
+	int connectedMag = xcv_alive.get();
 	
-	CANconnectedXCV ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
+	(connectedXCV == ALIVE_OK)? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
 	// lower horizontal line
-	if (CANconnectedMag)
+	if (connectedMag) {
 		ucg->setColor(COLOR_GREEN);
+	}
 	ucg->drawLine( x-CANW/2, y+CANH/2, x+3, y+CANH/2 );
 	ucg->drawLine( x-CANW/2, y+CANH/2-1, x+3, y+CANH/2-1 );
 	ucg->drawDisc( x-CANW/2, y+CANH/2, 2, UCG_DRAW_ALL);
-	CANconnectedMag ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
+	(connectedMag == ALIVE_OK)? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
 	// Z diagonal line
-	if (Flarm::connected()) { ucg->setColor(COLOR_GREEN); }
+	if (flarm_alive.get() == ALIVE_OK) { ucg->setColor(COLOR_GREEN); }
 	ucg->drawLine( x+2, y+CANH/2, x-4, y-CANH/2 );
 	ucg->drawLine( x+3, y+CANH/2-1, x-3, y-CANH/2-1 );
 	// upper horizontal line
-	CANconnectedXCV ? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
+	(connectedXCV == ALIVE_OK)? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
 	ucg->drawLine( x-3, y-CANH/2, x+CANW/2, y-CANH/2 );
 	ucg->drawLine( x-3, y-CANH/2-1, x+CANW/2, y-CANH/2-1 );
 	ucg->drawDisc( x+CANW/2, y-CANH/2, 2, UCG_DRAW_ALL);
@@ -1005,28 +1005,31 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		return;
 	int btq=1;
 	// ESP_LOGI(FNAME,"wireless %d", wireless );
-	if( wireless == WL_WLAN_CLIENT ){
-		if( WifiClient::isConnected(8884) )
+	if ( DEVMAN->isIntf(WIFI_CLIENT) ) {
+		if( WifiClient::isConnected(8884) ) // fixme
 			btq=0;
 	}
-	else if( wireless == WL_WLAN_STANDALONE || wireless == WL_WLAN_MASTER  )
+	else if ( xcv_role.get() <= 1 && DEVMAN->isIntf(WIFI_AP) ) {
 		btq=WifiAP::queueFull();
-	else
+	} else {
 		return;
-	if( btq != btqueue || Flarm::connected() != flarm_connected ){
+	}
+	if( btq != btqueue || flarm_alive.get() > ALIVE_NONE ){
 		ESP_LOGD(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,btq);
-		if( btq )
+		if( btq ) {
 			ucg->setColor(COLOR_MGREY);
-		else
+		} else {
 			ucg->setColor( COLOR_BLUE );
+		}
 		ucg->drawCircle( x, y, 9, UCG_DRAW_UPPER_RIGHT);
 		ucg->drawCircle( x, y, 10, UCG_DRAW_UPPER_RIGHT);
 		ucg->drawCircle( x, y, 16, UCG_DRAW_UPPER_RIGHT);
 		ucg->drawCircle( x, y, 17, UCG_DRAW_UPPER_RIGHT);
-		if( Flarm::connected() )
+		if( flarm_alive.get() == ALIVE_OK ) {
 			ucg->setColor( COLOR_GREEN );
+		}
 		ucg->drawDisc( x, y, 3, UCG_DRAW_ALL );
-		flarm_connected = Flarm::connected();
+		flarm_connected = flarm_alive.get();
 		btqueue = btq;
 	}
 	if( SetupCommon::isWired() ) {
@@ -1036,9 +1039,9 @@ void IpsDisplay::drawWifi( int x, int y ) {
 
 void IpsDisplay::drawConnection( int16_t x, int16_t y )
 {
-	if( wireless == WL_BLUETOOTH || wireless == WL_BLUETOOTH_LE )
+	if ( DEVMAN->isIntf(BT_SPP) || DEVMAN->isIntf(BT_LE) ) // fixme
 		drawBT();
-	else if( wireless != WL_DISABLE )
+	else if( DEVMAN->isIntf(WIFI_AP) || DEVMAN->isIntf(WIFI_CLIENT) )
 		drawWifi(x, y);
 	else if( SetupCommon::isWired() )
 		drawCable(DISPLAY_W-20, y);
@@ -2310,7 +2313,7 @@ void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sin
 		return;
 
 	if ( alt_display_mode.get() == MODE_QFE ) {
-		altitude -= elevation.get();
+		altitude -= elevation.get(); // fixme, what is elevation is not set?
 	}
 	xSemaphoreTake(display_mutex,portMAX_DELAY);
 	if( display_style.get() == DISPLAY_AIRLINER )

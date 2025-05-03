@@ -2,7 +2,6 @@
 
 #include "MPU.hpp"        // main file, provides the class itself
 #include "AnalogInput.h"
-#include "Protocols.h"
 #include "MP5004DP.h"
 #include "MS4525DO.h"
 #include "IpsDisplay.h"
@@ -16,6 +15,7 @@
 #include "AirspeedSensor.h"
 
 #include <hal/gpio_types.h>
+#include <esp_timer.h>
 
 // Display 4 Wire SPI and Display CS
 #define RESET_Display  GPIO_NUM_5       // Reset pin for Display
@@ -42,6 +42,7 @@ typedef struct global_flags{
 	bool validTemperature :1 ;
 	bool mpu_pwm_initalized: 1;
 	bool gear_warn_external :1;
+	bool schedule_reboot :1;
 } t_global_flags;
 
 class CANbus;
@@ -67,8 +68,6 @@ extern PressureSensor *baroSensor;
 
 // extern SetupRoot Menu;
 extern SemaphoreHandle_t display_mutex;
-
-extern e_wireless_type wireless;
 
 extern float getTAS();
 
@@ -113,9 +112,6 @@ extern vector_ijk gravity_vector;
 extern float mpu_target_temp;
 
 extern MPU_t MPU;
-
-// There is no temperature control for XCV hardware < 23, GPIO Pin there is wired to CAN slope control
-#define HAS_MPU_TEMP_CONTROL (CAN && !CAN->hasSlopeSupport())
 
 // The XCV access point password
 constexpr const char* PASSPHARSE = "xcvario-21";

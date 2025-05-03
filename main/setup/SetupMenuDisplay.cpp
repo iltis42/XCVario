@@ -7,7 +7,7 @@
  *                                                                         *
  ****************************************************************************
 
-File: SetupMenuDisplay.h
+File: SetupMenuDisplay.cpp
 
 Generic class to display text in a menu item.
 
@@ -16,31 +16,31 @@ Author: Axel Pauli, February 2021
 Last update: 2021-02-25
 
  ****************************************************************************/
+#include "IpsDisplay.h"
+#include "setup/SetupMenuDisplay.h"
+#include "setup/SetupMenu.h"
+#include "sensor.h"
+#include "logdef.h"
 
-#pragma once
+#include <esp_system.h>
 
-#include "MenuEntry.h"
-
-
-class SetupMenuDisplay: public MenuEntry
+SetupMenuDisplay::SetupMenuDisplay( const char* title, int (*action)(SetupMenuDisplay *p) ) :
+	MenuEntry()
 {
-public:
-  SetupMenuDisplay( const char* title, int (*action)(SetupMenuDisplay *p) = nullptr );
+	_title.assign(title);
+	_action = action;
+}
 
-  virtual ~SetupMenuDisplay() = default;
+void SetupMenuDisplay::display(int mode)
+{
+  if( _action != nullptr ) {
+    // Call user's callback
+    (*_action)( this );
+  }
+}
 
-  /**
-   * Make a class derive and overload this method with your own display method
-   * or handle all display stuff in your callback function action.
-   */
-	void display(int mode=0) override;
-
-	const char *value() const override { return nullptr; }
-	void rot( int count ) override {}
-	void press() override;
-	void longPress() override {};
-
-private:
-	// User's callback function
-	int (*_action)( SetupMenuDisplay *p );
-};
+void SetupMenuDisplay::press()
+{
+	_parent->highlightTop();
+	exit();
+}

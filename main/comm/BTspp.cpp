@@ -1,5 +1,5 @@
 #include "BTspp.h"
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
 #include "comm/DataLink.h"
 #include "comm/InterfaceCtrl.h"
@@ -71,9 +71,13 @@ static void spp_event_handler(esp_spp_cb_event_t event, esp_spp_cb_param_t *para
 		{
 			rxBuf[count] = '\0';
 
+			xSemaphoreTake(BTspp->_dlink_mutex, portMAX_DELAY);
 			auto dlit = BTspp->_dlink.begin();
 			if ( dlit != BTspp->_dlink.end() ) {
+				xSemaphoreGive(BTspp->_dlink_mutex);
 				dlit->second->process(rxBuf, count);
+			} else {
+				xSemaphoreGive(BTspp->_dlink_mutex);
 			}
 		}
 		// esp_spp_write(param->data_ind.handle, param->data_ind.len, param->data_ind.data);
@@ -174,7 +178,20 @@ bool BTSender::start()
 void BTSender::stop()
 {
 	if ( _initialized ) {
+		if ( _client_handle ) {
+			ESP_LOGI(FNAME, "Disconnecting SPP client");
+			esp_spp_disconnect(_client_handle);
+
+			// Wait for the disconnection event
+			while (_client_handle != 0) {
+				vTaskDelay(100 / portTICK_PERIOD_MS);
+			}
+			ESP_LOGI(FNAME, "SPP client disconnected");
+		}
 		esp_spp_deinit();
+		esp_bluedroid_disable();
+		esp_bluedroid_deinit();
+		esp_bt_controller_disable();
 		esp_bt_controller_deinit();
 		_initialized = false;
 		_server_running = false;

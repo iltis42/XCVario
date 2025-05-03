@@ -8,6 +8,11 @@
 
 class DataLink;
 
+
+// There is no temperature control for XCV hardware < 23, GPIO Pin there is wired to CAN slope control
+#define HAS_MPU_TEMP_CONTROL (CAN && !CAN->hasSlopeSupport())
+
+
 // #define CAN_NMEA_ID_MASTER 0x20
 // #define CAN_CONFIG_ID_MASTER 0x21
 // #define CAN_KEEPALIVE_ID_MASTER 0x11
@@ -27,17 +32,16 @@ typedef enum
 
 class CANbus final : public InterfaceCtrl
 {
-public:
-
+private:
 	CANbus();
+public:
+	static CANbus *createCAN();
 	~CANbus() = default;
 	bool begin();
 	void stop();
 	bool isInitialized() { return _initialized; };
 	bool hasSlopeSupport() { return _slope_support; };
 	// deprecated
-	bool GotNewClient() const { return _new_can_client_connected; }
-	void ResetNewClient() { _new_can_client_connected = false; }
 	bool connectedXCV() { return _connected_xcv; };
 	bool connected() { return (_connected_xcv); };
 	// --
@@ -61,7 +65,7 @@ private:
 	gpio_num_t _rx_io;
 	gpio_num_t _slope_ctrl;
 	bool _initialized = false;
-	bool _connected_xcv = false;
+	bool _connected_xcv = false; // fixme ...
 	bool _slope_support = false;
 	bool _new_can_client_connected = false;
 	bool _keep_alive_fails = false;

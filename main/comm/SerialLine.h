@@ -3,30 +3,39 @@
 #include "comm/DataLink.h"
 #include "comm/InterfaceCtrl.h"
 
-#include "SetupNG.h"
+#include "setup/SetupNG.h"
 
 #include <driver/uart.h>
 #include <driver/gpio.h>
 
+#include <cinttypes>
 #include <atomic>
 
 typedef enum { BAUD_4800, BAUD_9600, BAUD_19200, BAUD_38400, BAUD_57600, BAUD_115200 } e_baud;
 typedef enum { SM_FLARM, SM_RADIO, SM_XCTNAV_S3, SM_OPENVARIO, SM_XCFLARMBIN, SM_XCFLARMVIEW } e_profile;
 
-typedef struct _s_serial_cfg {
-	e_profile  profile:5;
-	e_baud     baud:4;
-	bool       polarity:1;
-	bool       pin_swp:1;
-	bool       tx_ena:1;
-} t_serial_cfg;
+union t_serial_cfg {
+	struct {
+		e_profile  profile:5;
+		e_baud     baud:4;
+		bool       polarity:1;
+		bool       pin_swp:1;
+		bool       tx_ena:1;
+	};
+	uint16_t raw = 0;
+	constexpr t_serial_cfg(int r) : raw(r) {}
+	constexpr t_serial_cfg(int pfl, int b, bool pty, bool swp, bool tx) :
+		raw((pfl & 0x1f) | (b & 0xf)<<5 | (pty & 0x1)<<9 | (swp & 0x1)<<10 | (tx & 0x1)<<11) {}
+};
 
-typedef struct serial_setup {
+struct t_serial_nvs_setup {
 	SetupNG<int> *baud;
 	SetupNG<int> *polarity;
 	SetupNG<int> *pin_swp;
 	SetupNG<int> *tx_ena;
-} t_serial_nvs_setup;
+	constexpr t_serial_nvs_setup(SetupNG<int>* ba, SetupNG<int>* po, SetupNG<int>* pi, SetupNG<int>* tx) : 
+		baud(ba), polarity(po), pin_swp(pi), tx_ena(tx) {}
+};
 
 
 class SerialLine final : public InterfaceCtrl {
@@ -44,10 +53,12 @@ public:
     const char* getStringId() const override { return _id_memo; }
     void ConfigureIntf(int cfg) override;                // 0:SM_FLARM, 1:SM_RADIO, 2: ..
     int Send(const char *msg, int &len, int port=0) override;
+    void stop(); // the ConfigureIntf call would start it again
 
     // integrated vom ex HardwareSerial
     void flush();
     int number() const { return uart_nr; }
+    int getBreakCount() const { return break_count; }
 
 private:
     void loadProfile(e_profile profile);    // load defaults according to profile given
@@ -72,6 +83,7 @@ private:
     friend void uartTask(SerialLine *arg);
     void* _event_queue = nullptr;
     void* _iotask = nullptr;
+    int break_count = 0;
     // Sending data with uart buffer
 };
 

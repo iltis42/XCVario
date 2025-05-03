@@ -8,18 +8,12 @@
 
 #pragma once
 
-#include "protocol/NMEA.h"
 
-class BorgeltMsg final : public NmeaPlugin
+// Bark interface
+class WDBark_I
 {
 public:
-    BorgeltMsg(NmeaPrtcl &nr, bool as) : NmeaPlugin(nr, BORGELT_P, as) {};
-    virtual ~BorgeltMsg() = default;
-    const ParserEntry* getPT() const override { return _pt; }
-
-    // Declare send routines in NmeaPrtcl class !
-
-private:
-    // Received messages
-    static const ParserEntry _pt[];
+    virtual ~WDBark_I() {}
+public:
+    virtual void barked() = 0;
 };

@@ -28,7 +28,7 @@ SetupRoot::~SetupRoot()
 
 void SetupRoot::begin(MenuEntry *setup)
 {
-    ESP_LOGI(FNAME,"SetupMenu %s", _title);
+    ESP_LOGI(FNAME,"SetupMenu %s", _title.c_str());
     // root will always own only one child
     if ( !_childs.empty() ) {
         ESP_LOGW(FNAME,"Found root menu not empty.");
@@ -56,7 +56,6 @@ void SetupRoot::exit(int levels)
     ESP_LOGI(FNAME,"End Setup Menu");
 
     screens_init = INIT_DISPLAY_NULL;
-    _display->doMenu(false);
     if (_restart) {
         reBoot();
     }

@@ -33,7 +33,6 @@ void AliveMonitor::keepAlive()
     else {
         _alive_wd.restart();
     }
-    _alive_wd.pet();
     ESP_LOGI(FNAME, "Alive monitor %s", _alive_flag->key());
 }
 

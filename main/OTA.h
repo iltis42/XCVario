@@ -4,26 +4,17 @@
  *  Created on: Feb 24, 2019
  *      Author: iltis
  */
-#ifndef MAIN_OTA_H_
-#define MAIN_OTA_H_
+#pragma once
 
-#include "ESPRotary.h"
-
-class OTA: public RotaryObserver
+class OTA
 {
 public:
-	OTA();
-	~OTA() {};
-	void begin();
-	void press() override;
-	void release() override {};
-	void rot( int count ) override {};
-	void longPress() override;
-	void escape() override {};
+	OTA() = default;
+	~OTA() = default;
 	void doSoftwareUpdate( IpsDisplay *p );
+
 private:
-    bool pressed;
-    int  tick;
+	int  tick = 0;
 };
 
-#endif /* MAIN_SWITCH_H_ */
+

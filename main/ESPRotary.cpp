@@ -272,12 +272,13 @@ bool ESPRotary::readSwitch() const
 {
 	// return true for any button event in the queue, except a release
 	int event;
-	while (xQueueReceive(buttonQueue, &event, 0) == pdTRUE) {
+	bool ret = false;
+	if (xQueueReceive(buttonQueue, &event, 0) == pdTRUE) {
 		if (event == SHORT_PRESS
 			|| event == LONG_PRESS) {
-			xQueueReset(buttonQueue);
-			return true;
+			ret = true;
 		}
 	}
-	return false;
+	xQueueReset(buttonQueue); // clear the queue
+	return ret;
 }

@@ -987,7 +987,6 @@ void system_startup(void *args){
 		}
 		delete boot_screen; // screen now belongs to OTA
 		ota = new OTA();
-		ota->begin();
 		ota->doSoftwareUpdate( Display ); // fixme -> missing the drawDisplay to process button at this point in time
 	}
 	if( hardwareRevision.get() >= XCVARIO_21 ){

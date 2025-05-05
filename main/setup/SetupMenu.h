@@ -28,6 +28,7 @@ public:
 	int getHighlight() const { return highlight; }
 	int incHighlight() { return ++highlight; }
 	void highlightTop() { highlight = -1; }
+	void highlightFirst() { highlight = 0; }
 	void highlightLast() { highlight = _childs.size()-1; }
 	void setHighlight(MenuEntry*);
 	int getNrChilds() const { return _childs.size(); }

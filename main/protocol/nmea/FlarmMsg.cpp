@@ -25,7 +25,7 @@
 // PFLAX,A*2E
 
 FlarmMsg::FlarmMsg(NmeaPrtcl &nr) :
-    NmeaPlugin(nr, FLARM_P)
+    NmeaPlugin(nr, FLARM_P, false)
 {
     _nmeaRef.setDefaultAction(DO_ROUTING);
 }
@@ -153,7 +153,7 @@ dl_action_t FlarmMsg::parsePFLAU(NmeaPlugin *plg)
     Flarm::RelativeVertical = atoi(s + word->at(6));
     Flarm::RelativeDistance = atoi(s + word->at(7));
     sprintf( Flarm::ID, "%06x", atoi(s + word->at(8)));
-    ESP_LOGI(FNAME,"RB: %d ALT:%d  DIST %d", Flarm::RelativeBearing, Flarm::RelativeVertical, Flarm::RelativeDistance);
+    // ESP_LOGI(FNAME,"RB: %d ALT:%d  DIST %d", Flarm::RelativeBearing, Flarm::RelativeVertical, Flarm::RelativeDistance);
     Flarm::_tick=0;
     return DO_ROUTING;
 }

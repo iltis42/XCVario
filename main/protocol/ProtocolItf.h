@@ -26,8 +26,9 @@ typedef enum
 } gen_state_t;
 
 
-constexpr int COMPLETE_BIT  = 0x10;
-constexpr int FORWARD_BIT   = 0x20;
+// a four bit command structure
+constexpr int COMPLETE_BIT  = 0x04;
+constexpr int FORWARD_BIT   = 0x08;
 typedef enum
 {
     NOACTION = 0,
@@ -39,13 +40,16 @@ typedef enum
 
 union dl_control_t {
     struct {
-        int      pcount : 24;
-        dl_action_t act : 8;
+        int      pcount : 23;
+        dl_action_t act : 4;
+        DeviceId    did : 5; // device id for routing
     };
     uint32_t raw;
     // Convenience
-    constexpr dl_control_t(dl_action_t act, int pc=1)
-        : raw(static_cast<uint32_t>(act << 24) | (pc & 0xffffff)) {}
+    constexpr dl_control_t(dl_action_t act, DeviceId id=NO_DEVICE, int pc=1)
+        : raw((static_cast<uint32_t>(act) << 23) | (static_cast<uint32_t>(id) << 27) | (pc & 0x7fffff)) {}
+    constexpr void setRoute(DeviceId id)
+        { raw |= (static_cast<uint32_t>(id) << 27); }
 };
 
 class ProtocolState;

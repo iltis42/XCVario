@@ -194,16 +194,6 @@ static int update_s1_txena(SetupMenuSelect *p)
     return 0;
 }
 
-static int refresh_nrbreaks_action(SetupAction *p)
-{
-    int nb = S1->getBreakCount();
-    if ( p->getCode() == 2 ) {
-        nb = S2->getBreakCount();
-    }
-    p->display(nb);
-    return 0;
-}
-
 void system_menu_create_interfaceS1(SetupMenu *top)
 {
     SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s1_baud, true, &serial1_speed);
@@ -232,10 +222,6 @@ void system_menu_create_interfaceS1(SetupMenu *top)
     stxdis1->setHelp("Option to listen only on the RX line, disables TX line to receive only data");
     stxdis1->mkEnable();
     top->addEntry(stxdis1);
-
-    SetupAction *nrbreaks = new SetupAction("Nr of breaks", refresh_nrbreaks_action, 1);
-    nrbreaks->setHelp("Press the button to re-read the nr of breaks from the interface");
-    top->addEntry(nrbreaks);
 }
 
 static int update_s2_baud(SetupMenuSelect *p)
@@ -295,10 +281,6 @@ void system_menu_create_interfaceS2(SetupMenu *top)
     stxdis2->setHelp("Option to listen only on the RX line, disables TX line to receive only data");
     stxdis2->mkEnable();
     top->addEntry(stxdis2);
-
-    SetupAction *nrbreaks = new SetupAction("Nr of breaks", refresh_nrbreaks_action, 2);
-    nrbreaks->setHelp("Press the button to re-read the nr of breaks from the interface");
-    top->addEntry(nrbreaks);
 }
 
 void system_menu_create_interfaceCAN(SetupMenu *top)
@@ -465,6 +447,7 @@ static void system_menu_add_device(SetupMenu *top)
     confirm->lock();
     new_device = NO_DEVICE;
     new_interface = NO_PHY;
+    top->highlightFirst();
 }
 
 /////////////////////////////////
@@ -485,25 +468,22 @@ static void system_menu_device(SetupMenu *top)
 
     // all data links
     std::string tmp;
-    for (DataLink* dl : dev->_dlset) {
-        int lport = dl->getPort();
-        tmp = "Listen(/Send) port: " + std::to_string(lport);
-        if ( dev->_itf->isOneToOne() ) {
-            tmp = "One data layer";
-        }
-        SetupAction *monitor = new SetupAction(tmp.c_str(), start_dm_action, (int)dl->getTarget().raw);
-        top->addEntry(monitor);
-        for ( int sp : dl->getAllSendPorts() ) {
-            if ( sp != lport ) {
-                tmp = "Send port: " + std::to_string(sp);
-                SetupAction *monitor = new SetupAction(tmp.c_str(), start_dm_action, (int)ItfTarget(dev->_itf->getId(), sp).raw);
-                top->addEntry(monitor);
-            }
+    int lport = dev->_link->getPort();
+    tmp = "Data Monitor";
+    if ( ! dev->_itf->isOneToOne() ) {
+        tmp += " port: " + std::to_string(lport);
+    }
+    SetupAction *monitor = new SetupAction(tmp.c_str(), start_dm_action, (int)dev->_link->getTarget().raw);
+    top->addEntry(monitor);
+    for ( int sp : dev->_link->getAllSendPorts() ) {
+        if ( sp != lport ) {
+            tmp = "Data Monitor port: " + std::to_string(sp);
+            SetupAction *monitor = new SetupAction(tmp.c_str(), start_dm_action, (int)ItfTarget(dev->_itf->getId(), sp).raw);
+            top->addEntry(monitor);
         }
     }
 
     // list protocols
-
     SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE, remove_device, false, nullptr, false, false);
     remove->mkConfirm();
     top->addEntry(remove);
@@ -516,7 +496,7 @@ void system_menu_connected_devices(SetupMenu *top)
     SetupMenu *adddev = static_cast<SetupMenu*>(top->getEntry(0));
     if ( ! adddev ) {
         adddev = new SetupMenu("Add Device", system_menu_add_device);
-        adddev->setHelp("Get XCVario to know about connected devices, enable it to handling data routes.");
+        adddev->setHelp("Get XCVario to know about your devices, it will handle data routing automatically");
         adddev->setDynContent();
         top->addEntry(adddev);
     }
@@ -537,5 +517,4 @@ void system_menu_connected_devices(SetupMenu *top)
             top->addEntry(devmenu);
         }
     }
-
 }

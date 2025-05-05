@@ -88,16 +88,16 @@ static const RoutingTarget* findRoute(const RoutingTarget& source) {
 constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
     {DeviceId::ANEMOI_DEV, {"Anemoi", {{S2_RS232, S1_RS232, CAN_BUS}}, {{ANEMOI_P}, 1}, 0, IS_REAL, &anemoi_devsetup}},
     {DeviceId::MASTER_DEV, {"Auto-connect", {{CAN_BUS}}, {{REGISTRATION_P}, 1}, CAN_REG_PORT, IS_REAL, &auto_connect}},
-    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232, XCVPROXY}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL, &flarm_devsetup}},
-    {DeviceId::FLARM_DEV,  {"Flarm proxy", {{XCVPROXY}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, 0, &flarm_devsetup}},
+    {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL, &flarm_devsetup}},
+    // {DeviceId::FLARM_DEV,  {"", {{XCVPROXY}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, 0, &flarm_devsetup}},
     {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}}, {{JUMBOCMD_P}, 1} , 0, 0, nullptr}}, // auto dev
     {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL, &master_devsetup}},
-    {DeviceId::XCVARIO_DEV, {"Master finder", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT, nullptr}}, // auto through XCV role
-    {DeviceId::XCVARIO_DEV, {"Master S2", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|SECOND_ONLY, &master_devsetup}},
+    {DeviceId::XCVARIO_DEV, {"", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT, nullptr}}, // auto through XCV role
+    {DeviceId::XCVARIO_DEV, {"", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|SECOND_ONLY, &master_devsetup}},
     {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL|MASTER_ONLY, &second_devsetup}},
-    {DeviceId::XCVARIOCLIENT_DEV, {"Second S2", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|MASTER_ONLY, &second_devsetup}},
+    {DeviceId::XCVARIOCLIENT_DEV, {"", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|MASTER_ONLY, &second_devsetup}},
     {DeviceId::MAGLEG_DEV, {"MagSens rev0", {{I2C, CAN_BUS}}, {{MAGSENSBIN_P}, 1}, 0, IS_REAL, &magleg_devsetup}},
-    {DeviceId::MAGLEG_DEV, {"MagSens rev0", {{CAN_BUS}}, {{MAGSENS_P}, 1}, MagSensBinary::LEGACY_MAGSTREAM_ID, IS_REAL, &magleg_devsetup}},
+    {DeviceId::MAGLEG_DEV, {"", {{CAN_BUS}}, {{MAGSENS_P}, 1}, MagSensBin::LEGACY_MAGSTREAM_ID, IS_REAL, &magleg_devsetup}},
     {DeviceId::MAGSENS_DEV, {"MagSens rev1", {{CAN_BUS}}, {{MAGSENS_P}, 1}, 0, IS_REAL, nullptr}}, // auto start
     {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
                                     {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
@@ -106,8 +106,10 @@ constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
                                     0, IS_REAL|MULTI_CONF, &navi_devsetup}},
     {DeviceId::NAVI_DEV,   {"", {{BT_SPP}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
                                     0, IS_REAL|MULTI_CONF, &navi_devsetup}},
-    {DeviceId::FLARM_HOST_DEV, {"Flarm host", {{WIFI_AP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, 0, &flarm_host_setup}},
-    // {DeviceId::FLARM_HOST_DEV, {"FH CAN", {{CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
+    {DeviceId::FLARM_HOST_DEV, {"Flarm host", {{WIFI_AP, S2_RS232, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, 0, &flarm_host_setup}},
+    // {DeviceId::FLARM_HOST_DEV, {"", {{CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
+    {DeviceId::FLARM_HOST_DEV, {"", {{S2_RS232}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
+    {DeviceId::FLARM_HOST_DEV, {"", {{BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
     {DeviceId::RADIO_REMOTE_DEV, {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, 0, &radio_host_setup}},
     {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL, &krt_devsetup}},
     {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL, &atr_devsetup}}
@@ -155,8 +157,8 @@ constexpr std::pair<InterfaceId, std::string_view> INTFCS[] = {
     {WIFI_AP, "Wifi AP"},
     {WIFI_CLIENT, "Wifi client"},
     {BT_SPP, "BT serial"},
-    {BT_LE, "BT low energy"},
-    {XCVPROXY, "XCV proxy"}
+    {BT_LE, "BT low energy"}
+    // {XCVPROXY, "XCV proxy"}
 };
 
 std::string_view DeviceManager::getItfName(InterfaceId iid) {
@@ -304,51 +306,6 @@ void TransmitTask(void *arg)
             later.pop_front();
         }
     }
-
-    // Fixme keep alive and ping code is a application layer concern and has to move
-    // void CANbus::txtick(int tick){
-
-    // SString msg;
-    // // CAN bus send
-    // if ( !can_tx_q.isEmpty() ){
-    // 	// ESP_LOGI(FNAME,"There is CAN data");
-    // 	if( _connected_xcv ){
-    // 		// ESP_LOGI(FNAME,"CAN TX Q:%d", can_tx_q.numElements() );
-    // 		while( Router::pullMsg( can_tx_q, msg ) ){
-    // 			// ESP_LOGI(FNAME,"CAN TX len: %d bytes Q:%d", msg.length(), can_tx_q.numElements() );
-    // 			// ESP_LOG_BUFFER_HEXDUMP(FNAME,msg.c_str(),msg.length(), ESP_LOG_INFO);
-    // 			DM.monitorString( MON_CAN, DIR_TX, msg.c_str(), msg.length() );
-    // 			if( !sendNMEA( msg ) ){
-    // 				_connected_timeout_xcv +=150;  // if sending fails as indication for disconnection
-    // 				// ESP_LOGW(FNAME,"CAN TX NMEA failed, timeout=%d", _connected_timeout_xcv );
-    // 				if( _connected_timeout_xcv > 1000 )
-    // 					recover();
-    // 			}
-    // 		}
-    // 	}
-    // }
-    // // Router::routeCAN();
-    // if( !(tick%100) ){
-    // 	if( ((can_mode.get() == CAN_MODE_CLIENT)  && _connected_xcv) || can_mode.get() == CAN_MODE_MASTER ){ // sent from client only if keep alive is there
-    // 		msg.set( "K" );
-    // 		if( !sendData( _can_id_keepalive_tx, msg.c_str(), 1 ) )
-    // 		{
-    // 			_connected_timeout_xcv +=150;  // if sending fails as indication for disconnection
-    // 			if( !_keep_alive_fails ){
-    // 				ESP_LOGW(FNAME,"Permanent CAN TX Keep Alive failure");
-    // 				_keep_alive_fails = true;
-    // 			}
-    // 			if( _connected_timeout_xcv > 1000 )
-    // 				recover();
-    // 		}else{
-    // 			if( _keep_alive_fails ){
-    // 				ESP_LOGI(FNAME,"Okay again CAN TX Keep Alive");
-    // 				_keep_alive_fails = false;
-    // 			}
-    // 		}
-    // 	}
-    // }
-
     vTaskDelete(NULL);
 }
 
@@ -392,16 +349,16 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
             itf = CAN;
         }
     }
-    else if ( iid == XCVPROXY) {
-        itf = &dummy_itf;
-        Device *dev = getXCVPeer();
-        if ( dev ) {
-            // XCV proxy is already there
-            itf = dev->_itf;
-            listen_port = dev->getListenPort();
-            send_port = dev->getSendPort(XCVSYNC_P);
-        }
-    }
+    // else if ( iid == XCVPROXY) {
+    //     itf = &dummy_itf;
+    //     Device *dev = getXCVPeer();
+    //     if ( dev ) {
+    //         // XCV proxy is already there
+    //         itf = dev->_itf;
+    //         listen_port = dev->getListenPort();
+    //         send_port = dev->getSendPort(XCVSYNC_P);
+    //     }
+    // }
     else if ( iid == WIFI_AP) {
         if ( ! Wifi ) {
             WifiAP::createWifiAP();
@@ -623,7 +580,7 @@ RoutingList DeviceManager::getRouting(RoutingTarget source)
 {
     // find routing entry, respect NO_PHY wildcards
     const RoutingTarget *route_list = findRoute(source);
-    ESP_LOGI(FNAME, "Search route: %x(%d:%d:%d)", (unsigned)source.raw, source.getDeviceId(), source.getItfTarget().iid, source.getItfTarget().port);
+    ESP_LOGD(FNAME, "Search route: %x(%d:%d:%d)", (unsigned)source.raw, source.getDeviceId(), source.getItfTarget().iid, source.getItfTarget().port);
     if ( route_list )
     {
         RoutingList activeList;
@@ -631,7 +588,7 @@ RoutingList DeviceManager::getRouting(RoutingTarget source)
         // look for existing devices and push only those to the routing list
         for (const RoutingTarget* entry = route_list; entry->raw != 0; ++entry)
         {
-            ESP_LOGD(FNAME, "Try match: %x", (unsigned)entry->raw);
+            ESP_LOGD(FNAME, "Try match: d%d/i%d/o%d", entry->did, entry->getItfId(), entry->getPort());
             // is dev configured, are itf and port identical
             DevMap::iterator devit = _device_map.find(entry->did);
             if ( devit != _device_map.end() ) {
@@ -640,17 +597,16 @@ RoutingList DeviceManager::getRouting(RoutingTarget source)
                 ESP_LOGD(FNAME, "Found dev %d on itf: %d", devit->first, dev->_itf->getId());
                 if ( dev->_itf->getId() == entry->getItfId() ) {
                     ESP_LOGD(FNAME, "Itfmatch: %d==%d", dev->_itf->getId(), dev->_itf->getId());
-                    PortList pl = dev->getSendPortList();
+                    EnumList pl = dev->getSendPortList();
                     if ( entry->getPort()==0 && pl.size()==1) {
                         // Take this joker port one
                         RoutingTarget merget = *entry;
-                        ESP_LOGI(FNAME, "Take port %d", *pl.begin());
                         merget.setItfPort(*pl.begin());
-                        ESP_LOGI(FNAME, "Take joker d%d/i%d/p%d", merget.did, merget.getItfId(), merget.getPort());
+                        ESP_LOGD(FNAME, "Take joker port %d, d%d/i%d/p%d", *pl.begin(), merget.did, merget.getItfId(), merget.getPort());
                         activeList.insert(merget);
                     }
                     else if ( pl.find(entry->getItfTarget().port) != pl.end() ) {
-                        ESP_LOGI(FNAME, "Take route d%d/i%d/p%d", entry->did, entry->getItfId(), entry->getPort());
+                        ESP_LOGD(FNAME, "Take route d%d/i%d/p%d", entry->did, entry->getItfId(), entry->getPort());
                         activeList.insert(*entry); // Ok, take this route
                     }
                 }
@@ -706,12 +662,9 @@ void DeviceManager::reserectFromNvs()
                 addDevice(did, nvs->setup.getProto(0), listen_port, nvs->getBinSPort(), iid);
             }
             // principle nmea proto option
-            if ( nvs->setup.getProto(1) ) {
-                ESP_LOGI(FNAME, "NmP: pid%d sp%d", nvs->setup.getProto(1), nvs->getNmeaSPort());
-                addDevice(did, nvs->setup.getProto(1), listen_port, nvs->getNmeaSPort(), iid);
-            }
+            ESP_LOGI(FNAME, "Nmea: sendport%d", nvs->getNmeaSPort());
             // more nmea plug options
-            for ( int i=2; i<ProtocolList::maxProto; i++ ) {
+            for ( int i=1; i<ProtocolList::maxProto; i++ ) {
                 if ( nvs->setup.getProto(i) ) {
                     ESP_LOGI(FNAME, "plugin: %d", nvs->setup.getProto(i));
                     addDevice(did, nvs->setup.getProto(i), listen_port, nvs->getNmeaSPort(), iid);
@@ -854,34 +807,39 @@ int Device::getListenPort() const
 // get all setup lines to write into nvs for this device
 DeviceNVS Device::getNvsData() const
 {
-    ESP_LOGI(FNAME, "NvsData #ld%d", _dlset.size());
+    ESP_LOGI(FNAME, "NvsData did%d", _id);
     DeviceNVS entry;
-    if ( !_dlset.empty() ) {
-        DataLink* dl = *_dlset.begin();
-        entry.target = RoutingTarget(_id, dl->getTarget());
-        ProtocolItf *bn = dl->getBinary(); // binary option
-        if ( bn ) {
-            entry.bin_sp = bn->getSendPort();
-            entry.setup.set(0, bn->getProtocolId());
-            ESP_LOGI(FNAME, "NvsData t%x bsp%d pid%d", (unsigned)entry.target.raw, entry.bin_sp, entry.setup.get(0));
-        }
-        NmeaPrtcl *nm = static_cast<NmeaPrtcl*>(dl->getNmea());
+    entry.target = RoutingTarget(_id, _link->getTarget());
+    ProtocolItf *bn = _link->getBinary(); // binary option
+    if ( bn ) {
+        entry.bin_sp = bn->getSendPort();
+        entry.setup.set(0, bn->getProtocolId());
+        ESP_LOGI(FNAME, "NvsData t%x bsp%d pid%d", (unsigned)entry.target.raw, entry.bin_sp, entry.setup.get(0));
+    }
+    NmeaPrtcl *nm = static_cast<NmeaPrtcl*>(_link->getNmea());
+    
+    if ( nm ) {
+        entry.nmea_sp = nm->getSendPort();
+        // entry.setup.set(1, nm->getProtocolId());
         int idx = 1;
-        if ( nm ) {
-            entry.nmea_sp = nm->getSendPort();
-            entry.setup.set(idx, nm->getProtocolId()); // first principal entry
-            idx++;
-            ESP_LOGI(FNAME, "NvsData t%x nmsp%d pid%d", (unsigned)entry.target.raw, entry.nmea_sp, entry.setup.get(idx));
-            for (auto it : nm->getAllPlugs() ) {
-                if ( ! it->getAuto() && it->getPtyp() != nm->getProtocolId() ) {
-                    entry.setup.set(idx, it->getPtyp()); // plugins
-                    ESP_LOGI(FNAME, "NvsExtra %d: pid%d", idx, entry.setup.get(idx));
-                    idx++;
-                }
+        ESP_LOGI(FNAME, "NvsData t%x nmsp%d", (unsigned)entry.target.raw, entry.nmea_sp);
+        for (auto it : nm->getAllPlugs() ) {
+            // list when not auto loaded, but does belong to this device
+            if ( ! it->getAuto() && it->getRouteId() == _id ) {
+                entry.setup.set(idx, it->getPtyp()); // plugins
+                ESP_LOGI(FNAME, "NvsExtra %d: pid%d", idx, entry.setup.get(idx));
+                idx++;
+            }
+            else {
+                ESP_LOGI(FNAME, "NvsDropped  pid%d did%d", it->getPtyp(), _id);
+            }
+            if ( idx >= ProtocolList::maxProto ) {
+                ESP_LOGW(FNAME, "Nvs no space left %d: pid%d", idx, entry.setup.get(idx));
+                break; // no more space
             }
         }
-        entry.setup.flags=1; // set valid
     }
+    entry.setup.flags=1; // set valid
     return entry;
 }
 

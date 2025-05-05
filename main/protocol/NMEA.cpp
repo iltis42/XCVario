@@ -60,14 +60,36 @@ void NmeaPrtcl::addPlugin(NmeaPlugin *pm)
     }
 }
 
-bool NmeaPrtcl::hasProtocol(ProtocolType p)
+void NmeaPrtcl::removeProtocol(ProtocolType p)
 {
-    for ( auto &pl : _plugs ) {
-        if ( pl->getPtyp() == p ) {
-            return true;
+    NmeaPlugin *pm = nullptr;
+    for ( auto it = _plugs.begin(); it != _plugs.end(); it++ ) {
+        if ( (*it)->getPtyp() == p ) {
+            pm = *it;
+            _plugs.erase(it);
+            break;
         }
     }
-    return false;
+    if ( pm ) {
+        // remove the parser table entries
+        for (auto it = _parsmap.begin(); it != _parsmap.end(); ) {
+            if (it->second.second == pm) {
+                it = _parsmap.erase(it);  // erase returns the next valid iterator
+            } else {
+                it++;
+            }
+        }
+        // delete the plugin
+        ESP_LOGI(FNAME, "Delete plugin %d", pm->getPtyp());
+        delete pm;
+    }
+    if ( _plugs.empty() ) {
+        // no more plugins, delete the alive monitor
+        if ( _alive ) {
+            delete _alive;
+            _alive = nullptr;
+        }
+    }
 }
 
 dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
@@ -157,8 +179,11 @@ dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
     return dl_control_t(action);
 }
 
-// some basic nmea plugin caps
-ProtocolType NmeaPlugin::belongsPtyp() const
+// plugin base with a potential different device id for routing
+NmeaPlugin::NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp, bool as) :
+    _nmeaRef(nr),
+    _pid(ptyp),
+    _auto(as),
+    _routeId(nr.getDL()->getDeviceId())
 {
-    return _nmeaRef.getProtocolId();
 }

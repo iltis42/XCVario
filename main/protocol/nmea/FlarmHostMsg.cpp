@@ -16,7 +16,7 @@
 // PFL*
 
 FlarmHostMsg::FlarmHostMsg(NmeaPrtcl &nr) :
-    NmeaPlugin(nr, FLARMHOST_P)
+    NmeaPlugin(nr, FLARMHOST_P, false)
 {
     _nmeaRef.setDefaultAction(DO_ROUTING);
 }
@@ -24,6 +24,7 @@ FlarmHostMsg::FlarmHostMsg(NmeaPrtcl &nr) :
 dl_action_t FlarmHostMsg::parsePFLAX(NmeaPlugin *plg)
 {
     ProtocolState *sm = plg->getNMEA().getSM();
+    ESP_LOGI(FNAME, "FLAX called -----------------+");
     if ( sm->_frame.at(6) != ',' ) {
         ESP_LOGI(FNAME, "Start binary request");
         return NXT_PROTO;

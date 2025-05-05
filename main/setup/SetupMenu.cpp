@@ -41,7 +41,7 @@
 #include "comm/SerialLine.h"
 #include "coredump_to_server.h"
 #include "protocol/nmea/JumboCmdMsg.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <inttypes.h>
 #include <iterator>
@@ -1180,33 +1180,28 @@ void options_menu_create_compasswind_compass_nmea(SetupMenu *top) {
 
 // Fixme goes to devices
 void options_menu_create_compasswind_compass(SetupMenu *top) {
-	SetupMenuSelect *compSensor = new SetupMenuSelect("Sensor Option", RST_NONE, compass_ena, true, &compass_enable);
-	compSensor->addEntry("Disable");
-	compSensor->addEntry("I2C sensor");
-	compSensor->addEntry("CAN sensor");
-	top->addEntry(compSensor);
+	// SetupMenuSelect *compSensor = new SetupMenuSelect("Sensor Option", RST_NONE, compass_ena, true, &compass_enable);
+	// compSensor->addEntry("Disable");
+	// compSensor->addEntry("I2C sensor");
+	// compSensor->addEntry("CAN sensor");
+	// top->addEntry(compSensor);
 
-	SetupMenuSelect *compSensorCal = new SetupMenuSelect("Sensor Calibration",
-			RST_NONE, compassSensorCalibrateAction, false);
+	SetupMenuSelect *compSensorCal = new SetupMenuSelect("Sensor Calibration", RST_NONE, compassSensorCalibrateAction, false);
 	compSensorCal->addEntry("Cancel");
 	compSensorCal->addEntry("Start");
 	compSensorCal->addEntry("Show");
 	compSensorCal->addEntry("Show Raw Data");
-	compSensorCal->setHelp(
-			"Calibrate Magnetic Sensor, mandatory for operation");
+	compSensorCal->setHelp("Calibrate Magnetic Sensor, mandatory for operation");
 	top->addEntry(compSensorCal);
 
 	// Fixme replace by WMM
-	SetupMenuValFloat *cd = new SetupMenuValFloat("Setup Declination", "°",
-			-180, 180, 1.0, compassDeclinationAction, false,
+	SetupMenuValFloat *cd = new SetupMenuValFloat("Setup Declination", "°", -180, 180, 1.0, compassDeclinationAction, false,
 			&compass_declination);
 	cd->setHelp("Set compass declination in degrees");
 	top->addEntry(cd);
 
-	SetupMenuSelect *devMenuA = new SetupMenuSelect("AutoDeviation", RST_NONE,
-			0, true, &compass_dev_auto);
-	devMenuA->setHelp(
-			"Automatic adaptive deviation and precise airspeed evaluation method using data from circling wind");
+	SetupMenuSelect *devMenuA = new SetupMenuSelect("AutoDeviation", RST_NONE, 0, true, &compass_dev_auto);
+	devMenuA->setHelp("Automatic adaptive deviation and precise airspeed evaluation method using data from circling wind");
 	devMenuA->addEntry("Disable");
 	devMenuA->addEntry("Enable");
 	top->addEntry(devMenuA);

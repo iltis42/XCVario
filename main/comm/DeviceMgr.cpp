@@ -544,11 +544,12 @@ void DeviceManager::removeDevice(DeviceId did)
                 ESP_LOGI(FNAME, "stopping CAN");
                 CAN->stop();
             }
-            else if ( itf == Wifi ) {
-                ESP_LOGI(FNAME, "stopping Wifi");
-                delete Wifi;
-                Wifi = nullptr;
-            }
+            // else if ( itf == Wifi ) { fixme, restart not reliably working
+            //     ESP_LOGI(FNAME, "stopping Wifi");
+            //     WifiAP *tmp = Wifi;
+            //     Wifi = nullptr;
+            //     delete tmp;
+            // }
             else if ( itf == BTspp ) {
                 ESP_LOGI(FNAME, "stopping BTspp");
                 BTspp->stop();
@@ -602,7 +603,7 @@ bool DeviceManager::isAvail(InterfaceId iid) const
     else if ( iid == I2C && isIntf(CAN_BUS) ) {
         return false;
     }
-    else if ( (iid == BT_SPP || iid == BT_LE) && isIntf(WIFI_AP) ) {
+    else if ( (iid == BT_SPP || iid == BT_LE) && Wifi ) {
         return false;
     }
     else if ( iid == WIFI_AP && (isIntf(BT_SPP) || isIntf(BT_LE)) ) {

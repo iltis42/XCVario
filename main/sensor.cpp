@@ -128,7 +128,7 @@ SetupRoot  *Menu = nullptr;
 
 // Gyro and acceleration sensor
 I2C_t& i2c = i2c1;  // i2c0 or i2c1
-I2C_t& i2c_0 = i2c0;  // i2c0 or i2c1
+I2C_t& I2C_0 = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 
 // Magnetic sensor / compass
@@ -983,7 +983,7 @@ void system_startup(void *args){
 			CANbus::createCAN();
 			CAN->begin();
 			DEVMAN->addDevice(MASTER_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-			DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
+			DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBin::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
 		}
 		delete boot_screen; // screen now belongs to OTA
 		ota = new OTA();

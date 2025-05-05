@@ -72,7 +72,7 @@ extern SemaphoreHandle_t display_mutex;
 extern float getTAS();
 
 extern I2C_t& i2c;
-extern I2C_t& i2c_0;
+extern I2C_t& I2C_0;
 extern AnalogInput *AnalogInWk;
 
 extern float airspeed;

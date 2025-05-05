@@ -56,7 +56,7 @@ void ShowCompassSettings::display(int mode)
 
 	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "Sensor enabled: %s",
-			(compass_enable.get() == 0) ? "No" : "Yes"  );
+			(compass) ? "Yes" : "No" );
 	MYUCG->print( buffer );
 	y += 25;
 

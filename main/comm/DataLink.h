@@ -17,7 +17,7 @@
 
 #include <set>
 
-using PortList = std::set<int>;
+using EnumList = std::set<int>;
 class NmeaPrtcl;
 class ProtocolItf;
 
@@ -27,24 +27,28 @@ class DataLink
 public:
     DataLink(int listen_port, int itfid);
     ~DataLink();
-    ProtocolItf* addProtocol(ProtocolType ptyp, DeviceId did, int sendport=0);
+    EnumList addProtocol(ProtocolType ptyp, DeviceId did, int sendport=0);
     ProtocolItf* getProtocol(ProtocolType ptyp=NO_ONE) const;
     bool hasProtocol(ProtocolType ptyp) const;
-    void deleteProtocol(ProtocolItf *proto);
+    void removeProtocol(ProtocolType ptyp);
+    // void removeId(DeviceId did);
     void process(const char *packet, int len);
     ProtocolItf *goBIN();
     void goNMEA();
     void switchProtocol();
     ProtocolItf *getBinary() const { return _binary; };
     NmeaPrtcl *getNmea() const { return _nmea; };
-    void updateRoutes();
+    void updateRoutes(DeviceId did);
     int getPort() const { return _itf_id.port; } // the listen port
     InterfaceId getItfId() const { return _itf_id.iid; }
     ItfTarget getTarget() const { return _itf_id; }
-    PortList getAllSendPorts() const;
+    EnumList getAllSendPorts() const;
+    DeviceId getDeviceId() const { return _did; } // routing purpouses
+    void setDeviceId(DeviceId did) { _did = did; }
     // house keeping
     void incrDeviceCount() { _dev_count++; }
     int decrDeviceCount() { return --_dev_count; }
+    int getDeviceCount() const { return _dev_count; }
     // dbg
     void dumpProto();
     bool isBinActive() const { return _active->isBinary(); }
@@ -63,8 +67,8 @@ private:
     // Listen on
     const ItfTarget _itf_id;
     bool _monitoring = false;
-    // All protocols attached to this data link should have the same device id, here just for opt. checks
-    DeviceId    _did = NO_DEVICE;
+    // Protocols attached to this data link might have different device id's, here just for opt. checks
+    DeviceId    _did = NO_DEVICE; // last active device id on this link
     // Routing
     RoutingList _routes;
     mutable SemaphoreHandle_t _route_mutex;

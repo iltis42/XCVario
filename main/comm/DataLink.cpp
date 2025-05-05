@@ -57,9 +57,11 @@ void DataLink::enforceNmea(DeviceId did, int sendport, ProtocolType ptyp)
 }
 
 // protocol factory
-ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
+// returns the list of protocols that were added
+EnumList DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
 {
     ProtocolItf *tmp = nullptr;
+    EnumList ret;
 
     // Check if already there
     if ( _nmea && _nmea->hasProtocol(ptyp) ) {
@@ -69,11 +71,25 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
     }
     if ( tmp ) {
         ESP_LOGW(FNAME, "Double insertion of device/protocol %d/%d.", did, ptyp);
-        return tmp;
+        return ret;
     }
 
+    // Check device id is equal to all others
+    if ( _did != NO_DEVICE ) {
+        if ( (_nmea && _nmea->getDeviceId() != did)
+            || (_binary && _binary->getDeviceId() != did) )
+        {
+            ESP_LOGW(FNAME, "dLink itf/port %d/%d %d shared with %d.", _itf_id.iid, _itf_id.port, _did, did);
+        }
+    }
+    
+    // Set first to mark the most recent activity,
+    // this influences the nmea plugin creation
+    _did = did; // set the device id for routing
+    ESP_LOGI(FNAME, "DL set dev id %d", _did);
 
     // Create a new one
+    ret.insert(ptyp);
     switch (ptyp)
     {
     case REGISTRATION_P:
@@ -82,6 +98,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         _nmea->addPlugin(new CANMasterRegMsg(*_nmea));
         if ( xcv_role.get() == SECOND_ROLE ) {
             _nmea->addPlugin(new CANClientQueryMsg(*_nmea));
+            ret.insert(XCVQUERY_P);
         }
         tmp = _nmea;
         break;
@@ -96,7 +113,9 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         enforceNmea(did, sendport, ptyp);
         _nmea->addAliveMonitor(new AliveMonitor(&flarm_alive));
         _nmea->addPlugin(new GpsMsg(*_nmea));
+        ret.insert(NMEASTD_P);
         _nmea->addPlugin(new GarminMsg(*_nmea));
+        ret.insert(GARMIN_P);
         _nmea->addPlugin(new FlarmMsg(*_nmea));
         tmp = _nmea;
         break;
@@ -118,15 +137,16 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         break;
     case MAGSENSBIN_P:
         ESP_LOGI(FNAME, "New MAGCANBinary");
-        tmp = new MagSensBinary(sendport, _sm, *this);
+        tmp = new MagSensBin(sendport, _sm, *this);
+        tmp->addAliveMonitor(new AliveMonitor(&mags_alive));
         break;
     case XCVARIO_P:
     {
         ESP_LOGI(FNAME, "New XCVario");
-        bool auto_setup = _nmea == nullptr;
         enforceNmea(did, sendport, ptyp);
         _nmea->addPlugin(new XCVarioMsg(*_nmea));
-        _nmea->addPlugin(new CambridgeMsg(*_nmea, auto_setup));
+        _nmea->addPlugin(new CambridgeMsg(*_nmea, true));
+        ret.insert(CAMBRIDGE_P);
         tmp = _nmea;
         break;
     }
@@ -137,33 +157,34 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         // The SyncMsg serves on both side, need to know it's role
         // connect to a client -> you are master
         if ( xcv_role.get() == NO_ROLE && did==XCVARIOCLIENT_DEV ) { xcv_role.set(MASTER_ROLE); }
-        _nmea->addPlugin(new XCVSyncMsg(*_nmea, did==XCVARIOCLIENT_DEV)); // true when on master (!!)
+        //                                        \/true when on master (!!), only CAN does it automatically
+        _nmea->addPlugin(new XCVSyncMsg(*_nmea, did==XCVARIOCLIENT_DEV, _itf_id == CAN_BUS));
         tmp = _nmea;
         break;
     case OPENVARIO_P:
     {
         ESP_LOGI(FNAME, "New OpenVario");
-        bool auto_setup = _nmea == nullptr;
+        // bool auto_setup = _nmea == nullptr;
         enforceNmea(did, sendport, ptyp);
-        _nmea->addPlugin(new OpenVarioMsg(*_nmea, auto_setup));
+        _nmea->addPlugin(new OpenVarioMsg(*_nmea, false));
         tmp = _nmea;
         break;
     }
     case BORGELT_P:
     {
         ESP_LOGI(FNAME, "New Borgelt");
-        bool auto_setup = _nmea == nullptr;
+        // bool auto_setup = _nmea == nullptr;
         enforceNmea(did, sendport, ptyp);
-        _nmea->addPlugin(new BorgeltMsg(*_nmea, auto_setup));
+        _nmea->addPlugin(new BorgeltMsg(*_nmea, false));
         tmp = _nmea;
         break;
     }
     case CAMBRIDGE_P:
     {
         ESP_LOGI(FNAME, "New Cambridge");
-        bool auto_setup = _nmea == nullptr;
+        // bool auto_setup = _nmea == nullptr;
         enforceNmea(did, sendport, ptyp);
-        _nmea->addPlugin(new CambridgeMsg(*_nmea, auto_setup));
+        _nmea->addPlugin(new CambridgeMsg(*_nmea, false));
         tmp = _nmea;
         break;
     }
@@ -176,20 +197,12 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         // tmp = new TestQuery(did, sendport, _sm, *this); todo, test proto does not fit into scheme any more
         break;
     default:
+        ret.clear();
         break;
     }
     ESP_LOGI(FNAME, "On send port %d", sendport);
 
     if ( tmp ) {
-        // Check device id is equal to all others
-        if ( _did == NO_DEVICE ) {
-            _did = did;
-        } 
-        else if ( (_nmea && _nmea->getDeviceId() != did)
-                || (_binary && _binary->getDeviceId() != did) )
-        {
-            ESP_LOGW(FNAME, "DevId missmatch in protocol list for Itf/port %d/%d %d: %d.", _itf_id.iid, _itf_id.port, _did, did);
-        }
 
         if ( tmp->isBinary() ) {
             _binary = tmp;
@@ -199,7 +212,7 @@ ProtocolItf* DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport
         }
     }
 
-    return tmp;
+    return ret;
 }
 
 ProtocolItf* DataLink::getProtocol(ProtocolType ptyp) const
@@ -214,7 +227,7 @@ ProtocolItf* DataLink::getProtocol(ProtocolType ptyp) const
         }
     }
     else {
-        if ( _nmea && _nmea->getProtocolId() == ptyp ) {
+        if ( _nmea && _nmea->hasProtocol(ptyp) ) {
             return _nmea;
         }
         else if ( _binary && _binary->getProtocolId() == ptyp ) {
@@ -226,31 +239,45 @@ ProtocolItf* DataLink::getProtocol(ProtocolType ptyp) const
 
 bool DataLink::hasProtocol(ProtocolType ptyp) const
 {
-    if ( getProtocol(ptyp) ) {
+    if ( _nmea && _nmea->hasProtocol(ptyp) ) {
+        return true;
+    }
+    else if ( _binary && _binary->getProtocolId() == ptyp ) {
         return true;
     }
     return false;
 }
 
-void DataLink::deleteProtocol(ProtocolItf *proto)
+void DataLink::removeProtocol(ProtocolType ptyp)
 {
-    if ( _nmea == proto ) {
-        delete(_nmea);
-        _nmea = nullptr;
-        _active = _binary;
+    if ( _nmea && _nmea->hasProtocol(ptyp) ) {
+        ESP_LOGI(FNAME, "Remove protocol %d", ptyp);
+        _nmea->removeProtocol(ptyp);
+        if ( _nmea->getNrPlugs() == 0 ) {
+            delete(_nmea);
+            _nmea = nullptr;
+            _active = _binary;
+        }
     }
-    else if ( _binary == proto ) {
+    else if ( _binary && _binary->getProtocolId() == ptyp ) {
         delete(_binary);
         _binary = nullptr;
         _active = _nmea;
     }
 }
 
+// void DataLink::removeId(DeviceId did)
+// {
+//     if ( _did == did ) {
+//         _did = NO_DEVICE;
+//     }
+// }
+
 void DataLink::process(const char *packet, int len)
 {
     // Feed the data monitor
     if (_monitoring) {
-        DM->monitorString(DIR_RX, _binary, packet, len);
+        DM->monitorString(DIR_RX, _active->isBinary(), packet, len);
     }
 
     if (_active == nullptr) {
@@ -274,7 +301,8 @@ void DataLink::process(const char *packet, int len)
         {
             control = _active->nextBytes(packet, len);
             if ( control.act & FORWARD_BIT ) {
-                doForward(_active->getDeviceId());
+                // DeviceId did = (control.did) ? control.did : _active->getDeviceId();
+                doForward(control.did);
             }
             if ( control.act == NXT_PROTO ) {
                 switchProtocol();
@@ -292,6 +320,7 @@ ProtocolItf* DataLink::goBIN()
 {
     if ( _binary ) {
         _active = _binary;
+        ESP_LOGI(FNAME, "Switch to binary protocol %d(%d)", _active->getProtocolId(),_active->isBinary());
     }
     _sm.reset();
     return _binary;
@@ -301,6 +330,7 @@ void DataLink::goNMEA()
 {
     if ( _nmea ) {
         _active = _nmea;
+        ESP_LOGI(FNAME, "Switch to nmea protocol %d(%d)", _active->getProtocolId(),_active->isBinary());
     }
     _sm.reset();
 }
@@ -316,17 +346,17 @@ void DataLink::switchProtocol()
 }
 
 // called from different contexts
-void DataLink::updateRoutes()
+void DataLink::updateRoutes(DeviceId did)
 {
-    ESP_LOGD(FNAME, "get routing for %d/%d", _did, _itf_id.port);
+    ESP_LOGI(FNAME, "get routing for d%d/i%d/o%d", did, _itf_id.getItfId(), _itf_id.port);
     xSemaphoreTake(_route_mutex, portMAX_DELAY);
-    _routes = DEVMAN->getRouting(RoutingTarget(_did, ItfTarget(_itf_id.iid, _itf_id.port)));
+    _routes = DEVMAN->getRouting(RoutingTarget(did, ItfTarget(_itf_id.iid, _itf_id.port)));
     xSemaphoreGive(_route_mutex);
 }
 
-PortList DataLink::getAllSendPorts() const
+EnumList DataLink::getAllSendPorts() const
 {
-    PortList pl;
+    EnumList pl;
     for (ProtocolItf* it : std::array<ProtocolItf*, 2>{_nmea, _binary}) {
         if ( it ) {
             pl.insert(it->getSendPort());

@@ -30,14 +30,23 @@ NmeaPrtcl::~NmeaPrtcl()
     }
 }
 
+bool NmeaPrtcl::hasProtocol(ProtocolType p) const
+{
+    for ( auto &pl : _plugs ) {
+        if ( pl->getPtyp() == p ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void NmeaPrtcl::addPlugin(NmeaPlugin *pm)
 {
     ESP_LOGI(FNAME, "Add plugin %d", pm->getPtyp());
     // check if plugin already there
-    for ( auto it = _plugs.begin(); it != _plugs.end(); it++ ) {
-        if ( *(*it) == *pm ) {
-            return; // do not add it
-        }
+    if ( hasProtocol(pm->getPtyp()) ) {
+        ESP_LOGW(FNAME, "Plugin already loaded");
+        return; // do not add it
     }
     _plugs.push_back(pm);
     // copy the parser table

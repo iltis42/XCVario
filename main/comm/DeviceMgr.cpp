@@ -455,18 +455,20 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
         dev = new Device(did);
         dev->_auto = ato;
         is_new = true;
+        // Retrieve, or create a new data link
+        DataLink *dl = itf->newDataLink(listen_port);
+        dev->_link = dl;
+        dl->incrDeviceCount();
+        dev->_itf = itf;
     }
-    // Retrieve, or create a new data link
-    DataLink *dl = itf->newDataLink(listen_port);
 
-    dl->addProtocol(proto, did, send_port); // Add proto, if not yet there
+    EnumList pl = dev->_link->addProtocol(proto, did, send_port); // Add proto, if not yet there
+    dev->_protos.insert(pl.begin(), pl.end());
+
     xSemaphoreTake(_devmap_mutex, portMAX_DELAY);
-    dev->_dlset.insert(dl);
-    dl->incrDeviceCount();
     if ( is_new ) {
         // Add only if new
         _device_map[did] = dev; // and add, in case this dev is new
-        dev->_itf = itf;
     }
     xSemaphoreGive(_devmap_mutex);
     refreshRouteCache();
@@ -508,10 +510,7 @@ NmeaPrtcl *DeviceManager::getNMEA(DeviceId did)
 {
     Device *d = getDevice(did);
     if ( d ) {
-        DataLink *dl = *d->_dlset.begin();
-        if ( dl ) {
-            return dl->getNmea();
-        }
+        return d->_link->getNmea();
     }
     return nullptr;
 }
@@ -531,11 +530,15 @@ void DeviceManager::removeDevice(DeviceId did)
 {
     xSemaphoreTake(_devmap_mutex, portMAX_DELAY);
     DevMap::iterator it = _device_map.find(did);
-    Device* dev;
+    Device* dev = nullptr;
     if ( it != _device_map.end() ) {
         dev = it->second;
         ESP_LOGI(FNAME, "Delete device %d", did);
         _device_map.erase(it);
+    }
+    xSemaphoreGive(_devmap_mutex); // handling device map is done
+
+    if ( dev ) {
         InterfaceCtrl *itf = dev->_itf;
         delete dev;
         // is it the last device on this interface
@@ -564,7 +567,6 @@ void DeviceManager::removeDevice(DeviceId did)
             }
         }
     }
-    xSemaphoreGive(_devmap_mutex);
     refreshRouteCache();
 
     ESP_LOGI(FNAME, "After remove device %d.", did);
@@ -666,10 +668,7 @@ void DeviceManager::refreshRouteCache()
 {
     for ( auto dev : _device_map ) {
         // all devices
-        for ( auto dl : dev.second->_dlset ) {
-            // all data  links
-            dl->updateRoutes();
-        }
+        dev.second->_link->updateRoutes(dev.second->_id);
     }
 }
 
@@ -761,10 +760,8 @@ void DeviceManager::dumpMap() const
     ESP_LOGI(FNAME, "Device map dump:");
     for ( auto &it : _device_map ) {
         Device* d = it.second;
-        ESP_LOGI(FNAME, "%d: %p (did%d/%s(%d)/dl*%d)", it.first, d, d->_id, d->_itf->getStringId(), d->_itf->getId(), d->_dlset.size());
-        for ( auto &l : d->_dlset ) {
-            l->dumpProto();
-        }
+        ESP_LOGI(FNAME, "%d: %p (did%d/%s(%d))", it.first, d, d->_id, d->_itf->getStringId(), d->_itf->getId());
+        d->_link->dumpProto();
     }
 }
 
@@ -806,27 +803,26 @@ Device::~Device()
 {
     ESP_LOGI(FNAME, "Dtor device %d.", _id);
     // Detach data links from interface
-    for (DataLink* dl : _dlset) {
-        if ( dl->decrDeviceCount() == 0 ) {
-            // last device on this link
-            ESP_LOGI(FNAME, "Last device on %s", _itf->getStringId());
-            _itf->DeleteDataLink(dl->getPort());
-        }
-        // In a perfect world the protocols related to this device should be removed
-        // even when data link is not deleted entirely.
+    if ( _link->decrDeviceCount() == 0 ) {
+        // last device on this link
+        ESP_LOGI(FNAME, "Last device on %s", _itf->getStringId());
+        _itf->DeleteDataLink(_link->getPort());
     }
-    // Clear the set
-    _dlset.clear();
+    else {
+        ESP_LOGI(FNAME, "Still %d devices on %s, remove protos.", _link->getDeviceCount(), _itf->getStringId());
+        for (auto it : _protos) {
+            _link->removeProtocol(static_cast<ProtocolType>(it));
+        }
+        // _link->removeId(_id); not needed
+    }
 }
 
 ProtocolItf *Device::getProtocol(ProtocolType p) const
 {
     // Find protocol
-    for (DataLink* dl : _dlset) {
-        ProtocolItf *tmp = dl->getProtocol(p);
-        if ( tmp ) {
-            return tmp;
-        }
+    ProtocolItf *tmp = _link->getProtocol(p);
+    if ( tmp ) {
+        return tmp;
     }
     return nullptr;
 }
@@ -834,21 +830,17 @@ ProtocolItf *Device::getProtocol(ProtocolType p) const
 DataLink *Device::getDLforProtocol(ProtocolType p) const
 {
     // Find protocol
-    for (DataLink* dl : _dlset) {
-        if ( dl->getProtocol(p) ) {
-            return dl;
-        }
+    if ( _link->getProtocol(p) ) {
+        return _link;
     }
     return nullptr;
 }
 
-PortList Device::getSendPortList() const
+EnumList Device::getSendPortList() const
 {
-    PortList pl;
-    for (DataLink* dl : _dlset) {
-        for ( int p : dl->getAllSendPorts()) {
-            pl.insert(p);
-        }
+    EnumList pl;
+    for ( int p : _link->getAllSendPorts()) {
+        pl.insert(p);
     }
     return pl;
 }
@@ -856,8 +848,7 @@ PortList Device::getSendPortList() const
 int Device::getListenPort() const
 {
     // !!! Assuming we have just one data link per devices fixme
-    DataLink* dl = *_dlset.begin();
-    return dl->getPort();
+    return _link->getPort();
 }
 
 // get all setup lines to write into nvs for this device

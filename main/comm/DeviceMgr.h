@@ -43,14 +43,15 @@ struct Device
     int getSendPort(ProtocolType p) const;
     ProtocolItf* getProtocol(ProtocolType p) const;
     DataLink *getDLforProtocol(ProtocolType p) const;
-    PortList getSendPortList() const;
+    EnumList getSendPortList() const;
     int getListenPort() const;
     bool isAlive() const { return true; } // fixme
     DeviceNVS getNvsData() const;
     // Attributes
     const DeviceId      _id;
-    std::set<DataLink*> _dlset;
-    InterfaceCtrl      *_itf;
+    DataLink           *_link = nullptr; // can have only one link layer, but it might be shared with other devs
+    EnumList            _protos = {}; // list of protocols belonging to this device
+    InterfaceCtrl      *_itf = nullptr;
     bool                _auto = false; // automatically set-up
 };
 

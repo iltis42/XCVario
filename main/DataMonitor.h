@@ -6,9 +6,6 @@
  */
 #pragma once
 
-#include "setup/SetupNG.h"
-#include "AdaptUGC.h"
-#include "ESPRotary.h"
 #include "setup/MenuEntry.h"
 #include "comm/InterfaceCtrl.h"
 
@@ -31,6 +28,8 @@ public:
 	int maxChar( const char *s, int pos, int len);
 
 private:
+	const int LINE_WIDTH;
+	const int SCROLL_BOTTOM;
 	void printString(e_dir_t dir, const char *s, int len );
 	void header(int len=0, e_dir_t dir=DIR_RX);
 	void scroll(int scroll);

@@ -6,16 +6,18 @@
 #include "sensor.h"
 #include "setup/SetupNG.h"
 #include "Flarm.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
-#define SCROLL_TOP      20
-#define SCROLL_BOTTOM  320
+constexpr int SCROLL_TOP = 20;
 
 DataMonitor *DM = nullptr;
 
-DataMonitor::DataMonitor()
+DataMonitor::DataMonitor() :
+	MenuEntry(),
+	LINE_WIDTH(MYUCG->getDisplayWidth()),
+	SCROLL_BOTTOM(MYUCG->getDisplayHeight())
 {
-	scrollpos = SCROLL_BOTTOM;
+	scrollpos = MYUCG->getDisplayHeight();
 	DM = this;
 }
 
@@ -23,7 +25,7 @@ int DataMonitor::maxChar( const char *str, int pos, int len ){
 	int N=0;
 	int i=0;
 	char s[4] = { 0 };
-	while( N <= 240 && (i+pos)<len ) {
+	while( N <= LINE_WIDTH && (i+pos)<len ) {
 		if( bin_mode ){
 			sprintf( s, "%02x ", str[i+pos] );
 		}
@@ -31,7 +33,7 @@ int DataMonitor::maxChar( const char *str, int pos, int len ){
 			s[0] = str[i+pos];
 		}
 		N += MYUCG->getStrWidth( s );
-		if( N<220 && (i+pos)<len ){
+		if( N<(LINE_WIDTH-20) && (i+pos)<len ){
 			i++;
 		}else{
 			break;
@@ -102,7 +104,7 @@ void DataMonitor::printString(e_dir_t dir, const char *str, int len ){
 			memcpy( (void*)hunk, (void*)(str+pos), hunklen );
 			// ESP_LOGI(FNAME,"DM 2 hunklen: %d pos: %d  h:%s", hunklen, pos, hunk );
 			MYUCG->setColor( COLOR_BLACK );
-			MYUCG->drawBox( 0, scrollpos, 240,scroll_lines );
+			MYUCG->drawBox( 0, scrollpos, LINE_WIDTH, scroll_lines );
 			MYUCG->setColor( COLOR_WHITE );
 			MYUCG->setPrintPos( 0, scrollpos+scroll_lines );
 			MYUCG->setFont(ucg_font_fub11_tr, true );
@@ -166,7 +168,7 @@ void DataMonitor::start(SetupAction *p, ItfTarget ch)
 	channel = ch;
 	bin_mode = false;
 	MYUCG->setColor( COLOR_BLACK );
-	MYUCG->drawBox( 0,0,240,320 );
+	MYUCG->drawBox( 0, 0, LINE_WIDTH, SCROLL_BOTTOM );
 	MYUCG->setColor( COLOR_WHITE );
 	MYUCG->setFont(ucg_font_fub11_tr, true );
 	paused = false;

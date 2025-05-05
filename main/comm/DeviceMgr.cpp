@@ -395,6 +395,11 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
         // blesender.begin();
         // itf = BT_..;
     }
+    else if ( iid == I2C) {
+        // if ( ) .. fixme
+        I2C_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
+        // itf = BT_..;
+    }
     // else // NO_PHY is just the hint to take the same interface
     
     bool is_new = false;
@@ -522,6 +527,10 @@ void DeviceManager::removeDevice(DeviceId did)
                 ESP_LOGI(FNAME, "stopping S2");
                 S2->stop();
             }
+            // else if ( itf == I2C_0 ) { fixme
+            //     ESP_LOGI(FNAME, "stopping I2C");
+            //     I2C_0.close();
+            // }
         }
     }
     refreshRouteCache();
@@ -559,13 +568,13 @@ bool DeviceManager::isAvail(InterfaceId iid) const
     if ( iid == CAN_BUS && (isIntf(I2C) || hardwareRevision.get() < XCVARIO_22) ) {
         return false;
     }
-    else if ( iid == I2C && isIntf(CAN_BUS) ) {
+    else if ( iid == I2C && CAN ) {
         return false;
     }
     else if ( (iid == BT_SPP || iid == BT_LE) && Wifi ) {
         return false;
     }
-    else if ( iid == WIFI_AP && (isIntf(BT_SPP) || isIntf(BT_LE)) ) {
+    else if ( iid == WIFI_AP && (BTspp || isIntf(BT_LE)) ) {
         return false;
     }
     else if ( iid == S2_RS232 && hardwareRevision.get() < XCVARIO_21 ) {

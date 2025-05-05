@@ -23,13 +23,6 @@
 // used CAN Id's
 static constexpr int CANTEST_ID = CAN_REG_PORT+1;
 
-// static int can_id_config_tx; // to unify CAN id's, the following _can* variables are initialized depending on master/client role in constructor
-// static int can_id_config_rx;
-// static int can_id_nmea_tx;
-// static int can_id_nmea_rx;
-// static int can_id_keepalive_tx;
-// static int can_id_keepalive_rx;
-
 static TaskHandle_t rxTask = nullptr;
 CANbus *CAN = 0;
 static bool terminate_receiver = false;
@@ -58,50 +51,14 @@ void canRxTask(void *arg)
         {
             msg.assign((char *)rx.data, rx.data_length_code);
             ESP_LOGD(FNAME, "CAN RX NMEA chunk, id:0x%x, len:%d msg: %s", (unsigned int)rx.identifier, rx.data_length_code, msg.c_str());
-            xSemaphoreTake(can->_dlink_mutex, portMAX_DELAY);;
+            xSemaphoreTake(can->_dlink_mutex, portMAX_DELAY);
             auto dl = can->_dlink.find(rx.identifier);
-            if ( dl != can->_dlink.end() ) {
-                xSemaphoreGive(can->_dlink_mutex);
+            bool valid = dl != can->_dlink.end();
+            xSemaphoreGive(can->_dlink_mutex);
+            if ( valid ) {
                 dl->second->process(msg.data(), msg.size());
                 to_once = true;
-            } else {
-                xSemaphoreGive(can->_dlink_mutex);
             }
-
-            // bool xcv_came = false;
-            // bool magsens_came = false;
-
-            // // old receiver missing a data link
-            // if (rx.identifier == can_id_keepalive_rx)
-            // { // keep alive of msg from peer XCV ?
-            //     // ESP_LOGI(FNAME,"CAN RX Keep Alive");
-            //     xcv_came = true;
-            //     // _connected_timeout_xcv = 0;
-            //     // if( !_connected_xcv ){
-            //     // 	bool entry=false;
-            //     // 	do{ // cleanup congestion at startup
-            //     // 		entry = Router::pullMsg( can_tx_q, msg );
-            //     // 	}while( entry );
-            //     // 	ESP_LOGI(FNAME,"CAN XCV connected");
-            //     // 	_connected_xcv = true;
-            //     // 	_new_can_client_connected = (the_can_mode == CAN_MODE_MASTER);
-            //     // }
-            // }
-            // // process NMEA message depending on role and peer
-            // else if (rx.identifier == can_id_nmea_rx)
-            // {
-            //     // ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
-            //     // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
-            //     // _connected_timeout_xcv = 0;
-            //     dlink.process(msg.c_str(), msg.length(), 3); // (char *packet, int len, int port );
-            // }
-            // else if (rx.identifier == can_id_config_rx)
-            // { // CAN messages for config (!xs) and NMEA may mix up: Fixed by a second ID and datalink layer for config variables
-            //     // ESP_LOGI(FNAME,"CAN RX NMEA chunk, len:%d msg: %s", bytes, msg.c_str() );
-            //     // ESP_LOG_BUFFER_HEXDUMP(FNAME, msg.c_str(), msg.length(), ESP_LOG_INFO);
-            //     // _connected_timeout_xcv = 0;
-            //     dlinkXs.process(msg.c_str(), msg.length(), 3); // (char *packet, int len, int port );
-            // }
         }
         else
         {
@@ -137,67 +94,6 @@ void canRxTask(void *arg)
     terminate_receiver = false; // handshake
     rxTask = nullptr;
     vTaskDelete(NULL);
-
-    // // Can bus receive
-    // SString msg;
-    // int id = 0;
-    // int bytes = 0;
-    // bool xcv_came=false;
-    // bool magsens_came=false;
-    // do{
-    // 	bytes = receive( &id, msg, 500 );
-    // 	// ESP_LOGI(FNAME,"CAN RX id:%02x, bytes:%d, connected XCV:%d Magsens: %d", id, bytes, _connected_xcv, _connected_magsens );
-    // 	if( bytes  ){ // keep alive from second XCV
-    // 		if( id == _can_id_keepalive_rx ){ // keep alive of msg from peer XCV ?
-    // 			// ESP_LOGI(FNAME,"CAN RX Keep Alive");
-    // 			xcv_came = true;
-    // 			_connected_timeout_xcv = 0;
-    // 			if( !_connected_xcv ){
-    // 				bool entry=false;
-    // 				do{ // cleanup congestion at startup
-    // 					entry = Router::pullMsg( can_tx_q, msg );
-    // 				}while( entry );
-    // 				ESP_LOGI(FNAME,"CAN XCV connected");
-    // 				_connected_xcv = true;
-    // 				_new_can_client_connected = (the_can_mode == CAN_MODE_MASTER);
-    // 			}
-    // 		}
-    // 		if( id == CAN_MAGSENS_ID ){
-    // 			magsens_came = true;
-    // 			_connected_timeout_magsens = 0;
-    // 			if( !_connected_magsens ){
-    // 				ESP_LOGI(FNAME,"CAN Magnetsensor connected");
-    // 				_connected_magsens = true;
-    // 			}
-    // 		}
-    // 	}
-    // 	if( !magsens_came ){
-    // 		_connected_timeout_magsens++;
-    // 		if( _connected_timeout_magsens > 500 ){
-    // 			if( _connected_magsens ){
-    // 				ESP_LOGI(FNAME,"CAN Magsensor connection timeout");
-    // 				_connected_magsens = false;
-    // 			}
-    // 			if( compass_enable.get() == CS_CAN && (_connected_timeout_magsens > 10000) && !_connected_xcv ){
-    // 				// only restart when xcv is not connected, otherwise magsensor may be just plugged out
-    // 				ESP_LOGI(FNAME,"CAN Magnet Sensor restart timeout");
-    // 				restart();
-    // 			}
-    // 		}
-    // 	}
-    // 	if( !xcv_came ){
-    // 		_connected_timeout_xcv++;
-    // 		if( _connected_timeout_xcv > 200 ){
-    // 			if(  _connected_xcv ){
-    // 				ESP_LOGI(FNAME,"CAN XCV connection timeout");
-    // 				_connected_xcv = false;
-    // 			}
-    // 			if( (can_mode.get() != CAN_MODE_STANDALONE) && !(_connected_timeout_xcv % 10000) ){
-    // 				ESP_LOGI(FNAME,"CAN restart timeout");
-    // 				restart();
-    // 			}
-    // 		}
-    // 	}
 }
 
 CANbus::CANbus()
@@ -206,25 +102,6 @@ CANbus::CANbus()
     _tx_io = GPIO_NUM_26;
     _rx_io = GPIO_NUM_33;
     _slope_ctrl = GPIO_NUM_2;
-
-    // if (SetupCommon::isClient())
-    // { // client uses different ID, so prepare canbus for client role
-    //     can_id_config_tx = CAN_CONFIG_ID_CLIENT;
-    //     can_id_config_rx = CAN_CONFIG_ID_MASTER;
-    //     can_id_nmea_tx = CAN_NMEA_ID_CLIENT;
-    //     can_id_nmea_rx = CAN_NMEA_ID_MASTER;
-    //     can_id_keepalive_tx = CAN_KEEPALIVE_ID_CLIENT;
-    //     can_id_keepalive_rx = CAN_KEEPALIVE_ID_MASTER;
-    // }
-    // else
-    // {
-    //     can_id_config_tx = CAN_CONFIG_ID_MASTER;
-    //     can_id_config_rx = CAN_CONFIG_ID_CLIENT;
-    //     can_id_nmea_tx = CAN_NMEA_ID_MASTER;
-    //     can_id_nmea_rx = CAN_NMEA_ID_CLIENT;
-    //     can_id_keepalive_tx = CAN_KEEPALIVE_ID_MASTER;
-    //     can_id_keepalive_rx = CAN_KEEPALIVE_ID_CLIENT;
-    // }
 }
 
 CANbus *CANbus::createCAN()
@@ -351,8 +228,6 @@ void CANbus::recover()
             twai_start();
         }
     }
-    _connected_timeout_xcv = 0;
-    _connected_timeout_magsens = 0;
 }
 
 // begin CANbus, launch driver in normal mode after a selfTest

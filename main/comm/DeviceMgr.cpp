@@ -232,7 +232,7 @@ static int tt_snd(Message *msg)
             msg->buffer.erase(0, len); // chop sent bytes off
         }
         else if ( plsrety == 0 && monitor_target == ItfTarget(itf->getId(), port) ) {
-            DM->monitorString(DIR_TX, !std::isalnum(msg->buffer.at(0)), msg->buffer.c_str(), len);
+            DM->monitorString(DIR_TX, !std::isprint(msg->buffer.at(0)), msg->buffer.c_str(), len);
         }
     }
     return plsrety;

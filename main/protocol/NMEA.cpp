@@ -8,6 +8,7 @@
 
 #include "NMEA.h"
 
+#include  "comm/DataLink.h"
 #include "AliveMonitor.h"
 #include "nmea_util.h"
 #include "logdefnone.h"
@@ -162,21 +163,22 @@ dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
         break;
     }
 
-    dl_action_t action = NOACTION;
+    dl_control_t ret(NOACTION, _did);
     if ( _sm._state == COMPLETE )
     {
         NMEA::ensureTermination(_sm._frame);
         _sm._state = START_TOKEN; // restart parsing
         ESP_LOGI(FNAME, "Msg complete %s", _mkey.toString().c_str());
-        action = _default_action;
+        ret.act = _default_action;
         if ( _parser.first ) {
-            action = (_parser.first)(_parser.second);
+            ret.act = (_parser.first)(_parser.second);
+            ret.did = _parser.second->getRouteId();
         }
         if ( _alive) {
             _alive->keepAlive();
         }
     }
-    return dl_control_t(action);
+    return ret;
 }
 
 // plugin base with a potential different device id for routing

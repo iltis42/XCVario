@@ -48,7 +48,7 @@ dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
     // _crc holds the last received frame type (!)
     if ( ! _binpeer ) {
         // Oops
-        return dl_control_t(GO_NMEA, count);
+        return dl_control_t(GO_NMEA, _did, count);
     }
 
     for (int i = 0; i < count; i++)
@@ -118,10 +118,11 @@ dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
                 _sm._state = START_TOKEN;
                 send_chunk(); // forward msg (remaining data)
                 if ( _sm._crc == 0x12 ) { // exit BP msg
-                    ESP_LOGI(FNAME, "0x12 BP end <---------------- switch to nmea");
-                    _binpeer->getDL()->goNMEA();
-                    _binpeer = nullptr;
-                    InterfaceCtrl *itf = DEVMAN->getIntf(FLARM_DEV);
+                    ESP_LOGI(FNAME, "0x12 BP end +---------------- switch to nmea ignored");
+                    // ESP_LOGI(FNAME, "0x12 BP end <---------------- switch to nmea");
+                    // _binpeer->getDL()->goNMEA();
+                    // _binpeer = nullptr;
+                    // InterfaceCtrl *itf = DEVMAN->getIntf(FLARM_DEV);
                     // vTaskDelay(pdMS_TO_TICKS(10));
                     // itf->ConfigureIntf(SM_FLARM); baud rate change not intended
                     last_action = GO_NMEA;
@@ -137,7 +138,7 @@ dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
         }
     }
 
-    return dl_control_t(last_action, count);
+    return dl_control_t(last_action, _did, count);
 }
 
 bool FlarmBinary::setBaudrate(int fnr, int br)

@@ -52,7 +52,6 @@ struct Device
     DataLink           *_link = nullptr; // can have only one link layer, but it might be shared with other devs
     EnumList            _protos = {}; // list of protocols belonging to this device
     InterfaceCtrl      *_itf = nullptr;
-    bool                _auto = false; // automatically set-up
 };
 
 
@@ -78,7 +77,7 @@ public:
     ~DeviceManager();
     static DeviceManager* Instance();
     // API
-    Device* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid, bool ato=false);
+    Device* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid);
     Device* getDevice(DeviceId did);
     Device* getXCVPeer();
     ProtocolItf *getProtocol(DeviceId dev, ProtocolType proto);

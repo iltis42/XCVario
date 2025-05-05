@@ -126,7 +126,7 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
 
             ESP_LOGI(FNAME, "use port %d", client_ch);
             int master_ch = client_ch + 1;
-            if ( DEVMAN->addDevice(ndev, nproto, master_ch, client_ch, CAN_BUS, true) ) {
+            if ( DEVMAN->addDevice(ndev, nproto, master_ch, client_ch, CAN_BUS) ) {
                 // all good
                 msg->buffer.clear();
                 msg->buffer = "$PJMACC, " + token + ", " + std::to_string(client_ch) + ", " + std::to_string(master_ch);

@@ -332,7 +332,7 @@ DeviceManager* DeviceManager::Instance()
 
 // Do all it needs to prepare comm with device and route data
 // It returns the pointer to the device
-Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_port, int send_port, InterfaceId iid, bool ato)
+Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_port, int send_port, InterfaceId iid)
 {
     // On first device a send task needs to be created
     if ( ! SendTask ) {
@@ -415,7 +415,6 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
     }
     if ( ! dev ) {
         dev = new Device(did);
-        dev->_auto = ato;
         is_new = true;
         // Retrieve, or create a new data link
         DataLink *dl = itf->newDataLink(listen_port);

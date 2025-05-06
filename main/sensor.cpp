@@ -206,10 +206,6 @@ void drawDisplay(void *arg)
 	int event = 0;
 	while (1) {
 		// handle button events in this context
-		if ( ! (event & ROTARY_EVTMASK) ) {
-			// Empty the queue to avoid on-running events
-			xQueueReset(buton_event_queue);
-		}
 		if (xQueueReceive(buton_event_queue, &event, pdMS_TO_TICKS(20)) == pdTRUE) {
 			if (event == SHORT_PRESS) {
 				// ESP_LOGI(FNAME,"Button short press detected");

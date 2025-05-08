@@ -1332,7 +1332,7 @@ void SetupMenu::options_menu_create_compasswind_straightwind_filters( MenuEntry 
 	top->addEntry( smgps );
 	smgps->setHelp( "Lowpass filter factor for GPS track and speed, to correlate with Compass latency");
 
-	SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Averager", "", 5, 120, 1, nullptr, false, &wind_filter_lowpass );
+	SetupMenuValFloat *wlpf = new SetupMenuValFloat( "Averager", "", 5, 60, 1, nullptr, false, &wind_filter_lowpass, RST_ON_EXIT );
 	wlpf->setPrecision(0);
 	top->addEntry( wlpf );
 	wlpf->setHelp( "Number of measurements (seconds) averaged in straight flight live wind estimation");

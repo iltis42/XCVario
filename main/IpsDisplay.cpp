@@ -2095,7 +2095,7 @@ bool PolarIndicator::drawPolarIndicatorAndBow(float a, bool dirty){
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
 		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor, bool ulmode ){
-	// ESP_LOGI(FNAME,"drawRetroDisplay polar_sink: %f", polar_sink_ms );
+	// ESP_LOGI(FNAME,"drawRetroDisplay polar_sink: %f AVario: %f m/s", polar_sink_ms, ate_ms );
 	if( _menu )
 		return;
 	if( !(screens_init & INIT_DISPLAY_RETRO) ){
@@ -2155,9 +2155,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		return;
 	}
 	// average Climb
-	if( ((int)(ate*30) != _ate) && !(tick%10) ) {
+	if( ((int)(ate*10) != _ate) || !(tick%10) ) {
 		drawAvgVario( AMIDX + 38, AMIDY, ate );
-		_ate = (int)(ate*30);
+		_ate = (int)(ate*10);
 	}
 
 	// S2F Command triangle

@@ -44,6 +44,7 @@ public:
 		_analog_adj = 0;
 		myS2F = 0;
 		_sensorBARO = 0;
+		N = 0;
 	}
 
 	void begin( PressureSensor *te,  PressureSensor *baro, S2F* s2f );
@@ -78,6 +79,7 @@ private:
 	double _analog_adj;
 	int    index;
 	double _TEF;
+	Average2<60, float, float> avgTE;
 	double _avgTE;
 	double bmpTemp;
 	bool _test;
@@ -85,9 +87,9 @@ private:
 	double _damping_factor;
 	float _S2FTE;
 	double _currentAlt;
-
 	static int   holddown;
 	S2F * myS2F;
+	int N;
 };
 
 extern BMPVario bmpVario;

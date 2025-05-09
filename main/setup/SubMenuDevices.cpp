@@ -13,7 +13,7 @@
 #include "SetupAction.h"
 #include "comm/DeviceMgr.h"
 #include "comm/SerialLine.h"
-#include "DataMonitor.h"
+#include "setup/DataMonitor.h"
 #include "WifiClient.h"
 #include "sensor.h"
 #include "logdef.h"

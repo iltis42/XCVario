@@ -26,7 +26,7 @@
 #include "protocol/TestQuery.h"
 #include "Messages.h"
 #include "DeviceMgr.h"
-#include "DataMonitor.h"
+#include "setup/DataMonitor.h"
 #include "protocol/AliveMonitor.h"
 #include "setup/SetupNG.h"
 #include "logdef.h"

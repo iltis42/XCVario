@@ -18,7 +18,7 @@
 #include "protocol/ProtocolItf.h"
 #include "protocol/NMEA.h"
 #include "protocol/MagSensBin.h"
-#include "DataMonitor.h"
+#include "setup/DataMonitor.h"
 #include "setup/SetupNG.h"
 
 #include "sensor.h"

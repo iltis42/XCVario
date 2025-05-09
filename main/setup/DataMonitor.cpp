@@ -1,4 +1,4 @@
-#include "DataMonitor.h"
+#include "setup/DataMonitor.h"
 
 #include "comm/DeviceMgr.h"
 #include "setup/SetupMenu.h"

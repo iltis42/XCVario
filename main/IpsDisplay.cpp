@@ -7,6 +7,7 @@
  */
 
 #include "IpsDisplay.h"
+
 #include "comm/DeviceMgr.h"
 #include "BLESender.h"
 #include "OneWireESP32.h"
@@ -21,18 +22,18 @@
 #include "comm/BTspp.h"
 #include "comm/CanBus.h"
 #include "Blackboard.h"
+#include "CenterAid.h"
+#include "Rotate.h"
+#include "AdaptUGC.h"
+#include "logdef.h"
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include <AdaptUGC.h>
-#include <logdef.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
-#include "sdkconfig.h"
+// #include "sdkconfig.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include "CenterAid.h"
-#include "Rotate.h"
 
 
 ////////////////////////////
@@ -143,10 +144,13 @@ int S2FST = 45;
 
 
 int ASLEN = 0;
-#define AMIDY DISPLAY_H/2
-#define AMIDX (DISPLAY_W/2 + 30)
+static int AMIDY = DISPLAY_H/2;
+static int AMIDX = (DISPLAY_W/2 + 30);
 
-static const int16_t INNER_RIGHT_ALIGN = 170;
+static int16_t INNER_RIGHT_ALIGN = 170;
+static int16_t LOAD_MPG_POS = 0;
+static int16_t LOAD_MNG_POS = 0;
+static int16_t LOAD_MIAS_POS = 0;
 static int fh;
 
 SemaphoreHandle_t display_mutex=NULL;
@@ -233,47 +237,47 @@ static float linGaugeIdx(const float val)
 static float (*_gauge)(float) = &linGaugeIdx;
 
 // get sin/cos position from gauge index in rad
-static inline int precal_scaled_idx(const float val) { return (int)(abs(val)*sincosScale)&(SINCOS_OVER_110-1); }
-static inline int precal_idx(const int ival) { return abs(ival)&(SINCOS_OVER_110-1); }
+static int precal_scaled_idx(const float val) { return (int)(abs(val)*sincosScale)&(SINCOS_OVER_110-1); }
+static int precal_idx(const int ival) { return abs(ival)&(SINCOS_OVER_110-1); }
 
-static inline int gaugeSin(const float val, const int len)
+static int gaugeSin(const float val, const int len)
 {
 	return AMIDY - precalc_sin[precal_scaled_idx(val)] * len * (std::signbit(val)?-1:1);
 }
-static inline int gaugeCos(const float val, const int len)
+static int gaugeCos(const float val, const int len)
 {
 	return AMIDX - precalc_cos[precal_scaled_idx(val)] * len;
 }
-static inline int gaugeSin(const int val, const int len)
+static int gaugeSin(const int val, const int len)
 {
 	return AMIDY - precalc_sin[precal_idx(val)] * len * (std::signbit(val)?-1:1);
 }
-static inline int gaugeCos(const int val, const int len)
+static int gaugeCos(const int val, const int len)
 {
 	return AMIDX - precalc_cos[precal_idx(val)] * len;
 }
-static inline int sinIncr(const int val, const int len)
+static int sinIncr(const int val, const int len)
 {
 	return precalc_sin[precal_idx(val)] * len * (std::signbit(val)?-1:1);
 }
-static inline int cosIncr(const int val, const int len)
+static int cosIncr(const int val, const int len)
 {
 	return precalc_cos[precal_idx(val)] * len;
 }
 // Or just simply the plain trigenometric function rad(-110) < idx < rad(110)
-static inline float mySin(const float val)
+static float mySin(const float val)
 {
 	return precalc_sin[precal_scaled_idx(val)] * (std::signbit(val)?-1:1);
 }
-static inline float myCos(const float val)
+static float myCos(const float val)
 {
 	return precalc_cos[precal_scaled_idx(val)];
 }
-static inline float mySin(const int ival)
+static float mySin(const int ival)
 {
 	return precalc_sin[precal_idx(ival)] * (std::signbit(ival)?-1:1);
 }
-static inline float myCos(const int ival)
+static float myCos(const int ival)
 {
 	return precalc_cos[precal_idx(ival)];
 }
@@ -293,6 +297,18 @@ static void initGauge(const float max, const bool log)
 		precalc_sin[i] = sin(i/sincosScale);
 		precalc_cos[i] = cos(i/sincosScale);
 	}
+
+	// center the gauge
+	AMIDY = DISPLAY_H/2;
+	AMIDX = (DISPLAY_W/2 + 30);
+	INNER_RIGHT_ALIGN = DISPLAY_W - 70;
+	LOAD_MPG_POS = DISPLAY_H*0.25;
+	LOAD_MNG_POS = DISPLAY_H*0.64;
+	LOAD_MIAS_POS = DISPLAY_H*0.81;
+	if ( display_orientation.get() == DISPLAY_NINETY ) {
+		AMIDX = DISPLAY_W/2 - 43;
+		LOAD_MNG_POS = DISPLAY_H*0.53;
+	}
 	initialized = true;
 }
 // inverse to xxGaugeIdx. Get the value for an indicator position
@@ -307,9 +323,9 @@ static float gaugeValueFromIdx(const float rad)
 
 
 PolarIndicator::PolarIndicator() :
-					base(80),
+					base(106),
 					tip(132),
-					h_width(9)
+					h_width(8)
 {
 	color = needlecolor[1];
 	base_val_offset = (int)(atan(static_cast<float>(h_width)/base)*sincosScale);
@@ -625,7 +641,7 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		int y=gaugeSin(a, pos);
 		ucg->drawTetragon( x+size, y, x,y+ylsize, x-size,y, x,y-yusize );
 		// refresh scale around old AVG icon
-		drawScale( _range, -_range, 140, 0, avc_old*10.f );
+		drawScale( _range, -_range, DISPLAY_H/2-16, 0, avc_old*10.f );
 	}
 	if( delta > (mean_climb_major_change.get())/core_climb_history.get() ){
 		ucg->setColor( COLOR_GREEN );
@@ -776,7 +792,7 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 void IpsDisplay::drawMC( float mc, bool large ) {
 	if( _menu )
 		return;
-	ucg->setPrintPos(5, DISPLAY_H-2);
+	ucg->setPrintPos(1, DISPLAY_H+2);
 	ucg->setColor(COLOR_WHITE);
 	if( large ) {
 		ucg->setFont(ucg_font_fub20_hn, false);
@@ -789,7 +805,7 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 	int16_t fl = ucg->getStrWidth(s);
 	ucg->setFont(ucg_font_fub11_hr, true);
 	ucg->setColor(COLOR_HEADER);
-	ucg->setPrintPos(5+fl+2, DISPLAY_H-2);
+	ucg->setPrintPos(1+fl+2, DISPLAY_H+2);
 	ucg->print("MC");
 }
 
@@ -1009,8 +1025,8 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		if( WifiClient::isConnected(8884) ) // fixme
 			btq=0;
 	}
-	else if ( xcv_role.get() <= 1 && DEVMAN->isIntf(WIFI_AP) ) {
-		btq=WifiAP::queueFull();
+	else if ( xcv_role.get() <= MASTER_ROLE && DEVMAN->isIntf(WIFI_AP) && Wifi ) {
+		btq=Wifi->queueFull();
 	} else {
 		return;
 	}
@@ -1121,6 +1137,8 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	if( _menu )
 		return;
+
+	// ucg->setClipRange(x-50, y-25, 80, 25); // avoid overwriting thermometer
 	ucg->setFont(ucg_font_fur14_hf, true);
 	char s[32];
 	if( t != DEVICE_DISCONNECTED_C ) {
@@ -1128,10 +1146,11 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 		sprintf(s, "%6.1f", std::roundf(temp_unit*10.f)/10.f );
 	}
 	else {
-		strcpy(s, "  --- ");
+		strcpy(s, " ---");
 	}
+	ESP_LOGI(FNAME,"drawTemperature: %d,%d %s", x-ucg->getStrWidth(s),y-3, s);
 	ucg->setColor( COLOR_WHITE );
-	ucg->setPrintPos(x-ucg->getStrWidth(s),y);
+	ucg->setPrintPos(x-ucg->getStrWidth(s),y-3);
 	ucg->print(s);
 	if( HAS_MPU_TEMP_CONTROL ){   // Color if T unit shows if MPU silicon temperature is locked, too high or too low
 		switch( MPU.getSiliconTempStatus() ){
@@ -1150,8 +1169,9 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	}else{
 		ucg->setColor( COLOR_HEADER );
 	}
-	ucg->setPrintPos(x+3,y);
+	ucg->setPrintPos(x+2,y-3);
 	ucg->print(Units::TemperatureUnitStr(temperature_unit.get()));
+	// ucg->undoClipRange();
 }
 
 // val, center x, y, start radius, end radius, width, r,g,b
@@ -1315,7 +1335,7 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 	mid_lpos /= modulo;
 	mid_lpos *= modulo; // round down to the next modulo hit
 	ucg->setFontPosCenter();
-	// ucg->setFontMode(UCG_FONT_MODE_TRANSPARENT);  is default
+	// ucg->setFontMode(UCG_FONT_MODE_TRANSPARENT); // is default
 	ucg->setFont(ucg_font_fub14_hn);
 
 	// calc pixel dist for interval 0.5-1
@@ -1398,14 +1418,14 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 	}
 	// ESP_LOGI( FNAME,"drawOneLabel val:%.2f label:%d  toside:%.2f inc:%.2f", val, labl, to_side, incr );
 	int x=gaugeCos(val+to_side, pos);
-	int y=gaugeSin(val+to_side, pos) +5;
+	int y=gaugeSin(val+to_side, pos) +6;
 
 	ucg->setColor(COLOR_LBBLUE);
 	ucg->setPrintPos(x,y);
 	if ( offset != 0 ) {
-		ucg->printf("%d", labl+offset );
+		ucg->print(labl+offset);
 	} else  {
-		ucg->printf("%d", abs(labl) );
+		ucg->print(abs(labl));
 	}
 }
 
@@ -1471,8 +1491,8 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	ucg->setFontPosBottom();
 	redrawValues();
 	initGauge(_range, log_scale.get());
-	drawScale( _range, -_range, 140, 0);
-	indicator->setGeometry(80, 132, 9);
+	drawScale( _range, -_range, DISPLAY_H/2-16, 0);
+	indicator->setGeometry(DISPLAY_H/2-24-26, DISPLAY_H/2-24, 8);
 
 	// Unit's
 	if( _menu )
@@ -1483,7 +1503,7 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	ucg->print( Units::VarioUnit() );
 	drawConnection(DISPLAY_W-27, FLOGO+2 );
 	drawSpeed(0., INNER_RIGHT_ALIGN, 75, true, true );
-	drawAltitude( altitude.get(), INNER_RIGHT_ALIGN, 270, true, true );
+	drawAltitude( altitude.get(), INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, true, true );
 	if( !ulmode )
 		drawMC( MC.get(), true );
 	if ( FLAP ) {
@@ -1518,11 +1538,11 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val, bool large ){
 	int ival = rint(val*10);  // integer value in steps of 10th
 	if( last_avg != ival){  // only print if there a change in rounded numeric string
 		char s[32];
-		if( large ) {
-			ucg->setFont(eglib_font_free_sansbold_66, false );
-		} else {
-			ucg->setFont(ucg_font_fub35_hn, false );
-		}
+		// if( large ) {
+		// 	ucg->setFont(eglib_font_free_sansbold_66, false );
+		// } else {
+		ucg->setFont(ucg_font_fub35_hn, false );
+		// }
 		ucg->setFontPosCenter();
 		static const char* format[2] = {"%2.1f","%2.0f"};
 		sprintf(s, format[std::abs(ival)>100], float(ival/10.) );
@@ -1533,7 +1553,7 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val, bool large ){
 			ucg->drawBox( x_start, y-fh/2, new_x_start-x_start, fh );  // draw blanking box
 		}
 		ucg->setColor( COLOR_WHITE );
-		ucg->setPrintPos(new_x_start, y + 7);
+		ucg->setPrintPos(new_x_start, y + 8);
 		ucg->print(s);
 		last_avg = ival;
 		x_start = new_x_start;
@@ -1759,12 +1779,12 @@ static float old_ias_max = -1;
 
 void IpsDisplay::drawLoadDisplayTexts(){
 	ucg->setFont(ucg_font_fub11_hr, true);
-	ucg->setPrintPos(130,70);
+	ucg->setPrintPos(INNER_RIGHT_ALIGN-40, LOAD_MPG_POS);
 	ucg->setColor(  COLOR_HEADER_LIGHT  );
 	ucg->print( "MAX POS G" );
-	ucg->setPrintPos(130,205);
+	ucg->setPrintPos(INNER_RIGHT_ALIGN-40, LOAD_MNG_POS);
 	ucg->print( "MAX NEG G" );
-	ucg->setPrintPos(130,260);
+	ucg->setPrintPos(INNER_RIGHT_ALIGN-40, LOAD_MIAS_POS);
 	ucg->printf( "MAX IAS %s", Units::AirspeedUnitStr() );
 }
 
@@ -1775,28 +1795,28 @@ void IpsDisplay::initLoadDisplay(){
 	ucg->setColor( COLOR_HEADER );
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(20,20);
-	ucg->print( "G-Force" );
+	ucg->print("G-Force");
 	drawLoadDisplayTexts();
 	int max_gscale = (int)( gload_pos_limit.get() )+1;
 	if( -gload_neg_limit.get() >= max_gscale )
 		max_gscale = (int)( -gload_neg_limit.get()  )+1;
 
 	for( float a=gload_pos_limit.get()-1; a<max_gscale; a+=0.05 ) {
-		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_RED );
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, DISPLAY_H/2-22, DISPLAY_H/2-22+10, 2, COLOR_RED );
 	}
 	for( float a=gload_neg_limit.get()-1; a>-max_gscale; a-=0.05 ) {
-		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_RED );
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, DISPLAY_H/2-22, DISPLAY_H/2-22+10, 2, COLOR_RED );
 	}
 	for( float a=gload_pos_limit_low.get()-1; a<gload_pos_limit.get()-1; a+=0.05 ) {
-		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_ORANGE );
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, DISPLAY_H/2-22, DISPLAY_H/2-22+10, 2, COLOR_ORANGE );
 	}
 	for( float a=gload_neg_limit_low.get()-1; a>gload_neg_limit.get()-1; a-=0.05 ) {
-		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, 140, 150, 2, COLOR_ORANGE );
+		drawOneScaleLine( ((float)a/max_gscale)*M_PI_2, DISPLAY_H/2-22, DISPLAY_H/2-22+10, 2, COLOR_ORANGE );
 	}
 
 	initGauge(max_gscale, false); // no logarithmic gauge for g-load
-	drawScale( max_gscale, -max_gscale, 140, 1 );
-	indicator->setGeometry(70, 129, 7);
+	drawScale( max_gscale, -max_gscale, DISPLAY_H/2-16, 1);
+	indicator->setGeometry(DISPLAY_H/2-24-26, DISPLAY_H/2-24, 8);
 	old_gmax = 100;
 	old_gmin = -100;
 	old_ias_max = -1;
@@ -1855,9 +1875,9 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 	P5r.moveVertical(p);
 	P6r.moveVertical(p);
 	int heading = 0;
-	if( compass_enable.get() != CS_DISABLE ){
+	// if( compass_enable.get() != CS_DISABLE ){
 
-	}
+	// }
 	// ESP_LOGI(FNAME,"P1:%d/%d P2:%d/%d P3:%d/%d P4:%d/%d roll:%f d:%d ", P1r.x, P1r.y+p, P2r.x, P2r.y+p, P3r.x, P3r.y+p, P4r.x , P4r.y+p, R2D(roll), p  );
 	if( P1r.y != P1o.y || P1r.x != P1o.x ){
 		// ESP_LOGI(FNAME,"drawHorizon P: %1.1f R: %1.1f Y: %1.1f", R2D(pitch), R2D(roll), R2D(yaw) );
@@ -1878,7 +1898,7 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 		ucg->undoClipRange();
 		xSemaphoreGive(display_mutex);
 	}
-	if( compass_enable.get() != CS_DISABLE ){
+	if( compass ){
 		heading = static_cast<int>(rintf(mag_hdt.get()));
 		ucg->setFont(ucg_font_fub20_hr, true);
 		ucg->setPrintPos(70,310);
@@ -1922,7 +1942,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 		else
 			ucg->setColor(  COLOR_RED  );
 		ucg->setFont(ucg_font_fub20_hr, true);
-		ucg->setPrintPos(120,105);
+		ucg->setPrintPos(INNER_RIGHT_ALIGN-40, LOAD_MPG_POS+30);
 		ucg->printf("  %+1.2f   ", gload_pos_max.get() );
 		old_gmax = gload_pos_max.get();
 	}
@@ -1932,7 +1952,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 		else
 			ucg->setColor(  COLOR_RED  );
 		ucg->setFont(ucg_font_fub20_hr, true);
-		ucg->setPrintPos(125,235);
+		ucg->setPrintPos(INNER_RIGHT_ALIGN-40, LOAD_MNG_POS+30);
 		ucg->printf("  %+1.2f   ", gload_neg_max.get() );
 		old_gmin = gload_neg_max.get();
 	}
@@ -1942,7 +1962,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 		else
 			ucg->setColor(  COLOR_RED  );
 		ucg->setFont(ucg_font_fub20_hr, true);
-		ucg->setPrintPos(125,295);
+		ucg->setPrintPos(INNER_RIGHT_ALIGN-40, LOAD_MIAS_POS+30);
 		ucg->printf("  %3d   ", Units::AirspeedRounded( airspeed_max.get() ) );
 		old_ias_max = airspeed_max.get();
 	}
@@ -2091,7 +2111,7 @@ bool PolarIndicator::drawPolarIndicatorAndBow(float a, bool dirty){
 		// Draw colored bow
 		float bar_val = (a>0.) ? a : 0.;
 		// draw green/red vario bar
-		IpsDisplay::drawBow(bar_val, old_vario_bar_val, 134, bowcolor[BC_GREEN] );
+		IpsDisplay::drawBow(bar_val, old_vario_bar_val, DISPLAY_H/2-22, bowcolor[BC_GREEN] );
 		return true;
 	}
 	return false;
@@ -2214,9 +2234,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		// static float alt = 0, rad = 0.0; int min_aq = std::max(alt_quant, (int16_t)1);
 		// altitude = alt + sin(rad) * (5*min_aq+2); rad += 0.003*min_aq;
 		if( bg_prio ){
-			drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, alt_dirty );
+			drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, alt_dirty );
 		}else{  // needle prio
-			if( drawAltitude( altitude, INNER_RIGHT_ALIGN, 270, (alt_dirty && !(tick%10)) ) ){
+			if( drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, (alt_dirty && !(tick%10)) ) ){
 				indicator->drawPolarIndicatorAndBow(needle_pos, true);
 			}
 		}
@@ -2244,7 +2264,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
 	if( ps_display.get() && !(tick%3) ){
 		if( int( polar_sink*100.) != int( old_polar_sink*100. ) ){
-			drawBow(  (*_gauge)(polar_sink), old_sink_bar_val, 134, bowcolor[BC_BLUE] );
+			drawBow(  (*_gauge)(polar_sink), old_sink_bar_val, DISPLAY_H/2-22, bowcolor[BC_BLUE] );
 			old_polar_sink = polar_sink;
 		}
 	}
@@ -2268,9 +2288,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Temperature Value
 	temp_status_t mputemp = MPU.getSiliconTempStatus();
 	if( (((int)(temp*10) != tempalt) || (mputemp != siliconTempStatusOld)) && !(tick%12)) {
-		ucg->setClipRange(ulmode?15:5,1,120,100); // avoid overwriting thermometer
-		drawTemperature( ulmode?65:55, 25, temp );
-		ucg->undoClipRange();
+		drawTemperature( ulmode?65:52, 23, temp );
 		tempalt=(int)(temp*10);
 		siliconTempStatusOld = mputemp;
 	}
@@ -2423,9 +2441,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	// Temperature ValueAirliner
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
-		ucg->setClipRange(FIELD_START+10, 1,500,500); // avoid overwriting thermometer
-		drawTemperature( FIELD_START+65, DISPLAY_H-5, temp );
-		ucg->undoClipRange();
+		drawTemperature( FIELD_START+65, DISPLAY_H, temp );
 		tempalt=(int)(temp*10);
 	}
 	// Battery Symbol

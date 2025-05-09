@@ -46,7 +46,6 @@ class Quaternion;
 
 typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } xcv_display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
-typedef enum rs232linemode { RS232_NORMAL, RS232_TTL } rs232lm_t;
 typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, NMEA_OFF } nmea_proto_t;
 typedef enum ext_device_protocol  { DEV_DISABLE, DEV_FLARM, DEV_KRT2_RADIO, DEV_BECKER_RADIO, DEV_GNSS_UBX, DEV_ANEMOI } ext_device_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS, MODE_CAS, MODE_SLIP } airspeed_mode_t;

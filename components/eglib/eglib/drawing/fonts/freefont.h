@@ -825,12 +825,12 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_54px_L
 /**
  * .. image:: freefont/FreeFont_FreeMono_54px_LatinExtendedA.png
  */
-extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_54px_LatinExtendedA;
+// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_54px_LatinExtendedA;
 
 /**
  * .. image:: freefont/FreeFont_FreeMono_54px_SuperscriptsAndSubscripts.png
  */
-extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_54px_SuperscriptsAndSubscripts;
+// extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_54px_SuperscriptsAndSubscripts;
 
 /**
  * 60 pixels
@@ -879,7 +879,7 @@ extern const struct glyph_unicode_block_t unicode_block_FreeFont_FreeMono_60px_S
  * and can be extended with :c:func:`eglib_AddUnicodeBlockToFont` to support
  * extra unicode blocks defined below.
  */
-extern const struct font_t font_FreeFont_FreeMono_66px;
+// extern const struct font_t font_FreeFont_FreeMono_66px;
 
 /**
  * Unicode blocks

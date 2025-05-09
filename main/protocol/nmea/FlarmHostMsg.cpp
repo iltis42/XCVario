@@ -7,8 +7,9 @@
  ***********************************************************/
 
 #include "FlarmHostMsg.h"
+#include "comm/DeviceMgr.h"
 
-#include <logdef.h>
+#include "logdefnone.h"
 
 // The FLARM host protocol checker/forwarder.
 //
@@ -21,13 +22,15 @@ FlarmHostMsg::FlarmHostMsg(NmeaPrtcl &nr) :
     _nmeaRef.setDefaultAction(DO_ROUTING);
 }
 
+// Initiate a flarm BP session
+// $PFLAX*2E
 dl_action_t FlarmHostMsg::parsePFLAX(NmeaPlugin *plg)
 {
     ProtocolState *sm = plg->getNMEA().getSM();
     ESP_LOGI(FNAME, "FLAX called -----------------+");
     if ( sm->_frame.at(6) != ',' ) {
         ESP_LOGI(FNAME, "Start binary request");
-        return NXT_PROTO;
+        DEVMAN->setFlarmBPInitiator(plg->getNMEA().getDL());
     }
     return DO_ROUTING;
 }

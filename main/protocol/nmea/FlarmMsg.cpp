@@ -13,7 +13,7 @@
 
 #include "comm/DeviceMgr.h"
 
-#include "logdefnone.h"
+#include "logdef.h"
 
 
 // The FLARM protocol parser.
@@ -174,7 +174,7 @@ dl_action_t FlarmMsg::parsePFLAX(NmeaPlugin *plg)
     if ( word->size() == 2 && *(sm->_frame.c_str() + word->at(0)) == 'A' ) {
         // this is the confirmation from flarm to go binary
         ESP_LOGI(FNAME,"confirmed");
-        DataLink *host = DEVMAN->getFlarmHost();
+        DataLink *host = DEVMAN->getFlarmBPInitiator();
         if ( host && host->getProtocol(FLARMBIN_P) && nmea.getDL()->getProtocol(FLARMBIN_P)) {
             // Host side
             FlarmBinary *hostfb = static_cast<FlarmBinary*>(host->goBIN());

@@ -80,7 +80,8 @@ ATR833Remote::ATR833Remote(int mp, ProtocolState &sm, DataLink &dl)
 
 dl_control_t ATR833Remote::nextBytes(const char* c, int len)
 {
-    int pos = _sm._frame.size() - 1; // c already in the buffer
+    int pos = _sm._frame.size();
+    _sm.push(*c);
     dl_action_t ret = NOACTION;
     // ESP_LOGI(FNAME, "state %d, pos %d next char %c", _sm._state, pos, *c);
     switch (_sm._state)

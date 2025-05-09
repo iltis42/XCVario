@@ -90,7 +90,8 @@ public:
     bool isAvail(InterfaceId iid) const;
     RoutingList getRouting(RoutingTarget t);
     void refreshRouteCache();
-    DataLink *getFlarmHost();
+    void setFlarmBPInitiator(DataLink *dl);
+    DataLink *getFlarmBPInitiator();
     static int nrDevs() { return (DEVMAN) ? DEVMAN->getNrDevs() : 0; }
     int getNrDevs() const { return _device_map.size(); }
     // void makePersistent();
@@ -118,5 +119,7 @@ private:
     // Hash table for routing purpose
     DevMap _device_map;
     mutable SemaphoreHandle_t _devmap_mutex;
+    // Flarm specific trace to handle the Flarm binary protocol
+    DataLink *_flarm_bp = nullptr; // the flarm binary protocol initiator
 };
 

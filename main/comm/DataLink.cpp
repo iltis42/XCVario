@@ -297,7 +297,7 @@ void DataLink::process(const char *packet, int len)
     // process every frame byte through state machine
     for (; len > 0; ) {
         dl_control_t control = dl_control_t(NOACTION);
-        if ( _sm.push(*packet) ) // only push one byte, beyond that it is protocol resposibility
+        if ( _sm.checkSpaceOne() ) // only check for one byte buffer space, beyond that it is protocol resposibility
         {
             control = _active->nextBytes(packet, len);
             if ( control.act & FORWARD_BIT ) {

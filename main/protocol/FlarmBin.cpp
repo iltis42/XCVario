@@ -14,7 +14,7 @@
 #include "comm/SerialLine.h"
 #include "nmea_util.h"
 
-#include <logdef.h>
+#include "logdefnone.h"
 
 static uint16_t xmodem_crc(const uint8_t *data, int length, uint16_t crc0 = 0);
 
@@ -28,15 +28,24 @@ void FlarmBinary::send_chunk()
     Message* msg = DEV::acqMessage(_binpeer->getDeviceId(), _binpeer->getSendPort());
     msg->buffer = _sm._frame;
     DEV::Send(msg);
-    if ( _sm._opt == 0 ) {
-        std::string str = msg->hexDump(9);
-        ESP_LOGI(FNAME, ">%c %s", msg->target_id==FLARM_DEV?'D':'H', str.c_str());
-    }
+    // if ( _sm._opt == -1 ) {
+    //     // just log the start of each bin message
+    //     ESP_LOGI(FNAME, "send to %d/%d:%d", _binpeer->getDeviceId(), _binpeer->getSendPort(), _sm._opt+_sm._frame.size());
+    //     std::string str = msg->hexDump(9);
+    //     ESP_LOGI(FNAME, "%c< %s", msg->target_id==FLARM_DEV?'D':'H', str.c_str());
+    // }
     // Partial reset to cope with large messages
     _sm._opt += _sm._frame.size();
     _sm._frame.clear();
 }
 
+void FlarmBinary::bailOut()
+{
+    if ( _binpeer ) {
+        _binpeer->getDL()->goNMEA();
+        _binpeer = nullptr;
+    }
+}
 
 dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
 {
@@ -48,13 +57,13 @@ dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
     // _crc holds the last received frame type (!)
     if ( ! _binpeer ) {
         // Oops
-        return dl_control_t(GO_NMEA, _did, count);
+        return dl_control_t(NXT_PROTO, _did, count);
     }
 
     for (int i = 0; i < count; i++)
     {
         char c = *(cptr+i);
-        _sm.push(c);
+        _sm.push(c); // add unfiltered incl. escape char etc.
         if ( c == ESCAPE ) { // escape token
             // one more charachter to expect, escape and start token do not count
             _sm._esc = ESCAPE;
@@ -70,6 +79,7 @@ dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
         switch (_sm._state)
         {
         case START_TOKEN:
+            // not part of frame bytes count
             if (c == 0x73)
             {
                 _sm._state = HEADER;
@@ -80,6 +90,7 @@ dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
             }
             break;
         case HEADER:
+            // the message length (2 byte)
             if (_sm._opt + _sm._frame.size() == 1)
             {
                 _sm._frame_len += (unsigned char)c;
@@ -87,11 +98,12 @@ dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
             else
             {
                 _sm._frame_len += ((unsigned)(c) << 8);
-                if (_sm._frame_len > 512)
+                if (_sm._frame_len > 1024)
                 {
                     ESP_LOGW(FNAME, "Odd length from flarm BP: %d: restart", _sm._frame_len);
                     _sm._state = START_TOKEN;
-                    last_action = GO_NMEA;
+                    bailOut();
+                    last_action = NXT_PROTO;
                     break;
                 }
                 // ESP_LOGI(FNAME, "Header payload: %db", _sm._frame_len);
@@ -110,22 +122,18 @@ dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
             }
             else if ( allfs == 6 ) { // msg type byte
                 _sm._crc = c;
-                ESP_LOGD(FNAME, "frame type 0x%x len %d", c, _sm._frame_len);
+                ESP_LOGI(FNAME, "frame type 0x%x len %d", c, _sm._frame_len);
             }
             else if ( allfs >= _sm._frame_len )
             {
                 // msg is read in completely
-                _sm._state = START_TOKEN;
+                ESP_LOGI(FNAME, "frame complete %d<>%d", allfs, _sm._frame_len);
                 send_chunk(); // forward msg (remaining data)
+                _sm._state = START_TOKEN;
                 if ( _sm._crc == 0x12 ) { // exit BP msg
-                    ESP_LOGI(FNAME, "0x12 BP end +---------------- switch to nmea ignored");
-                    // ESP_LOGI(FNAME, "0x12 BP end <---------------- switch to nmea");
-                    // _binpeer->getDL()->goNMEA();
-                    // _binpeer = nullptr;
-                    // InterfaceCtrl *itf = DEVMAN->getIntf(FLARM_DEV);
-                    // vTaskDelay(pdMS_TO_TICKS(10));
-                    // itf->ConfigureIntf(SM_FLARM); baud rate change not intended
-                    last_action = GO_NMEA;
+                    ESP_LOGI(FNAME, "0x12 BP end <---------------- switch to nmea");
+                    bailOut();
+                    last_action = NXT_PROTO;
                 }
             }
             else if (_sm._frame.size() >= SEND_THRESH) {

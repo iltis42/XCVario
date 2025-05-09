@@ -34,8 +34,7 @@ typedef enum
     NOACTION = 0,
     DO_ROUTING = COMPLETE_BIT | FORWARD_BIT,
     NOROUTING = COMPLETE_BIT,
-    NXT_PROTO = COMPLETE_BIT | FORWARD_BIT | 1,
-    GO_NMEA = COMPLETE_BIT | FORWARD_BIT | 2
+    NXT_PROTO = COMPLETE_BIT | FORWARD_BIT | 1
 } dl_action_t;
 
 union dl_control_t {
@@ -108,21 +107,20 @@ public:
         _opt = 0;
         _esc = 0;
     }
-    inline bool push(char c)
+    inline bool checkSpaceOne()
+    {
+        return _frame.size() < ProtocolItf::MAX_LEN;
+    }
+    inline void push(char c) // no buffer space check (!)
     {
         if ( _state )
         {
-            if ( _frame.size() < ProtocolItf::MAX_LEN ) {
-                _frame.push_back(c);
-                return true;
-            }
-            else {
-                return false;
-            }
+            _frame.push_back(c);
         }
-        _frame.assign(1, c);
-        _crc = 0;
-        return true;
+        else {
+            _frame.assign(1, c);
+            _crc = 0;
+        }
     }
 
     // frame buffer and state machine vars

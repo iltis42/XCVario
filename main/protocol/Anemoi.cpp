@@ -12,7 +12,8 @@ static void anemoiCRC(int &crc, const char c);
 dl_control_t Anemoi::nextBytes(const char* c, int len)
 {
     char *ptr;
-    int pos = _sm._frame.size() - 1; // c already in the buffer
+    int pos = _sm._frame.size();
+    _sm.push(*c);
 
     switch(_sm._state) {
     case START_TOKEN:

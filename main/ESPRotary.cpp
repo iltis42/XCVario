@@ -31,7 +31,7 @@ bool IRAM_ATTR ESPRotary::tick()
 	debounceCount = (buttonRead == lastButtonRead) ? (debounceCount+1) : 0;
 	lastButtonRead = buttonRead;
 	if ( holdCount > 0 ) {
-		holdCount++;
+		holdCount++; // hold timer
 		if ( holdCount > lp_duration ) {
 			gotEvent = LONG_PRESS;
 			holdCount = -1; // go for a "release"

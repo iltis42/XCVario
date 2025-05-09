@@ -160,7 +160,7 @@ void DataMonitor::longPress()
 
 void DataMonitor::start(SetupAction *p, ItfTarget ch)
 {
-	ESP_LOGI(FNAME,"start %x", unsigned(ch.raw));
+	ESP_LOGI(FNAME,"start %x (i%dp%d)", unsigned(ch.raw), ch.iid, ch.port );
 	attach();
 	_parent = p->getParent();
 	tx_total = 0;

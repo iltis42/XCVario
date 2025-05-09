@@ -50,7 +50,7 @@ void uartTask(SerialLine* s)
 	while (true)
 	{
 		// sleep until the UART gives us something to do
-		if ( xQueueReceive((QueueHandle_t)s->_event_queue, &event, portMAX_DELAY) != pdTRUE) { // pdMS_TO_TICKS(1000)
+		if ( xQueueReceive((QueueHandle_t)s->_event_queue, &event, pdMS_TO_TICKS(1000)) != pdTRUE) {
 			// time-out, propagate with empty message
 			xSemaphoreTake(s->_dlink_mutex, portMAX_DELAY);
 			auto dlit = s->_dlink.begin();

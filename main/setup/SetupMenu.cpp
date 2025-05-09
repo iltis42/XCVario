@@ -625,6 +625,13 @@ void SetupMenu::longPress()
 	}
 }
 
+int deviceDumpAction(SetupAction *p)
+{
+	// dump devices
+	DEVMAN->dumpMap();
+	return 0;
+}
+
 void vario_menu_create_damping(SetupMenu *top) {
 	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", 2.0, 10.0,
 			0.1, vario_setup, false, &vario_delay);
@@ -1956,6 +1963,8 @@ void system_menu_create(SetupMenu *sye) {
 	logg->mkEnable("Sensor RAW Data");
 	sye->addEntry(logg);
 
+	SetupAction *devdump = new SetupAction("Device Setup Dump", deviceDumpAction, 0);
+	sye->addEntry(devdump);
 }
 
 void setup_create_root(SetupMenu *top) {

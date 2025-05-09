@@ -288,9 +288,16 @@ void DataLink::process(const char *packet, int len)
     {
         // Special use, "no data" timeout, might be expected and normal
         // We just reset the protocol state machine then
-        goNMEA();
-        // ESP_LOGW(FNAME, "timeout Itf/Port %d/%d", _itf_id.iid, _itf_id.port);
+        // goNMEA();
+        ESP_LOGW(FNAME, "timeout Itf/Port %d/%d", _itf_id.iid, _itf_id.port);
         return;
+    }
+    if ( _active->isBinary() ) {
+        ESP_LOGI(FNAME, "dev %d", _active->getDeviceId());
+        ESP_LOG_BUFFER_HEXDUMP(FNAME, packet, len, ESP_LOG_INFO);
+    } else {
+        std::string str(packet, len);
+        ESP_LOGI(FNAME, "%d> %s", _active->getDeviceId(), str.c_str());
     }
     
     ESP_LOGD(FNAME, "%d proc %dchar: %c", _itf_id.iid, len, *packet);
@@ -369,13 +376,13 @@ void DataLink::dumpProto()
 {
     ESP_LOGI(FNAME, "    listen port %d", getPort());
     if ( _nmea ) {
-        ESP_LOGI(FNAME, "       nm did%d\tpid%d\tsp%d", _nmea->getDeviceId(), _nmea->getProtocolId(), _nmea->getSendPort());
+        ESP_LOGI(FNAME, "       nm did%d\tpid%d\tsp%d%c", _nmea->getDeviceId(), _nmea->getProtocolId(), _nmea->getSendPort(), (_nmea==_active)?'<':' ');
         for (auto it : static_cast<NmeaPrtcl*>(_nmea)->getAllPlugs() ) {
             ESP_LOGI(FNAME, "       nm plugin %d%c", it->getPtyp(), it->getAuto()?'a':'x');
         }
     }
     if ( _binary ) {
-            ESP_LOGI(FNAME, "       bi did%d\tpid%d\tsp%d", _binary->getDeviceId(), _binary->getProtocolId(), _binary->getSendPort());
+            ESP_LOGI(FNAME, "       bi did%d\tpid%d\tsp%d%c", _binary->getDeviceId(), _binary->getProtocolId(), _binary->getSendPort(), (_binary==_active)?'<':' ');
     }
 }
 

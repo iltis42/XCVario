@@ -234,7 +234,7 @@ static int tt_snd(Message *msg)
             ESP_LOGD(FNAME, "reshedule message %d/%d", len, msg->buffer.length());
             msg->buffer.erase(0, len); // chop sent bytes off
         }
-        else if ( plsrety == 0 && monitor_target == ItfTarget(itf->getId(), port) ) {
+        else if ( DM && plsrety == 0 && monitor_target == ItfTarget(itf->getId(), port) ) {
             DM->monitorString(DIR_TX, !std::isprint(msg->buffer.at(0)), msg->buffer.c_str(), len);
         }
     }
@@ -437,8 +437,8 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
     xSemaphoreGive(_devmap_mutex);
     refreshRouteCache();
 
-    ESP_LOGI(FNAME, "After add device %d.", did);
-    dumpMap();
+    // ESP_LOGI(FNAME, "After add device %d.", did);
+    // dumpMap();
 
     return dev;
 }
@@ -573,10 +573,10 @@ bool DeviceManager::isAvail(InterfaceId iid) const
     else if ( iid == I2C && CAN ) {
         return false;
     }
-    else if ( (iid == BT_SPP || iid == BT_LE) && Wifi ) {
+    else if ( (iid == BT_SPP || iid == BT_LE) && isIntf(WIFI_AP) ) {
         return false;
     }
-    else if ( iid == WIFI_AP && (BTspp || isIntf(BT_LE)) ) {
+    else if ( iid == WIFI_AP && (isIntf(BT_SPP) || isIntf(BT_LE)) ) {
         return false;
     }
     else if ( iid == S2_RS232 && hardwareRevision.get() < XCVARIO_21 ) {

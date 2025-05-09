@@ -50,7 +50,6 @@ class SerialLine;
 class Clock;
 class ESPRotary;
 class AnalogInput;
-class SetupRoot;
 class PressureSensor;
 
 AnalogInput* getBattery();
@@ -66,7 +65,6 @@ extern CenterAid *centeraid;
 extern AirspeedSensor *asSensor;
 extern PressureSensor *baroSensor;
 
-// extern SetupRoot Menu;
 extern SemaphoreHandle_t display_mutex;
 
 extern float getTAS();

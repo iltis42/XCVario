@@ -186,7 +186,6 @@ const ParserEntry JumboCmdMsg::_pt[] = {
 bool NmeaPrtcl::sendJPConnect()
 {
     Message* msg = newMessage(); // set target
-    if ( ! msg ) return false;
 
     msg->buffer = "$PJMPC\r\n";
     return DEV::Send(msg);
@@ -195,7 +194,6 @@ bool NmeaPrtcl::sendJPConnect()
 bool NmeaPrtcl::sendJPGetConfig(const int item_nr)
 {
     Message* msg = newMessage();
-    if ( ! msg ) return false;
 
     msg->buffer = "$PJMGC, ";
     msg->buffer += CONF_ITEM[item_nr];
@@ -206,7 +204,6 @@ bool NmeaPrtcl::sendJPGetConfig(const int item_nr)
 bool NmeaPrtcl::sendJPGetInfo()
 {
     Message* msg = newMessage();
-    if ( ! msg ) return false;
 
     msg->buffer = "$PJMIQ\r\n";
     return DEV::Send(msg);
@@ -215,7 +212,6 @@ bool NmeaPrtcl::sendJPGetInfo()
 bool NmeaPrtcl::sendJPSelectConfig(const int wingconfig)
 {
     Message* msg = newMessage();
-    if ( ! msg ) return false;
 
     msg->buffer = "$PJMCW, " + std::to_string(wingconfig);
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
@@ -225,7 +221,6 @@ bool NmeaPrtcl::sendJPSelectConfig(const int wingconfig)
 bool NmeaPrtcl::sendJPStartWipe(const int side)
 {
     Message* msg = newMessage();
-    if ( ! msg ) return false;
 
     char side_chr = 'R';
     if ( side == 1 ) {
@@ -240,7 +235,6 @@ bool NmeaPrtcl::sendJPStartWipe(const int side)
 bool NmeaPrtcl::sendJPAbortWipe(const int side)
 {
     Message* msg = newMessage();
-    if ( ! msg ) return false;
 
     char side_chr = 'R';
     if ( side == 1 ) {
@@ -255,7 +249,6 @@ bool NmeaPrtcl::sendJPAbortWipe(const int side)
 bool NmeaPrtcl::sendJPShortPress(const int side)
 {
     Message* msg = newMessage();
-    if ( ! msg ) return false;
 
     char side_chr = 'R';
     if ( side == 1 ) {
@@ -270,7 +263,6 @@ bool NmeaPrtcl::sendJPShortPress(const int side)
 bool NmeaPrtcl::sendJPHoldPressed(const int side)
 {
     Message* msg = newMessage();
-    if ( ! msg ) return false;
 
     char side_chr = 'R';
     if ( side == 1 ) {
@@ -285,7 +277,6 @@ bool NmeaPrtcl::sendJPHoldPressed(const int side)
 bool NmeaPrtcl::sendJPReleasePressed(const int side)
 {
     Message* msg = newMessage();
-    if ( ! msg ) return false;
 
     char side_chr = 'R';
     if ( side == 1 ) {

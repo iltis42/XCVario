@@ -23,6 +23,7 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 #include "quaternion.h"
 #include "sensor.h"
 #include "comm/DeviceMgr.h"
+#include "protocol/Clock.h"
 #include "logdef.h"
 
 #include <esp_system.h>
@@ -30,23 +31,39 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 #include <cassert>
 #include <cmath>
 
-TaskHandle_t ctid = 0;
+Compass *compass = nullptr;
 
-MagnetSensor *Compass::instance = nullptr;
+Compass *Compass::createCompass(InterfaceId iid)
+{
+	if (compass) {
+		ESP_LOGI(FNAME, "re-creating compass");
+		delete compass;
+		compass = nullptr;
+	}
+	if (iid == CAN_BUS) {
+		ESP_LOGI( FNAME, "Magnetic sensor type CAN");
+		compass = new Compass( 0 );  // I2C addr 0 -> instantiate without I2C bus and local sensor
+	}
+	else {
+		ESP_LOGI( FNAME, "Magnetic sensor type I2C");
+		compass = new Compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512, &I2C_0 );
+	} 
+    return compass;
+}
 
-/*
-  Creates instance for I2C connection with passing the desired parameters.
-  No action is done at the bus. The default address of the chip is 0x0D.
- */
-Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, const uint16_t osr , I2C_t *i2cBus )
+
+//   Creates instance for I2C connection with passing the desired parameters.
+//   No action is done at the bus. The default address of the chip is 0x0D.
+Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, const uint16_t osr , I2C_t *i2cBus ) :
+	Deviation(),
+	Clock_I(5) // 50ms duty cycle
 {
 	ESP_LOGI(FNAME,"Compass() I2C addr=%02x", addr );
 	if( addr == 0 ){
-
-		instance = new QMCMagCAN();
+		mysensor = new QMCMagCAN();
 	}
 	else{
-		instance = new QMC5883L( addr, odr, range, osr, i2cBus );  // tbd. base class and QMC5883CAN class
+		mysensor = new QMC5883L( addr, odr, range, osr, i2cBus );  // tbd. base class and QMC5883CAN class
 	}
 	m_magn_heading = 0;
 	m_gyro_fused_heading = 0;
@@ -70,33 +87,29 @@ Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, co
 
 Compass::~Compass()
 {
+	Clock::stop(this);
+	delete mysensor;
 }
 
-void Compass::tick(){
-	// ESP_LOGI( FNAME, "Compass::tick()");
+void Compass::ageIncr(){
+	ESP_LOGI( FNAME, "Compass::tick()");
 	Deviation::tick();
 	age++;
 	_tick++;
-	instance->tick();
+	mysensor->age_incr();
 	gyro_age++;
 }
 
 esp_err_t Compass::selfTest(){
-	if( instance )
-		return instance->selfTest();
-	return ESP_FAIL;
+	return mysensor->selfTest();
 }
 
 bool Compass::haveSensor() {
-	if( instance )
-		return instance->haveSensor();
-	return false;
+	return mysensor->haveSensor();
 }
 
 bool Compass::overflowFlag(){
-	if( instance )
-		return instance->overflowFlag();
-	return false;
+	return mysensor->overflowFlag();
 }
 
 void Compass::setGyroHeading( float hd ){
@@ -123,66 +136,52 @@ float Compass::getGyroHeading( bool *ok, bool addDecl ){
  * This is the compass task called periodically in a fixed time raster. It Reads
  * the current heading from the sensor and apply a low pass filter, deviation and more
  */
-void Compass::compassT(void* arg ){
-	while(1){
-		TickType_t lastWakeTime = xTaskGetTickCount();
-		if( compass ){
-			if( !compass->calibrationIsRunning() ){
-				compass->progress();
-			}
-			else{
-				compass->calcCalibration();
-			}
-			vTaskDelayUntil(&lastWakeTime, 50/portTICK_PERIOD_MS);
-		}
+bool Compass::tick()
+{
+	if( !compass->calibrationIsRunning() ){
+		compass->progress();
 	}
+	else {
+		compass->calcCalibration();
+	}
+	return false;
 }
 
 void Compass:: progress(){
 	if( _external_data ){  // Simulation data
 		_external_data--;  // age external data
 	}
-	// if( compass_enable.get() ){
-		if( !_external_data ){
-			bool rok;
-			float hd = heading( &rok );
-			if( rok == false ){
-				m_headingValid = false;
-			}else{
-				m_magn_heading = hd;
-				m_headingValid = true;
-			}
+	if( !_external_data ){
+		bool rok;
+		float hd = heading( &rok );
+		if( rok == false ){
+			m_headingValid = false;
+		}else{
+			m_magn_heading = hd;
+			m_headingValid = true;
 		}
-		if( uxTaskGetStackHighWaterMark( ctid  ) < 256 ) {
-			ESP_LOGW(FNAME,"Warning Compass task stack low: %d bytes", uxTaskGetStackHighWaterMark( ctid ) );
-		}
-		float diff = Vector::angleDiffDeg( m_gyro_fused_heading, _heading_average );
-		if( _heading_average == -1000 ) {
-			_heading_average = m_gyro_fused_heading;
-		}
-		else {
-			_heading_average += diff * (1/(20*compass_damping.get()));
-		}
-		_heading_average = Vector::normalizeDeg( _heading_average );
-		// ESP_LOGI(FNAME,"average hd=%.1f mag:%.1f gfh:%.1f", _heading_average, m_magn_heading, m_gyro_fused_heading );
-	// }
+	}
+	float diff = Vector::angleDiffDeg( m_gyro_fused_heading, _heading_average );
+	if( _heading_average == -1000 ) {
+		_heading_average = m_gyro_fused_heading;
+	}
+	else {
+		_heading_average += diff * (1/(20*compass_damping.get()));
+	}
+	_heading_average = Vector::normalizeDeg( _heading_average );
+	// ESP_LOGI(FNAME,"average hd=%.1f mag:%.1f gfh:%.1f", _heading_average, m_magn_heading, m_gyro_fused_heading );
 }
 
 void Compass::begin(){
 	Deviation::begin();
 	loadCalibration();
-	// fixme
-	if( compass  ){
-		I2C_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
-		if( serial2_speed.get() )
-			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
-	}
+
 	mag_hdm.set( -1 );
 	mag_hdt.set( -1 );
 }
 
 void Compass::start(){
-	xTaskCreatePinnedToCore(&compassT, "compassT", 2600, NULL, 11, &ctid, 0);
+	Clock::start(this);
 }
 
 float Compass::filteredHeading( bool *okIn )
@@ -223,12 +222,12 @@ void Compass::calcCalibration(){
 	nrsamples++;
 	float variance = 0.f;
 	t_float_axes var;
-	if( instance ){
-		if( instance->readRaw( magRaw ) == false )
+	if( mysensor ){
+		if( ! mysensor->readRaw(magRaw) )
 		{
 			errors++;
 			if( errors > 100 ){
-				instance->initialize();
+				mysensor->initialize();
 				errors = 0;
 			}
 			return;
@@ -434,7 +433,7 @@ float Compass::heading( bool *ok )
 		// ESP_LOGI(FNAME,"Not calibrated" );
 		return 0.0;
 	}
-	// ESP_LOGI(FNAME,"QMC5883L::heading() errors:%d, N:%d", errors, N );
+	// ESP_LOGI(FNAME,"QMC5883L::heading() errors:%d", errors );
 	if( errors > 100 && errors % 100 )  // Holddown processing and throwing errors once sensor is gone
 	{
 		errors++;
@@ -443,9 +442,9 @@ float Compass::heading( bool *ok )
 	}
 
 	bool state = false;
-	if ( instance->isCalibrated() ) {
+	if ( mysensor->isCalibrated() ) {
 		vector_ijk tmp;
-		state = instance->readBiased( tmp );
+		state = mysensor->readBiased( tmp );
 		if ( state ) {
 			// rotate -90Z and then 180X, to have the same orientation as the IMU reference system
 			fx = -tmp.b;
@@ -454,24 +453,16 @@ float Compass::heading( bool *ok )
 		}
 	}
 	else {
-		state = instance->readRaw( magRaw );
-		ESP_LOGI(FNAME,"state %d  x:%d y:%d z:%d", state, magRaw.x, magRaw.y, magRaw.z );
+		state = mysensor->readRaw( magRaw );
+		// ESP_LOGI(FNAME,"state %d  x:%d y:%d z:%d", state, magRaw.x, magRaw.y, magRaw.z );
 		if( !state )
 		{
 			errors++;
 			age++;
 			totalReadErrors++;
-			// ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Total Errors:%d  Init: %d", N, totalReadErrors, errors );
+			// ESP_LOGI(FNAME,"Magnetic sensor Total Errors:%d, since Init: %d", totalReadErrors, errors );
 			if( errors > 10 )
 			{
-			// 	// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
-			// 	if( compass_enable.get() != CS_CAN ){
-			// 		if( instance->initialize() != ESP_OK ) //  reinitialize once crashed, one retry
-			// 			instance->initialize();
-			// 	}
-			// 	return 0.0;
-			// }
-			// if( errors > 100 ){  // survive 100 samples with constant heading if no valid reading
 				return 0.0;
 			}
 			*ok = true;

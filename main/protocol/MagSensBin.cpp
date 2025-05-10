@@ -12,7 +12,7 @@
 #include "Clock.h"
 #include "protocol/AliveMonitor.h"
 
-#include <logdef.h>
+#include "logdef.h"
 
 // The legacy MagSens binary protocol.
 
@@ -58,8 +58,12 @@ dl_control_t MagSensBin::nextBytes(const char *cptr, int count)
     return dl_control_t(NOACTION);
 }
 
+// todo replace, improve
 bool MagSensBin::isActive() const
 {
+    if ( _alive ) {
+        return _alive->get() == ALIVE_OK;
+    }
     ESP_LOGI(FNAME, "Active %ld %ld %ld", Clock::getMillis(), _last_sample_time, _delta_time);
     return (Clock::getMillis() - _last_sample_time) < (2 * _delta_time);
 }

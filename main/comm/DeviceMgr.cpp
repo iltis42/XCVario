@@ -20,6 +20,7 @@
 #include "protocol/MagSensBin.h"
 #include "setup/DataMonitor.h"
 #include "setup/SetupNG.h"
+#include "Compass.h"
 
 #include "sensor.h"
 #include "logdef.h"
@@ -100,7 +101,8 @@ constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
     {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL|MASTER_ONLY, &second_devsetup}},
     {DeviceId::XCVARIOCLIENT_DEV, {"", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|MASTER_ONLY, &second_devsetup}},
     {DeviceId::MAGLEG_DEV, {"MagSens rev0", {{I2C, CAN_BUS}}, {{MAGSENSBIN_P}, 1}, 0, IS_REAL, &magleg_devsetup}},
-    {DeviceId::MAGLEG_DEV, {"", {{CAN_BUS}}, {{MAGSENS_P}, 1}, MagSensBin::LEGACY_MAGSTREAM_ID, IS_REAL, &magleg_devsetup}},
+    {DeviceId::MAGLEG_DEV, {"", {{CAN_BUS}}, {{MAGSENSBIN_P}, 1}, MagSensBin::LEGACY_MAGSTREAM_ID, IS_REAL, &magleg_devsetup}},
+    {DeviceId::MAGLEG_DEV, {"", {{I2C}}, {{MAGSENSBIN_P}, 0}, 0, IS_REAL, &magleg_devsetup}},
     {DeviceId::MAGSENS_DEV, {"MagSens rev1", {{CAN_BUS}}, {{MAGSENS_P}, 1}, 0, IS_REAL, nullptr}}, // auto start
     {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
                                     {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
@@ -399,9 +401,10 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
         // itf = BT_..;
     }
     else if ( iid == I2C) {
-        // if ( ) .. fixme
-        I2C_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
-        // itf = BT_..;
+        if ( ! S2 || ! S2->getTestOk() ) {
+            // double check S2 not active - they share the gpio's
+            I2C_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
+        }
     }
     // else // NO_PHY is just the hint to take the same interface
     
@@ -424,6 +427,11 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
         dev->_link = dl;
         dl->incrDeviceCount();
         dev->_itf = itf;
+
+        // some devices we need to create some gears to process the data stream
+        if ( did == MAGLEG_DEV ) {
+            Compass::createCompass(itf->getId());
+        }
     }
 
     EnumList pl = dev->_link->addProtocol(proto, did, send_port); // Add proto, if not yet there
@@ -573,19 +581,22 @@ bool DeviceManager::isIntf(ItfTarget tgt) const
 
 bool DeviceManager::isAvail(InterfaceId iid) const
 {
-    if ( iid == CAN_BUS && (isIntf(I2C) || hardwareRevision.get() < XCVARIO_22) ) {
+    // CAN depends on HW revision only
+    if ( iid == CAN_BUS && hardwareRevision.get() < XCVARIO_22 ) {
         return false;
     }
-    else if ( iid == I2C && CAN ) {
+    // S2 depends on WH revision and shares pins with I2C
+    else if ( iid == S2_RS232 && (isIntf(I2C) || hardwareRevision.get() < XCVARIO_21) ) {
         return false;
     }
+    else if ( iid == I2C && isIntf(S2_RS232) ) {
+        return false;
+    }
+    // BT and WIFI are mutually exclusive
     else if ( (iid == BT_SPP || iid == BT_LE) && isIntf(WIFI_AP) ) {
         return false;
     }
     else if ( iid == WIFI_AP && (isIntf(BT_SPP) || isIntf(BT_LE)) ) {
-        return false;
-    }
-    else if ( iid == S2_RS232 && hardwareRevision.get() < XCVARIO_21 ) {
         return false;
     }
     return true;

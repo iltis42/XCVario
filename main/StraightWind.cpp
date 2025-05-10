@@ -117,7 +117,7 @@ bool StraightWind::calculateWind()
 	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleStraightWind::getFlightMode() );
 	// Check if straight wind requirements are fulfilled fixme
 	if( ! compass || compass_calibrated.get() == false || !(wind_enable.get() & WA_STRAIGHT)) {
-		// ESP_LOGI(FNAME,"Compass issues: ENA:%d CAL:%d WIND_ENA:%d, abort", compass_enable.get(), compass_calibrated.get(), wind_enable.get() );
+		// ESP_LOGI(FNAME,"Compass issues: CAL:%d WIND_ENA:%d, abort", compass_calibrated.get(), wind_enable.get() );
 		if( ! compass )
 			status="Compass not available";
 		else if( !compass_calibrated.get() )

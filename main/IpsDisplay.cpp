@@ -21,6 +21,7 @@
 #include "comm/WifiAP.h"
 #include "comm/BTspp.h"
 #include "comm/CanBus.h"
+#include "protocol/AliveMonitor.h"
 #include "Blackboard.h"
 #include "CenterAid.h"
 #include "Rotate.h"
@@ -30,7 +31,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
-// #include "sdkconfig.h"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -971,7 +971,7 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 	const int16_t CANW = 14;
 
 	int connectedXCV = xcv_alive.get();
-	int connectedMag = xcv_alive.get();
+	int connectedMag = mags_alive.get();
 	
 	(connectedXCV == ALIVE_OK)? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
 	// lower horizontal line
@@ -1853,9 +1853,7 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 	P5r.moveVertical(p);
 	P6r.moveVertical(p);
 	int heading = 0;
-	// if( compass_enable.get() != CS_DISABLE ){
 
-	// }
 	// ESP_LOGI(FNAME,"P1:%d/%d P2:%d/%d P3:%d/%d P4:%d/%d roll:%f d:%d ", P1r.x, P1r.y+p, P2r.x, P2r.y+p, P3r.x, P3r.y+p, P4r.x , P4r.y+p, R2D(roll), p  );
 	if( P1r.y != P1o.y || P1r.x != P1o.x ){
 		// ESP_LOGI(FNAME,"drawHorizon P: %1.1f R: %1.1f Y: %1.1f", R2D(pitch), R2D(roll), R2D(yaw) );

@@ -36,6 +36,11 @@ void AliveMonitor::keepAlive()
     ESP_LOGI(FNAME, "Alive monitor %s", _alive_flag->key());
 }
 
+int AliveMonitor::get() const
+{
+    return _alive_flag->get();
+}
+
 void AliveMonitor::barked()
 {
     // alive timeout

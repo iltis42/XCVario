@@ -25,6 +25,7 @@
 #include "comm/Configuration.h"
 #include "comm/SerialLine.h"
 #include "protocol/NMEA.h"
+#include "protocol/AliveMonitor.h"
 #include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>

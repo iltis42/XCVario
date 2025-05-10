@@ -138,7 +138,7 @@ EnumList DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
     case MAGSENSBIN_P:
         ESP_LOGI(FNAME, "New MAGCANBinary");
         tmp = new MagSensBin(sendport, _sm, *this);
-        tmp->addAliveMonitor(new AliveMonitor(&mags_alive));
+        tmp->addAliveMonitor(new AliveMonitor(&mags_alive, 200));
         break;
     case XCVARIO_P:
     {

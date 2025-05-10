@@ -132,7 +132,6 @@ I2C_t& I2C_0 = i2c0;  // i2c0 or i2c1
 MPU_t MPU;         // create an object
 
 // Magnetic sensor / compass
-Compass *compass = 0;
 BLESender blesender;
 SerialLine *S1 = NULL;
 SerialLine *S2 = NULL;
@@ -719,9 +718,9 @@ void readSensors(void *pvParameters){
 			toyFeed();
 			vTaskDelay(2/portTICK_PERIOD_MS);
 		}
-		// Router::routeXCV();
-		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass->haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
+
 		if( compass ){
+			// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d", compass->haveSensor(),  compass_nmea_hdt.get());
 			if( ! compass->calibrationIsRunning() ) {
 				// Trigger heading reading and low pass filtering. That job must be
 				// done periodically.
@@ -750,7 +749,8 @@ void readSensors(void *pvParameters){
 					if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
 						if ( prtcl ) {
 							prtcl->sendXCVNmeaHDM(heading);
-						}					}
+						}
+					}
 				}
 				else{
 					if( mag_hdt.get() != -1 )
@@ -832,7 +832,7 @@ void readTemp(void *pvParameters)
 			// ESP_LOGV(FNAME,"T=%f", temperature );
 			Flarm::tick();
 			if( compass )
-				compass->tick();
+				compass->ageIncr();
 		}else{
 			if( (OAT.get() > -55.0) && (OAT.get() < 85.0) )
 				gflags.validTemperature = true;
@@ -1421,17 +1421,6 @@ void system_startup(void *args){
 		}
 	}
 
-	if (DEVMAN->getDevice(MAGLEG_DEV)) {
-		Device *dev = DEVMAN->getDevice(MAGLEG_DEV);
-		if (dev->_itf->getId() == CAN_BUS) {
-			ESP_LOGI( FNAME, "Magnetic sensor type CAN");
-			compass = new Compass( 0 );  // I2C addr 0 -> instantiate without I2C bus and local sensor
-		}
-		else {
-			ESP_LOGI( FNAME, "Magnetic sensor type I2C");
-			compass = new Compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512, &I2C_0 );
-		} 
-	}
 	// magnetic sensor / compass selftest
 	if( compass ) {
 		compass->begin();

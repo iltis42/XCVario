@@ -98,8 +98,6 @@ extern ESPRotary *Rotary;
 
 extern SemaphoreHandle_t spiMutex;
 
-extern Compass *compass;
-
 class AdaptUGC;
 extern AdaptUGC *MYUCG;
 

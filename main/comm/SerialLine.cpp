@@ -303,6 +303,8 @@ void SerialLine::start()
 			.rxfifo_full_thresh = 60
 		};
 		uart_intr_config(uart_nr, &intr_config);
+
+		_functional = true; // self test passed (!)
 	}
 }
 

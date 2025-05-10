@@ -51,7 +51,7 @@ public:
     int getDeviceCount() const { return _dev_count; }
     // dbg
     void dumpProto();
-    bool isBinActive() const { return _active->isBinary(); }
+    bool isBinActive() const;
     void setMonitor(bool m) { _monitoring = m; }
 
 private:

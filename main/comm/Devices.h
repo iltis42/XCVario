@@ -21,12 +21,12 @@ typedef enum
     KRT2_HOST_DEV,
     MAGSENS_DEV,
     MAGLEG_DEV,
-    MASTER_DEV,  // CAN id registry
+    CANREGISTRAR_DEV,  // CAN id registry
     NAVI_DEV, // <- 10
     RADIO_ATR833_DEV,
     RADIO_KRT2_DEV,
     RADIO_REMOTE_DEV,
-    XCVARIO_DEV,
+    XCVARIOFIRST_DEV,
     XCVARIOCLIENT_DEV,
     FLARM_PROXY,
     RADIO_PROXY,

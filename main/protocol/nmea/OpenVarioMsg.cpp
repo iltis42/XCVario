@@ -8,6 +8,7 @@
 
 #include "OpenVarioMsg.h"
 #include "protocol/nmea_util.h"
+#include "comm/DataLink.h"
 #include "comm/Messages.h"
 
 #include "logdefnone.h"
@@ -25,6 +26,9 @@ const ParserEntry OpenVarioMsg::_pt[] = {
 
 void NmeaPrtcl::sendOpenVario(float baro, float dp, float te, float temp, bool validTemp)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message* msg = newMessage();
 
     msg->buffer = "$POV,P,";

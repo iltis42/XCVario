@@ -978,7 +978,7 @@ void system_startup(void *args){
 			// Give CAN MagSens a chance for an update
 			CANbus::createCAN();
 			CAN->begin();
-			DEVMAN->addDevice(MASTER_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+			DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
 			DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBin::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
 		}
 		delete boot_screen; // screen now belongs to OTA
@@ -1065,7 +1065,7 @@ void system_startup(void *args){
 	DEVMAN->reserectFromNvs();
 	if ( CAN ) {
 		// just allways, it respects the XCV role setting
-		DEVMAN->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+		DEVMAN->addDevice(DeviceId::CANREGISTRAR_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
 	}
 
 	ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
@@ -1524,11 +1524,11 @@ void system_startup(void *args){
 	}
 	else
 	{
-		// just sit, wait shoe a little message
+		// just sit, wait, show a little message
 
 		// if ( SetupCommon::isClient() ) {
 		// 	// Wait for master to release the vario screen
-		// 	Device *dev = DEVMAN->getDevice(XCVARIO_DEV);
+		// 	Device *dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
 		// 	Display->clear();
 		// 	if (dev && dev->_itf->getId() == WIFI_CLIENT) {
 		// 		int line=1;
@@ -1556,7 +1556,7 @@ void system_startup(void *args){
 		// 	else if ( !dev && CAN ) {
 		// 		Display->writeText( 1, "Wait for CAN Master" );
 		// 		while( ! dev ) {
-		// 			dev = DEVMAN->getDevice(XCVARIO_DEV);
+		// 			dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
 		// 			if( dev ) {
 		// 				Display->writeText( 3, "Master XCVario found" );
 		// 				Display->writeText( 4, "start synchronization ..." );

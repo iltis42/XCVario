@@ -44,12 +44,12 @@ static TaskHandle_t SendTask = nullptr;
 // entries with zero termination, entirely as ro flash data
 static constexpr RoutingTarget flarm_routes_synch[] = { 
     {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
-    {XCVARIO_DEV, CAN_BUS, 0}, {} };
+    {XCVARIOFIRST_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget flarm_routes[] = { 
     {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
 static constexpr RoutingTarget krt2_routes[] = { 
     {NAVI_DEV, S2_RS232, 0}, {RADIO_REMOTE_DEV, WIFI_AP, 8882}, {RADIO_REMOTE_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
-    {XCVARIO_DEV, CAN_BUS, 0}, {} };
+    {XCVARIOFIRST_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget navi_routes[] = { 
     {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {} };
 static constexpr RoutingTarget fhost_routes[] = { 
@@ -62,7 +62,7 @@ static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(RADIO_KRT2_DEV, NO_PHY, 0), krt2_routes },
     { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes },
     { RoutingTarget(FLARM_HOST_DEV, NO_PHY, 0), fhost_routes },
-    { RoutingTarget(XCVARIO_DEV, NO_PHY, 0), proxy_routes },
+    { RoutingTarget(XCVARIOFIRST_DEV, NO_PHY, 0), proxy_routes },
     { RoutingTarget(XCVARIOCLIENT_DEV, NO_PHY, 0), proxy_routes }
 };
 // Search the flash data table
@@ -90,13 +90,13 @@ static const RoutingTarget* findRoute(const RoutingTarget& source) {
 // - 
 constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
     {DeviceId::ANEMOI_DEV, {"Anemoi", {{S2_RS232, S1_RS232, CAN_BUS}}, {{ANEMOI_P}, 1}, 0, IS_REAL, &anemoi_devsetup}},
-    {DeviceId::MASTER_DEV, {"Auto-connect", {{CAN_BUS}}, {{REGISTRATION_P}, 1}, CAN_REG_PORT, IS_REAL, &auto_connect}},
+    {DeviceId::CANREGISTRAR_DEV, {"Auto-connect", {{CAN_BUS}}, {{REGISTRATION_P}, 1}, CAN_REG_PORT, IS_REAL, &auto_connect}},
     {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL, &flarm_devsetup}},
     // {DeviceId::FLARM_DEV,  {"", {{XCVPROXY}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, 0, &flarm_devsetup}},
     {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}}, {{JUMBOCMD_P}, 1} , 0, 0, nullptr}}, // auto dev
-    {DeviceId::XCVARIO_DEV, {"Master XCV", {{WIFI_CLIENT, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL, &master_devsetup}},
-    {DeviceId::XCVARIO_DEV, {"", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT, nullptr}}, // auto through XCV role
-    {DeviceId::XCVARIO_DEV, {"", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|SECOND_ONLY, &master_devsetup}},
+    {DeviceId::XCVARIOFIRST_DEV, {"Master XCV", {{WIFI_CLIENT, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL, &master_devsetup}},
+    {DeviceId::XCVARIOFIRST_DEV, {"", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT, nullptr}}, // auto through XCV role
+    {DeviceId::XCVARIOFIRST_DEV, {"", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|SECOND_ONLY, &master_devsetup}},
     {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL|MASTER_ONLY, &second_devsetup}},
     {DeviceId::XCVARIOCLIENT_DEV, {"", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|MASTER_ONLY, &second_devsetup}},
     {DeviceId::MAGLEG_DEV, {"MagSens rev0", {{I2C, CAN_BUS}}, {{MAGSENSBIN_P}, 1}, 0, IS_REAL, &magleg_devsetup}},
@@ -454,7 +454,7 @@ Device *DeviceManager::getDevice(DeviceId did)
 
 Device *DeviceManager::getXCVPeer()
 {
-    DevMap::iterator it = _device_map.find((xcv_role.get()==MASTER_ROLE)?XCVARIOCLIENT_DEV:XCVARIO_DEV);
+    DevMap::iterator it = _device_map.find((xcv_role.get()==MASTER_ROLE)?XCVARIOCLIENT_DEV:XCVARIOFIRST_DEV);
     if ( it != _device_map.end() ) {
         return it->second;
     }

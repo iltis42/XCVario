@@ -292,13 +292,13 @@ void DataLink::process(const char *packet, int len)
         ESP_LOGW(FNAME, "timeout Itf/Port %d/%d", _itf_id.iid, _itf_id.port);
         return;
     }
-    if ( _active->isBinary() ) {
-        ESP_LOGI(FNAME, "dev %d", _active->getDeviceId());
-        ESP_LOG_BUFFER_HEXDUMP(FNAME, packet, len, ESP_LOG_INFO);
-    } else {
-        std::string str(packet, len);
-        ESP_LOGI(FNAME, "%d> %s", _active->getDeviceId(), str.c_str());
-    }
+    // if ( _active->isBinary() ) {
+    //     ESP_LOGI(FNAME, "dev %d", _active->getDeviceId());
+    //     ESP_LOG_BUFFER_HEXDUMP(FNAME, packet, len, ESP_LOG_INFO);
+    // } else {
+    //     std::string str(packet, len);
+    //     ESP_LOGI(FNAME, "%d> %s", _active->getDeviceId(), str.c_str());
+    // }
     
     ESP_LOGD(FNAME, "%d proc %dchar: %c", _itf_id.iid, len, *packet);
     // process every frame byte through state machine
@@ -384,6 +384,11 @@ void DataLink::dumpProto()
     if ( _binary ) {
             ESP_LOGI(FNAME, "       bi did%d\tpid%d\tsp%d%c", _binary->getDeviceId(), _binary->getProtocolId(), _binary->getSendPort(), (_binary==_active)?'<':' ');
     }
+}
+
+bool DataLink::isBinActive() const
+{
+    return _active->isBinary();
 }
 
 // called only from one and always same itf receiver context

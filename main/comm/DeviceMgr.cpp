@@ -433,6 +433,7 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
     if ( is_new ) {
         // Add only if new
         _device_map[did] = dev; // and add, in case this dev is new
+        _interface_map[itf->getId()] = itf;
     }
     xSemaphoreGive(_devmap_mutex);
     refreshRouteCache();
@@ -533,6 +534,7 @@ void DeviceManager::removeDevice(DeviceId did)
             //     ESP_LOGI(FNAME, "stopping I2C");
             //     I2C_0.close();
             // }
+            _interface_map.erase(itf->getId());
         }
     }
     refreshRouteCache();
@@ -554,13 +556,11 @@ InterfaceCtrl* DeviceManager::getIntf(DeviceId did)
     return tmp;
 }
 
-bool DeviceManager::isIntf(ItfTarget iid) const
+bool DeviceManager::isIntf(ItfTarget tgt) const
 {
-    for ( auto dev : _device_map ) {
-        // all devices
-        if ( dev.second->_itf->getId() == iid.iid ) {
-            return true;
-        }
+    auto it = _interface_map.find(tgt.iid);
+    if ( it != _interface_map.end() ) {
+        return true;
     }
     return false;
 }
@@ -586,7 +586,7 @@ bool DeviceManager::isAvail(InterfaceId iid) const
 }
 
 
-// Result should be cashed for performance purpose.
+// Result is cashed for performance purpose.
 RoutingList DeviceManager::getRouting(RoutingTarget source)
 {
     // find routing entry, respect NO_PHY wildcards
@@ -732,9 +732,9 @@ void DeviceManager::dumpMap() const
 
 void DeviceManager::startMonitoring(ItfTarget tgt)
 {
-    // all devices
-    for ( auto dev : _device_map ) {
-        dev.second->_itf->startMonitoring(tgt);
+    // all interfaces
+    for ( auto itf : _interface_map ) {
+        itf.second->startMonitoring(tgt);
     }
     // activate also the send callback
     monitor_target = tgt;
@@ -744,9 +744,9 @@ void DeviceManager::stopMonitoring()
 {
     // stop send monitor
     monitor_target = ItfTarget();
-    // all devices
-    for ( auto dev : _device_map ) {
-        dev.second->_itf->stopMonitoring();
+    // all interfaces
+    for ( auto itf : _interface_map ) {
+        itf.second->stopMonitoring();
     }
 }
 

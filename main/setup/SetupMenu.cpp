@@ -7,6 +7,7 @@
 
 #include "setup/SetupMenu.h"
 #include "setup/SubMenuDevices.h"
+#include "setup/SubMenuCompassWind.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"
@@ -21,12 +22,6 @@
 #include "setup/SetupMenuValFloat.h"
 #include "setup/SetupMenuChar.h"
 #include "setup/SetupAction.h"
-#include "DisplayDeviations.h"
-#include "ShowCompassSettings.h"
-#include "ShowCirclingWind.h"
-#include "ShowStraightWind.h"
-#include "Compass.h"
-#include "CompassMenu.h"
 #include "esp_wifi.h"
 #include "Flarm.h"
 #include "protocol/FlarmSim.h"
@@ -71,14 +66,6 @@ static void glider_menu_create_polarpoints(SetupMenu *top);
 static void options_menu_create(SetupMenu *top);
 static void options_menu_create_units(SetupMenu *top);
 static void options_menu_create_flarm(SetupMenu *top);
-static void options_menu_create_compasswind(SetupMenu *top);
-static void options_menu_create_compasswind_compass(SetupMenu *top);
-static void options_menu_create_compasswind_compass_dev(SetupMenu *top);
-static void options_menu_create_compasswind_compass_nmea(SetupMenu *top);
-static void options_menu_create_compasswind_straightwind(SetupMenu *top);
-static void options_menu_create_compasswind_straightwind_limits(SetupMenu *top);
-static void options_menu_create_compasswind_straightwind_filters(SetupMenu *top);
-static void options_menu_create_compasswind_circlingwind(SetupMenu *top);
 static void options_menu_create_gload(SetupMenu *top);
 
 static void system_menu_create(SetupMenu *top);
@@ -411,43 +398,8 @@ static int startFlarmSimulation(SetupMenuSelect *p) {
 	return 0;
 }
 
-/**
- * C-Wrappers function to compass menu handlers.
- */
-static int compassDeviationAction(SetupMenuSelect *p) {
-	if (p->getSelect() == 0) {
-		CompassMenu::deviationAction(p);
-	}
-	return 0;
-}
-
-static int compassResetDeviationAction(SetupMenuSelect *p) {
-	return CompassMenu::resetDeviationAction(p);
-}
-
-static int compassDeclinationAction(SetupMenuValFloat *p) {
-	return CompassMenu::declinationAction(p);
-}
-
-static int windResetAction(SetupMenuSelect *p) {
-	if (p->getSelect() == 1) {
-		// Reset is selected, set default values
-		wind_as_min.set(25);
-	}
-	return 0;
-}
-
 static int eval_chop(SetupMenuSelect *p) {
 	AUDIO->evaluateChopping();
-	return 0;
-}
-
-static int compassSensorCalibrateAction(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
-	if (p->getSelect() != 0) { // Start, Show
-		CompassMenu::sensorCalibrationAction(p);
-	}
-	p->setSelect(0);
 	return 0;
 }
 
@@ -1162,251 +1114,6 @@ void options_menu_create_flarm(SetupMenu *top) {
 	top->addEntry(flarms);
 }
 
-void options_menu_create_compasswind_compass_dev(SetupMenu *top) {
-	const char *skydirs[8] = { "0°", "45°", "90°", "135°", "180°", "225°",
-			"270°", "315°" };
-	for (int i = 0; i < 8; i++) {
-		SetupMenuSelect *sms = new SetupMenuSelect("Direction", RST_NONE,
-				compassDeviationAction, false, 0);
-		sms->setHelp("Push button to start deviation action");
-		sms->addEntry(skydirs[i]);
-		top->addEntry(sms);
-	}
-}
-
-void options_menu_create_compasswind_compass_nmea(SetupMenu *top) {
-	SetupMenuSelect *nmeaHdm = new SetupMenuSelect("Magnetic Heading", RST_NONE,
-			0, true, &compass_nmea_hdm);
-	nmeaHdm->addEntry("Disable");
-	nmeaHdm->addEntry("Enable");
-	nmeaHdm->setHelp(
-			"Enable/disable NMEA '$HCHDM' sentence generation for magnetic heading");
-	top->addEntry(nmeaHdm);
-
-	SetupMenuSelect *nmeaHdt = new SetupMenuSelect("True Heading", RST_NONE, 0,
-			true, &compass_nmea_hdt);
-	nmeaHdt->addEntry("Disable");
-	nmeaHdt->addEntry("Enable");
-	nmeaHdt->setHelp(
-			"Enable/disable NMEA '$HCHDT' sentence generation for true heading");
-	top->addEntry(nmeaHdt);
-}
-
-// Fixme goes to devices
-void options_menu_create_compasswind_compass(SetupMenu *top) {
-	// SetupMenuSelect *compSensor = new SetupMenuSelect("Sensor Option", RST_NONE, compass_ena, true, &compass_enable);
-	// compSensor->addEntry("Disable");
-	// compSensor->addEntry("I2C sensor");
-	// compSensor->addEntry("CAN sensor");
-	// top->addEntry(compSensor);
-
-	SetupMenuSelect *compSensorCal = new SetupMenuSelect("Sensor Calibration", RST_NONE, compassSensorCalibrateAction, false);
-	compSensorCal->addEntry("Cancel");
-	compSensorCal->addEntry("Start");
-	compSensorCal->addEntry("Show");
-	compSensorCal->addEntry("Show Raw Data");
-	compSensorCal->setHelp("Calibrate Magnetic Sensor, mandatory for operation");
-	top->addEntry(compSensorCal);
-
-	// Fixme replace by WMM
-	SetupMenuValFloat *cd = new SetupMenuValFloat("Setup Declination", "°", -180, 180, 1.0, compassDeclinationAction, false,
-			&compass_declination);
-	cd->setHelp("Set compass declination in degrees");
-	top->addEntry(cd);
-
-	SetupMenuSelect *devMenuA = new SetupMenuSelect("AutoDeviation", RST_NONE, 0, true, &compass_dev_auto);
-	devMenuA->setHelp("Automatic adaptive deviation and precise airspeed evaluation method using data from circling wind");
-	devMenuA->addEntry("Disable");
-	devMenuA->addEntry("Enable");
-	top->addEntry(devMenuA);
-
-	SetupMenu *devMenu = new SetupMenu("Setup Deviations", options_menu_create_compasswind_compass_dev);
-	devMenu->setHelp("Compass Deviations", 280);
-	top->addEntry(devMenu);
-
-	// Show comapss deviations
-	DisplayDeviations *smd = new DisplayDeviations("Show Deviations");
-	top->addEntry(smd);
-
-	SetupMenuSelect *sms = new SetupMenuSelect("Reset Deviations ", RST_NONE,
-			compassResetDeviationAction, false, 0);
-	sms->setHelp("Reset all deviation data to zero");
-	sms->addEntry("Cancel");
-	sms->addEntry("Reset");
-	top->addEntry(sms);
-
-	SetupMenu *nmeaMenu = new SetupMenu("Setup NMEA", options_menu_create_compasswind_compass_nmea);
-	top->addEntry(nmeaMenu);
-
-	SetupMenuValFloat *compdamp = new SetupMenuValFloat("Damping", "sec", 0.1,
-			10.0, 0.1, 0, false, &compass_damping);
-	compdamp->setPrecision(1);
-	top->addEntry(compdamp);
-	compdamp->setHelp("Compass or magnetic heading damping factor in seconds");
-
-	SetupMenuValFloat *compi2c = new SetupMenuValFloat("I2C Clock", "KHz", 10.0,
-			400.0, 10, 0, false, &compass_i2c_cl, RST_ON_EXIT);
-	top->addEntry(compi2c);
-	compi2c->setHelp("Setup compass I2C Bus clock in KHz (reboots)");
-
-	// Show compass settings
-	ShowCompassSettings *scs = new ShowCompassSettings("Show Settings");
-	top->addEntry(scs);
-}
-
-void options_menu_create_compasswind_straightwind_filters(SetupMenu *top) {
-	SetupMenuValFloat *smgsm = new SetupMenuValFloat("Airspeed Lowpass", "", 0,
-			0.05, 0.001, nullptr, false, &wind_as_filter);
-	smgsm->setPrecision(3);
-	top->addEntry(smgsm);
-	smgsm->setHelp(
-			"Lowpass filter factor (per sec) for airspeed estimation from AS/Compass and GPS tracks");
-
-	SetupMenuValFloat *devlp = new SetupMenuValFloat("Deviation Lowpass", "", 0,
-			0.05, 0.001, nullptr, false, &wind_dev_filter);
-	devlp->setPrecision(3);
-	top->addEntry(devlp);
-	devlp->setHelp(
-			"Lowpass filter factor (per sec) for deviation table correction from AS/Compass and GPS tracks");
-
-	SetupMenuValFloat *smgps = new SetupMenuValFloat("GPS Lowpass", "sec", 0.1,
-			10.0, 0.1, nullptr, false, &wind_gps_lowpass);
-	smgps->setPrecision(1);
-	top->addEntry(smgps);
-	smgps->setHelp(
-			"Lowpass filter factor for GPS track and speed, to correlate with Compass latency");
-
-	SetupMenuValFloat *wlpf = new SetupMenuValFloat("Averager", "", 5, 120, 1, nullptr, false, &wind_filter_lowpass);
-	wlpf->setPrecision(0);
-	top->addEntry(wlpf);
-	wlpf->setHelp("Number of measurements (seconds) averaged in straight flight live wind estimation");
-}
-
-void options_menu_create_compasswind_straightwind_limits(SetupMenu *top) {
-	SetupMenuValFloat *smdev = new SetupMenuValFloat("Deviation Limit", "°",
-			0.0, 180.0, 1.0, nullptr, false, &wind_max_deviation);
-	smdev->setHelp(
-			"Maximum deviation change accepted when derived from AS/Compass and GPS tracks");
-	top->addEntry(smdev);
-
-	SetupMenuValFloat *smslip = new SetupMenuValFloat("Sideslip Limit", "°", 0,
-			45.0, 0.1, nullptr, false, &swind_sideslip_lim);
-	smslip->setPrecision(1);
-	top->addEntry(smslip);
-	smslip->setHelp(
-			"Maximum side slip estimation in ° accepted in straight wind calculation");
-
-	SetupMenuValFloat *smcourse = new SetupMenuValFloat("Course Limit", "°",
-			2.0, 30.0, 0.1, nullptr, false, &wind_straight_course_tolerance);
-	smcourse->setPrecision(1);
-	top->addEntry(smcourse);
-	smcourse->setHelp(
-			"Maximum delta angle in ° per second accepted for straight wind calculation");
-
-	SetupMenuValFloat *aslim = new SetupMenuValFloat("AS Delta Limit", "km/h",
-			1.0, 30.0, 1, nullptr, false, &wind_straight_speed_tolerance);
-	aslim->setPrecision(0);
-	top->addEntry(aslim);
-	aslim->setHelp(
-			"Maximum delta in airspeed estimation from wind and GPS during straight flight accepted for straight wind calculation");
-}
-
-void options_menu_create_compasswind_straightwind(SetupMenu *top) {
-	SetupMenu *strWindFM = new SetupMenu("Filters", options_menu_create_compasswind_straightwind_filters);
-	top->addEntry(strWindFM);
-	SetupMenu *strWindLM = new SetupMenu("Limits", options_menu_create_compasswind_straightwind_limits);
-	top->addEntry(strWindLM);
-	ShowStraightWind *ssw = new ShowStraightWind("Straight Wind Status");
-	top->addEntry(ssw);
-}
-
-void options_menu_create_compasswind_circlingwind(SetupMenu *top) {
-	// Show Circling Wind Status
-	ShowCirclingWind *scw = new ShowCirclingWind("Circling Wind Status");
-	top->addEntry(scw);
-
-	SetupMenuValFloat *cirwd = new SetupMenuValFloat("Max Delta", "°", 0, 90.0,
-			1.0, nullptr, false, &max_circle_wind_diff);
-	top->addEntry(cirwd);
-	cirwd->setHelp(
-			"Maximum accepted value for heading error in circling wind calculation");
-
-	SetupMenuValFloat *cirlp = new SetupMenuValFloat("Averager", "", 1, 10, 1,
-			nullptr, false, &circle_wind_lowpass);
-	cirlp->setPrecision(0);
-	top->addEntry(cirlp);
-	cirlp->setHelp(
-			"Number of circles used for circling wind averager. A value of 1 means no average");
-
-	SetupMenuValFloat *cirwsd = new SetupMenuValFloat("Max Speed Delta", "km/h",
-			0.0, 20.0, 0.1, nullptr, false, &max_circle_wind_delta_speed);
-	top->addEntry(cirwsd);
-	cirwsd->setPrecision(1);
-	cirwsd->setHelp(
-			"Maximum wind speed delta from last measurement accepted for circling wind calculation");
-
-	SetupMenuValFloat *cirwdd = new SetupMenuValFloat("Max Dir Delta", "°", 0.0,
-			60.0, 0.1, nullptr, false, &max_circle_wind_delta_deg);
-	top->addEntry(cirwdd);
-	cirwdd->setPrecision(1);
-	cirwdd->setHelp(
-			"Maximum wind direction delta from last measurement accepted for circling wind calculation");
-}
-
-void options_menu_create_compasswind(SetupMenu *top) {
-	SetupMenu *compassMenu = new SetupMenu("Compass", options_menu_create_compasswind_compass);
-	top->addEntry(compassMenu);
-
-	// Wind speed observation window
-	SetupMenuSelect *windcal = new SetupMenuSelect("Wind Calculation", RST_NONE,
-			0, true, &wind_enable);
-	windcal->addEntry("Disable");
-	windcal->addEntry("Straight");
-	windcal->addEntry("Circling");
-	windcal->addEntry("Both");
-	windcal->setHelp(
-			"Enable Wind calculation for straight flight (needs compass), circling, or both - display wind in retro display style");
-	top->addEntry(windcal);
-
-	// Display option
-	SetupMenuSelect *winddis = new SetupMenuSelect("Display", RST_NONE, 0, true,
-			&wind_display);
-	winddis->addEntry("Disable");
-	winddis->addEntry("Wind Digits");
-	winddis->addEntry("Wind Arrow");
-	winddis->addEntry("Wind Both");
-	winddis->addEntry("Compass");
-	winddis->setHelp(
-			"What is to be displayed, as digits or arrow or both, on retro style screen. If no wind available, compass is shown");
-	top->addEntry(winddis);
-
-	// Wind speed observation window
-	SetupMenuSelect *windref = new SetupMenuSelect("Arrow Ref", RST_NONE, 0,
-			true, &wind_reference);
-	windref->addEntry("North");
-	windref->addEntry("Mag Heading");
-	windref->addEntry("GPS Course");
-	windref->setHelp(
-			"Choose wind arrow relative to geographic north or to true aircraft heading");
-	top->addEntry(windref);
-
-	SetupMenu *strWindM = new SetupMenu("Straight Wind", options_menu_create_compasswind_straightwind);
-	top->addEntry(strWindM);
-	strWindM->setHelp("Straight flight wind calculation needs compass module active",250);
-
-	SetupMenu *cirWindM = new SetupMenu("Circling Wind", options_menu_create_compasswind_circlingwind);
-	top->addEntry(cirWindM);
-
-	SetupMenuSelect *windlog = new SetupMenuSelect("Wind Logging", RST_NONE, 0,
-			true, &wind_logging);
-	windlog->addEntry("Disable");
-	windlog->addEntry("Enable WIND");
-	windlog->addEntry("Enable GYRO/MAG");
-	windlog->addEntry("Enable Both");
-	windlog->setHelp("Enable Wind logging NMEA output, e.g. to WIFI port");
-	top->addEntry(windlog);
-}
-
 void options_menu_create_gload(SetupMenu *top) {
 	SetupMenuSelect *glmod = new SetupMenuSelect("Activation Mode", RST_NONE, 0,
 			true, &gload_mode);
@@ -1536,6 +1243,7 @@ void options_menu_create(SetupMenu *opt) {
 			"Option to display FLARM Warnings depending on FLARM alarm level");
 
 	SetupMenu *compassWindMenu = new SetupMenu("Compass/Wind", options_menu_create_compasswind);
+	compassWindMenu->setDynContent();
 	opt->addEntry(compassWindMenu);
 	compassWindMenu->setHelp("Setup Compass and Wind", 280);
 

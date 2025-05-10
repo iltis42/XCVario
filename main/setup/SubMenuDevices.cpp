@@ -37,6 +37,7 @@ static void options_menu_create_bluetooth(SetupMenu *top);
 static void system_menu_create_interfaceS1(SetupMenu *top);
 static void system_menu_create_interfaceS2(SetupMenu *top);
 static void system_menu_create_interfaceCAN(SetupMenu *top);
+static void system_menu_create_interfaceI2C(SetupMenu *top);
 
 static SetupMenuCreator_t get_itf_menu_creator(InterfaceId iid)
 {
@@ -51,6 +52,9 @@ static SetupMenuCreator_t get_itf_menu_creator(InterfaceId iid)
     }
     else if ( iid == CAN_BUS ) {
         return system_menu_create_interfaceCAN;
+    }
+    else if ( iid == I2C ) {
+        return system_menu_create_interfaceI2C;
     }
     return nullptr;
 }

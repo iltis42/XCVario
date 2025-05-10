@@ -560,8 +560,15 @@ void clientLoop(void *pvParameters)
 	}
 }
 
+static int client_sync_dataIdx = 10000;
+void startClientSync()
+{
+	// Start the client sync in a moment
+	client_sync_dataIdx = -4;
+}
+
 void readSensors(void *pvParameters){
-	int client_sync_dataIdx = 0;
+	
 	float tasraw = 0;
 	esp_task_wdt_add(NULL);
 
@@ -758,18 +765,16 @@ void readSensors(void *pvParameters){
 		}
 
 		// Check on new clients connecting
-		// if ( CAN && CAN->GotNewClient() ) { // fixme hook to registration protocol
-		// 	while( client_sync_dataIdx < SetupCommon::numEntries() ) {
-		// 		if ( SetupCommon::syncEntry(client_sync_dataIdx++) ) {
-		// 			break; // Hit entry to actually sync and send data
-		// 		}
-		// 	}
-		// 	if ( client_sync_dataIdx >= SetupCommon::numEntries() ) {
-		// 		// Synch complete
-		// 		client_sync_dataIdx = 0;
-		// 		CAN->ResetNewClient();
-		// 	}
-		// }
+		if ( client_sync_dataIdx < SetupCommon::numEntries() ) {
+			while( client_sync_dataIdx < SetupCommon::numEntries() ) {
+				if ( SetupCommon::syncEntry(client_sync_dataIdx++) ) {
+					break; // Hit entry to actually sync and send data
+				}
+			}
+			if ( client_sync_dataIdx >= SetupCommon::numEntries() ) {
+				ESP_LOGI(FNAME,"Client sync complete");
+			}
+		}
 		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
 			MPU.temp_control( count, xcvTemp );

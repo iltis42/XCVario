@@ -13,6 +13,7 @@
 #include "comm/DeviceMgr.h"
 #include "comm/Messages.h"
 #include "setup/SetupNG.h"
+#include "sensor.h"
 
 #include "logdefnone.h"
 
@@ -131,6 +132,9 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
                 msg->buffer.clear();
                 msg->buffer = "$PJMACC, " + token + ", " + std::to_string(client_ch) + ", " + std::to_string(master_ch);
                 msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+                if ( ndev == XCVARIOCLIENT_DEV ) {
+                    startClientSync();
+                }
             }
             else {
                 // Something went wrong, undo port reservation, send NAC

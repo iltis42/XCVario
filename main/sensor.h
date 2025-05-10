@@ -126,3 +126,5 @@ inline void delay(uint32_t ms)
 }
 
 int sign(int num);
+
+void startClientSync();

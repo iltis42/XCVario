@@ -114,8 +114,11 @@ CANbus *CANbus::createCAN()
 
 void CANbus::ConfigureIntf(int cfg)
 {
-    // just set the default speed
-    can_speed.set(CAN_SPEED_1MBIT);
+    if (cfg == 1) {
+        // data rate got changed
+        driverUninstall();
+    }
+    begin();
 }
 
 // install/reinstall CAN driver in corresponding mode

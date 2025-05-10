@@ -12,6 +12,7 @@
 #include "setup/SetupMenuValFloat.h"
 #include "SetupAction.h"
 #include "comm/DeviceMgr.h"
+#include "comm/CanBus.h"
 #include "comm/SerialLine.h"
 #include "setup/DataMonitor.h"
 #include "WifiClient.h"
@@ -283,14 +284,28 @@ void system_menu_create_interfaceS2(SetupMenu *top)
     top->addEntry(stxdis2);
 }
 
+static int update_can_datarate(SetupMenuSelect *p)
+{
+    ESP_LOGI(FNAME, "New CAN data rate: %d", p->getSelect());
+    CAN->ConfigureIntf(1);
+    return 0;
+}
+
 void system_menu_create_interfaceCAN(SetupMenu *top)
 {
-    SetupMenuSelect *canmode = new SetupMenuSelect("Datarate", RST_ON_EXIT, 0, true, &can_speed);
+    SetupMenuSelect *canmode = new SetupMenuSelect("Datarate", RST_NONE, update_can_datarate, true, &can_speed);
     top->addEntry(canmode);
     canmode->setHelp("Datarate on high speed serial CAN interace in kbit per second");
     canmode->addEntry("250 kbit");
     canmode->addEntry("500 kbit");
     canmode->addEntry("1000 kbit (default)");
+}
+
+void system_menu_create_interfaceI2C(SetupMenu *top)
+{
+	SetupMenuValFloat *compi2c = new SetupMenuValFloat("I2C Clock", "KHz", 10.0, 400.0, 10, 0, false, &compass_i2c_cl, RST_ON_EXIT);
+	top->addEntry(compi2c);
+	compi2c->setHelp("Setup compass I2C Bus clock in KHz (reboots)");
 }
 
 

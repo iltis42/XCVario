@@ -347,7 +347,7 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
         // Do not try to create it
         if ( CAN && CAN->getTestOk() ) {
             if ( ! CAN->isInitialized() ) {
-                CAN->begin();
+                CAN->ConfigureIntf(0); // default setup
             }
             itf = CAN;
         }

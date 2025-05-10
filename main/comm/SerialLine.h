@@ -13,6 +13,8 @@
 
 typedef enum { BAUD_4800, BAUD_9600, BAUD_19200, BAUD_38400, BAUD_57600, BAUD_115200 } e_baud;
 typedef enum { SM_FLARM, SM_RADIO, SM_XCTNAV_S3, SM_OPENVARIO, SM_XCFLARMBIN, SM_XCFLARMVIEW } e_profile;
+typedef enum { RS232_NORMAL, RS232_TTL } rs232lm_t;
+
 
 union t_serial_cfg {
 	struct {

@@ -29,6 +29,7 @@ public:
 
 private:
     void send_chunk();
+    void bailOut();
     // binary mode peer
     FlarmBinary *_binpeer = nullptr;
     // frame counter monitor

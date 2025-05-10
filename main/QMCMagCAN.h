@@ -28,10 +28,11 @@ Last update: 2021-03-28
 
 #include "vector_3d.h"
 
+class MagSensBin;
 
 class QMCMagCAN: public MagnetSensor
 {
-	friend class MagSensBinary;
+	// friend class MagSensBin;
 
 public:
 	/*

@@ -18,13 +18,13 @@ static constexpr std::array<int, 6> baud_rate_table = { 4800, 9600, 19200, 38400
 
 
 static constexpr std::array<t_serial_cfg, 6>  sm_serial_config = {{
-		// enumerator,    baud,    polarity, pin swp, tx enable
-		{ SM_FLARM,       BAUD_19200, true, false, true },
-		{ SM_RADIO,       BAUD_9600,  true, false, true },
-		{ SM_XCTNAV_S3,   BAUD_19200, true, false, true },
-		{ SM_OPENVARIO,   BAUD_19200, true, false, true },
-		{ SM_XCFLARMBIN,  BAUD_38400, true, false, true },
-		{ SM_XCFLARMVIEW, BAUD_57600, true, false, true }
+		// enumerator,    baud,       polarity,  pin swp, tx enable
+		{ SM_FLARM,       BAUD_19200, RS232_TTL, false, true },
+		{ SM_RADIO,       BAUD_9600,  RS232_TTL, false, true },
+		{ SM_XCTNAV_S3,   BAUD_19200, RS232_TTL, false, true },
+		{ SM_OPENVARIO,   BAUD_19200, RS232_TTL, false, true },
+		{ SM_XCFLARMBIN,  BAUD_38400, RS232_TTL, false, true },
+		{ SM_XCFLARMVIEW, BAUD_57600, RS232_TTL, false, true }
 }};
 
 static constexpr std::array<std::string_view, 3> MEMOS = { "S0", "S1", "S2" };
@@ -50,7 +50,17 @@ void uartTask(SerialLine* s)
 	while (true)
 	{
 		// sleep until the UART gives us something to do
-		xQueueReceive((QueueHandle_t)s->_event_queue, &event, portMAX_DELAY);
+		if ( xQueueReceive((QueueHandle_t)s->_event_queue, &event, pdMS_TO_TICKS(1000)) != pdTRUE) {
+			// time-out, propagate with empty message
+			xSemaphoreTake(s->_dlink_mutex, portMAX_DELAY);
+			auto dlit = s->_dlink.begin();
+			bool valid = dlit != s->_dlink.end();
+			xSemaphoreGive(s->_dlink_mutex);
+			if ( valid ) {
+				dlit->second->process(nullptr, 0);
+			}
+			continue;
+		}
 
 		if (event.type == UART_EVENT_MAX)
 		{
@@ -69,11 +79,10 @@ void uartTask(SerialLine* s)
 					// ESP_LOGI(FNAME, "Data received from UART%d: %dc", un, count);
 					xSemaphoreTake(s->_dlink_mutex, portMAX_DELAY);
 					auto dlit = s->_dlink.begin();
-					if ( dlit != s->_dlink.end() ) {
-						xSemaphoreGive(s->_dlink_mutex);
+					bool valid = dlit != s->_dlink.end();
+					xSemaphoreGive(s->_dlink_mutex);
+					if ( valid ) {
 						dlit->second->process(rx_buf, count); // SX interfaces do have only one data link
-					} else {
-						xSemaphoreGive(s->_dlink_mutex);
 					}
 				}
 				break;

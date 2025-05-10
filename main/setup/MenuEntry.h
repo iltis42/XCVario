@@ -42,7 +42,7 @@ public:
 	void regParent(SetupMenu* p);
 	bool isRoot() const;
 	bool isActive() const { return selected == this; }
-	void setHelp( const char *txt, int y=DEFAULT_HELP_Y_POS ) { helptext = (char*)txt; hypos = y; };
+	void setHelp( const char *txt, int y=DEFAULT_HELP_Y_POS ) { helptext = (char*)txt; };
 	void doHighlight(int sel) const;
     void unHighlight(int sel) const;
     void indentHighlight(int sel);
@@ -57,6 +57,7 @@ public:
 	void menuPrintLn(const char* str, int sel, int x=1) const;
 	void uprint( int x, int y, const char* str );
 	void SavedDelay(bool showit=true);
+	void scheduleReboot() { _restart = true; }
 	void reBoot();
 
 public:
@@ -71,7 +72,6 @@ protected:
 	std::string _title;
 	const char *helptext = nullptr;
 	bool        is_inline = false;
-	int16_t     hypos = DEFAULT_HELP_Y_POS;
 	static int16_t cur_indent;
 	static int16_t cur_row;
 

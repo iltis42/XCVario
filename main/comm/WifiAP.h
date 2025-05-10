@@ -20,15 +20,14 @@ typedef struct client_record {
 	struct sockaddr_in clientAddress;
 }client_record_t;
 
-typedef struct xcv_sock_server {
-	xcv_sock_server(int p, WifiAP* mw) : port(p), mywifi(mw) {};
+struct sock_server_t {
+	sock_server_t(int p) : port(p) {};
 	// This should store the handle to send data to the port
 	const int port;
 	int socket;
 	int idle = 0;
-	std::list<client_record_t>  clients;
-	WifiAP *mywifi;
-}sock_server_t;
+	std::list<client_record_t> clients;
+};
 
 class WifiAP final : public InterfaceCtrl
 {
@@ -48,14 +47,15 @@ public:
 	virtual int Send(const char *msg, int &len, int port=0) override;
 
 	// returns 1 if queue is full, changes color of WiFi symbol, connection is stuck
-	static int queueFull();
-
-	static sock_server_t *_socks[NUM_TCP_PORTS];
-	static TaskHandle_t pid;
+	int queueFull();
 
 private:
-	static bool full[NUM_TCP_PORTS];
-	static bool task_created;
+	bool full[NUM_TCP_PORTS];
+	sock_server_t *_socks[NUM_TCP_PORTS];
+	TaskHandle_t socket_server_task_pid = nullptr;
+	bool _terminte_sock_server = false;
+	esp_netif_t *_netif = nullptr;
+	esp_event_handler_instance_t _evnt_handler = nullptr;
 
 	// internal functionality
 	void wifi_init_softap();

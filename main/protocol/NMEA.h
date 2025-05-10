@@ -72,10 +72,11 @@ typedef std::map<Key, MapValue> ParserMap;
 class NmeaPlugin
 {
 public:
-    explicit NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp, bool as=true) : _nmeaRef(nr), _pid(ptyp), _auto(as) {}
+    explicit NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp, bool as=true);
     virtual ~NmeaPlugin() = default;
     ProtocolType getPtyp() const { return _pid; }
-    ProtocolType belongsPtyp() const;
+    DeviceId getRouteId() const { return _routeId; };
+    void setRouteId(DeviceId did) { _routeId = did; }
     NmeaPrtcl &getNMEA() const { return _nmeaRef; }
     void setExplicit() { _auto = false; }
     bool getAuto() const { return _auto; }
@@ -91,10 +92,10 @@ protected:
     ProtocolType _pid;
 private:
     bool _auto; // most plugins get installed together with the principal NMEA parser
+    DeviceId _routeId = NO_DEVICE; // the device id for the plugin's routing
 };
 
-// forward declaration
-class AliveMonitor;
+
 
 // generic mnea message parser
 class NmeaPrtcl final : public ProtocolItf
@@ -106,13 +107,15 @@ public:
 public:
     // general API
     ProtocolType getProtocolId() const override { return _ptyp; }
-    void addPlugin(NmeaPlugin *pm); // one way addition
-    bool hasProtocol(ProtocolType p);
+    bool hasProtocol(ProtocolType p) const override;
+    void addAliveMonitor(AliveMonitor *am) override { _alive = am; }
     dl_control_t nextBytes(const char* c, int len) override;
     // house keeping
+    void addPlugin(NmeaPlugin *pm);
+    void removeProtocol(ProtocolType p);
+    int getNrPlugs() const { return _plugs.size(); }
     const std::vector<NmeaPlugin*>& getAllPlugs() const { return _plugs; }
     ProtocolItf* asPrtclItfPtr() { return static_cast<ProtocolItf*>(this); }
-    void addAliveMonitor(AliveMonitor *am) { _alive = am; }
 
 
     // XCVario transmitter routines

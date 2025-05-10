@@ -28,7 +28,7 @@ typedef enum {
     WIFI_CLIENT,
     BT_SPP,
     BT_LE,
-    XCVPROXY
+    XCVPROXY // not yet implemented
 } InterfaceId;
 
 // Interface target

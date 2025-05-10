@@ -308,7 +308,6 @@ SetupNG<float>          flarm_alarm_time( "FLARM_ALM", 5 );
 SetupNG<int>            flap_sensor( "FLAP_SENS", 0, RST_NONE, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>          flap_pos_max("FL_POS_M", +2, true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
 SetupNG<float>          flap_neg_max("FL_NEG_M", -2, true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
-SetupNG<int>            compass_enable( "CP_ENABLE", 0 );
 SetupNG<float>          compass_dev_0( "CP_DEV_0", 0 );
 SetupNG<float>          compass_dev_45( "CP_DEV_45", 0 );
 SetupNG<float>          compass_dev_90( "CP_DEV_90", 0 );
@@ -399,7 +398,7 @@ SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", {} );
 SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target );    // default for AHRS chip temperature (XCV 2023)
 SetupNG<int> 			xcv_role("XCVROLE", MASTER_ROLE, true);
 // Those device entries are serving as factory reset minimum configuration
-SetupNG<DeviceNVS>		anemoi_devsetup("ANEMOIN", DeviceNVS() );
+SetupNG<DeviceNVS>		anemoi_devsetup("ANEMOI", DeviceNVS() );
 SetupNG<DeviceNVS>		auto_connect("AUTOCON", DeviceNVS() );
 SetupNG<DeviceNVS>		flarm_devsetup("FLARM", {{FLARM_DEV, S1_RS232, 0}, {{FLARMBIN_P, FLARM_P}, 0}, 0, 0});
 SetupNG<DeviceNVS>		master_devsetup("MASTER", DeviceNVS() );

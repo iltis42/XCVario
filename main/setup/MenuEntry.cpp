@@ -165,8 +165,7 @@ int MenuEntry::nrOfHelpLines() const
 {
 	int lines = 0;
     if( helptext ) {
-		int nr_of_char_per_line = dwidth / MYUCG->getStrWidth("n");
-
+		int nr_of_char_per_line = dwidth * 11 / (MYUCG->getStrWidth("n") * 10); // add 10% for safety
 		int ll = 0;
 		int last_ll = 0;
 		const char *p = helptext;
@@ -190,23 +189,27 @@ int MenuEntry::nrOfHelpLines() const
 }
 
 // In case inline is requested: Try to squeeze the help under
-// the parents menu lines, return true when everything fit in.
+// the parents menu lines, 
+// returns true when inlining is possible
 bool MenuEntry::showhelp(bool inln)
 {
+	bool ret = true; // inlining w/o help text is always possible
     if( helptext != 0 )
 	{
 		// option to fit the help under the menu lines
-		int y=hypos;
+		int needed_ln = nrOfHelpLines();
+		int y = dheight - ((needed_ln+1)-1) * 25;
 		if ( inln ) {
-			int nr_lines = freeBottomLines();
-			int needed_ln = nrOfHelpLines();
-			if (nr_lines >= needed_ln ) {
-				nr_lines = std::min(nr_lines, needed_ln+2);
-				y = dheight - (nr_lines-1)*25;
+			int nr_free_lines = freeBottomLines();
+			if (nr_free_lines >= needed_ln ) {
+				y = dheight - (std::min(nr_free_lines, needed_ln+2) -1) * 25;
 			}
 			else {
-				return false;
+				y = dheight - (nr_free_lines-1) * 25;
 			}
+		}
+		else {
+			ret = false;
 		}
 
 		int line_length = dwidth;
@@ -239,7 +242,7 @@ bool MenuEntry::showhelp(bool inln)
 		}
 		free( buf );
 	}
-	return true;
+	return ret;
 }
 
 void MenuEntry::clear()

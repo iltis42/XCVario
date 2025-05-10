@@ -142,7 +142,7 @@ void Compass:: progress(){
 	if( _external_data ){  // Simulation data
 		_external_data--;  // age external data
 	}
-	if( compass_enable.get() ){
+	// if( compass_enable.get() ){
 		if( !_external_data ){
 			bool rok;
 			float hd = heading( &rok );
@@ -165,14 +165,15 @@ void Compass:: progress(){
 		}
 		_heading_average = Vector::normalizeDeg( _heading_average );
 		// ESP_LOGI(FNAME,"average hd=%.1f mag:%.1f gfh:%.1f", _heading_average, m_magn_heading, m_gyro_fused_heading );
-	}
+	// }
 }
 
 void Compass::begin(){
 	Deviation::begin();
 	loadCalibration();
-	if( compass_enable.get() == CS_I2C ){
-		i2c_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
+	// fixme
+	if( compass  ){
+		I2C_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
 		if( serial2_speed.get() )
 			serial2_speed.set(0);  // switch off serial interface, we can do only alternatively
 	}
@@ -463,14 +464,14 @@ float Compass::heading( bool *ok )
 			// ESP_LOGI(FNAME,"Magnetic sensor error Reads:%d, Total Errors:%d  Init: %d", N, totalReadErrors, errors );
 			if( errors > 10 )
 			{
-				// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
-				if( compass_enable.get() != CS_CAN ){
-					if( instance->initialize() != ESP_OK ) //  reinitialize once crashed, one retry
-						instance->initialize();
-				}
-				return 0.0;
-			}
-			if( errors > 100 ){  // survive 100 samples with constant heading if no valid reading
+			// 	// ESP_LOGI(FNAME,"Magnetic sensor errors > 10: init mag sensor" );
+			// 	if( compass_enable.get() != CS_CAN ){
+			// 		if( instance->initialize() != ESP_OK ) //  reinitialize once crashed, one retry
+			// 			instance->initialize();
+			// 	}
+			// 	return 0.0;
+			// }
+			// if( errors > 100 ){  // survive 100 samples with constant heading if no valid reading
 				return 0.0;
 			}
 			*ok = true;

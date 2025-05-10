@@ -49,8 +49,7 @@ bool FlarmSim::tick()
         msg += pflau_msg[_next_msg];
         msg += ",1234*";
         msg += NMEA::CheckSum(msg.c_str()) + "\r\n";
-        DataLink *dl = *_d->_dlset.begin();
-        dl->process(msg.c_str(), msg.size());
+        _d->_link->process(msg.c_str(), msg.size());
         _next_msg++;
     }
     else {
@@ -72,7 +71,7 @@ FlarmSim::~FlarmSim()
 {
     InterfaceCtrl *ic = _d->_itf;
     // Reconnect datalink
-    ic->addDataLink(*(_d->_dlset.begin()));
+    ic->addDataLink(_d->_link);
     _sim = nullptr;
 }
 

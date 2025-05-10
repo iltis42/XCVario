@@ -40,23 +40,23 @@ typedef enum _fonts_enum {
 	UCG_FONT_FUB11_TR,
 	UCG_FONT_FUB11_HR,
 	UCG_FONT_FUB14_HR,
-	UCG_FONT_FUB14_HF,
+	// UCG_FONT_FUB14_HF,
 	UCG_FONT_FUB17_HF,
 	UCG_FONT_FUB20_HN,
 	UCG_FONT_FUB20_HR,
-	UCG_FONT_FUB20_HF,
+	// UCG_FONT_FUB20_HF,
 	UCG_FONT_FUB25_HR,
 	UCG_FONT_FUB25_HF,
-	UCG_FONT_FUR25_HF,
+	// UCG_FONT_FUR25_HF,
 	UCG_FONT_FUB35_HN,
 	UCG_FONT_FUB35_HR,
 	UCG_FONT_FUR14_HF,
-	UCG_FONT_FUR20_HF,
+	// UCG_FONT_FUR20_HF,
 	UCG_FONT_PROFONT22_MR,
 	UCG_FONT_FUB25_HN,
 	UCG_FONT_FUB11_HN,
-	UCG_FONT_FUB14_HN,
-	EGLIB_FONT_FREE_SANSBOLD_66,
+	UCG_FONT_FUB14_HN
+	// EGLIB_FONT_FREE_SANSBOLD_66,
 } e_fonts_enum;
 
 // to be activated as soon as ucg.h is replaced by AdaptUGC.h
@@ -67,22 +67,22 @@ extern const uint8_t ucg_font_fub11_tr[];
 extern const uint8_t ucg_font_fub11_hr[];
 extern const uint8_t ucg_font_fub14_hn[];
 extern const uint8_t ucg_font_fub14_hr[];
-extern const uint8_t ucg_font_fub14_hf[];
+// extern const uint8_t ucg_font_fub14_hf[];
 extern const uint8_t ucg_font_fur14_hf[];
 extern const uint8_t ucg_font_fub17_hf[];
 extern const uint8_t ucg_font_fub20_hn[];
 extern const uint8_t ucg_font_fub20_hr[];
-extern const uint8_t ucg_font_fub20_hf[];
-extern const uint8_t ucg_font_fur20_hf[];
+// extern const uint8_t ucg_font_fub20_hf[];
+// extern const uint8_t ucg_font_fur20_hf[];
 extern const uint8_t ucg_font_fub25_hr[];
 extern const uint8_t ucg_font_fub25_hf[];
-extern const uint8_t ucg_font_fur25_hf[];
+// extern const uint8_t ucg_font_fur25_hf[];
 extern const uint8_t ucg_font_fub35_hn[];
 extern const uint8_t ucg_font_fub35_hr[];
 extern const uint8_t ucg_font_profont22_mr[];
 extern const uint8_t ucg_font_fub25_hn[];
 extern const uint8_t ucg_font_fub11_hn[];
-extern const uint8_t eglib_font_free_sansbold_66[];
+// extern const uint8_t eglib_font_free_sansbold_66[];
 
 
 class AdaptUGC

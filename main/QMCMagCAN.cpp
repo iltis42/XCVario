@@ -13,12 +13,15 @@
 
 #include "QMCMagCAN.h"
 
-#include "sensor.h"
-#include "setup/SetupNG.h"
-#include "setup/MenuEntry.h"
+#include "protocol/MagSensBin.h"
+// #include "sensor.h"
+// #include "setup/SetupNG.h"
+// #include "setup/MenuEntry.h"
 #include "vector.h"
-#include "comm/CanBus.h"
+// #include "comm/CanBus.h"
 #include "logdef.h"
+
+#include <freertos/FreeRTOS.h>
 
 #include <cassert>
 #include <cmath>
@@ -33,10 +36,12 @@ QMCMagCAN::QMCMagCAN()
 	age = 100;
 	can = { 0,0,0 };
 	m_sensor = false;
+	MagSensBin::setMagSink(this);
 }
 
 QMCMagCAN::~QMCMagCAN()
 {
+	MagSensBin::removeMagSink();
 }
 
 // check if messages arrive
@@ -53,7 +58,7 @@ esp_err_t QMCMagCAN::selfTest()
 		if( age < 5 ) {
 			return ESP_OK;
 		}
-		delay(10);
+		vTaskDelay(pdMS_TO_TICKS(10));
 	}
 	return ESP_FAIL;
 }

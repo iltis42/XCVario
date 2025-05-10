@@ -31,7 +31,7 @@ bool IRAM_ATTR ESPRotary::tick()
 	debounceCount = (buttonRead == lastButtonRead) ? (debounceCount+1) : 0;
 	lastButtonRead = buttonRead;
 	if ( holdCount > 0 ) {
-		holdCount++;
+		holdCount++; // hold timer
 		if ( holdCount > lp_duration ) {
 			gotEvent = LONG_PRESS;
 			holdCount = -1; // go for a "release"
@@ -272,12 +272,13 @@ bool ESPRotary::readSwitch() const
 {
 	// return true for any button event in the queue, except a release
 	int event;
-	while (xQueueReceive(buttonQueue, &event, 0) == pdTRUE) {
+	bool ret = false;
+	if (xQueueReceive(buttonQueue, &event, 0) == pdTRUE) {
 		if (event == SHORT_PRESS
 			|| event == LONG_PRESS) {
-			xQueueReset(buttonQueue);
-			return true;
+			ret = true;
 		}
 	}
-	return false;
+	xQueueReset(buttonQueue); // clear the queue
+	return ret;
 }

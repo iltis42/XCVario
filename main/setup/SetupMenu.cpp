@@ -41,7 +41,7 @@
 #include "comm/SerialLine.h"
 #include "coredump_to_server.h"
 #include "protocol/nmea/JumboCmdMsg.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <inttypes.h>
 #include <iterator>
@@ -625,14 +625,28 @@ void SetupMenu::longPress()
 	}
 }
 
+int deviceDumpAction(SetupAction *p)
+{
+	// dump devices
+	DEVMAN->dumpMap();
+	return 0;
+}
+
+int varioAvChange(SetupMenuValFloat *p) {
+	// ESP_LOGI(FNAME,"varioAvChange() %f", vario_av_delay.get() );
+	if (vario_av_delay.get() > 0.1) {
+		bmpVario.setAveragerTime(vario_av_delay.get());
+	}
+	return 0;
+}
+
 void vario_menu_create_damping(SetupMenu *top) {
 	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", 2.0, 10.0,
 			0.1, vario_setup, false, &vario_delay);
 	vda->setHelp("Response time, time constant of Vario low pass filter");
 	top->addEntry(vda);
 
-	SetupMenuValFloat *vdav = new SetupMenuValFloat("Averager", "sec", 2.0,
-			60.0, 1, 0, false, &vario_av_delay);
+	SetupMenuValFloat *vdav = new SetupMenuValFloat("Averager", "sec", 2.0, 60.0, 1, varioAvChange, false, &vario_av_delay);
 	vdav->setHelp("Response time, time constant of digital Average Vario Display");
 	top->addEntry(vdav);
 }
@@ -1180,33 +1194,28 @@ void options_menu_create_compasswind_compass_nmea(SetupMenu *top) {
 
 // Fixme goes to devices
 void options_menu_create_compasswind_compass(SetupMenu *top) {
-	SetupMenuSelect *compSensor = new SetupMenuSelect("Sensor Option", RST_NONE, compass_ena, true, &compass_enable);
-	compSensor->addEntry("Disable");
-	compSensor->addEntry("I2C sensor");
-	compSensor->addEntry("CAN sensor");
-	top->addEntry(compSensor);
+	// SetupMenuSelect *compSensor = new SetupMenuSelect("Sensor Option", RST_NONE, compass_ena, true, &compass_enable);
+	// compSensor->addEntry("Disable");
+	// compSensor->addEntry("I2C sensor");
+	// compSensor->addEntry("CAN sensor");
+	// top->addEntry(compSensor);
 
-	SetupMenuSelect *compSensorCal = new SetupMenuSelect("Sensor Calibration",
-			RST_NONE, compassSensorCalibrateAction, false);
+	SetupMenuSelect *compSensorCal = new SetupMenuSelect("Sensor Calibration", RST_NONE, compassSensorCalibrateAction, false);
 	compSensorCal->addEntry("Cancel");
 	compSensorCal->addEntry("Start");
 	compSensorCal->addEntry("Show");
 	compSensorCal->addEntry("Show Raw Data");
-	compSensorCal->setHelp(
-			"Calibrate Magnetic Sensor, mandatory for operation");
+	compSensorCal->setHelp("Calibrate Magnetic Sensor, mandatory for operation");
 	top->addEntry(compSensorCal);
 
 	// Fixme replace by WMM
-	SetupMenuValFloat *cd = new SetupMenuValFloat("Setup Declination", "°",
-			-180, 180, 1.0, compassDeclinationAction, false,
+	SetupMenuValFloat *cd = new SetupMenuValFloat("Setup Declination", "°", -180, 180, 1.0, compassDeclinationAction, false,
 			&compass_declination);
 	cd->setHelp("Set compass declination in degrees");
 	top->addEntry(cd);
 
-	SetupMenuSelect *devMenuA = new SetupMenuSelect("AutoDeviation", RST_NONE,
-			0, true, &compass_dev_auto);
-	devMenuA->setHelp(
-			"Automatic adaptive deviation and precise airspeed evaluation method using data from circling wind");
+	SetupMenuSelect *devMenuA = new SetupMenuSelect("AutoDeviation", RST_NONE, 0, true, &compass_dev_auto);
+	devMenuA->setHelp("Automatic adaptive deviation and precise airspeed evaluation method using data from circling wind");
 	devMenuA->addEntry("Disable");
 	devMenuA->addEntry("Enable");
 	top->addEntry(devMenuA);
@@ -1267,12 +1276,10 @@ void options_menu_create_compasswind_straightwind_filters(SetupMenu *top) {
 	smgps->setHelp(
 			"Lowpass filter factor for GPS track and speed, to correlate with Compass latency");
 
-	SetupMenuValFloat *wlpf = new SetupMenuValFloat("Averager", "", 5, 120, 1,
-			nullptr, false, &wind_filter_lowpass);
+	SetupMenuValFloat *wlpf = new SetupMenuValFloat("Averager", "", 5, 120, 1, nullptr, false, &wind_filter_lowpass);
 	wlpf->setPrecision(0);
 	top->addEntry(wlpf);
-	wlpf->setHelp(
-			"Number of measurements (seconds) averaged in straight flight live wind estimation");
+	wlpf->setHelp("Number of measurements (seconds) averaged in straight flight live wind estimation");
 }
 
 void options_menu_create_compasswind_straightwind_limits(SetupMenu *top) {
@@ -1961,6 +1968,8 @@ void system_menu_create(SetupMenu *sye) {
 	logg->mkEnable("Sensor RAW Data");
 	sye->addEntry(logg);
 
+	SetupAction *devdump = new SetupAction("Device Setup Dump", deviceDumpAction, 0);
+	sye->addEntry(devdump);
 }
 
 void setup_create_root(SetupMenu *top) {

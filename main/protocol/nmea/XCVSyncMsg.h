@@ -14,7 +14,7 @@ class XCVSyncMsg  final : public NmeaPlugin
 {
 public:
 
-    explicit XCVSyncMsg(NmeaPrtcl &nr, bool master);
+    explicit XCVSyncMsg(NmeaPrtcl &nr, bool master, bool as);
     virtual ~XCVSyncMsg();
     const ParserEntry* getPT() const override { return _pt; }
 

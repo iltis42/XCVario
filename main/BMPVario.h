@@ -1,5 +1,4 @@
-#ifndef __BMPVario_H__
-#define __BMPVario_H__
+#pragma once
 
 #include "ESP32NVS.h"
 #include "PressureSensor.h"
@@ -12,11 +11,11 @@
 
  */
 
-#define SPS 10                   // samples per second
-#define FILTER_LEN 34            // Max Filter length
-#define ALPHA 0.2   			 // Kalman Gain alpha
+// #define SPS 10                   // samples per second
+constexpr const int FILTER_LEN = 34; // Max Filter length
+constexpr const double ALPHA = 0.2; // Kalman Gain alpha
 #define ERRORVAL 1.6             // damping Factor for values off the weeds
-#define STANDARD 1013.25         // ICAO standard pressure
+constexpr const float STANDARD = 1013.25; // ICAO standard pressure
 
 
 class BMPVario {
@@ -44,21 +43,21 @@ public:
 		_analog_adj = 0;
 		myS2F = 0;
 		_sensorBARO = 0;
+		N = 0;
 	}
 
 	void begin( PressureSensor *te,  PressureSensor *baro, S2F* s2f );
 
 	static void setHolddown( int hold ) { holddown = hold; }
 	void setQNH( float qnh ) { _qnh = qnh; };
+	void setAveragerTime(float t) { avgTE.setLength(t); };
 	void setup();
 
-	double   readTE( float tas, float tePressure );   // get TE value im m/s
-
-
-	double   readAVGTE();   // get TE value im m/s
-	float    readS2FTE();   // get TE value im m/s for S2F
-	inline double   readAVGalt() { return averageAlt; };   // get average Altitude
-	inline double   readCuralt() { return _currentAlt; };   // get average Altitude
+	double readTE(float tas, float tePressure);   // get TE value im m/s
+	double readAVGTE();   // get TE value im m/s
+	float  readS2FTE();   // get TE value im m/s for S2F
+	double readAVGalt() { return averageAlt; };    // get average Altitude
+	double readCuralt() { return _currentAlt; };   // get current Altitude
 	void setTE( double te ); // for testing purposes
 	void configChange();
 
@@ -78,6 +77,7 @@ private:
 	double _analog_adj;
 	int    index;
 	double _TEF;
+	Average<60, float, float> avgTE;
 	double _avgTE;
 	double bmpTemp;
 	bool _test;
@@ -85,10 +85,9 @@ private:
 	double _damping_factor;
 	float _S2FTE;
 	double _currentAlt;
-
 	static int   holddown;
 	S2F * myS2F;
+	int N;
 };
 
 extern BMPVario bmpVario;
-#endif

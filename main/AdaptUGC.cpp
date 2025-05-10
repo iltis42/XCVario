@@ -110,9 +110,9 @@ void AdaptUGC::setFont(const uint8_t *f, bool filled ){    // adapter
 	// case UCG_FONT_FUR25_HF:
 	// 	eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
 	// 	break;
-	// case UCG_FONT_FUB25_HN:
-	// 	eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
-	// 	break;
+	case UCG_FONT_FUB25_HN:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
+		break;
 	case UCG_FONT_FUB35_HN:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_48px);
 		break;
@@ -126,7 +126,7 @@ void AdaptUGC::setFont(const uint8_t *f, bool filled ){    // adapter
 		eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_20px);
 		break;
 	default:
-		ESP_LOGI(FNAME, "Font not found !\n");
+		ESP_LOGI(FNAME, "Font not found %d!\n", f[0]);
 	}
 }
 

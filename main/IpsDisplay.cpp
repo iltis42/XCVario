@@ -125,7 +125,7 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 #define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +22 )
 
 #define BATX (DISPLAY_W-10)
-#define BATY (DISPLAY_H-15)
+#define BATY (DISPLAY_H-12)
 #define LOWBAT  11.6    // 20%  -> 0%
 #define FULLBAT 12.8    // 100%
 
@@ -528,7 +528,7 @@ void IpsDisplay::initDisplay() {
 		ucg->drawTriangle( FIELD_START+ASLEN-1, dmid, FIELD_START+ASLEN+5, dmid-6, FIELD_START+ASLEN+5, dmid+6);
 
 		// Thermometer
-		drawThermometer(  FIELD_START+5, DISPLAY_H-6 );
+		drawThermometer(  FIELD_START+5, DISPLAY_H-5 );
 
 		if ( FLAP ) {
 			FLAP->setBarPosition( WKSYMST+2, YS2F-fh );
@@ -803,7 +803,7 @@ void IpsDisplay::drawMC( float mc, bool large ) {
 	std::sprintf(s, "%1.1f", Units::Vario(mc) );
 	ucg->print(s);
 	int16_t fl = ucg->getStrWidth(s);
-	ucg->setFont(ucg_font_fub11_hr, true);
+	ucg->setFont(ucg_font_fub11_hr, false);
 	ucg->setColor(COLOR_HEADER);
 	ucg->setPrintPos(1+fl+2, DISPLAY_H+2);
 	ucg->print("MC");
@@ -934,13 +934,13 @@ void IpsDisplay::drawBT() {
 	if( _menu )
 		return;
 	int btq=0;
-	if( DEVMAN->isIntf(BT_SPP) && BTspp ) // fixme
+	if( DEVMAN->isIntf(BT_SPP) && BTspp )
 		btq = BTspp->isConnected() ? 0 : 1;
 	else if( DEVMAN->isIntf(BT_LE) )
 		btq=BLESender::queueFull();
 	if( btq != btqueue || flarm_alive.get() > ALIVE_NONE ){
-		int16_t btx=DISPLAY_W-20;
-		int16_t bty=(BTH/2) + 8;
+		int16_t btx=DISPLAY_W-18;
+		int16_t bty=(BTH/2) + 6;
 		if( btq )
 			ucg->setColor( COLOR_MGREY );
 		else
@@ -970,7 +970,7 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 	const int16_t CANH = 8;
 	const int16_t CANW = 14;
 
-	int connectedXCV = xcv_alive.get(); // fixme
+	int connectedXCV = xcv_alive.get();
 	int connectedMag = xcv_alive.get();
 	
 	(connectedXCV == ALIVE_OK)? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
@@ -993,27 +993,6 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 	ucg->drawDisc( x+CANW/2, y-CANH/2, 2, UCG_DRAW_ALL);
 }
 
-void IpsDisplay::drawFlarm( int x, int y, bool flarm ) {
-	if( _menu )
-		return;
-	int16_t flx=x;
-	int16_t fly=y;
-	if( flarm )
-		ucg->setColor(COLOR_RED);
-	else
-		ucg->setColor( COLOR_MGREY );
-	ucg->setClipRange( flx, fly-FLOGO, FLOGO, FLOGO );
-	ucg->drawTriangle( flx+1, fly, flx+1+(FLOGO/2), fly, flx+1+(FLOGO/4), fly-(FLOGO/2)+2 );
-	ucg->undoClipRange();
-	ucg->setClipRange( flx+FLOGO/4+3, fly-FLOGO, FLOGO, FLOGO );
-	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/4)-2, UCG_DRAW_UPPER_RIGHT);
-	ucg->undoClipRange();
-	ucg->setClipRange( flx+FLOGO/4+5, fly-FLOGO, FLOGO, FLOGO );
-	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-2, UCG_DRAW_UPPER_RIGHT);
-	ucg->drawCircle( flx, fly, FLOGO/2 + (FLOGO/2)-3, UCG_DRAW_UPPER_RIGHT);
-	ucg->undoClipRange();
-}
-
 void IpsDisplay::drawWifi( int x, int y ) {
 	if( _menu  )
 		return;
@@ -1025,7 +1004,7 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		if( WifiClient::isConnected(8884) ) // fixme
 			btq=0;
 	}
-	else if ( xcv_role.get() <= MASTER_ROLE && DEVMAN->isIntf(WIFI_AP) && Wifi ) {
+	else if ( DEVMAN->isIntf(WIFI_AP) && Wifi ) {
 		btq=Wifi->queueFull();
 	} else {
 		return;
@@ -1055,12 +1034,15 @@ void IpsDisplay::drawWifi( int x, int y ) {
 
 void IpsDisplay::drawConnection( int16_t x, int16_t y )
 {
-	if ( DEVMAN->isIntf(BT_SPP) || DEVMAN->isIntf(BT_LE) ) // fixme
+	if ( DEVMAN->isIntf(BT_SPP) || DEVMAN->isIntf(BT_LE) ) {
 		drawBT();
-	else if( DEVMAN->isIntf(WIFI_AP) || DEVMAN->isIntf(WIFI_CLIENT) )
+	}
+	else if( DEVMAN->isIntf(WIFI_AP) || DEVMAN->isIntf(WIFI_CLIENT) ) {
 		drawWifi(x, y);
-	else if( SetupCommon::isWired() )
-		drawCable(DISPLAY_W-20, y);
+	}
+	else if( SetupCommon::isWired() ) {
+		drawCable(DISPLAY_W-18, y);
+	}
 }
 
 void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
@@ -1138,19 +1120,18 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	if( _menu )
 		return;
 
-	// ucg->setClipRange(x-50, y-25, 80, 25); // avoid overwriting thermometer
-	ucg->setFont(ucg_font_fur14_hf, true);
+	ucg->setFont(ucg_font_fub14_hn, false);
 	char s[32];
 	if( t != DEVICE_DISCONNECTED_C ) {
 		float temp_unit = Units::TemperatureUnit( t );
-		sprintf(s, "%6.1f", std::roundf(temp_unit*10.f)/10.f );
+		sprintf(s, "%.1f ", std::roundf(temp_unit*10.f)/10.f );
 	}
 	else {
-		strcpy(s, " ---");
+		strcpy(s, "---");
 	}
-	ESP_LOGI(FNAME,"drawTemperature: %d,%d %s", x-ucg->getStrWidth(s),y-3, s);
+	// ESP_LOGI(FNAME,"drawTemperature: %d,%d %s", x, y, s);
 	ucg->setColor( COLOR_WHITE );
-	ucg->setPrintPos(x-ucg->getStrWidth(s),y-3);
+	ucg->setPrintPos(x,y-3);
 	ucg->print(s);
 	if( HAS_MPU_TEMP_CONTROL ){   // Color if T unit shows if MPU silicon temperature is locked, too high or too low
 		switch( MPU.getSiliconTempStatus() ){
@@ -1169,9 +1150,9 @@ void IpsDisplay::drawTemperature( int x, int y, float t ) {
 	}else{
 		ucg->setColor( COLOR_HEADER );
 	}
-	ucg->setPrintPos(x+2,y-3);
-	ucg->print(Units::TemperatureUnitStr(temperature_unit.get()));
-	// ucg->undoClipRange();
+	ucg->setFont(ucg_font_fub11_hn, false);
+	ucg->setPrintPos(x+ucg->getStrWidth(s)+2,y-3);
+	ucg->printf("%s ", Units::TemperatureUnitStr(temperature_unit.get()));
 }
 
 // val, center x, y, start radius, end radius, width, r,g,b
@@ -1498,10 +1479,10 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	if( _menu )
 		return;
 	ucg->setFont(ucg_font_fub11_hr);
-	ucg->setPrintPos(5,50);
+	ucg->setPrintPos(2,50);
 	ucg->setColor(COLOR_HEADER);
 	ucg->print( Units::VarioUnit() );
-	drawConnection(DISPLAY_W-27, FLOGO+2 );
+	drawConnection(DISPLAY_W-25, FLOGO );
 	drawSpeed(0., INNER_RIGHT_ALIGN, 75, true, true );
 	drawAltitude( altitude.get(), INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, true, true );
 	if( !ulmode )
@@ -1510,10 +1491,7 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 		FLAP->setBarPosition( WKSYMST-4, WKBARMID);
 		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(flap_neg_max.get()))-18 );
 	}
-	if (ulmode){
-		// Thermometer
-		drawThermometer(10, 25 );
-	}
+
 }
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
@@ -2196,10 +2174,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		}
 	}
 
-	// Bluetooth
+	// Bluetooth etc
 	if( !(tick%12) )
 	{
-		drawConnection(DISPLAY_W-27, FLOGO+2 );
+		drawConnection(DISPLAY_W-25, FLOGO );
 	}
 
 	// S2F Command triangle
@@ -2288,7 +2266,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Temperature Value
 	temp_status_t mputemp = MPU.getSiliconTempStatus();
 	if( (((int)(temp*10) != tempalt) || (mputemp != siliconTempStatusOld)) && !(tick%12)) {
-		drawTemperature( ulmode?65:52, 23, temp );
+		drawTemperature( 2, 25, temp );
 		tempalt=(int)(temp*10);
 		siliconTempStatusOld = mputemp;
 	}
@@ -2441,7 +2419,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	// Temperature ValueAirliner
 	if( (int)(temp*10) != tempalt && !(tick%11)) {
-		drawTemperature( FIELD_START+65, DISPLAY_H, temp );
+		drawTemperature( FIELD_START+18, DISPLAY_H+3, temp );
 		tempalt=(int)(temp*10);
 	}
 	// Battery Symbol
@@ -2461,10 +2439,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		blankold = blank;
 	}
 
-	// Bluetooth Symbol
-
+	// Bluetooth Symbol etc
 	if( !(tick%12) ){
-		drawConnection(DISPLAY_W-27, FLOGO);
+		drawConnection(DISPLAY_W-25, FLOGO);
 	}
 
 	bool flarm=false;

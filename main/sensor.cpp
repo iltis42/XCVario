@@ -201,7 +201,7 @@ void drawDisplay(void *arg)
 	ESPRotary &knob = *static_cast<ESPRotary*>(arg);
 	QueueHandle_t buton_event_queue = knob.getQueue();
 
-	esp_task_wdt_add(NULL);
+	// esp_task_wdt_add(NULL); // incompatible with current setup implementation, e.g. all calib procedures would trigger the wd
 
 	int event = 0;
 	while (1) {
@@ -390,7 +390,7 @@ void drawDisplay(void *arg)
 				}
 			}
 		}
-		esp_task_wdt_reset();
+		// esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( dpid ) < 512  ) {
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 		}

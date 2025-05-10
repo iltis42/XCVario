@@ -57,6 +57,7 @@ public:
 	void menuPrintLn(const char* str, int sel, int x=1) const;
 	void uprint( int x, int y, const char* str );
 	void SavedDelay(bool showit=true);
+	void scheduleReboot() { _restart = true; }
 	void reBoot();
 
 public:

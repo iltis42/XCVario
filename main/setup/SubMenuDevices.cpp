@@ -302,7 +302,10 @@ static int remove_device(SetupMenuSelect *p)
     if ( p->getSelect() == 1 ) {
         DeviceId did = (DeviceId)p->getParent()->getContId(); // dev id to remove
         ESP_LOGI(FNAME, "remove %d", did);
-        DEVMAN->removeDevice(did);
+        if ( DEVMAN->removeDevice(did) ) {
+            // restart needed
+            p->scheduleReboot();
+        }
         // clear nvs
         const DeviceAttributes &da = DeviceManager::getDevAttr(did);
         if ( da.nvsetup ) {

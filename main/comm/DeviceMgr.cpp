@@ -491,7 +491,8 @@ int DeviceManager::getSendPort(DeviceId did, ProtocolType proto)
 }
 
 // Remove device from map, delete device and all resources
-void DeviceManager::removeDevice(DeviceId did)
+// returns true, when a reboot is needed
+bool DeviceManager::removeDevice(DeviceId did)
 {
     xSemaphoreTake(_devmap_mutex, portMAX_DELAY);
     DevMap::iterator it = _device_map.find(did);
@@ -502,6 +503,7 @@ void DeviceManager::removeDevice(DeviceId did)
         _device_map.erase(it);
     }
     xSemaphoreGive(_devmap_mutex); // handling device map is done
+    bool ret = false;
 
     if ( dev ) {
         InterfaceCtrl *itf = dev->_itf;
@@ -512,15 +514,17 @@ void DeviceManager::removeDevice(DeviceId did)
                 ESP_LOGI(FNAME, "stopping CAN");
                 CAN->stop();
             }
-            // else if ( itf == Wifi ) { fixme, restart not reliably working
+            else if ( itf == Wifi ) { // fixme, restart not reliably working
             //     ESP_LOGI(FNAME, "stopping Wifi");
             //     WifiAP *tmp = Wifi;
             //     Wifi = nullptr;
             //     delete tmp;
-            // }
+                ret = true; // restart needed
+            }
             else if ( itf == BTspp ) {
                 ESP_LOGI(FNAME, "stopping BTspp");
                 BTspp->stop();
+                ret = true; // restart needed
             }
             else if ( itf == S1 ) {
                 ESP_LOGI(FNAME, "stopping S1");
@@ -541,6 +545,8 @@ void DeviceManager::removeDevice(DeviceId did)
 
     ESP_LOGI(FNAME, "After remove device %d.", did);
     dumpMap();
+    
+    return ret;
 }
 
 // routing lookup table

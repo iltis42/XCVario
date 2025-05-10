@@ -85,7 +85,7 @@ public:
     NmeaPrtcl *getNMEA(DeviceId did);
     int getSendPort(DeviceId did, ProtocolType proto);
     // Remove device of this type
-    void removeDevice(DeviceId did);
+    bool removeDevice(DeviceId did);
     InterfaceCtrl* getIntf(DeviceId did);
     bool isIntf(ItfTarget iid) const;
     bool isAvail(InterfaceId iid) const;

@@ -632,14 +632,21 @@ int deviceDumpAction(SetupAction *p)
 	return 0;
 }
 
+int varioAvChange(SetupMenuValFloat *p) {
+	// ESP_LOGI(FNAME,"varioAvChange() %f", vario_av_delay.get() );
+	if (vario_av_delay.get() > 0.1) {
+		bmpVario.setAveragerTime(vario_av_delay.get());
+	}
+	return 0;
+}
+
 void vario_menu_create_damping(SetupMenu *top) {
 	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", 2.0, 10.0,
 			0.1, vario_setup, false, &vario_delay);
 	vda->setHelp("Response time, time constant of Vario low pass filter");
 	top->addEntry(vda);
 
-	SetupMenuValFloat *vdav = new SetupMenuValFloat("Averager", "sec", 2.0,
-			60.0, 1, 0, false, &vario_av_delay);
+	SetupMenuValFloat *vdav = new SetupMenuValFloat("Averager", "sec", 2.0, 60.0, 1, varioAvChange, false, &vario_av_delay);
 	vdav->setHelp("Response time, time constant of digital Average Vario Display");
 	top->addEntry(vdav);
 }
@@ -1269,12 +1276,10 @@ void options_menu_create_compasswind_straightwind_filters(SetupMenu *top) {
 	smgps->setHelp(
 			"Lowpass filter factor for GPS track and speed, to correlate with Compass latency");
 
-	SetupMenuValFloat *wlpf = new SetupMenuValFloat("Averager", "", 5, 120, 1,
-			nullptr, false, &wind_filter_lowpass);
+	SetupMenuValFloat *wlpf = new SetupMenuValFloat("Averager", "", 5, 120, 1, nullptr, false, &wind_filter_lowpass);
 	wlpf->setPrecision(0);
 	top->addEntry(wlpf);
-	wlpf->setHelp(
-			"Number of measurements (seconds) averaged in straight flight live wind estimation");
+	wlpf->setHelp("Number of measurements (seconds) averaged in straight flight live wind estimation");
 }
 
 void options_menu_create_compasswind_straightwind_limits(SetupMenu *top) {

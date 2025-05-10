@@ -66,7 +66,7 @@ void SetupMenuValFloat::setPrecision( int prec ){
 void SetupMenuValFloat::display(int mode)
 {
 	ESP_LOGI(FNAME,"display %s", _title.c_str());
-	if ( is_inline ) {
+	if ( bits._is_inline ) {
 		indentHighlight(_parent->getHighlight());
 	}
 	else {
@@ -81,7 +81,7 @@ void SetupMenuValFloat::display(int mode)
 void SetupMenuValFloat::displayVal()
 {
 	// ESP_LOGI(FNAME,"displayVal %s", v);
-	if ( is_inline ) {
+	if ( bits._is_inline ) {
 		indentPrintLn(value());
 	}
 	else {

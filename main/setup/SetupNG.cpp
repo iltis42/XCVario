@@ -7,7 +7,7 @@
 
 #include "setup/SetupNG.h"
 
-#include "setup/SetupMenuValCommon.h"
+#include "setup/SetupMenuCommon.h"
 #include "quaternion.h"
 #include "ESP32NVS.h"
 #include "ESPAudio.h"

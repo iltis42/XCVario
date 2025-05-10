@@ -9,7 +9,21 @@
 
 #include "ESPRotary.h"
 #include "setup/SetupNG.h"
+#include "setup/SetupMenuCommon.h"
 #include <string>
+
+struct bitfield {
+    e_restart_mode_t _restart :2;
+    bool _ext_handler         :1; // ??
+    bool _save                :1; // fixme show the save word -> needed?
+    bool _end_setup           :1; // roll setup on exit
+    bool _end_menu            :1; // just terminate the containing menu (two levels up)
+    bool _locked              :1; // cannot enter
+    bool _is_inline           :1; // inline menu
+    bool _live_update         :1;
+    uint8_t _precision        :4;
+};
+
 
 class PressureSensor;
 class SetupMenu;
@@ -35,6 +49,10 @@ public:
 	virtual void display( int mode=0 ) = 0;
 	virtual bool isLeaf() const { return true; }
 	virtual const char* value() const = 0; // content as string
+
+	virtual void lock() { bits._locked = true; }
+	virtual void unlock() { bits._locked = false; }
+	virtual bool isLocked() const { return bits._locked; }
 
 	// helper
 	const char* getTitle() const { return _title.c_str(); }
@@ -71,7 +89,8 @@ protected:
 	SetupMenu  *_parent = nullptr;
 	std::string _title;
 	const char *helptext = nullptr;
-	bool        is_inline = false;
+	bitfield bits = {};
+	// bool        is_inline = false;
 	static int16_t cur_indent;
 	static int16_t cur_row;
 

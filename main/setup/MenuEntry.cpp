@@ -86,11 +86,15 @@ void MenuEntry::SavedDelay(bool showit)
 // Handle the basics to jump in- and out of setup menu levels
 void MenuEntry::enter()
 {
+	selected = this;
+	if (bits._locked) {
+		return;
+	}
+	
 	// enter a level of setup menu
 	attach(); // set rotary focus
-	selected = this;
 	if ( isLeaf() && canInline() ) {
-		is_inline = showhelp(true);
+		bits._is_inline = showhelp(true);
 	} else {
 		clear();
 		showhelp();

@@ -289,7 +289,7 @@ void DataLink::process(const char *packet, int len)
         // Special use, "no data" timeout, might be expected and normal
         // We just reset the protocol state machine then
         // goNMEA();
-        ESP_LOGW(FNAME, "timeout Itf/Port %d/%d", _itf_id.iid, _itf_id.port);
+        // ESP_LOGW(FNAME, "timeout Itf/Port %d/%d", _itf_id.iid, _itf_id.port);
         return;
     }
     // if ( _active->isBinary() ) {

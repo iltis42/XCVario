@@ -13,6 +13,7 @@
 #include "comm/CanBus.h"
 #include "comm/WifiAP.h"
 #include "comm/BTspp.h"
+#include "comm/I2CWrapper.h"
 #include "BLESender.h"
 #include "SerialLine.h"
 #include "protocol/ProtocolItf.h"
@@ -400,11 +401,14 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
         // blesender.begin();
         // itf = BT_..;
     }
-    else if ( iid == I2C) {
-        if ( ! S2 || ! S2->getTestOk() ) {
+    else if ( iid == I2C ) {
+        if ( ! I2Cext && (! S2 || ! S2->getTestOk()) ) {
             // double check S2 not active - they share the gpio's
-            I2C_0.begin(GPIO_NUM_4, GPIO_NUM_18, GPIO_PULLUP_DISABLE, GPIO_PULLUP_DISABLE, (int)(compass_i2c_cl.get()*1000) );
+            itf = new I2CWrapper();
+            itf->ConfigureIntf(0); // default setup
+            ESP_LOGI(FNAME, "I2C conf");
         }
+        itf = I2Cext;
     }
     // else // NO_PHY is just the hint to take the same interface
     
@@ -518,6 +522,7 @@ bool DeviceManager::removeDevice(DeviceId did)
         delete dev;
         // is it the last device on this interface
         if ( itf->getNrDLinks() == 0 ) {
+            _interface_map.erase(itf->getId());
             if ( itf == CAN ) {
                 ESP_LOGI(FNAME, "stopping CAN");
                 CAN->stop();
@@ -542,11 +547,10 @@ bool DeviceManager::removeDevice(DeviceId did)
                 ESP_LOGI(FNAME, "stopping S2");
                 S2->stop();
             }
-            // else if ( itf == I2C_0 ) { fixme
-            //     ESP_LOGI(FNAME, "stopping I2C");
-            //     I2C_0.close();
-            // }
-            _interface_map.erase(itf->getId());
+            else if ( itf == I2Cext ) {
+                ESP_LOGI(FNAME, "stopping I2C");
+                delete I2Cext;
+            }
         }
     }
     refreshRouteCache();

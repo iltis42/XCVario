@@ -127,8 +127,7 @@ OTA *ota = 0;
 SetupRoot  *Menu = nullptr;
 
 // Gyro and acceleration sensor
-I2C_t& i2c = i2c1;  // i2c0 or i2c1
-I2C_t& I2C_0 = i2c0;  // i2c0 or i2c1
+I2C_t& i2c = i2c1;
 MPU_t MPU;         // create an object
 
 // Magnetic sensor / compass

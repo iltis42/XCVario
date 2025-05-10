@@ -23,6 +23,7 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 #include "quaternion.h"
 #include "sensor.h"
 #include "comm/DeviceMgr.h"
+#include "comm/I2CWrapper.h"
 #include "protocol/Clock.h"
 #include "logdef.h"
 
@@ -46,7 +47,12 @@ Compass *Compass::createCompass(InterfaceId iid)
 	}
 	else {
 		ESP_LOGI( FNAME, "Magnetic sensor type I2C");
-		compass = new Compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512, &I2C_0 );
+		I2C_t *i2cBus = nullptr;
+		if ( I2Cext ) {
+			// Wrapper should exist
+			i2cBus = I2Cext->getI2C();
+		}
+		compass = new Compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512, i2cBus );
 	} 
     return compass;
 }
@@ -92,7 +98,7 @@ Compass::~Compass()
 }
 
 void Compass::ageIncr(){
-	ESP_LOGI( FNAME, "Compass::tick()");
+	// ESP_LOGI( FNAME, "Compass::tick()");
 	Deviation::tick();
 	age++;
 	_tick++;

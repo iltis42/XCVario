@@ -116,7 +116,8 @@ void CANbus::ConfigureIntf(int cfg)
 {
     if (cfg == 1) {
         // data rate got changed
-        driverUninstall();
+        terminate_receiver = true;
+        vTaskDelay(pdMS_TO_TICKS(600)); // wait for the task to finish
     }
     begin();
 }
@@ -213,6 +214,7 @@ void CANbus::driverUninstall()
     {
         _initialized = false;
         twai_stop();
+        vTaskDelay(pdMS_TO_TICKS(10));
         twai_driver_uninstall();
     }
 }

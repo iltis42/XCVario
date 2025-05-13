@@ -177,7 +177,7 @@ dl_action_t FlarmMsg::parsePFLAX(NmeaPlugin *plg)
         DataLink *host = DEVMAN->getFlarmBPInitiator();
         if ( host && host->getProtocol(FLARMBIN_P) && nmea.getDL()->getProtocol(FLARMBIN_P)) {
             // Host side
-            FlarmBinary *hostfb = static_cast<FlarmBinary*>(host->goBIN());
+            FlarmBinary *hostfb = static_cast<FlarmBinary*>(host->getBinary());
             ESP_LOGI(FNAME, "Host side %d", hostfb->getDeviceId());
             // Device side
             FlarmBinary *devfb = static_cast<FlarmBinary*>(nmea.getDL()->goBIN());

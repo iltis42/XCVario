@@ -27,12 +27,10 @@ FlarmHostMsg::FlarmHostMsg(NmeaPrtcl &nr) :
 dl_action_t FlarmHostMsg::parsePFLAX(NmeaPlugin *plg)
 {
     ProtocolState *sm = plg->getNMEA().getSM();
-    ESP_LOGI(FNAME, "FLAX called -----------------+");
-    if ( sm->_frame.at(6) != ',' ) {
-        ESP_LOGI(FNAME, "Start binary request");
-        DEVMAN->setFlarmBPInitiator(plg->getNMEA().getDL());
-    }
-    return DO_ROUTING;
+    ESP_LOGI(FNAME, "FLAX request received from host -----------------+");
+    ESP_LOGI(FNAME, "Start binary request");
+    DEVMAN->setFlarmBPInitiator(plg->getNMEA().getDL());
+    return NXT_PROTO; // proactively to mute all other NMEA activities on the line
 }
 
 const ParserEntry FlarmHostMsg::_pt[] = {

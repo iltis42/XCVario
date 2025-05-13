@@ -57,7 +57,7 @@ dl_control_t FlarmBinary::nextBytes(const char *cptr, int count)
     // _crc holds the last received frame type (!)
     if ( ! _binpeer ) {
         // Oops
-        return dl_control_t(NXT_PROTO, _did, count);
+        return dl_control_t(NOACTION, _did, count);
     }
 
     for (int i = 0; i < count; i++)

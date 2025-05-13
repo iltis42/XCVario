@@ -50,12 +50,14 @@ void uartTask(SerialLine* s)
 	while (true)
 	{
 		// sleep until the UART gives us something to do
-		if ( xQueueReceive((QueueHandle_t)s->_event_queue, &event, pdMS_TO_TICKS(1000)) != pdTRUE) {
-			// time-out, propagate with empty message
-			xSemaphoreTake(s->_dlink_mutex, portMAX_DELAY);
-			auto dlit = s->_dlink.begin();
-			bool valid = dlit != s->_dlink.end();
-			xSemaphoreGive(s->_dlink_mutex);
+		BaseType_t ret = xQueueReceive((QueueHandle_t)s->_event_queue, &event, pdMS_TO_TICKS(10000));
+		// fetch the data link
+		xSemaphoreTake(s->_dlink_mutex, portMAX_DELAY);
+		auto dlit = s->_dlink.begin();
+		bool valid = dlit != s->_dlink.end();
+		xSemaphoreGive(s->_dlink_mutex);
+		if ( ret != pdTRUE) {
+			// time-out, propagate as empty message
 			if ( valid ) {
 				dlit->second->process(nullptr, 0);
 			}
@@ -74,16 +76,10 @@ void uartTask(SerialLine* s)
 			case UART_DATA:
 			{
 				int count = uart_read_bytes(un, rx_buf, BUF_LEN, 0);
-				if ( count > 0 ) {
+				if ( count > 0 && valid ) {
 					rx_buf[count] = '\0';
 					// ESP_LOGI(FNAME, "Data received from UART%d: %dc", un, count);
-					xSemaphoreTake(s->_dlink_mutex, portMAX_DELAY);
-					auto dlit = s->_dlink.begin();
-					bool valid = dlit != s->_dlink.end();
-					xSemaphoreGive(s->_dlink_mutex);
-					if ( valid ) {
-						dlit->second->process(rx_buf, count); // SX interfaces do have only one data link
-					}
+					dlit->second->process(rx_buf, count); // SX interfaces do have only one data link
 				}
 				break;
 			}

@@ -172,6 +172,9 @@ void NmeaPrtcl::sendXcvRPYL(float roll, float pitch, float yaw, float acc_z)
 
 void NmeaPrtcl::sendXcvAPENV1(float ias, float alt, float te)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message *msg = newMessage();
 
     msg->buffer = "$APENV1,";

@@ -156,9 +156,9 @@ EnumList DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
         _nmea->addAliveMonitor(new AliveMonitor(&xcv_alive, 800));
         // The SyncMsg serves on both side, need to know it's role
         // connect to a client -> you are master
-        if ( xcv_role.get() == NO_ROLE && did==XCVARIOCLIENT_DEV ) { xcv_role.set(MASTER_ROLE); }
+        if ( xcv_role.get() == NO_ROLE && did==XCVARIOSECOND_DEV ) { xcv_role.set(MASTER_ROLE); }
         //                                        \/true when on master (!!), only CAN does it automatically
-        _nmea->addPlugin(new XCVSyncMsg(*_nmea, did==XCVARIOCLIENT_DEV, _itf_id == CAN_BUS));
+        _nmea->addPlugin(new XCVSyncMsg(*_nmea, did==XCVARIOSECOND_DEV, _itf_id == CAN_BUS));
         tmp = _nmea;
         break;
     case OPENVARIO_P:
@@ -266,18 +266,11 @@ void DataLink::removeProtocol(ProtocolType ptyp)
     }
 }
 
-// void DataLink::removeId(DeviceId did)
-// {
-//     if ( _did == did ) {
-//         _did = NO_DEVICE;
-//     }
-// }
-
 void DataLink::process(const char *packet, int len)
 {
     // Feed the data monitor
     if (_monitoring) {
-        DM->monitorString(DIR_RX, _active->isBinary(), packet, len);
+        DM->monitorString(DIR_RX, _active && _active->isBinary(), packet, len);
     }
 
     if (_active == nullptr) {
@@ -287,9 +280,7 @@ void DataLink::process(const char *packet, int len)
     if (packet == nullptr)
     {
         // Special use, "no data" timeout, might be expected and normal
-        // We just reset the protocol state machine then
-        // goNMEA();
-        // ESP_LOGW(FNAME, "timeout Itf/Port %d/%d", _itf_id.iid, _itf_id.port);
+        // plenty of use case options, none right now
         return;
     }
     // if ( _active->isBinary() ) {
@@ -309,6 +300,7 @@ void DataLink::process(const char *packet, int len)
             control = _active->nextBytes(packet, len);
             if ( control.act & FORWARD_BIT ) {
                 // DeviceId did = (control.did) ? control.did : _active->getDeviceId();
+                ESP_LOGI(FNAME, "forward %d", control.did);
                 doForward(control.did);
             }
             if ( control.act == NXT_PROTO ) {
@@ -325,21 +317,21 @@ void DataLink::process(const char *packet, int len)
 
 ProtocolItf* DataLink::goBIN()
 {
-    if ( _binary ) {
+    if ( _binary && _active != _binary ) {
         _active = _binary;
         ESP_LOGI(FNAME, "Switch to binary protocol %d(%d)", _active->getProtocolId(),_active->isBinary());
+        _sm.reset();
     }
-    _sm.reset();
     return _binary;
 }
 
 void DataLink::goNMEA()
 {
-    if ( _nmea ) {
+    if ( _nmea && _active != _nmea ) {
         _active = _nmea;
         ESP_LOGI(FNAME, "Switch to nmea protocol %d(%d)", _active->getProtocolId(),_active->isBinary());
+        _sm.reset();
     }
-    _sm.reset();
 }
 
 void DataLink::switchProtocol()

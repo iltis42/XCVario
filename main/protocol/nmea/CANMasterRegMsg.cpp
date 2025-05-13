@@ -107,7 +107,7 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
         ndev = MAGSENS_DEV;
         nproto = MAGSENS_P;
     } else if ( protocol.compare("XCVCLIENT") == 0 && xcv_role.get() == MASTER_ROLE ) {
-        ndev = XCVARIOCLIENT_DEV;
+        ndev = XCVARIOSECOND_DEV;
         nproto = XCVSYNC_P;
         prio = 4;
     }
@@ -132,7 +132,7 @@ dl_action_t CANMasterRegMsg::registration_query(NmeaPlugin *plg)
                 msg->buffer.clear();
                 msg->buffer = "$PJMACC, " + token + ", " + std::to_string(client_ch) + ", " + std::to_string(master_ch);
                 msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
-                if ( ndev == XCVARIOCLIENT_DEV ) {
+                if ( ndev == XCVARIOSECOND_DEV ) {
                     startClientSync();
                 }
             }

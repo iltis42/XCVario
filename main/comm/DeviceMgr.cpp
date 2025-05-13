@@ -45,7 +45,7 @@ static TaskHandle_t SendTask = nullptr;
 //
 // entries with zero termination, entirely as ro flash data
 static constexpr RoutingTarget flarm_routes_synch[] = { 
-    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
+    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {XCVARIOSECOND_DEV, CAN_BUS, 0}, 
     {XCVARIOFIRST_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget flarm_routes[] = { 
     {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
@@ -65,7 +65,7 @@ static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes },
     { RoutingTarget(FLARM_HOST_DEV, NO_PHY, 0), fhost_routes },
     { RoutingTarget(XCVARIOFIRST_DEV, NO_PHY, 0), proxy_routes },
-    { RoutingTarget(XCVARIOCLIENT_DEV, NO_PHY, 0), proxy_routes }
+    { RoutingTarget(XCVARIOSECOND_DEV, NO_PHY, 0), proxy_routes }
 };
 // Search the flash data table
 static const RoutingTarget* findRoute(const RoutingTarget& source) {
@@ -99,8 +99,8 @@ constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
     {DeviceId::XCVARIOFIRST_DEV, {"Master XCV", {{WIFI_CLIENT, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL, &master_devsetup}},
     {DeviceId::XCVARIOFIRST_DEV, {"", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT, nullptr}}, // auto through XCV role
     {DeviceId::XCVARIOFIRST_DEV, {"", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|SECOND_ONLY, &master_devsetup}},
-    {DeviceId::XCVARIOCLIENT_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL|MASTER_ONLY, &second_devsetup}},
-    {DeviceId::XCVARIOCLIENT_DEV, {"", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|MASTER_ONLY, &second_devsetup}},
+    {DeviceId::XCVARIOSECOND_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL|MASTER_ONLY, &second_devsetup}},
+    {DeviceId::XCVARIOSECOND_DEV, {"", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|MASTER_ONLY, &second_devsetup}},
     {DeviceId::MAGLEG_DEV, {"MagSens rev0", {{I2C, CAN_BUS}}, {{MAGSENSBIN_P}, 1}, 0, IS_REAL, &magleg_devsetup}},
     {DeviceId::MAGLEG_DEV, {"", {{CAN_BUS}}, {{MAGSENSBIN_P}, 1}, MagSensBin::LEGACY_MAGSTREAM_ID, IS_REAL, &magleg_devsetup}},
     {DeviceId::MAGLEG_DEV, {"", {{I2C}}, {{MAGSENSBIN_P}, 0}, 0, IS_REAL, &magleg_devsetup}},
@@ -467,7 +467,7 @@ Device *DeviceManager::getDevice(DeviceId did)
 
 Device *DeviceManager::getXCVPeer()
 {
-    DevMap::iterator it = _device_map.find((xcv_role.get()==MASTER_ROLE)?XCVARIOCLIENT_DEV:XCVARIOFIRST_DEV);
+    DevMap::iterator it = _device_map.find((xcv_role.get()==MASTER_ROLE)?XCVARIOSECOND_DEV:XCVARIOFIRST_DEV);
     if ( it != _device_map.end() ) {
         return it->second;
     }

@@ -31,7 +31,6 @@ public:
     ProtocolItf* getProtocol(ProtocolType ptyp=NO_ONE) const;
     bool hasProtocol(ProtocolType ptyp) const;
     void removeProtocol(ProtocolType ptyp);
-    // void removeId(DeviceId did);
     void process(const char *packet, int len);
     ProtocolItf *goBIN();
     void goNMEA();

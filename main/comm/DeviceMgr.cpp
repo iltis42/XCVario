@@ -49,19 +49,18 @@ static constexpr RoutingTarget flarm_routes_synch[] = {
     {XCVARIOFIRST_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget flarm_routes[] = { 
     {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
-static constexpr RoutingTarget krt2_routes[] = { 
-    {NAVI_DEV, S2_RS232, 0}, {RADIO_REMOTE_DEV, WIFI_AP, 8882}, {RADIO_REMOTE_DEV, BT_SPP, 0}, {XCVARIOCLIENT_DEV, CAN_BUS, 0}, 
-    {XCVARIOFIRST_DEV, CAN_BUS, 0}, {} };
+static constexpr RoutingTarget radio_routes[] = { 
+    {RADIO_KRT2_DEV, S2_RS232, 0}, {RADIO_ATR833_DEV, S2_RS232, 0}, {XCVARIOFIRST_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget navi_routes[] = { 
-    {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {} };
+    {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, CAN_BUS, 0}, {RADIO_KRT2_DEV, S2_RS232, 0}, {} };
 static constexpr RoutingTarget fhost_routes[] = { 
-    {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, S2_RS232, 0}, {RADIO_KRT2_DEV, S2_RS232, 0}, {FLARM_DEV, CAN_BUS, 0}, {} };
+    {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget proxy_routes[] = { 
     {NAVI_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
 static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(FLARM_DEV, S1_RS232, 0), flarm_routes_synch },
     { RoutingTarget(FLARM_DEV, CAN_BUS, 0), flarm_routes },
-    { RoutingTarget(RADIO_KRT2_DEV, NO_PHY, 0), krt2_routes },
+    { RoutingTarget(RADIO_REMOTE_DEV, NO_PHY, 0), radio_routes },
     { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes },
     { RoutingTarget(FLARM_HOST_DEV, NO_PHY, 0), fhost_routes },
     { RoutingTarget(XCVARIOFIRST_DEV, NO_PHY, 0), proxy_routes },

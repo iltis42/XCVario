@@ -9,6 +9,8 @@
 
 #include "WifiAP.h"
 #include "sensor.h"
+#include "setup/SetupNG.h"
+#include "setup/SetupCommon.h"
 #include "comm/DataLink.h"
 #include "logdefnone.h"
 
@@ -16,11 +18,12 @@
 #include <freertos/task.h>
 #include <lwip/sockets.h>
 #include <esp_system.h>
+#include <esp_random.h>
 #include <esp_wifi.h>
 #include <esp_mac.h>
 #include <esp_event.h>
 
-extern bool netif_initialized;
+bool netif_initialized = false;
 
 WifiAP *Wifi = nullptr;
 
@@ -240,7 +243,6 @@ WifiAP::~WifiAP()
 		esp_netif_destroy_default_wifi(_netif);
 		_netif = nullptr;
 	}
-	// tcpip_adapter_stop(); 
 }
 
 int  WifiAP::queueFull(){
@@ -253,11 +255,21 @@ int  WifiAP::queueFull(){
 
 // it's mostly static IP a cfg dependig of port so give here port minus 8880
 void WifiAP::ConfigureIntf(int port){
-	if (port < 8880 || port > 8883) {
-		ESP_LOGE(FNAME, "Invalid cfg: %d, should be between 8880 and 8883", port);
+	if (port >= 8880 && port <= 8883) {
+		initialize_wifi(true, false, SetupCommon::getID());
+	}
+	else if ( port == 8884 ) {
+		initialize_wifi(false, false, SetupCommon::getID());
+	}
+	else if ( port == 80 ) {
+		initialize_wifi(true, true, "ESP32 OTA");
+		return;  // no socket server for this port
+	}
+	else {
+		ESP_LOGE(FNAME, "Invalid cfg: %d, should be between 8880 and 8884, or 80", port);
 		return;
 	}
-	wifi_init_softap();
+
 	int pidx = port-8880;
 	sock_server_t *sock = _socks[pidx];  // particular pointer to socket server record for this port
 	if ( sock == nullptr ) {  // its a one-way train, we can only create those ATM
@@ -316,11 +328,14 @@ int WifiAP::Send(const char *msg, int &len, int port)
 	return 50;  // this port -> socket number is currently unavailable please try again 50 ms later
 }
 
-void WifiAP::wifi_init_softap()
+void WifiAP::initialize_wifi(bool ap_mode, bool ota, const char* ssid)
 {
 	if ( ! netif_initialized ) {
 		netif_initialized = true;
 		ESP_ERROR_CHECK(esp_netif_init()); // can only be called once
+	}
+
+	if ( ap_mode && !_netif) {
 		ESP_ERROR_CHECK(esp_event_loop_create_default());
 		ESP_LOGV(FNAME,"now esp_netif_create_default_wifi_ap");
 		_netif = esp_netif_create_default_wifi_ap();
@@ -331,16 +346,16 @@ void WifiAP::wifi_init_softap()
 		ESP_LOGV(FNAME,"now esp_event_handler_instance_register");
 		ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WIFI_EVENT_HANDLER::wifi_event_handler, NULL, &_evnt_handler));
 
-		ESP_LOGV(FNAME,"now esp_wifi_set_config ssid:%s", SetupCommon::getID() );
+		ESP_LOGV(FNAME,"now esp_wifi_set_config ssid:%s", ssid);
 		wifi_config_t wc;
-		strcpy( (char *)wc.ap.ssid, SetupCommon::getID() );
+		strcpy( (char *)wc.ap.ssid, ssid );
 		wc.ap.ssid_len = strlen( (char *)wc.ap.ssid );
 		strcpy( (char *)wc.ap.password, PASSPHARSE );
-		wc.ap.channel = 1;
-		wc.ap.max_connection = 4;
+		wc.ap.channel = esp_random()%11;
+		wc.ap.max_connection = ota ? 2 : 4;
 		wc.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
 		wc.ap.ssid_hidden = 0;
-		wc.ap.beacon_interval = 50;
+		wc.ap.beacon_interval = 100;
 
 		ESP_LOGV(FNAME,"now esp_wifi_set_mode");
 		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
@@ -355,6 +370,6 @@ void WifiAP::wifi_init_softap()
 		ESP_LOGI(FNAME,"now start WSP wifi access point");
 		ESP_ERROR_CHECK(esp_wifi_start());
 		ESP_ERROR_CHECK(esp_wifi_set_max_tx_power( int(wifi_max_power.get()*80.0/100.0) ));
-		ESP_LOGV(FNAME, "wifi_init_softap finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
+		ESP_LOGV(FNAME, "initialize_wifi finished SUCCESS. SSID:%s password:%s channel:%d", (char *)wc.ap.ssid, (char *)wc.ap.password, wc.ap.channel );
 	}
 }

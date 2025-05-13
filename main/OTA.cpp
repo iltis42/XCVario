@@ -10,7 +10,7 @@
 
 #include "ESPRotary.h"
 
-#include "MyWiFi.h"
+#include "comm/WifiAP.h"
 #include "IpsDisplay.h"
 #include "setup/SetupNG.h"
 #include "OTA.h"
@@ -30,7 +30,8 @@ const char* pwd = "xcvario-21";
 // OTA
 void OTA::doSoftwareUpdate(IpsDisplay * disp ){
 	ESP_LOGI(FNAME,"Now start Wifi OTA");
-	init_wifi_softap(nullptr);
+	WifiAP *wifi = WifiAP::createWifiAP();
+	wifi->ConfigureIntf(80);
 
 	// Break the cycle of booting into OTA mode early
 	software_update.commit();

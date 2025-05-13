@@ -10,6 +10,8 @@
 #include <cstring>
 #include <list>
 
+extern bool netif_initialized;
+
 class WifiAP;
 
 #define NUM_TCP_PORTS 4
@@ -58,7 +60,7 @@ private:
 	esp_event_handler_instance_t _evnt_handler = nullptr;
 
 	// internal functionality
-	void wifi_init_softap();
+	void initialize_wifi(bool ap_mode, bool ota, const char* ssid);
 };
 
 extern WifiAP *Wifi;

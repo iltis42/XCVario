@@ -121,7 +121,7 @@ AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *Display = 0;
 CenterAid  *centeraid = 0;
 
-bool netif_initialized = false;
+
 OTA *ota = 0;
 
 SetupRoot  *Menu = nullptr;

@@ -45,7 +45,7 @@ Compass *Compass::createCompass(InterfaceId iid)
 		ESP_LOGI( FNAME, "Magnetic sensor type CAN");
 		compass = new Compass( 0 );  // I2C addr 0 -> instantiate without I2C bus and local sensor
 	}
-	else {
+	else if (iid == I2C) {
 		ESP_LOGI( FNAME, "Magnetic sensor type I2C");
 		I2C_t *i2cBus = nullptr;
 		if ( I2Cext ) {
@@ -65,7 +65,7 @@ Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, co
 	Clock_I(5) // 50ms duty cycle
 {
 	ESP_LOGI(FNAME,"Compass() I2C addr=%02x", addr );
-	if( addr == 0 ){
+	if( i2cBus == 0 ){
 		mysensor = new QMCMagCAN();
 	}
 	else{

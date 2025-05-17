@@ -54,8 +54,9 @@ esp_err_t QMCMagCAN::selfTest()
 
 	// Wait max. 1 sec for arriving magsens stream data
 	ESP_LOGI( FNAME, "QMCMagCAN selftest");
-	for( int i=0; i<100; i++ ) {
+	for( int i=0; i<1000; i++ ) {
 		if( age < 5 ) {
+			ESP_LOGI( FNAME, "Magsens detected after: %.2f s", i/100.0 );
 			return ESP_OK;
 		}
 		delay(10);

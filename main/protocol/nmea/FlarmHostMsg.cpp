@@ -7,8 +7,9 @@
  ***********************************************************/
 
 #include "FlarmHostMsg.h"
+#include "comm/DeviceMgr.h"
 
-#include <logdef.h>
+#include "logdefnone.h"
 
 // The FLARM host protocol checker/forwarder.
 //
@@ -16,19 +17,20 @@
 // PFL*
 
 FlarmHostMsg::FlarmHostMsg(NmeaPrtcl &nr) :
-    NmeaPlugin(nr, FLARMHOST_P)
+    NmeaPlugin(nr, FLARMHOST_P, false)
 {
     _nmeaRef.setDefaultAction(DO_ROUTING);
 }
 
+// Initiate a flarm BP session
+// $PFLAX*2E
 dl_action_t FlarmHostMsg::parsePFLAX(NmeaPlugin *plg)
 {
     ProtocolState *sm = plg->getNMEA().getSM();
-    if ( sm->_frame.at(6) != ',' ) {
-        ESP_LOGI(FNAME, "Start binary request");
-        return NXT_PROTO;
-    }
-    return DO_ROUTING;
+    ESP_LOGI(FNAME, "FLAX request received from host -----------------+");
+    ESP_LOGI(FNAME, "Start binary request");
+    DEVMAN->setFlarmBPInitiator(plg->getNMEA().getDL());
+    return NXT_PROTO; // proactively to mute all other NMEA activities on the line
 }
 
 const ParserEntry FlarmHostMsg::_pt[] = {

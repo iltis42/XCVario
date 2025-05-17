@@ -121,18 +121,16 @@ AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *Display = 0;
 CenterAid  *centeraid = 0;
 
-bool netif_initialized = false;
+
 OTA *ota = 0;
 
 SetupRoot  *Menu = nullptr;
 
 // Gyro and acceleration sensor
-I2C_t& i2c = i2c1;  // i2c0 or i2c1
-I2C_t& i2c_0 = i2c0;  // i2c0 or i2c1
+I2C_t& i2c = i2c1;
 MPU_t MPU;         // create an object
 
 // Magnetic sensor / compass
-Compass *compass = 0;
 BLESender blesender;
 SerialLine *S1 = NULL;
 SerialLine *S2 = NULL;
@@ -201,15 +199,11 @@ void drawDisplay(void *arg)
 	ESPRotary &knob = *static_cast<ESPRotary*>(arg);
 	QueueHandle_t buton_event_queue = knob.getQueue();
 
-	esp_task_wdt_add(NULL);
+	// esp_task_wdt_add(NULL); // incompatible with current setup implementation, e.g. all calib procedures would trigger the wd
 
 	int event = 0;
 	while (1) {
 		// handle button events in this context
-		if ( ! (event & ROTARY_EVTMASK) ) {
-			// Empty the queue to avoid on-running events
-			xQueueReset(buton_event_queue);
-		}
 		if (xQueueReceive(buton_event_queue, &event, pdMS_TO_TICKS(20)) == pdTRUE) {
 			if (event == SHORT_PRESS) {
 				// ESP_LOGI(FNAME,"Button short press detected");
@@ -394,7 +388,7 @@ void drawDisplay(void *arg)
 				}
 			}
 		}
-		esp_task_wdt_reset();
+		// esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark( dpid ) < 512  ) {
 			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
 		}
@@ -564,8 +558,15 @@ void clientLoop(void *pvParameters)
 	}
 }
 
+static int client_sync_dataIdx = 10000;
+void startClientSync()
+{
+	// Start the client sync in a moment
+	client_sync_dataIdx = -4;
+}
+
 void readSensors(void *pvParameters){
-	int client_sync_dataIdx = 0;
+	
 	float tasraw = 0;
 	esp_task_wdt_add(NULL);
 
@@ -716,9 +717,9 @@ void readSensors(void *pvParameters){
 			toyFeed();
 			vTaskDelay(2/portTICK_PERIOD_MS);
 		}
-		// Router::routeXCV();
-		// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d ena=%d", compass->haveSensor(),  compass_nmea_hdt.get(),  compass_enable.get() );
+
 		if( compass ){
+			// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d", compass->haveSensor(),  compass_nmea_hdt.get());
 			if( ! compass->calibrationIsRunning() ) {
 				// Trigger heading reading and low pass filtering. That job must be
 				// done periodically.
@@ -747,7 +748,8 @@ void readSensors(void *pvParameters){
 					if( !(count%5) && ( compass_nmea_hdt.get() == true )  ) {
 						if ( prtcl ) {
 							prtcl->sendXCVNmeaHDM(heading);
-						}					}
+						}
+					}
 				}
 				else{
 					if( mag_hdt.get() != -1 )
@@ -762,18 +764,16 @@ void readSensors(void *pvParameters){
 		}
 
 		// Check on new clients connecting
-		// if ( CAN && CAN->GotNewClient() ) { // fixme hook to registration protocol
-		// 	while( client_sync_dataIdx < SetupCommon::numEntries() ) {
-		// 		if ( SetupCommon::syncEntry(client_sync_dataIdx++) ) {
-		// 			break; // Hit entry to actually sync and send data
-		// 		}
-		// 	}
-		// 	if ( client_sync_dataIdx >= SetupCommon::numEntries() ) {
-		// 		// Synch complete
-		// 		client_sync_dataIdx = 0;
-		// 		CAN->ResetNewClient();
-		// 	}
-		// }
+		if ( client_sync_dataIdx < SetupCommon::numEntries() ) {
+			while( client_sync_dataIdx < SetupCommon::numEntries() ) {
+				if ( SetupCommon::syncEntry(client_sync_dataIdx++) ) {
+					break; // Hit entry to actually sync and send data
+				}
+			}
+			if ( client_sync_dataIdx >= SetupCommon::numEntries() ) {
+				ESP_LOGI(FNAME,"Client sync complete");
+			}
+		}
 		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
 			MPU.temp_control( count, xcvTemp );
@@ -831,7 +831,7 @@ void readTemp(void *pvParameters)
 			// ESP_LOGV(FNAME,"T=%f", temperature );
 			Flarm::tick();
 			if( compass )
-				compass->tick();
+				compass->ageIncr();
 		}else{
 			if( (OAT.get() > -55.0) && (OAT.get() < 85.0) )
 				gflags.validTemperature = true;
@@ -982,12 +982,11 @@ void system_startup(void *args){
 			// Give CAN MagSens a chance for an update
 			CANbus::createCAN();
 			CAN->begin();
-			DEVMAN->addDevice(MASTER_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-			DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBinary::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
+			DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+			DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBin::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
 		}
 		delete boot_screen; // screen now belongs to OTA
 		ota = new OTA();
-		ota->begin();
 		ota->doSoftwareUpdate( Display ); // fixme -> missing the drawDisplay to process button at this point in time
 	}
 	if( hardwareRevision.get() >= XCVARIO_21 ){
@@ -1070,7 +1069,7 @@ void system_startup(void *args){
 	DEVMAN->reserectFromNvs();
 	if ( CAN ) {
 		// just allways, it respects the XCV role setting
-		DEVMAN->addDevice(DeviceId::MASTER_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+		DEVMAN->addDevice(DeviceId::CANREGISTRAR_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
 	}
 
 	ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
@@ -1421,14 +1420,6 @@ void system_startup(void *args){
 		}
 	}
 
-	if( compass_enable.get() == CS_CAN ){ // fixme ask devman
-		ESP_LOGI( FNAME, "Magnetic sensor type CAN");
-		compass = new Compass( 0 );  // I2C addr 0 -> instantiate without I2C bus and local sensor
-	}
-	else if( compass_enable.get() == CS_I2C ){
-		ESP_LOGI( FNAME, "Magnetic sensor type I2C");
-		compass = new Compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512, &i2c_0 );
-	}
 	// magnetic sensor / compass selftest
 	if( compass ) {
 		compass->begin();
@@ -1526,11 +1517,11 @@ void system_startup(void *args){
 	}
 	else
 	{
-		// just sit, wait shoe a little message
+		// just sit, wait, show a little message
 
 		// if ( SetupCommon::isClient() ) {
 		// 	// Wait for master to release the vario screen
-		// 	Device *dev = DEVMAN->getDevice(XCVARIO_DEV);
+		// 	Device *dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
 		// 	Display->clear();
 		// 	if (dev && dev->_itf->getId() == WIFI_CLIENT) {
 		// 		int line=1;
@@ -1558,7 +1549,7 @@ void system_startup(void *args){
 		// 	else if ( !dev && CAN ) {
 		// 		Display->writeText( 1, "Wait for CAN Master" );
 		// 		while( ! dev ) {
-		// 			dev = DEVMAN->getDevice(XCVARIO_DEV);
+		// 			dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
 		// 			if( dev ) {
 		// 				Display->writeText( 3, "Master XCVario found" );
 		// 				Display->writeText( 4, "start synchronization ..." );

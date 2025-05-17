@@ -77,13 +77,14 @@ dl_action_t MagSensMsg::streamData(NmeaPlugin *plg)
         return NOACTION;
     }
     ESP_LOGI(FNAME,"PMMD stream data %s", sm->_frame.c_str());
-    QMCMagCAN* magsens = static_cast<QMCMagCAN*>(Compass::getSensInst());
     if ( sm->_frame.at(6) == 'r' ) {
-        t_magn_axes tmp;
-        tmp.x = atoi(sm->_frame.c_str() + word->at(1));
-        tmp.y = atoi(sm->_frame.c_str() + word->at(2)); 
-        tmp.z = atoi(sm->_frame.c_str() + word->at(3));
-        magsens->fromCAN(&tmp);
+        if ( MagSensBin::Can_Mag ) {
+            t_magn_axes tmp;
+            tmp.x = atoi(sm->_frame.c_str() + word->at(1));
+            tmp.y = atoi(sm->_frame.c_str() + word->at(2)); 
+            tmp.z = atoi(sm->_frame.c_str() + word->at(3));
+            MagSensBin::Can_Mag->fromCAN(&tmp);
+        }
     }
     else if ( sm->_frame.at(6) == 'c' ) {
         // later
@@ -129,7 +130,7 @@ bool NmeaPrtcl::startStream(int choice)
 bool NmeaPrtcl::killStream()
 {
     // block until mag stream is down
-    MagSensBinary *prtc = static_cast<MagSensBinary*>(DEVMAN->getProtocol(MAGSENS_DEV, MAGSENSBIN_P));
+    MagSensBin *prtc = static_cast<MagSensBin*>(DEVMAN->getProtocol(MAGSENS_DEV, MAGSENSBIN_P));
     int try_times = 10;
     do {
         Message* msg = newMessage();

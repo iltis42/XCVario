@@ -46,21 +46,21 @@ public:
 	~QMC5883L();
 
 	// Returns true, if the self test has been passed successfully, otherwise
-	bool haveSensor() {  return m_sensor; }
+	bool haveSensor() override {  return initialized; }
 	// operation related methods
-	void tick() { age++; }
+	void age_incr() { age++; }
 	// Check for reply with I2C bus address
-	esp_err_t selfTest();
-
-	esp_err_t initialize();
+	esp_err_t selfTest() override;
+	esp_err_t initialize() override;
 
 	//  Write with data part
-	bool overflowFlag()	{ return overflowWarning; }
+	bool overflowFlag() override { return overflowWarning; }
 	// Read out the registers X, Y, Z (0...5) in raw format into variables, return true if success
-	bool readRaw( t_magn_axes &mag );
-	int curX(){ return axes.x; };
-	int curY(){ return axes.y; };
-	int curZ(){ return axes.z; };
+	bool readRaw( t_magn_axes &mag ) override;
+	int curX() override { return axes.x; }
+	int curY() override { return axes.y; }
+	int curZ() override { return axes.z; }
+
 private:
 	// Configure the device with the set parameters and set the mode to continuous.
 	esp_err_t initialize2( int a_odr=0, int a_osr=0 );
@@ -76,13 +76,13 @@ private:
 	// Return the overflow status flag. It is set to true, if any data of three * axis magnetic sensor channels is out of range.
 	uint8_t readRegister( const uint8_t addr, const uint8_t reg, const uint8_t count, uint8_t *data );
 
-	bool m_sensor;
+	bool initialized = false;
 	I2C_t* m_bus;
 	uint8_t addr; // chip adress
 	uint8_t odr;  // output data rate
 	uint8_t range; // magnetic resolution of sensor
 	uint8_t osr; // over sample ratio
-	bool overflowWarning;
+	bool overflowWarning = false;
 	t_magn_axes axes;
-	int age;
+	int age = 0;
 };

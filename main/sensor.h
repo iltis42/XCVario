@@ -50,7 +50,6 @@ class SerialLine;
 class Clock;
 class ESPRotary;
 class AnalogInput;
-class SetupRoot;
 class PressureSensor;
 
 AnalogInput* getBattery();
@@ -66,13 +65,12 @@ extern CenterAid *centeraid;
 extern AirspeedSensor *asSensor;
 extern PressureSensor *baroSensor;
 
-// extern SetupRoot Menu;
 extern SemaphoreHandle_t display_mutex;
 
 extern float getTAS();
 
 extern I2C_t& i2c;
-extern I2C_t& i2c_0;
+
 extern AnalogInput *AnalogInWk;
 
 extern float airspeed;
@@ -100,8 +98,6 @@ extern ESPRotary *Rotary;
 
 extern SemaphoreHandle_t spiMutex;
 
-extern Compass *compass;
-
 class AdaptUGC;
 extern AdaptUGC *MYUCG;
 
@@ -128,3 +124,5 @@ inline void delay(uint32_t ms)
 }
 
 int sign(int num);
+
+void startClientSync();

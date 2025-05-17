@@ -28,11 +28,10 @@ Last update: 2021-03-28
 
 #include "vector_3d.h"
 
+class MagSensBin;
 
 class QMCMagCAN: public MagnetSensor
 {
-	friend class MagSensBinary;
-
 public:
 	/*
     Creates instance for I2C connection with passing the desired parameters.
@@ -44,36 +43,32 @@ public:
 	~QMCMagCAN();
 
 	// Returns true, if the self test has been passed successfully, otherwise
-	bool haveSensor() {  return m_sensor; }
+	bool haveSensor() {  return initialized; }
 	// operation related methods
-	void tick() { age++; }
+	void age_incr() { age++; }
 
-	esp_err_t initialize() { return ESP_OK; };
+	esp_err_t initialize() override { return ESP_OK; };
 
 	// Check for CAN magsens stream data
-	esp_err_t selfTest();
+	esp_err_t selfTest() override;
 
-    bool overflowFlag()	{ return false; }  // no support
+    bool overflowFlag() override { return false; }  // no support
 
 	// Read in raw format into variables, return true if success
-	bool readRaw( t_magn_axes &mag );
+	bool readRaw( t_magn_axes &mag ) override;
 	// In micro Tesla unit, bias and scale corrected, return true if success
-	bool readBiased( vector_ijk &mag );
+	// bool readBiased( vector_ijk &mag );
 
 	// If device is connected via CAN, just get X,Y,Z data from there
-	// Todo, needs better organization
     void fromCAN(const t_magn_axes *magaxes);
-	// void fromCAN(const char * msg, int len);
 
-	int curX() { return (int)can.x; }
-	int curY() { return (int)can.y; }
-	int curZ() { return (int)can.z; }
-
-	// int getVersion() const;
+	int curX() override { return (int)can.x; }
+	int curY() override { return (int)can.y; }
+	int curZ() override { return (int)can.z; }
 
 private:
-	bool m_sensor;
-	t_magn_axes can;
-	vector_ijk calib, stage;
-	int age;
+	bool initialized = false;
+	t_magn_axes can = {};
+	// vector_ijk calib, stage;
+	int age = 100;
 };

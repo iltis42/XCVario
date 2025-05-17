@@ -8,6 +8,7 @@
 
 #include "CambridgeMsg.h"
 #include "protocol/nmea_util.h"
+#include "comm/DataLink.h"
 #include "comm/Messages.h"
 #include "Blackboard.h"
 #include "Units.h"
@@ -80,6 +81,9 @@ const ParserEntry CambridgeMsg::_pt[] = {
 */
 void NmeaPrtcl::sendCambridge(float te, float tas, float mc, int bugs, float alt)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message* msg = newMessage();
 
     msg->buffer = "!w,0,0,0,0,";

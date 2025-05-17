@@ -43,15 +43,15 @@ struct Device
     int getSendPort(ProtocolType p) const;
     ProtocolItf* getProtocol(ProtocolType p) const;
     DataLink *getDLforProtocol(ProtocolType p) const;
-    PortList getSendPortList() const;
+    EnumList getSendPortList() const;
     int getListenPort() const;
     bool isAlive() const { return true; } // fixme
     DeviceNVS getNvsData() const;
     // Attributes
     const DeviceId      _id;
-    std::set<DataLink*> _dlset;
-    InterfaceCtrl      *_itf;
-    bool                _auto = false; // automatically set-up
+    DataLink           *_link = nullptr; // can have only one link layer, but it might be shared with other devs
+    EnumList            _protos = {}; // list of protocols belonging to this device
+    InterfaceCtrl      *_itf = nullptr;
 };
 
 
@@ -68,7 +68,8 @@ struct Device
 
 class DeviceManager
 {
-    typedef std::map<DeviceId, Device*> DevMap; // dynamic RAM data
+    using DevMap = std::map<DeviceId, Device*>; // dynamic RAM data
+    using ItfMap = std::map<InterfaceId, InterfaceCtrl*>; // just a cached Itf summary for quick access
 
 private:
     DeviceManager();
@@ -77,20 +78,21 @@ public:
     ~DeviceManager();
     static DeviceManager* Instance();
     // API
-    Device* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid, bool ato=false);
+    Device* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid);
     Device* getDevice(DeviceId did);
     Device* getXCVPeer();
     ProtocolItf *getProtocol(DeviceId dev, ProtocolType proto);
     NmeaPrtcl *getNMEA(DeviceId did);
     int getSendPort(DeviceId did, ProtocolType proto);
     // Remove device of this type
-    void removeDevice(DeviceId did);
+    bool removeDevice(DeviceId did);
     InterfaceCtrl* getIntf(DeviceId did);
     bool isIntf(ItfTarget iid) const;
     bool isAvail(InterfaceId iid) const;
     RoutingList getRouting(RoutingTarget t);
     void refreshRouteCache();
-    DataLink *getFlarmHost();
+    void setFlarmBPInitiator(DataLink *dl);
+    DataLink *getFlarmBPInitiator();
     static int nrDevs() { return (DEVMAN) ? DEVMAN->getNrDevs() : 0; }
     int getNrDevs() const { return _device_map.size(); }
     // void makePersistent();
@@ -117,6 +119,9 @@ private:
     // Restriction: It can only contain one element of one device type
     // Hash table for routing purpose
     DevMap _device_map;
+    ItfMap _interface_map;
     mutable SemaphoreHandle_t _devmap_mutex;
+    // Flarm specific trace to handle the Flarm binary protocol
+    DataLink *_flarm_bp = nullptr; // the flarm binary protocol initiator
 };
 

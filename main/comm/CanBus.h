@@ -12,17 +12,6 @@ class DataLink;
 // There is no temperature control for XCV hardware < 23, GPIO Pin there is wired to CAN slope control
 #define HAS_MPU_TEMP_CONTROL (CAN && !CAN->hasSlopeSupport())
 
-
-// #define CAN_NMEA_ID_MASTER 0x20
-// #define CAN_CONFIG_ID_MASTER 0x21
-// #define CAN_KEEPALIVE_ID_MASTER 0x11
-
-// #define CAN_NMEA_ID_CLIENT 0x22
-// #define CAN_CONFIG_ID_CLIENT 0x23
-// #define CAN_KEEPALIVE_ID_CLIENT 0x12
-
-// #define CAN_MAGSENS_ID 0x31
-
 typedef enum
 { // never change, nvs item (!)
 	CAN_SPEED_250KBIT,
@@ -41,10 +30,7 @@ public:
 	void stop();
 	bool isInitialized() { return _initialized; };
 	bool hasSlopeSupport() { return _slope_support; };
-	// deprecated
-	bool connectedXCV() { return _connected_xcv; };
-	bool connected() { return (_connected_xcv); };
-	// --
+
 	// Ctrl
     InterfaceId getId() const override { return CAN_BUS; }
     const char* getStringId() const override { return "CAN"; }
@@ -65,13 +51,7 @@ private:
 	gpio_num_t _rx_io;
 	gpio_num_t _slope_ctrl;
 	bool _initialized = false;
-	bool _connected_xcv = false; // fixme ...
 	bool _slope_support = false;
-	bool _new_can_client_connected = false;
-	bool _keep_alive_fails = false;
-	bool _send_nmea_fails = false;
-	int _connected_timeout_magsens = 0;
-	int _connected_timeout_xcv = 0;
 	TickType_t _tx_timeout = 2; // [msec] about two times the time for 111 bit to send
 };
 

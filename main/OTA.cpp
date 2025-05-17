@@ -8,58 +8,40 @@
  *
  */
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include <esp_netif.h>
+#include "ESPRotary.h"
 
-#include "esp_ota_ops.h"
-#include "freertos/event_groups.h"
-#include "MyWiFi.h"
+#include "comm/WifiAP.h"
 #include "IpsDisplay.h"
 #include "setup/SetupNG.h"
 #include "OTA.h"
-#include <logdef.h>
-#include "ESPAudio.h"
+#include "logdef.h"
 #include "Webserver.h"
 #include "qrcodegen.h"
 
-OTA::OTA(){
-	pressed = false;
-	tick = 0;
-}
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <esp_netif.h>
+#include <esp_ota_ops.h>
 
-void OTA::begin(){
-	attach();
-}
-
-void OTA::press() {
-	ESP_LOGI(FNAME,"OTA::press() %d", tick );
-	if( tick > 2 ){
-		pressed = true;
-	}
-}
-
-void OTA::longPress() {
-	ESP_LOGI(FNAME,"OTA::longPress() %d", tick );
-	if( tick > 2 ){
-		pressed = true;
-	}
-}
 
 const char* ssid = "ESP32 OTA";
 const char* pwd = "xcvario-21";
 
 // OTA
-void OTA::doSoftwareUpdate(IpsDisplay * p ){
+void OTA::doSoftwareUpdate(IpsDisplay * disp ){
 	ESP_LOGI(FNAME,"Now start Wifi OTA");
-	init_wifi_softap(nullptr);
+	WifiAP *wifi = WifiAP::createWifiAP();
+	wifi->ConfigureIntf(80);
 
-	p->clear();
+	// Break the cycle of booting into OTA mode early
+	software_update.commit();
+
+	disp->clear();
 	int line=1;
-	p->writeText(line++,"SOFTWARE DOWNLOAD");
-	p->writeText(line++,"Use Wifi: ESP32 OTA");
-	p->writeText(line++,"Password: xcvario-21");
-	p->writeText(line++,"Open: http://192.168.4.1");
+	disp->writeText(line++,"SOFTWARE DOWNLOAD");
+	disp->writeText(line++,"Use Wifi: ESP32 OTA");
+	disp->writeText(line++,"Password: xcvario-21");
+	disp->writeText(line++,"Open: http://192.168.4.1");
 	// p->writeText(line++,"Then follow the dialogue");
 
 	enum qrcodegen_Ecc errCorLvl = qrcodegen_Ecc_LOW; // Error correction level
@@ -79,9 +61,9 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 	size_t xOffset = 0;
 
 	const char *wifiText = "WIFI:";
-	size_t strWidth = p->ucg->getStrWidth(wifiText);
-	p->ucg->setPrintPos((120 - strWidth) / 2, 130);
-	p->ucg->print(wifiText);
+	size_t strWidth = disp->ucg->getStrWidth(wifiText);
+	disp->ucg->setPrintPos((120 - strWidth) / 2, 130);
+	disp->ucg->print(wifiText);
 
 	if( qrSuccess ) {
 		// Calculate module size for best fit
@@ -94,12 +76,12 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 		for( int y = 0; y < size; y++ ) {
 			for( int x = 0; x < size; x++ ) {
 				if( qrcodegen_getModule(qrcodeBuffer, x, y) ) {
-				  p->ucg->drawBox(xOffset + (x * dotSize), yOffset + (y * dotSize), dotSize, dotSize);
+				  disp->ucg->drawBox(xOffset + (x * dotSize), yOffset + (y * dotSize), dotSize, dotSize);
 				}
 			}
 		}
 	} else {
-		p->ucg->drawFrame(xOffset + ((120 - qrCodeMaxWidth) / 2), yOffset, qrCodeMaxWidth, qrCodeMaxWidth);
+		disp->ucg->drawFrame(xOffset + ((120 - qrCodeMaxWidth) / 2), yOffset, qrCodeMaxWidth, qrCodeMaxWidth);
 	}
 
     // Generate URL QR Code using the AP IP-address
@@ -111,9 +93,9 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 	qrSuccess = qrcodegen_encodeText(textBuffer, tempBuffer, qrcodeBuffer, errCorLvl, 4, 4, qrcodegen_Mask_AUTO, true);
 
 	const char *urlText = "URL:";
-	strWidth = p->ucg->getStrWidth(urlText);
-	p->ucg->setPrintPos(120 + (120 - strWidth) / 2, 130);
-	p->ucg->print(urlText);
+	strWidth = disp->ucg->getStrWidth(urlText);
+	disp->ucg->setPrintPos(120 + (120 - strWidth) / 2, 130);
+	disp->ucg->print(urlText);
 
 	xOffset = 120;
 	if( qrSuccess ) {
@@ -127,13 +109,13 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 		for( int y = 0; y < size; y++ ) {
 			for( int x = 0; x < size; x++ ) {
 				if( qrcodegen_getModule(qrcodeBuffer, x, y) ) {
-				  p->ucg->drawBox(xOffset + (x * dotSize), yOffset + (y * dotSize), dotSize, dotSize);
+				  disp->ucg->drawBox(xOffset + (x * dotSize), yOffset + (y * dotSize), dotSize, dotSize);
 				}
 			}
 		}
 	} else {
 		// In case of error draw empty rectangle
-		p->ucg->drawFrame(xOffset + ((120 - qrCodeMaxWidth) / 2), yOffset, qrCodeMaxWidth, qrCodeMaxWidth);
+		disp->ucg->drawFrame(xOffset + ((120 - qrCodeMaxWidth) / 2), yOffset, qrCodeMaxWidth, qrCodeMaxWidth);
 	}
 
 	free(textBuffer);
@@ -142,31 +124,31 @@ void OTA::doSoftwareUpdate(IpsDisplay * p ){
 
     Webserver.start();
 
+	Rotary->readSwitch(); //empty the button queue
+
     line = 9;
 	for( tick=0; tick<900; tick++ ) {
 		char txt[40];
 		sprintf(txt,"Timeout in %d sec  ", 900-tick );
-		p->writeText(line+2,txt);
+		disp->writeText(line+2,txt);
 		std::string pro( "Progress: ");
 		pro += std::to_string( Webserver.getOtaProgress() ) + " %";
-		p->writeText(line+3,pro.c_str());
+		disp->writeText(line+3, pro.c_str());
 		vTaskDelay(1000/portTICK_PERIOD_MS);
 		if( Webserver.getOtaStatus() == otaStatus::DONE ){
 			ESP_LOGI(FNAME,"Flash status, Now restart");
-			p->writeText(line+5,"Download SUCCESS !");
+			disp->writeText(line+3,"Download SUCCESS !");
 			vTaskDelay(3000/portTICK_PERIOD_MS);
 			break;
 		}
-		if( pressed ) {
+		if( Rotary->readSwitch() ) {
 			ESP_LOGI(FNAME,"pressed");
-			p->writeText(line+5,"Abort, Now Restart");
+			disp->writeText(line+3,"Abort OTA, restarting ...");
 			vTaskDelay(3000/portTICK_PERIOD_MS);
 			break;
 		}
 	}
     Webserver.stop();
 	ESP_LOGI(FNAME,"Now restart");
-	software_update.commit();
-	AUDIO->mute();
 	esp_restart();
 }

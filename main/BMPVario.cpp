@@ -17,6 +17,7 @@ void BMPVario::begin( PressureSensor *te, PressureSensor *baro, S2F *aS2F  ) {
 	_sensorBARO = baro;
 	_S2FTE = 0.0;
 	myS2F = aS2F;
+	avgTE.setLength(vario_av_delay.get());
 }
 
 double BMPVario::readAVGTE() {
@@ -61,6 +62,7 @@ double BMPVario::readTE( float tas, float tep ) {
 	if ( _test )     // we are in testmode, just return what has been set
 		return _TEF;
 	bool success;
+	N++;
 	// Latency supervision and correction
 	uint64_t rts = esp_timer_get_time();
 	float time_delta = (float)(rts - lastrts)/1000000.0;   // in seconds
@@ -111,8 +113,11 @@ double BMPVario::readTE( float tas, float tep ) {
 	double TEAVG = TEavg( altDiff / time_delta );
 	predictAlt = Altitude + (TEAVG * time_delta);
 	_TEF += ((TEAVG - _TEF)) * _damping_factor;
-	_avgTE += (_TEF - _avgTE)* (1/(10*vario_av_delay.get()));   // _av_damping in seconds, we have 10 samples per second.
-	if( holddown > 0 ) {
+	if( !(N%10) ){ // every second one sample
+		_avgTE = avgTE( _TEF );
+		// ESP_LOGI(FNAME," _avgTE: %f ", _avgTE);
+	}
+ 	if( holddown > 0 ) {
 		holddown--;
 	}
 	else
@@ -121,7 +126,7 @@ double BMPVario::readTE( float tas, float tep ) {
 	}
 	// Bird catcher
 	if( (altDiff > 0.2) || (altDiff < -0.2) ){
-	ESP_LOGI(FNAME,"Vario alt: %f, Vario: %f, Vario-AVG: %f, t-delta=%2.3f sec \b\b\b", _currentAlt, _TEF, TEAVG, time_delta );
+		ESP_LOGI(FNAME,"Vario alt: %f, Vario: %f, Vario-AVG: %f, t-delta=%2.3f sec \b\b\b", _currentAlt, _TEF, TEAVG, time_delta );
 	}
 	return _TEF;
 }

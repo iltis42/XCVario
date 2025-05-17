@@ -18,22 +18,22 @@ const uint8_t ucg_font_fub11_tr[] = { UCG_FONT_FUB11_TR };
 const uint8_t ucg_font_fub11_hr[] = { UCG_FONT_FUB11_HR };
 const uint8_t ucg_font_fub14_hn[] = { UCG_FONT_FUB14_HN };
 const uint8_t ucg_font_fub14_hr[] = { UCG_FONT_FUB14_HR };
-const uint8_t ucg_font_fub14_hf[] = { UCG_FONT_FUB14_HF };
+// const uint8_t ucg_font_fub14_hf[] = { UCG_FONT_FUB14_HF };
 const uint8_t ucg_font_fur14_hf[] = { UCG_FONT_FUR14_HF };
 const uint8_t ucg_font_fub17_hf[] = { UCG_FONT_FUB17_HF };
 const uint8_t ucg_font_fub20_hn[] = { UCG_FONT_FUB20_HN };
 const uint8_t ucg_font_fub20_hr[] = { UCG_FONT_FUB20_HR };
-const uint8_t ucg_font_fub20_hf[] = { UCG_FONT_FUB20_HF };
-const uint8_t ucg_font_fur20_hf[] = { UCG_FONT_FUR20_HF };
+// const uint8_t ucg_font_fub20_hf[] = { UCG_FONT_FUB20_HF };
+// const uint8_t ucg_font_fur20_hf[] = { UCG_FONT_FUR20_HF };
 const uint8_t ucg_font_fub25_hr[] = { UCG_FONT_FUB25_HR };
 const uint8_t ucg_font_fub25_hf[] = { UCG_FONT_FUB25_HF };
-const uint8_t ucg_font_fur25_hf[] = { UCG_FONT_FUR25_HF };
+// const uint8_t ucg_font_fur25_hf[] = { UCG_FONT_FUR25_HF };
 const uint8_t ucg_font_fub35_hn[] = { UCG_FONT_FUB35_HN };
 const uint8_t ucg_font_fub35_hr[] = { UCG_FONT_FUB35_HR };
 const uint8_t ucg_font_profont22_mr[] = {  UCG_FONT_PROFONT22_MR };
 const uint8_t ucg_font_fub25_hn[] = { UCG_FONT_FUB25_HN };
 const uint8_t ucg_font_fub11_hn[] = { UCG_FONT_FUB11_HN };
-const uint8_t eglib_font_free_sansbold_66[] = { EGLIB_FONT_FREE_SANSBOLD_66 };
+// const uint8_t eglib_font_free_sansbold_66[] = { EGLIB_FONT_FREE_SANSBOLD_66 };
 
 static ili9341_config_t ili9341_config = {
 		.width = 240,
@@ -83,12 +83,12 @@ void AdaptUGC::setFont(const uint8_t *f, bool filled ){    // adapter
 	case UCG_FONT_FUB14_HR:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_20px);
 		break;
-	case UCG_FONT_FUB14_HF:
-		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_20px);
-		break;
-	case UCG_FONT_FUR14_HF:
-		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_20px);
-		break;
+	// case UCG_FONT_FUB14_HF:
+	// 	eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_20px);
+	// 	break;
+	// case UCG_FONT_FUR14_HF:
+	// 	eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_20px);
+	// 	break;
 	case UCG_FONT_FUB17_HF:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_24px);
 		break;
@@ -98,18 +98,18 @@ void AdaptUGC::setFont(const uint8_t *f, bool filled ){    // adapter
 	case UCG_FONT_FUB20_HR:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_28px);
 		break;
-	case UCG_FONT_FUB20_HF:
-		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_28px);
-		break;
+	// case UCG_FONT_FUB20_HF:
+	// 	eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_28px);
+	// 	break;
 	case UCG_FONT_FUB25_HR:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
 		break;
-	case UCG_FONT_FUB25_HF:
-		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
-		break;
-	case UCG_FONT_FUR25_HF:
-		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
-		break;
+	// case UCG_FONT_FUB25_HF:
+	// 	eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
+	// 	break;
+	// case UCG_FONT_FUR25_HF:
+	// 	eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
+	// 	break;
 	case UCG_FONT_FUB25_HN:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
 		break;
@@ -119,14 +119,14 @@ void AdaptUGC::setFont(const uint8_t *f, bool filled ){    // adapter
 	case UCG_FONT_FUB35_HR:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_48px);
 		break;
-	case EGLIB_FONT_FREE_SANSBOLD_66:
-        eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_66px);
-        break;
+	// case EGLIB_FONT_FREE_SANSBOLD_66:
+    //     eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_66px);
+    //     break;
 	case UCG_FONT_PROFONT22_MR:
 		eglib_SetFont(eglib, &font_FreeFont_FreeMonoBold_20px);
 		break;
 	default:
-		ESP_LOGI(FNAME, "Font not found !\n");
+		ESP_LOGI(FNAME, "Font not found %d!\n", f[0]);
 	}
 }
 

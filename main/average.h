@@ -1,5 +1,7 @@
 #pragma once
 
+// returns initially fast results
+// runs steadily up to the value
 template <int N, typename T=int, typename Total=int >
 class Average
 {
@@ -26,13 +28,20 @@ public:
 				return (Total)(total / num_sample);
 		}
 	}
-	void setLength( int len ){ if( len <=N ){ length = len; } };
+	void reset()
+	{
+		num_sample = 0;
+		full = false;
+		total = (Total)0;
+	}
+	void setLength( int len ) { if( len <=N ) { length = len; reset(); } };
 
 private:
-	T     samples[N]{0};
-	int   length{N};
-	int   num_sample{0};
-	bool  full{false};
-	Total total{0};
+	T     samples[N] = {0};
+	int   length = N;
+	int   num_sample = 0;
+	bool  full = false;
+	Total total = 0;
 };
+
 

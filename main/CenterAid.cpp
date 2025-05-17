@@ -205,9 +205,10 @@ void CenterAid::tick(){
 	if( !(_tick%5) ) { // every 100 mS
 		// ESP_LOGI(FNAME,"CenterAid tick %d fm: %d", _tick, flightmode );
 		float new_heading = -1.0;
-		if( compass_enable.get() )  // this is the best source for a heading, use this when avail
+		if( compass ) { // this is the best source for a heading, use this when avail
 			new_heading = mag_hdt.get();
-		// ESP_LOGI(FNAME,"MH %f", new_heading );
+		}
+		// // ESP_LOGI(FNAME,"MH %f", new_heading );
 		if( new_heading < 0 )  {         // fall back to GPS course and fuse gps heading with gyro
 			if( Flarm::gpsStatus() ){
 				if( gyro_last == 0 ){

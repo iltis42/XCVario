@@ -19,8 +19,8 @@
 
 // The XCV sync messages to synchronize a client vario.
 
-XCVSyncMsg::XCVSyncMsg(NmeaPrtcl &nr, bool master) :
-    NmeaPlugin(nr, XCVSYNC_P),
+XCVSyncMsg::XCVSyncMsg(NmeaPrtcl &nr, bool master, bool as) :
+    NmeaPlugin(nr, XCVSYNC_P, as),
     _is_master(master)
 {
     // tell the only user of this

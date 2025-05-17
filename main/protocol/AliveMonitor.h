@@ -10,6 +10,9 @@
 
 #include "WatchDog.h"
 
+// the alive state of the device or data stream
+enum alive_state_t { ALIVE_NONE, ALIVE_TIMEOUT, ALIVE_OK };
+
 
 template<typename T>
 class SetupNG;
@@ -24,6 +27,7 @@ public:
     // API
     void setTimeout(int to_ms) { _alive_wd.setTimeout(to_ms); }
     void keepAlive();
+    int get() const;
 
 protected:
     // alive timeout

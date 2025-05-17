@@ -254,7 +254,7 @@ struct DeviceAttributes
     constexpr DeviceAttributes(std::string_view n, PackedInt5Array i, PackedInt5Array p, int o, int f, NvsPtr setup ) 
         : name(n), itfs(i), prcols(p), port(o), flags(f), nvsetup(setup) {}
 
-    bool isSelectable() const { return nvsetup!=nullptr; }
+    bool isSelectable() const { return nvsetup!=nullptr && !name.empty(); }
     bool isMultiConf() const { return (bool)multipleConf; }
     bool hasProfile() const { return (bool)profileConf; }
     bool isVariant() const { return (bool)aVariant; }

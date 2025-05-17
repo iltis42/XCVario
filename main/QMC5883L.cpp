@@ -73,11 +73,12 @@ Last update: 2021-04-05
  */
 
 
-QMC5883L::QMC5883L( const uint8_t addrIn,
-		const uint8_t odrIn,
-		const uint8_t rangeIn,
-		const uint16_t osrIn,
-		I2C_t *i2cBus ) : m_bus( i2cBus ), addr( addrIn ), odr( odrIn ), range( rangeIn ), osr( osrIn )
+QMC5883L::QMC5883L( const uint8_t addrIn, const uint8_t odrIn, const uint8_t rangeIn, const uint16_t osrIn, I2C_t *i2cBus ) :
+	m_bus(i2cBus),
+	addr(addrIn),
+	odr(odrIn),
+	range(rangeIn),
+	osr(osrIn)
 {
 	ESP_LOGI( FNAME, "QMC5883L( %02X )", addrIn );
 
@@ -86,11 +87,7 @@ QMC5883L::QMC5883L( const uint8_t addrIn,
 		// set address to default value of chip, if it is zero.
 		addr = QMC5883L_ADDR;
 	}
-	age = 0;
-	overflowWarning = false;
-	m_sensor = false;
 }
-
 
 QMC5883L::~QMC5883L()
 {
@@ -161,31 +158,31 @@ esp_err_t QMC5883L::selfTest()
 	ESP_LOGI( FNAME, "QMC5883L selftest");
 	// load last known calibration.
 	if( !checkBus() )	{
-		m_sensor = false;
+		initialized = false;
 		return ESP_FAIL;
 	}
 	uint8_t chipId = 0;
 	// Try to read Register 0xD, it delivers the chip id 0xff for a QMC5883L
-	m_sensor = false;
+	initialized = false;
 	for( int i=0; i< 10; i++ ){
 		esp_err_t err = m_bus->readByte( QMC5883L_ADDR, REG_CHIP_ID, &chipId );
 		if( err == ESP_OK ){
-			m_sensor = true;
+			initialized = true;
 			break;
 		}
 		delay(20);
 	}
-	if( !m_sensor ){
+	if( !initialized ){
 		ESP_LOGE( FNAME,"Scan for I2C address 0x%02X FAILED", QMC5883L_ADDR );
 		return ESP_FAIL;
 	}
 	if( chipId != 0xff ){
-		m_sensor = false;
+		initialized = false;
 		ESP_LOGE( FNAME, "QMC5883L self-test, detected chip ID 0x%02X is unsupported, expected 0xFF",	chipId );
 		return ESP_FAIL;
 	}
 	ESP_LOGI( FNAME, "QMC5883L selftest PASSED");
-	m_sensor = true;
+	initialized = true;
 	return ESP_OK;
 
 }
@@ -292,13 +289,13 @@ bool QMC5883L::readRaw( t_magn_axes &mag )
 		// ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", axes.x, axes.y, axes.z, x, y, z );
 
 		age = 0;
-		m_sensor = true;
+		initialized = true;
 		// ESP_LOGI( FNAME, "X:%d Y:%d Z:%d  RDY:%d DOR:%d", raw.x, raw.y,raw.z, status & STATUS_DRDY, status & STATUS_DOR );
 		return true;
 	}
 	ESP_LOGE( FNAME, "read Register REG_X_LSB returned count != 6, count: %d", count );
 	if( age > 10 )
-		m_sensor = false;
+		initialized = false;
 	return false;
 }
 

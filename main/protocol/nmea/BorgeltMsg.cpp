@@ -8,6 +8,7 @@
 
 #include "BorgeltMsg.h"
 #include "protocol/nmea_util.h"
+#include "comm/DataLink.h"
 #include "comm/Messages.h"
 #include "Units.h"
 
@@ -39,6 +40,9 @@ const ParserEntry BorgeltMsg::_pt[] = {
 */
 void NmeaPrtcl::sendBorgelt(float te, float temp, float ias, float tas, float mc, int bugs, float aballast, bool cruise, bool validTemp)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message* msg = newMessage();
 
     if( !validTemp ) {

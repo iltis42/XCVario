@@ -144,13 +144,13 @@ const char* Units::TemperatureUnitStr(int idx)
 	}
 	if (idx == T_FAHRENHEIT)
 	{ // °F
-		return "°F";
+		return "'F";
 	}
 	else if (idx == T_KELVIN)
 	{ // °F
-		return "°K";
+		return "'K";
 	}
-	return "°C"; // default °C
+	return "'C"; // default °C
 }
 
 const char* Units::AirspeedUnitStr(int u)

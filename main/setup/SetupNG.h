@@ -46,7 +46,6 @@ class Quaternion;
 
 typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } xcv_display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
-typedef enum rs232linemode { RS232_NORMAL, RS232_TTL } rs232lm_t;
 typedef enum nmea_protocol  { OPENVARIO, BORGELT, CAMBRIDGE, XCVARIO, NMEA_OFF } nmea_proto_t;
 typedef enum ext_device_protocol  { DEV_DISABLE, DEV_FLARM, DEV_KRT2_RADIO, DEV_BECKER_RADIO, DEV_GNSS_UBX, DEV_ANEMOI } ext_device_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS, MODE_CAS, MODE_SLIP } airspeed_mode_t;
@@ -106,7 +105,6 @@ typedef enum e_hardware_rev {
 typedef enum e_drawing_prio { DP_NEEDLE, DP_BACKGROUND } e_drawing_prio_t;
 typedef enum e_equalizer_type {  AUDIO_EQ_DISABLE, AUDIO_EQ_LS4, AUDIO_EQ_LS8, AUDIO_EQ_LSEXT } e_equalizer_type_t;
 typedef enum e_tek_compensation { TE_TEK_PROBE, TE_TEK_EPOT, TE_TEK_PRESSURE } e_tek_compensation_t;
-enum alive_state_t { ALIVE_NONE, ALIVE_TIMEOUT, ALIVE_OK }; // for the alive state of the device or data stream
 
 constexpr int NOTSET_ELEVATION = -30;
 
@@ -435,7 +433,6 @@ extern SetupNG<float>       flarm_alarm_time;
 extern SetupNG<int>       	flap_sensor;
 extern SetupNG<float>     	flap_pos_max;
 extern SetupNG<float>     	flap_neg_max;
-extern SetupNG<int>       	compass_enable;
 extern SetupNG<int>       	compass_dev_auto;
 extern SetupNG<float>       compass_dev_0;
 extern SetupNG<float>       compass_dev_45;

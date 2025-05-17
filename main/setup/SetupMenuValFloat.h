@@ -9,14 +9,7 @@
 
 #include "setup/SetupNG.h"
 #include "setup/MenuEntry.h"
-#include "setup/SetupMenuValCommon.h"
 
-struct bitfield {
-   e_restart_mode_t _restart :2;
-   bool _end_menu            :1;
-   bool _live_update         :1;
-   uint8_t _precision        :4;
-};
 
 class SetupMenuValFloat:  public MenuEntry {
 public:
@@ -41,7 +34,6 @@ private:
     float step( float instep );
     mutable char _val_str[20]; // buffer for returned string
 	float _min, _max, _step;
-	bitfield bits = {};
 	float _value_safe = 0;
 	const char *_unit = "";
 	int (*_action)( SetupMenuValFloat *p );

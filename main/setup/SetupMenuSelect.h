@@ -8,7 +8,6 @@
 #pragma once
 
 #include "setup/MenuEntry.h"
-#include "setup/SetupMenuValCommon.h"
 #include "setup/SetupNG.h"
 
 class SetupMenuSelect : public MenuEntry
@@ -27,9 +26,7 @@ public:
 	void longPress() override;
 	const char *value() const override;
 	void setTerminateMenu() { bits._end_menu = true; }
-	void lock() { bits._locked = true; }
-	void unlock() { bits._locked = false; }
-	bool isLocked() const { return bits._locked; }
+
 
 	bool existsEntry( std::string ent );
     void addEntry(const char* ent, int val);
@@ -49,7 +46,6 @@ private:
 	mutable int  _select = 0;
 	int  _select_save = 0;
 	int  _char_index = 0;   // position of character to be altered
-	bitfield_select bits = {};
 	std::vector<ITEM_t> _values;
 	int (*_action)( SetupMenuSelect *p );
 	SetupNG<int> *_nvs;

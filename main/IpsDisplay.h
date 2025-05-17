@@ -124,7 +124,6 @@ private:
 	static void drawCruise( int x, int y, bool draw );
 	static void drawBT();
 	static void drawCable(int16_t x, int16_t y);
-	static void drawFlarm( int x, int y, bool flarm );
 	static void drawWifi( int x, int y );
 	static void drawConnection( int16_t x, int16_t y );
 	static void drawBat( float volt, int x, int y, bool blank );

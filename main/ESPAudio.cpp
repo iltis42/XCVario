@@ -42,7 +42,7 @@ typedef struct {  uint8_t div; uint8_t step; } t_lookup_entry;
 #define FADING_STEPS 6  // steps used for fade in/out at chopping
 #define FADING_TIME  3  // factor for volume changes fade over smoothing
 
-Poti *DigitalPoti;
+static Poti *DigitalPoti = nullptr;
 
 Audio::Audio() :
 	Clock_I(10)
@@ -54,6 +54,18 @@ Audio::~Audio()
 {
 	// fixme
 	Clock::stop(this);
+	if( equalizerSpline ) {
+		delete equalizerSpline;
+		equalizerSpline = nullptr;
+	}
+	if ( DigitalPoti ) {
+		delete DigitalPoti;
+		DigitalPoti = nullptr;
+	}
+	if ( dactid ) {
+		vTaskDelete(dactid);
+		dactid = nullptr;
+	}
 }
 
 // Keep the table in flash memory

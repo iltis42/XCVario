@@ -32,7 +32,7 @@ public:
 	virtual esp_err_t initialize() = 0;
 	virtual bool haveSensor() = 0;
 	bool isCalibrated() { return calibrated; }
-	virtual void tick() = 0;
+	virtual void age_incr() = 0;
 	virtual esp_err_t selfTest() = 0;
 	virtual bool overflowFlag() = 0;
 	virtual bool readRaw( t_magn_axes &mag ) = 0;

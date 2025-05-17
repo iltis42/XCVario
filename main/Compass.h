@@ -19,9 +19,12 @@ Last update: 2021-03-07
 
 #pragma once
 
-#include "QMC5883L.h"
+#include "comm/InterfaceCtrl.h"
+#include "protocol/ClockIntf.h"
 #include "average.h"
 #include "Deviation.h"
+
+class MagnetSensor;
 
 typedef struct float_axes {
 	float x;
@@ -57,23 +60,22 @@ union bitfield_compass{
 	};
 };
 
-class Compass: public Deviation
+class Compass: public Deviation, public Clock_I
 {
-public:
-	/*
-    Creates instance for I2C connection with passing the desired parameters.
-    No action is done at the bus. The default address of the chip is 0x0D.
-	 */
+private:
+    // Creates instance for I2C connection with passing the desired parameters.
+    // No action is done at the bus. The default address of the chip is 0x0D.
 	Compass( const uint8_t addr, const uint8_t odr=0,	const uint8_t range=0, const uint16_t osr=0, I2C_t *i2cBus=0 );
-	~Compass();
 
+public:
+	static Compass* createCompass(InterfaceId iid);
+	~Compass();
 	esp_err_t selfTest();
-	static MagnetSensor* getSensInst() { return instance; }
 
 	// system related methods
 	void begin();
 	void start();
-	void tick();
+	void ageIncr();
 
 	// sensor related interface
 	bool haveSensor();
@@ -86,12 +88,12 @@ public:
 	float rawX() { return fx; };
 	float rawY() { return fy; };
 	float rawZ() { return fz; };
-	float curX() { return instance->curX(); };
-	float curY() { return instance->curY(); };
-	float curZ() { return instance->curZ(); };
-	float calX() { return ((float( (float)instance->curX() ) - bias.x) * scale.x); };
-	float calY() { return ((float( (float)instance->curY() ) - bias.y) * scale.y); };
-	float calZ() { return ((float( (float)instance->curZ() ) - bias.z) * scale.z); };
+	float curX() { return mysensor->curX(); };
+	float curY() { return mysensor->curY(); };
+	float curZ() { return mysensor->curZ(); };
+	float calX() { return ((float( (float)mysensor->curX() ) - bias.x) * scale.x); };
+	float calY() { return ((float( (float)mysensor->curY() ) - bias.y) * scale.y); };
+	float calZ() { return ((float( (float)mysensor->curZ() ) - bias.z) * scale.z); };
 
 	t_magn_axes getRawAxes() { return magRaw; };
 	float filteredHeading( bool *okIn );
@@ -117,7 +119,7 @@ private:
 
 	// internal task management
 	void progress();
-	static void compassT(void* arg );  // task for compass reading
+	bool tick() override;  // ticker for compass reading
 
 	// Saves a done compass calibration.
 	void saveCalibration();
@@ -155,10 +157,12 @@ private:
 
 	// Mag readings
 	int age;
-	static MagnetSensor *instance;
+	MagnetSensor *mysensor = nullptr;
 	float fx; //bias corrected
 	float fy;
 	float fz;
 	float _heading;
 	t_magn_axes magRaw;
 };
+
+extern Compass *compass;

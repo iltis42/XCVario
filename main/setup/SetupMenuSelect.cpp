@@ -37,7 +37,7 @@ SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, i
 
 void SetupMenuSelect::enter()
 {
-	if ( bits._locked ) { return; }
+	if ( isLocked() ) { return; }
 
 	_select_save = _select;
 	_select = (_select > _values.size()-1) ? _values.size()-1 : _select;

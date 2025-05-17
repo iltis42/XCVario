@@ -9,6 +9,7 @@
 #pragma once
 
 #include "comm/Devices.h"
+
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -26,30 +27,34 @@ typedef enum
 } gen_state_t;
 
 
-constexpr int COMPLETE_BIT  = 0x10;
-constexpr int FORWARD_BIT   = 0x20;
+// a four bit command structure
+constexpr int COMPLETE_BIT  = 0x04;
+constexpr int FORWARD_BIT   = 0x08;
 typedef enum
 {
     NOACTION = 0,
     DO_ROUTING = COMPLETE_BIT | FORWARD_BIT,
     NOROUTING = COMPLETE_BIT,
-    NXT_PROTO = COMPLETE_BIT | FORWARD_BIT | 1,
-    GO_NMEA = COMPLETE_BIT | FORWARD_BIT | 2
+    NXT_PROTO = COMPLETE_BIT | FORWARD_BIT | 1
 } dl_action_t;
 
 union dl_control_t {
     struct {
-        int      pcount : 24;
-        dl_action_t act : 8;
+        int      pcount : 23;
+        dl_action_t act : 4;
+        DeviceId    did : 5; // device id for routing
     };
     uint32_t raw;
     // Convenience
-    constexpr dl_control_t(dl_action_t act, int pc=1)
-        : raw(static_cast<uint32_t>(act << 24) | (pc & 0xffffff)) {}
+    constexpr dl_control_t(dl_action_t act, DeviceId id=NO_DEVICE, int pc=1)
+        : raw((static_cast<uint32_t>(act) << 23) | (static_cast<uint32_t>(id) << 27) | (pc & 0x7fffff)) {}
+    constexpr void setRoute(DeviceId id)
+        { raw |= (static_cast<uint32_t>(id) << 27); }
 };
 
 class ProtocolState;
 class DataLink;
+class AliveMonitor;
 
 // Protocol parser interface
 class ProtocolItf
@@ -65,6 +70,7 @@ public:
     DeviceId getDeviceId() { return _did; } // The connected (!) device through protocol
     virtual ProtocolType getProtocolId() const { return NO_ONE; }
     virtual bool hasProtocol(ProtocolType pid) const { return getProtocolId() == pid; }
+    virtual void addAliveMonitor(AliveMonitor *am) {} // optional stream surveilance
     virtual dl_control_t nextBytes(const char *cptr, int count) { return dl_control_t(NOACTION); } // control the datalink stream loop with the return value
     inline Message* newMessage() const { return DEV::acqMessage(_did, _send_port); }
     void setDefaultAction(dl_action_t da) { _default_action = da; }
@@ -102,21 +108,20 @@ public:
         _opt = 0;
         _esc = 0;
     }
-    inline bool push(char c)
+    inline bool checkSpaceOne()
+    {
+        return _frame.size() < ProtocolItf::MAX_LEN;
+    }
+    inline void push(char c) // no buffer space check (!)
     {
         if ( _state )
         {
-            if ( _frame.size() < ProtocolItf::MAX_LEN ) {
-                _frame.push_back(c);
-                return true;
-            }
-            else {
-                return false;
-            }
+            _frame.push_back(c);
         }
-        _frame.assign(1, c);
-        _crc = 0;
-        return true;
+        else {
+            _frame.assign(1, c);
+            _crc = 0;
+        }
     }
 
     // frame buffer and state machine vars

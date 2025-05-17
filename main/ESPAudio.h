@@ -17,9 +17,6 @@
 
 typedef enum e_audio_alarm_type { AUDIO_ALARM_OFF, AUDIO_ALARM_STALL, AUDIO_ALARM_FLARM_1, AUDIO_ALARM_FLARM_2, AUDIO_ALARM_FLARM_3, AUDIO_ALARM_GEAR } e_audio_alarm_type_t;
 
-class Poti;
-extern Poti *DigitalPoti;
-
 class Audio : public Clock_I
 {
 public:
@@ -60,7 +57,7 @@ private:
 	float equal_volume( float volume );
 	void  calculateFrequency();
 	void writeVolume( float volume );
-	static void doAudio();
+	// static void doAudio();
     
 	bool _s2f_mode_back = false;
 	unsigned long next_scedule = 0;

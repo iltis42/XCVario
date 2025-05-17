@@ -8,6 +8,7 @@
 
 #include "NMEA.h"
 
+#include  "comm/DataLink.h"
 #include "AliveMonitor.h"
 #include "nmea_util.h"
 #include "logdefnone.h"
@@ -30,14 +31,23 @@ NmeaPrtcl::~NmeaPrtcl()
     }
 }
 
+bool NmeaPrtcl::hasProtocol(ProtocolType p) const
+{
+    for ( auto &pl : _plugs ) {
+        if ( pl->getPtyp() == p ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void NmeaPrtcl::addPlugin(NmeaPlugin *pm)
 {
     ESP_LOGI(FNAME, "Add plugin %d", pm->getPtyp());
     // check if plugin already there
-    for ( auto it = _plugs.begin(); it != _plugs.end(); it++ ) {
-        if ( *(*it) == *pm ) {
-            return; // do not add it
-        }
+    if ( hasProtocol(pm->getPtyp()) ) {
+        ESP_LOGW(FNAME, "Plugin already loaded");
+        return; // do not add it
     }
     _plugs.push_back(pm);
     // copy the parser table
@@ -51,19 +61,42 @@ void NmeaPrtcl::addPlugin(NmeaPlugin *pm)
     }
 }
 
-bool NmeaPrtcl::hasProtocol(ProtocolType p)
+void NmeaPrtcl::removeProtocol(ProtocolType p)
 {
-    for ( auto &pl : _plugs ) {
-        if ( pl->getPtyp() == p ) {
-            return true;
+    NmeaPlugin *pm = nullptr;
+    for ( auto it = _plugs.begin(); it != _plugs.end(); it++ ) {
+        if ( (*it)->getPtyp() == p ) {
+            pm = *it;
+            _plugs.erase(it);
+            break;
         }
     }
-    return false;
+    if ( pm ) {
+        // remove the parser table entries
+        for (auto it = _parsmap.begin(); it != _parsmap.end(); ) {
+            if (it->second.second == pm) {
+                it = _parsmap.erase(it);  // erase returns the next valid iterator
+            } else {
+                it++;
+            }
+        }
+        // delete the plugin
+        ESP_LOGI(FNAME, "Delete plugin %d", pm->getPtyp());
+        delete pm;
+    }
+    if ( _plugs.empty() ) {
+        // no more plugins, delete the alive monitor
+        if ( _alive ) {
+            delete _alive;
+            _alive = nullptr;
+        }
+    }
 }
 
 dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
 {
-    int pos = _sm._frame.size() - 1; // c already in the buffer
+    int pos = _sm._frame.size();
+    _sm.push(*c);
     ESP_LOGD(FNAME, "state %d, pos %d next char %c", _sm._state, pos, *c);
     switch(_sm._state) {
     case START_TOKEN:
@@ -131,25 +164,29 @@ dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
         break;
     }
 
-    dl_action_t action = NOACTION;
+    dl_control_t ret(NOACTION, _did);
     if ( _sm._state == COMPLETE )
     {
         NMEA::ensureTermination(_sm._frame);
         _sm._state = START_TOKEN; // restart parsing
         ESP_LOGI(FNAME, "Msg complete %s", _mkey.toString().c_str());
-        action = _default_action;
+        ret.act = _default_action;
         if ( _parser.first ) {
-            action = (_parser.first)(_parser.second);
+            ret.act = (_parser.first)(_parser.second);
+            ret.did = _parser.second->getRouteId();
         }
         if ( _alive) {
             _alive->keepAlive();
         }
     }
-    return dl_control_t(action);
+    return ret;
 }
 
-// some basic nmea plugin caps
-ProtocolType NmeaPlugin::belongsPtyp() const
+// plugin base with a potential different device id for routing
+NmeaPlugin::NmeaPlugin(NmeaPrtcl &nr, ProtocolType ptyp, bool as) :
+    _nmeaRef(nr),
+    _pid(ptyp),
+    _auto(as),
+    _routeId(nr.getDL()->getDeviceId())
 {
-    return _nmeaRef.getProtocolId();
 }

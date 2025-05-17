@@ -8,6 +8,7 @@
 
 #include "XCVarioMsg.h"
 #include "protocol/nmea_util.h"
+#include "comm/DataLink.h"
 #include "comm/Messages.h"
 #include "setup/SetupNG.h"
 #include "KalmanMPU6050.h"
@@ -92,6 +93,9 @@ void NmeaPrtcl::sendStdXCVario(float baro, float dp, float te, float temp, float
                                float acc_x, float acc_y, float acc_z,
                                float gx, float gy, float gz)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message *msg = newMessage();
 
     if (!validTemp)
@@ -149,6 +153,9 @@ void NmeaPrtcl::sendStdXCVario(float baro, float dp, float te, float temp, float
 
 void NmeaPrtcl::sendXcvRPYL(float roll, float pitch, float yaw, float acc_z)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message *msg = newMessage();
 
     // LEVIL_AHRS  $RPYL,Roll,Pitch,MagnHeading,SideSlip,YawRate,G,errorcode,
@@ -165,6 +172,9 @@ void NmeaPrtcl::sendXcvRPYL(float roll, float pitch, float yaw, float acc_z)
 
 void NmeaPrtcl::sendXcvAPENV1(float ias, float alt, float te)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message *msg = newMessage();
 
     msg->buffer = "$APENV1,";
@@ -183,6 +193,9 @@ void NmeaPrtcl::sendXcvAPENV1(float ias, float alt, float te)
  */
 void NmeaPrtcl::sendXcvGeneric(float te, float alt, float tas)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message *msg = newMessage();
 
     msg->buffer = "$PTAS1,";
@@ -195,6 +208,9 @@ void NmeaPrtcl::sendXcvGeneric(float te, float alt, float tas)
 
 void NmeaPrtcl::sendXCVCrewWeight(float w)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     if (XCVarioMsg::getXcvProtocolVersion() > 1) {
         Message *msg = newMessage();
 
@@ -208,6 +224,9 @@ void NmeaPrtcl::sendXCVCrewWeight(float w)
 
 void NmeaPrtcl::sendXCVEmptyWeight(float w)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     if (XCVarioMsg::getXcvProtocolVersion() > 1) {
         Message *msg = newMessage();
 
@@ -220,6 +239,9 @@ void NmeaPrtcl::sendXCVEmptyWeight(float w)
 
 void NmeaPrtcl::sendXCVWaterWeight(float w)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     if (XCVarioMsg::getXcvProtocolVersion() > 1) {
         Message *msg = newMessage();
 
@@ -233,6 +255,9 @@ void NmeaPrtcl::sendXCVWaterWeight(float w)
 
 void NmeaPrtcl::sendXCVVersion(int v)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message *msg = newMessage();
 
     msg->buffer = "!xcv,version," + std::to_string(v);
@@ -255,6 +280,9 @@ void NmeaPrtcl::sendXCVVersion(int v)
 */
 void NmeaPrtcl::sendXCVNmeaHDM(float heading)
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message *msg = newMessage();
 
     msg->buffer = "$HCHDM,";
@@ -279,6 +307,9 @@ void NmeaPrtcl::sendXCVNmeaHDM(float heading)
 */
 void NmeaPrtcl::sendXCVNmeaHDT( float heading )
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message *msg = newMessage();
 
     msg->buffer = "$HCHDT,";
@@ -292,6 +323,9 @@ void NmeaPrtcl::sendXCVNmeaHDT( float heading )
 // send a prepared nmea telegram
 void NmeaPrtcl::sendXCV(const char *str) const
 {
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
     Message *msg = newMessage();
 
     msg->buffer.assign(str);

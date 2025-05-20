@@ -274,7 +274,7 @@ bool CANbus::selfTest()
     _slope_support = false;
     for (int gpio_level = 0; gpio_level <=1; gpio_level++)
     {
-        ESP_LOGI(FNAME,"slope pin level %s.", (gpio_level==0) ? "low" : "hogh");
+        ESP_LOGI(FNAME,"slope pin level %s.", (gpio_level==0) ? "low" : "high");
         // in case of GPIO 2 wired to CAN this would inhibit sending and cause a failing test
         gpio_set_level(_slope_ctrl, gpio_level);
         for (int i = 0; i < 3; i++)

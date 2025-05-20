@@ -246,7 +246,10 @@ bool CANbus::begin()
         terminate_receiver = false;
         xTaskCreate(&canRxTask, "canRxTask", 4096, this, 22, &rxTask);
     }
-
+    if( _slope_support ){
+    	gpio_set_direction(_slope_ctrl, GPIO_MODE_OUTPUT);
+    	gpio_set_level(_slope_ctrl, 0);  // when there is slope support, bit is to be set to 0 to enable this feature, else CAN fails
+    }
     return _initialized;
 }
 

@@ -289,7 +289,6 @@ bool SetupCommon::initSetup( bool& ahrs_lic_present ) {
 		ret = factoryReset();
 		commitDirty();
 	}
-	last_volume = (int)default_volume.get();
 	giveConfigChanges( 0, true );
 	return ret;
 };

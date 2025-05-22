@@ -533,7 +533,6 @@ extern SetupNG<DeviceNVS>	radio_host_setup;
 extern SetupNG<DeviceNVS>	krt_devsetup;
 extern SetupNG<DeviceNVS>	atr_devsetup;
 
-extern float last_volume;   // is this used?
 
 void change_ballast();
 void change_mc();

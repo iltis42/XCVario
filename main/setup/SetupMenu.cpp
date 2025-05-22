@@ -232,7 +232,7 @@ int update_rentry(SetupMenuValFloat *p) {
 	// ESP_LOGI(FNAME,"update_rentry() vu:%s ar:%p", Units::VarioUnit(), audio_range_sm );
 	sprintf(rentry0, "Fixed (5  %s)", Units::VarioUnit());
 	sprintf(rentry1, "Fixed (10 %s)", Units::VarioUnit());
-	sprintf(rentry2, "Variable (%d %s)", (int) (range.get()),
+	sprintf(rentry2, "Variable (%d %s)", (int) (scale_range.get()),
 			Units::VarioUnit());
 	return 0;
 }

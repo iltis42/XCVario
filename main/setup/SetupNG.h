@@ -288,7 +288,7 @@ extern SetupNG<int>  		dual_tone;
 extern SetupNG<float>  		high_tone_var;
 extern SetupNG<float>  		deadband;
 extern SetupNG<float>  		deadband_neg;
-extern SetupNG<float>  		range;
+extern SetupNG<float>  		scale_range;
 extern SetupNG<int>			log_scale;
 extern SetupNG<float>  		ballast;
 extern SetupNG<float>  		ballast_kg;

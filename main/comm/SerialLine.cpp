@@ -16,15 +16,15 @@ constexpr int UARTEVENTQ_LEN = 10;
 
 static constexpr std::array<int, 6> baud_rate_table = { 4800, 9600, 19200, 38400, 57600, 115200 };
 
-
+// enumeration is: SM_FLARM, SM_RADIO, SM_XCTNAV_S3, SM_OPENVARIO, SM_XCFLARMBIN, SM_XCFLARMVIEW
 static constexpr std::array<t_serial_cfg, 6>  sm_serial_config = {{
-		// enumerator,    baud,       polarity,  pin swp, tx enable
-		{ SM_FLARM,       BAUD_19200, RS232_TTL, false, true },
-		{ SM_RADIO,       BAUD_9600,  RS232_TTL, false, true },
-		{ SM_XCTNAV_S3,   BAUD_19200, RS232_TTL, false, true },
-		{ SM_OPENVARIO,   BAUD_19200, RS232_TTL, false, true },
-		{ SM_XCFLARMBIN,  BAUD_38400, RS232_TTL, false, true },
-		{ SM_XCFLARMVIEW, BAUD_57600, RS232_TTL, false, true }
+		// baud,      polarity,  pinswp, tx enable
+		{ BAUD_19200, RS232_TTL, false, true },
+		{ BAUD_9600,  RS232_TTL, false, true },
+		{ BAUD_19200, RS232_TTL, false, true },
+		{ BAUD_19200, RS232_TTL, false, true },
+		{ BAUD_38400, RS232_TTL, false, true },
+		{ BAUD_57600, RS232_TTL, false, true }
 }};
 
 static constexpr std::array<std::string_view, 3> MEMOS = { "S0", "S1", "S2" };

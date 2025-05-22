@@ -37,7 +37,7 @@ dl_action_t CambridgeMsg::parseExcl_g(NmeaPlugin *plg)
         mc = mc*0.1;   // comes in knots*10, unify to knots
         float mc_ms =  std::roundf(Units::knots2ms(mc)*10.f)/10.f; // hide rough knot resolution
         // FIXME -> only SI units internally
-        if( vario_unit.get() == VARIO_UNIT_KNOTS )
+        if( vario_unit.get() == SPEED_UNIT_KNOTS )
             mc_ms =  std::roundf(Units::knots2ms(mc)*100.f)/100.f; // higher resolution for knots
         ESP_LOGI(FNAME,"New MC: %1.1f knots, %f m/s", mc, mc_ms );
         MC.set( mc_ms );  // set mc in m/s

@@ -14,10 +14,10 @@ struct httpd_req;
 
 struct t_setup_flags {
 	bool _reset    :1; // reset data on factory reset
-	bool _volatile :1;
+	bool _volatile :1; // none nvs, run-time (black board) item only
 	uint8_t _sync  :2; // sync mode with client device
-	uint8_t _unit  :3;
-	bool _dirty    :1;
+	uint8_t _quant :3; // quantity
+	bool _dirty    :1; // has changed
 };
 
 class SetupCommon {

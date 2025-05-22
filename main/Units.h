@@ -39,6 +39,6 @@ public:
 	static const char *AltitudeUnit(int unit = -1);
 	static const char *AltitudeUnitMeterOrFeet(int unit = -1);
 	static const char *DistanceUnit(int unit = -1);
-	static float value(float val, e_unit_type_t u);
-	static const char *unit(e_unit_type_t u);
+	static float value(float val, e_quantity_t u);
+	static const char *unit(e_quantity_t u);
 };

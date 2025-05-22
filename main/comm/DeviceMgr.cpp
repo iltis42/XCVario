@@ -680,7 +680,6 @@ void DeviceManager::reserectFromNvs()
         // check on role compatibility
         if ( entry.second.nvsetup && entry.second.nvsetup->get().isValid() 
             && ( !entry.second.getRoleDep() || entry.second.getRoleDep() == xcv_role.get()) ) {
-            nr_set_up++;
             // setup device
             DeviceNVS *nvs = static_cast<DeviceNVS*>(entry.second.nvsetup->getPtr());
             ESP_LOGI(FNAME, "Entry: t%x - s%x (%d/%d)", (unsigned)nvs->target.raw, (unsigned)nvs->setup.data, nvs->bin_sp, nvs->nmea_sp);
@@ -692,6 +691,7 @@ void DeviceManager::reserectFromNvs()
             if ( nvs->setup.getProto(0) ) {
                 ESP_LOGI(FNAME, "BinP: pid%d sp%d", nvs->setup.getProto(0), nvs->getBinSPort());
                 addDevice(did, nvs->setup.getProto(0), listen_port, nvs->getBinSPort(), iid);
+                nr_set_up++;
             }
             // principle nmea proto option
             ESP_LOGI(FNAME, "Nmea: sendport%d", nvs->getNmeaSPort());
@@ -700,11 +700,23 @@ void DeviceManager::reserectFromNvs()
                 if ( nvs->setup.getProto(i) ) {
                     ESP_LOGI(FNAME, "plugin: %d", nvs->setup.getProto(i));
                     addDevice(did, nvs->setup.getProto(i), listen_port, nvs->getNmeaSPort(), iid);
+                    nr_set_up++;
                 }
             }
         }
     }
     ESP_LOGI(FNAME, "Reserected %d dev entries from NVS", nr_set_up);
+    if ( nr_set_up == 0 ) {
+        // A very first start w/ devices. Add a Flarm automatically
+        assert(S1);
+        S1->ConfigureIntf(SM_FLARM); // load flarm serial default profile
+        Device *dev = DEVMAN->addDevice(FLARM_DEV, FLARM_P, 0, 0, S1_RS232);
+        DEVMAN->addDevice(FLARM_DEV, FLARMBIN_P, 0, 0, NO_PHY);
+        if ( dev ) {
+            // save it to nvs
+            flarm_devsetup.set(dev->getNvsData());
+        }
+    }
 }
 
 // prio - 0,..,4 0:low prio data stream, .. 5: important high prio commanding

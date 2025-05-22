@@ -423,7 +423,7 @@ SetupNG<int> 			xcv_role("XCVROLE", MASTER_ROLE, true);
 // Those device entries are serving as factory reset minimum configuration
 SetupNG<DeviceNVS>		anemoi_devsetup("ANEMOI", DeviceNVS() );
 SetupNG<DeviceNVS>		auto_connect("AUTOCON", DeviceNVS() );
-SetupNG<DeviceNVS>		flarm_devsetup("FLARM", {{FLARM_DEV, S1_RS232, 0}, {{FLARMBIN_P, FLARM_P}, 0}, 0, 0});
+SetupNG<DeviceNVS>		flarm_devsetup("FLARM", DeviceNVS() );
 SetupNG<DeviceNVS>		master_devsetup("MASTER", DeviceNVS() );
 SetupNG<DeviceNVS>		second_devsetup("SECOND", DeviceNVS() );
 SetupNG<DeviceNVS>		magleg_devsetup("MAGLEG", DeviceNVS() );

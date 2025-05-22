@@ -22,7 +22,7 @@
 #include "comm/BTspp.h"
 #include "comm/CanBus.h"
 #include "protocol/AliveMonitor.h"
-#include "Blackboard.h"
+#include "setup/SetupNG.h"
 #include "CenterAid.h"
 #include "Rotate.h"
 #include "AdaptUGC.h"

@@ -10,7 +10,6 @@
 #include "protocol/nmea_util.h"
 #include "comm/DataLink.h"
 #include "comm/Messages.h"
-#include "Blackboard.h"
 #include "Units.h"
 
 #include "logdef.h"

@@ -26,7 +26,6 @@
 #include "Flarm.h"
 #include "protocol/FlarmSim.h"
 #include "WifiClient.h"
-#include "Blackboard.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
 #include "setup/SetupNG.h"

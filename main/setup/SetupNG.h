@@ -268,6 +268,7 @@ private:
 	const T _default; // value applied with a factory reset
 };
 
+extern SetupNG<float> 		MC;
 extern SetupNG<float> 		QNH;
 extern SetupNG<float> 		polar_wingload;
 extern SetupNG<float> 		polar_speed1;

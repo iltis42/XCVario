@@ -24,7 +24,6 @@
 #include "Version.h"
 #include "glider/Polars.h"
 #include "Flarm.h"
-#include "Blackboard.h"
 #include "setup/SetupMenuValFloat.h"
 #include "protocol/Clock.h"
 #include "protocol/MagSensBin.h"

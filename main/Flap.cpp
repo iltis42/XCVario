@@ -185,22 +185,22 @@ static SetupMenu *flapss = 0;
 static SetupMenu *flapls = 0;
 
 void Flap::speeds_setup_menu_create(SetupMenu* top){
-	SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "",  20, 150, 1, flap_speed_act, false, &flap_plus_2  );
+	SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "", flap_speed_act, false, &flap_plus_2  );
 	top->addEntry( plus3 );
 
-	SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "",  20, 170, 1, flap_speed_act, false, &flap_plus_1  );
+	SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "", flap_speed_act, false, &flap_plus_1  );
 	top->addEntry( plus2 );
 
-	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to  0", "",  20, v_max.get(), 1, flap_speed_act, false, &flap_0  );
+	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to  0", "", flap_speed_act, false, &flap_0  );
 	top->addEntry( plus1 );
 
-	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed  0 to -1", "",   20, v_max.get(), 1, flap_speed_act, false, &flap_minus_1  );
+	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed  0 to -1", "", flap_speed_act, false, &flap_minus_1  );
 	top->addEntry( min1 );
 
-	SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "",  50, v_max.get(), 1, flap_speed_act, false, &flap_minus_2  );
+	SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "", flap_speed_act, false, &flap_minus_2  );
 	top->addEntry( min2 );
 
-	SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "",  50, v_max.get(), 1, flap_speed_act, false, &flap_minus_3  );
+	SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "", flap_speed_act, false, &flap_minus_3  );
 	top->addEntry( min3 );
 }
 
@@ -238,15 +238,15 @@ void Flap::setupIndicatorMenueEntries(SetupMenu *wkm)
 	wke->setHelp("Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");
 	wkm->addEntry( wke );
 
-	nflpos = new SetupMenuValFloat("Max positive Flap", "", 0., 3., 1., flap_pos_act, false, &flap_pos_max);
+	nflpos = new SetupMenuValFloat("Max positive Flap", "", flap_pos_act, false, &flap_pos_max);
 	nflpos->setHelp("Maximum positive flap position to be displayed");
 	wkm->addEntry( nflpos );
 
-	nflneg = new SetupMenuValFloat("Max negative Flap", "", -3., 0., 1., flap_pos_act, false, &flap_neg_max);
+	nflneg = new SetupMenuValFloat("Max negative Flap", "", flap_pos_act, false, &flap_neg_max);
 	nflneg->setHelp("Maximum negative flap position to be displayed");
 	wkm->addEntry( nflneg );
 
-	flgnd = new SetupMenuValFloat("Takeoff Flap","", -3, 3, 1, 0, false, &flap_takeoff  );
+	flgnd = new SetupMenuValFloat("Takeoff Flap","", nullptr, false, &flap_takeoff  );
 	flgnd->setHelp("Flap position to be set on ground for takeoff, when there is no airspeed");
 	wkm->addEntry( flgnd );
 

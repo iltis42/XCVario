@@ -126,14 +126,29 @@ struct t_tenchar_id {
 	}
 };
 
+struct limits_t
+{
+	float _min;
+	float _max;
+	float _step;
+	constexpr limits_t(float min, float max, float step)
+		: _min(min), _max(max), _step(step) {}
+};
+// create static pointers to limits that live only in flash
+#define LIMITS(min, max, step) ([]() -> const limits_t* { \
+    static constexpr limits_t _lim = { (min), (max), (step) }; \
+    return &_lim; \
+}())
+
 template<typename T>
 class SetupNG: public SetupCommon
 {
 public:
 	SetupNG( const char *akey, T adefault, bool reset=true, e_sync_t sync=SYNC_NONE, e_volatility vol=PERSISTENT,
-			void (* action)()=0, e_unit_type_t unit = UNIT_NONE) :
+			void (* action)()=0, e_quantity_t quant = QUANT_NONE, const limits_t *l = nullptr) :
 		SetupCommon(akey),
-		_default(adefault)
+		_default(adefault),
+		_limt(l)
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		// if( strlen( akey ) > 15 ) {
@@ -262,9 +277,15 @@ public:
 
 	T getDefault() const { return _default; }
 
+	bool hasLimits() const { return _limt != nullptr; }
+	float getMin() const { return _limt->_min; }
+	float getMax() const { return _limt->_max; }
+	float getStep() const { return _limt->_step; }
+
 private:
 	T       _value;   // the value
 	const T _default; // value applied with a factory reset
+	const limits_t *_limt = nullptr;
 };
 
 extern SetupNG<float> 		MC;

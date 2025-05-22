@@ -340,7 +340,6 @@ SetupNG<float> 			wind_straight_speed_tolerance("WINDSSTOL", 15 );
 SetupNG<int> 			wind_display( "WIND_DIS", WD_NONE );
 SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
 SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0 );
-SetupNG<float> 			wind_as_min( "WIND_ASM", 25 );
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0, true, SYNC_BIDIR );  // considering netto vario and g load for S2F or not
 SetupNG<int> 			needle_color("NEEDLE_COLOR", VN_COLOR_ORANGE );
 SetupNG<int>			s2f_arrow_color("S2F_ARRCOL", AC_WHITE_WHITE );

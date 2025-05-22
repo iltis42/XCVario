@@ -29,14 +29,6 @@ static int compassDeclinationAction(SetupMenuValFloat *p) {
 	return CompassMenu::declinationAction(p);
 }
 
-static int windResetAction(SetupMenuSelect *p) {
-	if (p->getSelect() == 1) {
-		// Reset is selected, set default values
-		wind_as_min.set(25);
-	}
-	return 0;
-}
-
 static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
 	if (p->getSelect() != 0) { // Start, Show

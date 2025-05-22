@@ -7,7 +7,6 @@
  ***********************************************************/
 
 #include "SetupRoot.h"
-#include "Blackboard.h"
 #include "IpsDisplay.h"
 
 #include "sensor.h"

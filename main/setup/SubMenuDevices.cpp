@@ -114,8 +114,7 @@ static int master_xcv_lock(SetupMenuSelect *p) {
 
 void options_menu_create_wifi(SetupMenu *top)
 {
-    SetupMenuValFloat *wifip = new SetupMenuValFloat("WIFI Power", "%", 10.0,
-                                                     100.0, 5.0, update_wifi_power, false, &wifi_max_power);
+    SetupMenuValFloat *wifip = new SetupMenuValFloat("WIFI Power", "%", update_wifi_power, false, &wifi_max_power);
     wifip->setPrecision(0);
     top->addEntry(wifip);
     wifip->setHelp("Maximum Wifi Power to be used 10..100% or 2..20dBm");
@@ -307,7 +306,7 @@ void system_menu_create_interfaceCAN(SetupMenu *top)
 
 void system_menu_create_interfaceI2C(SetupMenu *top)
 {
-	SetupMenuValFloat *compi2c = new SetupMenuValFloat("I2C Clock", "KHz", 10.0, 400.0, 10, 0, false, &compass_i2c_cl, RST_ON_EXIT);
+	SetupMenuValFloat *compi2c = new SetupMenuValFloat("I2C Clock", "KHz", nullptr, false, &compass_i2c_cl, RST_ON_EXIT);
 	top->addEntry(compi2c);
 	compi2c->setHelp("Setup compass I2C Bus clock in KHz (reboots)");
 }

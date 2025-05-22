@@ -22,7 +22,7 @@
 #include "comm/BTspp.h"
 #include "comm/CanBus.h"
 #include "protocol/AliveMonitor.h"
-#include "Blackboard.h"
+#include "setup/SetupNG.h"
 #include "CenterAid.h"
 #include "Rotate.h"
 #include "AdaptUGC.h"
@@ -570,7 +570,7 @@ void IpsDisplay::begin() {
 void IpsDisplay::setup()
 {
 	ESP_LOGI(FNAME,"IpsDisplay::setup");
-	_range = Units::Vario( range.get() );
+	_range = Units::Vario( scale_range.get() );
 
 	if( (int)_range <= 5 )
 		_divisons = (int)_range*2;

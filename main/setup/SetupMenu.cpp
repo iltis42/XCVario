@@ -26,7 +26,6 @@
 #include "Flarm.h"
 #include "protocol/FlarmSim.h"
 #include "WifiClient.h"
-#include "Blackboard.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
 #include "setup/SetupNG.h"
@@ -232,7 +231,7 @@ int update_rentry(SetupMenuValFloat *p) {
 	// ESP_LOGI(FNAME,"update_rentry() vu:%s ar:%p", Units::VarioUnit(), audio_range_sm );
 	sprintf(rentry0, "Fixed (5  %s)", Units::VarioUnit());
 	sprintf(rentry1, "Fixed (10 %s)", Units::VarioUnit());
-	sprintf(rentry2, "Variable (%d %s)", (int) (range.get()),
+	sprintf(rentry2, "Variable (%d %s)", (int) (scale_range.get()),
 			Units::VarioUnit());
 	return 0;
 }
@@ -593,44 +592,38 @@ int varioAvChange(SetupMenuValFloat *p) {
 }
 
 void vario_menu_create_damping(SetupMenu *top) {
-	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", 2.0, 10.0,
-			0.1, vario_setup, false, &vario_delay);
+	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", vario_setup, false, &vario_delay);
 	vda->setHelp("Response time, time constant of Vario low pass filter");
 	top->addEntry(vda);
 
-	SetupMenuValFloat *vdav = new SetupMenuValFloat("Averager", "sec", 2.0, 60.0, 1, varioAvChange, false, &vario_av_delay);
+	SetupMenuValFloat *vdav = new SetupMenuValFloat("Averager", "sec", varioAvChange, false, &vario_av_delay);
 	vdav->setHelp("Response time, time constant of digital Average Vario Display");
 	top->addEntry(vdav);
 }
 
 void vario_menu_create_meanclimb(SetupMenu *top) {
-	SetupMenuValFloat *vccm = new SetupMenuValFloat("Minimum climb", "", 0.0,
-			2.0, 0.1, 0, false, &core_climb_min);
+	SetupMenuValFloat *vccm = new SetupMenuValFloat("Minimum climb", "", nullptr, false, &core_climb_min);
 	vccm->setHelp("Minimum climb rate that counts for arithmetic mean climb value");
 	top->addEntry(vccm);
 
-	SetupMenuValFloat *vcch = new SetupMenuValFloat("Duration", "min", 1, 300,
-			1, 0, false, &core_climb_history);
+	SetupMenuValFloat *vcch = new SetupMenuValFloat("Duration", "min", nullptr, false, &core_climb_history);
 	vcch->setHelp(
 			"Duration in minutes over which mean climb rate is computed, default is last 3 thermals or 45 min");
 	top->addEntry(vcch);
 
-	SetupMenuValFloat *vcp = new SetupMenuValFloat("Cycle", "sec", 60, 300, 1,
-			0, false, &core_climb_period);
+	SetupMenuValFloat *vcp = new SetupMenuValFloat("Cycle", "sec", nullptr, false, &core_climb_period);
 	vcp->setHelp(
 			"Cycle: number of seconds when mean climb value is recalculated, default is every 60 seconds");
 	top->addEntry(vcp);
 
-	SetupMenuValFloat *vcmc = new SetupMenuValFloat("Major Change", "m/s", 0.1,
-			5.0, 0.1, 0, false, &mean_climb_major_change);
+	SetupMenuValFloat *vcmc = new SetupMenuValFloat("Major Change", "m/s", nullptr, false, &mean_climb_major_change);
 	vcmc->setHelp(
 			"Change in mean climb during last cycle (minute), that results in a major change indication (with arrow symbol)");
 	top->addEntry(vcmc);
 }
 
 void vario_menu_create_s2f(SetupMenu *top) {
-	SetupMenuValFloat *vds2 = new SetupMenuValFloat("Damping", "sec", 0.10001,
-			10.0, 0.1, 0, false, &s2f_delay);
+	SetupMenuValFloat *vds2 = new SetupMenuValFloat("Damping", "sec", nullptr, false, &s2f_delay);
 	vds2->setHelp("Time constant of S2F low pass filter");
 	top->addEntry(vds2);
 
@@ -666,26 +659,22 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	s2fsw->addEntry("Switch Invert");
 	s2fsw->addEntry("Disable");
 
-	SetupMenuValFloat *autospeed = new SetupMenuValFloat("S2F AutoSpeed", "",
-			20.0, 250.0, 1.0, update_s2f_speed, false, &s2f_speed);
+	SetupMenuValFloat *autospeed = new SetupMenuValFloat("S2F AutoSpeed", "", update_s2f_speed, false, &s2f_speed);
 	top->addEntry(autospeed);
 	autospeed->setHelp(
 			"Transition speed if using AutoSpeed to switch Vario <-> Cruise (S2F) mode");
 
-	SetupMenuValFloat *s2f_flap = new SetupMenuValFloat("S2F Flap Pos", "", -3,
-			3, 0.1, 0, false, &s2f_flap_pos);
+	SetupMenuValFloat *s2f_flap = new SetupMenuValFloat("S2F Flap Pos", "", nullptr, false, &s2f_flap_pos);
 	top->addEntry(s2f_flap);
 	s2f_flap->setHelp(
 			"Precise flap position used for switching Vario <-> Cruise (S2F)");
 
-	SetupMenuValFloat *s2f_gyro = new SetupMenuValFloat("S2F AHRS Deg", "°", 0,
-			100, 1, 0, false, &s2f_gyro_deg);
+	SetupMenuValFloat *s2f_gyro = new SetupMenuValFloat("S2F AHRS Deg", "°", 0, false, &s2f_gyro_deg);
 	top->addEntry(s2f_gyro);
 	s2f_gyro->setHelp(
 			"Attitude change in degrees per second to switch Vario <-> Cruise (S2F) mode");
 
-	SetupMenuValFloat *s2fhy = new SetupMenuValFloat("Hysteresis", "", -20, 20,
-			1, 0, false, &s2f_hysteresis);
+	SetupMenuValFloat *s2fhy = new SetupMenuValFloat("Hysteresis", "", 0, false, &s2f_hysteresis);
 	s2fhy->setHelp("Hysteresis (+- this value) for Autospeed S2F transition");
 	top->addEntry(s2fhy);
 
@@ -709,8 +698,7 @@ void vario_menu_create_ec(SetupMenu *top) {
 	enac->addEntry("PRESSURE");
 	top->addEntry(enac);
 
-	SetupMenuValFloat *elca = new SetupMenuValFloat("Adjustment", "%", -100,
-			100, 0.1, 0, false, &te_comp_adjust);
+	SetupMenuValFloat *elca = new SetupMenuValFloat("Adjustment", "%", nullptr, false, &te_comp_adjust);
 	elca->setHelp(
 			"Adjustment option for electronic TE compensation in %. This affects the energy altitude calculated from airspeed");
 	top->addEntry(elca);
@@ -728,8 +716,7 @@ void wiper_menu_create(SetupMenu *top) {
 }
 
 void bugs_item_create(SetupMenu *top) {
-	SetupMenuValFloat *bgs = new SetupMenuValFloat("Bugs", "%", 0.0, 50, 1,
-			bug_adj, true, &bugs);
+	SetupMenuValFloat *bgs = new SetupMenuValFloat("Bugs", "%", bug_adj, true, &bugs);
 	bgs->setHelp("Percent degradation of gliding performance due to bugs contamination");
 	top->addEntry(bgs);
 }
@@ -737,8 +724,7 @@ void bugs_item_create(SetupMenu *top) {
 void vario_menu_create(SetupMenu *vae) {
 	ESP_LOGI(FNAME,"SetupMenu::vario_menu_create( %p )", vae );
 
-	SetupMenuValFloat *vga = new SetupMenuValFloat("Range", "", 1.0, 30.0, 1,
-			audio_setup_f, true, &range);
+	SetupMenuValFloat *vga = new SetupMenuValFloat("Range", "", audio_setup_f, true, &scale_range);
 	vga->setHelp("Upper and lower value for Vario graphic display region");
 	vga->setPrecision(0);
 	vae->addEntry(vga);
@@ -798,13 +784,11 @@ void vario_menu_create(SetupMenu *vae) {
 }
 
 void audio_menu_create_tonestyles(SetupMenu *top) {
-	SetupMenuValFloat *cf = new SetupMenuValFloat("CenterFreq", "Hz", 200.0,
-			2000.0, 10.0, audio_setup_f, false, &center_freq);
+	SetupMenuValFloat *cf = new SetupMenuValFloat("CenterFreq", "Hz", audio_setup_f, false, &center_freq);
 	cf->setHelp("Center frequency for Audio at zero Vario or zero S2F delta");
 	top->addEntry(cf);
 
-	SetupMenuValFloat *oc = new SetupMenuValFloat("Octaves", "fold", 1.2, 4,
-			0.05, audio_setup_f, false, &tone_var);
+	SetupMenuValFloat *oc = new SetupMenuValFloat("Octaves", "fold", audio_setup_f, false, &tone_var);
 	oc->setHelp("Maximum tone frequency variation");
 	top->addEntry(oc);
 
@@ -814,8 +798,7 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	dt->mkEnable();
 	top->addEntry(dt);
 
-	SetupMenuValFloat *htv = new SetupMenuValFloat("Dual Tone Pitch", "%", 0,
-			50, 1.0, audio_setup_f, false, &high_tone_var);
+	SetupMenuValFloat *htv = new SetupMenuValFloat("Dual Tone Pitch", "%", audio_setup_f, false, &high_tone_var);
 	htv->setHelp(
 			"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
 	top->addEntry(htv);
@@ -847,16 +830,16 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 }
 
 void audio_menu_create_deadbands(SetupMenu *top) {
-	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", -5.0, .0, 0.1, nullptr, false, &deadband_neg);
+	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", nullptr, false, &deadband_neg);
 	top->addEntry(dbminlv);
 
-	SetupMenuValFloat *dbmaxlv = new SetupMenuValFloat("Upper Vario", "", .0, 5.0, 0.1, nullptr, false, &deadband);
+	SetupMenuValFloat *dbmaxlv = new SetupMenuValFloat("Upper Vario", "", nullptr, false, &deadband);
 	top->addEntry(dbmaxlv);
 
-	SetupMenuValFloat *dbmaxls2fn = new SetupMenuValFloat("Lower S2F", "", -25.0, .0, 1, nullptr, false, &s2f_deadband_neg);
+	SetupMenuValFloat *dbmaxls2fn = new SetupMenuValFloat("Lower S2F", "", nullptr, false, &s2f_deadband_neg);
 	top->addEntry(dbmaxls2fn);
 
-	SetupMenuValFloat *dbmaxls2f = new SetupMenuValFloat("Upper S2F", "", .0, 25.0, 1, nullptr, false, &s2f_deadband);
+	SetupMenuValFloat *dbmaxls2f = new SetupMenuValFloat("Upper S2F", "", nullptr, false, &s2f_deadband);
 	top->addEntry(dbmaxls2f);
 }
 
@@ -871,8 +854,7 @@ void audio_menu_create_equalizer(SetupMenu *top) {
 	audeqt->addEntry("Speaker External");
 	top->addEntry(audeqt);
 
-	SetupMenuValFloat *frqr = new SetupMenuValFloat("Frequency Response", "%",
-			-70.0, 70.0, 1.0, 0, false, &frequency_response);
+	SetupMenuValFloat *frqr = new SetupMenuValFloat("Frequency Response", "%", 0, false, &frequency_response);
 	frqr->setHelp(
 			"Setup frequency response, double frequency will be attenuated by the factor given, half frequency will be amplified");
 	top->addEntry(frqr);
@@ -880,8 +862,7 @@ void audio_menu_create_equalizer(SetupMenu *top) {
 
 void audio_menu_create_volume(SetupMenu *top) {
 
-	SetupMenuValFloat *vol = new SetupMenuValFloat("Current Volume", "%", 0.0,
-			100.0, 2.0, vol_adj, false, &audio_volume);
+	SetupMenuValFloat *vol = new SetupMenuValFloat("Current Volume", "%", vol_adj, false, &audio_volume);
 	// unlike top-level menu volume which exits setup, this returns to parent menu
 	vol->setHelp(
 			"Audio volume level for variometer tone on internal and external speaker");
@@ -896,13 +877,11 @@ void audio_menu_create_volume(SetupMenu *top) {
 	cdv->setHelp("Set current volume as default volume when device is switched on");
 	top->addEntry(cdv);
 
-	SetupMenuValFloat *dv = new SetupMenuValFloat("Default Volume", "%", 0, 100,
-			1.0, 0, false, &default_volume);
+	SetupMenuValFloat *dv = new SetupMenuValFloat("Default Volume", "%", nullptr, false, &default_volume);
 	top->addEntry(dv);
 	dv->setHelp("Default volume for Audio when device is switched on");
 
-	SetupMenuValFloat *mv = new SetupMenuValFloat("Max Volume", "%", 0, 100,
-			1.0, 0, false, &max_volume);
+	SetupMenuValFloat *mv = new SetupMenuValFloat("Max Volume", "%", nullptr, false, &max_volume);
 	top->addEntry(mv);
 	mv->setHelp("Maximum audio volume setting allowed");
 
@@ -991,33 +970,31 @@ void audio_menu_create(SetupMenu *audio) {
 	audio->addEntry(db);
 	db->setHelp("Dead band limits within which audio remains silent.  1 m/s equals roughly 200 fpm or 2 knots");
 
-	SetupMenuValFloat *afac = new SetupMenuValFloat("Audio Exponent", "", 0.1,
-			2, 0.025, 0, false, &audio_factor);
+	SetupMenuValFloat *afac = new SetupMenuValFloat("Audio Exponent", "", nullptr, false, &audio_factor);
 	afac->setHelp(
 			"How the audio frequency responds to the climb rate: < 1 for logarithmic, and > 1 for exponential, response");
 	audio->addEntry(afac);
 }
 
 void glider_menu_create_polarpoints(SetupMenu *top) {
-	SetupMenuValFloat *wil = new SetupMenuValFloat("Ref Wingload", "kg/m2",
-			10.0, 100.0, 0.1, 0, false, &polar_wingload);
+	SetupMenuValFloat *wil = new SetupMenuValFloat("Ref Wingload", "kg/m2", nullptr, false, &polar_wingload);
 	wil->setHelp(
 			"Wingloading that corresponds to the 3 value pairs for speed/sink of polar");
 	top->addEntry(wil);
-	SetupMenuValFloat *pov1 = new SetupMenuValFloat("Speed 1", "km/h", 50.0, 120.0, 1, nullptr, false, &polar_speed1);
+	SetupMenuValFloat *pov1 = new SetupMenuValFloat("Speed 1", "km/h", nullptr, false, &polar_speed1);
 	pov1->setHelp("Speed 1, near minimum sink from polar e.g. 80 km/h");
 	top->addEntry(pov1);
-	SetupMenuValFloat *pos1 = new SetupMenuValFloat("Sink  1", "m/s", -3.0, 0.0, 0.01, nullptr, false, &polar_sink1);
+	SetupMenuValFloat *pos1 = new SetupMenuValFloat("Sink  1", "m/s", nullptr, false, &polar_sink1);
 	top->addEntry(pos1);
-	SetupMenuValFloat *pov2 = new SetupMenuValFloat("Speed 2", "km/h", 70.0, 180.0, 1, nullptr, false, &polar_speed2);
+	SetupMenuValFloat *pov2 = new SetupMenuValFloat("Speed 2", "km/h", nullptr, false, &polar_speed2);
 	pov2->setHelp("Speed 2 for a moderate cruise from polar e.g. 120 km/h");
 	top->addEntry(pov2);
-	SetupMenuValFloat *pos2 = new SetupMenuValFloat("Sink  2", "m/s", -5.0, 0.0, 0.01, nullptr, false, &polar_sink2);
+	SetupMenuValFloat *pos2 = new SetupMenuValFloat("Sink  2", "m/s", nullptr, false, &polar_sink2);
 	top->addEntry(pos2);
-	SetupMenuValFloat *pov3 = new SetupMenuValFloat("Speed 3", "km/h", 100.0, 250.0, 1, nullptr, false, &polar_speed3);
+	SetupMenuValFloat *pov3 = new SetupMenuValFloat("Speed 3", "km/h", nullptr, false, &polar_speed3);
 	pov3->setHelp("Speed 3 for a fast cruise from polar e.g. 170 km/h");
 	top->addEntry(pov3);
-	SetupMenuValFloat *pos3 = new SetupMenuValFloat("Sink  3", "m/s", -6.0, 0.0, 0.01, nullptr, false, &polar_sink3);
+	SetupMenuValFloat *pos3 = new SetupMenuValFloat("Sink  3", "m/s", nullptr, false, &polar_sink3);
 	top->addEntry(pos3);
 }
 
@@ -1037,13 +1014,13 @@ void glider_menu_create(SetupMenu *poe) {
 	pa->setHelp("Adjust the polar at 3 points, in the commonly used metric system",230);
 	poe->addEntry(pa);
 
-	SetupMenuValFloat *maxbal = new SetupMenuValFloat("Max Ballast", "liters", 0, 500, 1, nullptr, false, &polar_max_ballast);
+	SetupMenuValFloat *maxbal = new SetupMenuValFloat("Max Ballast", "liters", nullptr, false, &polar_max_ballast);
 	poe->addEntry(maxbal);
 
-	SetupMenuValFloat *wingarea = new SetupMenuValFloat("Wing Area", "m2", 0, 50, 0.1, nullptr, false, &polar_wingarea);
+	SetupMenuValFloat *wingarea = new SetupMenuValFloat("Wing Area", "m2", nullptr, false, &polar_wingarea);
 	poe->addEntry(wingarea);
 
-	SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", 0, 1000, 1, empty_weight_adj, false, &empty_weight);
+	SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", empty_weight_adj, false, &empty_weight);
 	fixball->setPrecision(0);
 	fixball->setHelp("Net rigged weight of the glider, according to the weight and balance plan");
 	poe->addEntry(fixball);
@@ -1096,13 +1073,11 @@ void options_menu_create_flarm(SetupMenu *top) {
 	flarml->addEntry("Level 3");
 	top->addEntry(flarml);
 
-	SetupMenuValFloat *flarmv = new SetupMenuValFloat("Alarm Volume", "%", 20,
-			100, 1, 0, false, &flarm_volume);
+	SetupMenuValFloat *flarmv = new SetupMenuValFloat("Alarm Volume", "%", nullptr, false, &flarm_volume);
 	flarmv->setHelp("Maximum audio volume of FLARM alarm warning");
 	top->addEntry(flarmv);
 
-	SetupMenuValFloat *flarmt = new SetupMenuValFloat("Alarm Timeout", "sec", 1,
-			15, 1, 0, false, &flarm_alarm_time);
+	SetupMenuValFloat *flarmt = new SetupMenuValFloat("Alarm Timeout", "sec", nullptr, false, &flarm_alarm_time);
 	flarmt->setHelp(
 			"The time FLARM alarm warning keeps displayed after alarm went off");
 	top->addEntry(flarmt);
@@ -1124,60 +1099,51 @@ void options_menu_create_gload(SetupMenu *top) {
 	glmod->addEntry("Always-On");
 	top->addEntry(glmod);
 
-	SetupMenuValFloat *gtpos = new SetupMenuValFloat("Positive Threshold", "",
-			1.0, 8.0, 0.1, 0, false, &gload_pos_thresh);
+	SetupMenuValFloat *gtpos = new SetupMenuValFloat("Positive Threshold", "", nullptr, false, &gload_pos_thresh);
 	top->addEntry(gtpos);
 	gtpos->setPrecision(1);
 	gtpos->setHelp("Positive threshold to launch G-Load display");
 
-	SetupMenuValFloat *gtneg = new SetupMenuValFloat("Negative Threshold", "",
-			-8.0, 1.0, 0.1, 0, false, &gload_neg_thresh);
+	SetupMenuValFloat *gtneg = new SetupMenuValFloat("Negative Threshold", "", nullptr, false, &gload_neg_thresh);
 	top->addEntry(gtneg);
 	gtneg->setPrecision(1);
 	gtneg->setHelp("Negative threshold to launch G-Load display");
 
-	SetupMenuValFloat *glpos = new SetupMenuValFloat("Red positive limit", "",
-			1.0, 8.0, 0.1, 0, false, &gload_pos_limit);
+	SetupMenuValFloat *glpos = new SetupMenuValFloat("Red positive limit", "", nullptr, false, &gload_pos_limit);
 	top->addEntry(glpos);
 	glpos->setPrecision(1);
 	glpos->setHelp(
 			"Positive g load factor limit the aircraft is able to handle below maneuvering speed, see manual");
 
-	SetupMenuValFloat *glposl = new SetupMenuValFloat("Yellow pos. Limit", "",
-			1.0, 8.0, 0.1, 0, false, &gload_pos_limit_low);
+	SetupMenuValFloat *glposl = new SetupMenuValFloat("Yellow pos. Limit", "", nullptr, false, &gload_pos_limit_low);
 	top->addEntry(glposl);
 	glposl->setPrecision(1);
 	glposl->setHelp(
 			"Positive g load factor limit the aircraft is able to handle above maneuvering speed, see manual");
 
-	SetupMenuValFloat *glneg = new SetupMenuValFloat("Red negative limit", "",
-			-8.0, 1.0, 0.1, 0, false, &gload_neg_limit);
+	SetupMenuValFloat *glneg = new SetupMenuValFloat("Red negative limit", "", nullptr, false, &gload_neg_limit);
 	top->addEntry(glneg);
 	glneg->setPrecision(1);
 	glneg->setHelp(
 			"Negative g load factor limit the aircraft is able to handle below maneuvering speed, see manual");
 
-	SetupMenuValFloat *glnegl = new SetupMenuValFloat("Yellow neg. Limit", "",
-			-8.0, 1.0, 0.1, 0, false, &gload_neg_limit_low);
+	SetupMenuValFloat *glnegl = new SetupMenuValFloat("Yellow neg. Limit", "", nullptr, false, &gload_neg_limit_low);
 	top->addEntry(glnegl);
 	glnegl->setPrecision(1);
 	glnegl->setHelp(
 			"Negative g load factor limit the aircraft is able to handle above maneuvering speed, see manual");
 
-	SetupMenuValFloat *gmpos = new SetupMenuValFloat("Max Positive", "", 0.0,
-			0.0, 0.0, 0, false, &gload_pos_max);
+	SetupMenuValFloat *gmpos = new SetupMenuValFloat("Max Positive", "", nullptr, false, &gload_pos_max);
 	top->addEntry(gmpos);
 	gmpos->setPrecision(1);
 	gmpos->setHelp("Maximum positive G-Load measured since last reset");
 
-	SetupMenuValFloat *gmneg = new SetupMenuValFloat("Max Negative", "", 0.0,
-			0.0, 0.0, 0, false, &gload_neg_max);
+	SetupMenuValFloat *gmneg = new SetupMenuValFloat("Max Negative", "", nullptr, false, &gload_neg_max);
 	top->addEntry(gmneg);
 	gmneg->setPrecision(1);
 	gmneg->setHelp("Maximum negative G-Load measured since last reset");
 
-	SetupMenuValFloat *gloadalvo = new SetupMenuValFloat("Alarm Volume", "%",
-			20, 100, 1, 0, false, &gload_alarm_volume);
+	SetupMenuValFloat *gloadalvo = new SetupMenuValFloat("Alarm Volume", "%", nullptr, false, &gload_alarm_volume);
 	gloadalvo->setHelp("Maximum volume of G-Load alarm audio warning");
 	top->addEntry(gloadalvo);
 
@@ -1192,13 +1158,11 @@ void options_menu_create_gload(SetupMenu *top) {
 
 void options_menu_create(SetupMenu *opt) {
 	if (student_mode.get() == 0) {
-		SetupMenuSelect *stumo = new SetupMenuSelect("Student Mode",
-				RST_ON_EXIT, 0, true, &student_mode);
+		SetupMenuSelect *stumo = new SetupMenuSelect("Student Mode", RST_NONE, 0, true, &student_mode);
 		opt->addEntry(stumo);
 		stumo->setHelp(
-				"Student mode, disables all sophisticated setup to just basic pre-flight related items like MC, ballast or bugs  (reboots)");
-		stumo->addEntry("Disable");
-		stumo->addEntry("Enable");
+				"Student mode, disables all sophisticated setup to just basic pre-flight related items like MC, ballast or bugs");
+		stumo->mkEnable();
 	}
 	Flap::setupMenue(opt);
 	// Units
@@ -1230,8 +1194,7 @@ void options_menu_create(SetupMenu *opt) {
 	altDisplayMode->addEntry("QNH");
 	altDisplayMode->addEntry("QFE");
 
-	SetupMenuValFloat *tral = new SetupMenuValFloat("Transition Altitude", "FL",
-			0, 400, 10, 0, false, &transition_alt);
+	SetupMenuValFloat *tral = new SetupMenuValFloat("Transition Altitude", "FL", nullptr, false, &transition_alt);
 	tral->setHelp(
 			"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)",
 			100);
@@ -1271,14 +1234,10 @@ void system_menu_create_software(SetupMenu *top) {
 }
 
 void system_menu_create_battery(SetupMenu *top) {
-	SetupMenuValFloat *blow = new SetupMenuValFloat("Battery Low", "Volt ", 0.0,
-			28.0, 0.1, 0, false, &bat_low_volt);
-	SetupMenuValFloat *bred = new SetupMenuValFloat("Battery Red", "Volt ", 0.0,
-			28.0, 0.1, 0, false, &bat_red_volt);
-	SetupMenuValFloat *byellow = new SetupMenuValFloat("Battery Yellow",
-			"Volt ", 0.0, 28.0, 0.1, 0, false, &bat_yellow_volt);
-	SetupMenuValFloat *bfull = new SetupMenuValFloat("Battery Full", "Volt ",
-			0.0, 28.0, 0.1, 0, false, &bat_full_volt);
+	SetupMenuValFloat *blow = new SetupMenuValFloat("Battery Low", "Volt ", nullptr, false, &bat_low_volt);
+	SetupMenuValFloat *bred = new SetupMenuValFloat("Battery Red", "Volt ", nullptr, false, &bat_red_volt);
+	SetupMenuValFloat *byellow = new SetupMenuValFloat("Battery Yellow", "Volt ", nullptr, false, &bat_yellow_volt);
+	SetupMenuValFloat *bfull = new SetupMenuValFloat("Battery Full", "Volt ", nullptr, false, &bat_full_volt);
 
 	SetupMenuSelect *batv = new SetupMenuSelect("Battery Display", RST_NONE, 0,
 			true, &battery_display);
@@ -1347,8 +1306,7 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	dtest->addEntry("Cancel");
 	dtest->addEntry("Start Test");
 
-	SetupMenuValFloat *dcadj = new SetupMenuValFloat("Display Clk Adj", "%", -2,
-			2, 0.1, 0, true, &display_clock_adj, RST_IMMEDIATE);
+	SetupMenuValFloat *dcadj = new SetupMenuValFloat("Display Clk Adj", "%", nullptr, true, &display_clock_adj, RST_IMMEDIATE);
 	dcadj->setHelp(
 			"Modify display clock by given percentage (restarts on exit)", 100);
 	top->addEntry(dcadj);
@@ -1415,9 +1373,7 @@ void system_menu_create_ahrs_calib(SetupMenu *top) {
 	ahrs_calib_collect->addEntry("Start");
 	ahrs_calib_collect->addEntry("Reset");
 
-	SetupMenuValFloat *ahrs_ground_aa = new SetupMenuValFloat(
-			"Ground angle of attack", "°", -5, 20, 1, imu_gaa, false,
-			&glider_ground_aa);
+	SetupMenuValFloat *ahrs_ground_aa = new SetupMenuValFloat("Ground angle of attack", "°", imu_gaa, false, &glider_ground_aa);
 	ahrs_ground_aa->setHelp(
 			"Angle of attack with tail skid on the ground to adjust the AHRS reference. Change this any time to correct the AHRS horizon level.");
 	ahrs_ground_aa->setPrecision(0);
@@ -1450,20 +1406,17 @@ void system_menu_create_hardware_ahrs_lc(SetupMenu *top) {
 }
 
 void system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
-	SetupMenuValFloat *ahrsgf = new SetupMenuValFloat("Gyro Max Trust", "x", 0,
-			100, 1, 0, false, &ahrs_gyro_factor);
+	SetupMenuValFloat *ahrsgf = new SetupMenuValFloat("Gyro Max Trust", "x", nullptr, false, &ahrs_gyro_factor);
 	ahrsgf->setPrecision(0);
 	ahrsgf->setHelp("Maximum Gyro trust factor in artifical horizon");
 	top->addEntry(ahrsgf);
 
-	SetupMenuValFloat *ahrsgfm = new SetupMenuValFloat("Gyro Min Trust", "x", 0,
-			100, 1, 0, false, &ahrs_min_gyro_factor);
+	SetupMenuValFloat *ahrsgfm = new SetupMenuValFloat("Gyro Min Trust", "x", nullptr, false, &ahrs_min_gyro_factor);
 	ahrsgfm->setPrecision(0);
 	ahrsgfm->setHelp("Minimum Gyro trust factor in artifical horizon");
 	top->addEntry(ahrsgfm);
 
-	SetupMenuValFloat *ahrsdgf = new SetupMenuValFloat("Gyro Dynamics", "", 0.5,
-			10, 0.1, 0, false, &ahrs_dynamic_factor);
+	SetupMenuValFloat *ahrsdgf = new SetupMenuValFloat("Gyro Dynamics", "", nullptr, false, &ahrs_dynamic_factor);
 	ahrsdgf->setHelp(
 			"Gyro dynamics factor, higher value trusts gyro more when load factor is different from one");
 	top->addEntry(ahrsdgf);
@@ -1475,13 +1428,11 @@ void system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
 	ahrsrollcheck->addEntry("Enable");
 	top->addEntry(ahrsrollcheck);
 
-	SetupMenuValFloat *gyrog = new SetupMenuValFloat("Gyro Gating", "°", 0, 10,
-			0.1, 0, false, &gyro_gating);
+	SetupMenuValFloat *gyrog = new SetupMenuValFloat("Gyro Gating", "°", nullptr, false, &gyro_gating);
 	gyrog->setHelp("Minimum accepted gyro rate in degree per second");
 	top->addEntry(gyrog);
 
-	SetupMenuValFloat *tcontrol = new SetupMenuValFloat("AHRS Temp Control", "",
-			-1, 60, 1, 0, false, &mpu_temperature);
+	SetupMenuValFloat *tcontrol = new SetupMenuValFloat("AHRS Temp Control", "", nullptr, false, &mpu_temperature);
 	tcontrol->setPrecision(0);
 	tcontrol->setHelp(
 			"Regulated target temperature of AHRS silicon chip, if supported in hardware (model > 2023), -1 means OFF");
@@ -1581,7 +1532,7 @@ void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
 	top->addEntry(stawaen);
 
 	// Fixme no need to reboot
-	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", 20, 200, 0, nullptr, true, &stall_speed);
+	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", nullptr, true, &stall_speed);
 	top->addEntry(staspe);
 }
 
@@ -1595,8 +1546,7 @@ void system_menu_create_altimeter_airspeed(SetupMenu *top) {
 	als->addEntry("Baro Sensor");
 	als->addEntry("External");
 
-	SetupMenuValFloat *spc = new SetupMenuValFloat("AS Calibration", "%", -100,
-			100, 1, speedcal_change, false, &speedcal);
+	SetupMenuValFloat *spc = new SetupMenuValFloat("AS Calibration", "%", speedcal_change, false, &speedcal);
 	spc->setHelp(
 			"Calibration of airspeed sensor (AS). Normally not needed, unless pressure probes have systematic error");
 	top->addEntry(spc);
@@ -1624,8 +1574,7 @@ void system_menu_create_altimeter_airspeed(SetupMenu *top) {
 	top->addEntry(stallwa);
 	stallwa->setHelp("Configure stall warning parameters");
 
-	SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", 70,
-			450, 1, 0, false, &v_max);
+	SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", nullptr, false, &v_max);
 	vmax->setHelp("Configure maximum speed for corresponding aircraft type");
 	top->addEntry(vmax);
 }
@@ -1683,15 +1632,13 @@ void system_menu_create(SetupMenu *sye) {
 void setup_create_root(SetupMenu *top) {
 	ESP_LOGI(FNAME,"setup_create_root()");
 	if (rot_default.get() == 0) {
-		SetupMenuValFloat *mc = new SetupMenuValFloat("MC", "", 0.0, 9.9, 0.1,
-				0, true, &MC);
+		SetupMenuValFloat *mc = new SetupMenuValFloat("MC", "", nullptr, true, &MC);
 		mc->setHelp(
 				"Mac Cready value for optimum cruise speed or average climb rate, in same unit as the variometer");
 		mc->setPrecision(1);
 		top->addEntry(mc);
 	} else {
-		SetupMenuValFloat *vol = new SetupMenuValFloat("Audio Volume", "%", 0.0,
-				100, 1, vol_adj, true, &audio_volume);
+		SetupMenuValFloat *vol = new SetupMenuValFloat("Audio Volume", "%", vol_adj, true, &audio_volume);
 		vol->setHelp(
 				"Audio volume level for variometer tone on internal and external speaker");
 		vol->setMax(max_volume.get());
@@ -1708,14 +1655,12 @@ void setup_create_root(SetupMenu *top) {
 		bugs_item_create(top);
 	}
 
-	SetupMenuValFloat *bal = new SetupMenuValFloat("Ballast", "litre", 0.0, 500,
-			1, water_adj, true, &ballast_kg);
+	SetupMenuValFloat *bal = new SetupMenuValFloat("Ballast", "litre", water_adj, true, &ballast_kg);
 	bal->setHelp("Amount of water ballast added to the over all weight");
 	bal->setPrecision(0);
 	top->addEntry(bal);
 
-	SetupMenuValFloat *crewball = new SetupMenuValFloat("Crew Weight", "kg", 0,
-			300, 1, crew_weight_adj, false, &crew_weight);
+	SetupMenuValFloat *crewball = new SetupMenuValFloat("Crew Weight", "kg", crew_weight_adj, false, &crew_weight);
 	crewball->setPrecision(0);
 	crewball->setHelp(
 			"Weight of the pilot(s) including parachute (everything on top of the empty weight apart from ballast)");
@@ -1724,8 +1669,7 @@ void setup_create_root(SetupMenu *top) {
 	SetupMenuValFloat *qnh_menu = SetupMenu::createQNHMenu();
 	top->addEntry(qnh_menu);
 
-	SetupMenuValFloat *afe = new SetupMenuValFloat("Airfield Elevation", "", NOTSET_ELEVATION,
-			3000, 1, 0, true, &elevation);
+	SetupMenuValFloat *afe = new SetupMenuValFloat("Airfield Elevation", "", nullptr, true, &elevation);
 	afe->setHelp(
 			"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
 	afe->setRotDynamic(3.0);
@@ -1738,8 +1682,7 @@ void setup_create_root(SetupMenu *top) {
 	}
 	// Student mode: Query password
 	if (student_mode.get()) {
-		SetupMenuValFloat *passw = new SetupMenuValFloat("Expert Password", "",
-				0, 1000, 1, 0, false, &password);
+		SetupMenuValFloat *passw = new SetupMenuValFloat("Expert Password", "", nullptr, false, &password);
 		passw->setPrecision(0);
 		passw->setHelp(
 				"To exit from student mode enter expert password and restart device after expert password has been set correctly");
@@ -1769,14 +1712,13 @@ SetupMenu* SetupMenu::createTopSetup() {
 }
 
 SetupMenuValFloat* SetupMenu::createQNHMenu() {
-	SetupMenuValFloat *qnh = new SetupMenuValFloat("QNH", "", 900, 1100.0, 0.250, qnh_adj, true, &QNH);
+	SetupMenuValFloat *qnh = new SetupMenuValFloat("QNH", "", qnh_adj, true, &QNH);
 	qnh->setHelp("QNH pressure value from ATC. On ground you may adjust to airfield altitude above MSL", 180);
 	return qnh;
 }
 
 SetupMenuValFloat* SetupMenu::createVoltmeterAdjustMenu() {
-	SetupMenuValFloat *met_adj = new SetupMenuValFloat("Voltmeter Adjust", "%",
-		-25.0, 25.0, 0.01, factv_adj, false, &factory_volt_adjust, RST_NONE, false, true);
+	SetupMenuValFloat *met_adj = new SetupMenuValFloat("Voltmeter Adjust", "%", factv_adj, false, &factory_volt_adjust, RST_NONE, false, true);
 	met_adj->setHelp("Option to factory fine-adjust voltmeter");
 	return met_adj;
 }

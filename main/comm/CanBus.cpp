@@ -5,7 +5,7 @@
 #include "DeviceMgr.h"
 #include "DataLink.h"
 #include "sensor.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>

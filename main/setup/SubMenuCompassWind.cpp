@@ -29,14 +29,6 @@ static int compassDeclinationAction(SetupMenuValFloat *p) {
 	return CompassMenu::declinationAction(p);
 }
 
-static int windResetAction(SetupMenuSelect *p) {
-	if (p->getSelect() == 1) {
-		// Reset is selected, set default values
-		wind_as_min.set(25);
-	}
-	return 0;
-}
-
 static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"compassSensorCalibrateAction()");
 	if (p->getSelect() != 0) { // Start, Show
@@ -86,8 +78,7 @@ static void options_menu_create_compasswind_compass(SetupMenu *top) {
 	top->addEntry(compSensorCal);
 
 	// Fixme replace by WMM
-	SetupMenuValFloat *cd = new SetupMenuValFloat("Setup Declination", "°", -180, 180, 1.0, compassDeclinationAction, false,
-			&compass_declination);
+	SetupMenuValFloat *cd = new SetupMenuValFloat("Setup Declination", "°", compassDeclinationAction, false, &compass_declination);
 	cd->setHelp("Set compass declination in degrees");
 	top->addEntry(cd);
 
@@ -115,8 +106,7 @@ static void options_menu_create_compasswind_compass(SetupMenu *top) {
 	SetupMenu *nmeaMenu = new SetupMenu("Setup NMEA", options_menu_create_compasswind_compass_nmea);
 	top->addEntry(nmeaMenu);
 
-	SetupMenuValFloat *compdamp = new SetupMenuValFloat("Damping", "sec", 0.1,
-			10.0, 0.1, 0, false, &compass_damping);
+	SetupMenuValFloat *compdamp = new SetupMenuValFloat("Damping", "sec", nullptr, false, &compass_damping);
 	compdamp->setPrecision(1);
 	top->addEntry(compdamp);
 	compdamp->setHelp("Compass or magnetic heading damping factor in seconds");
@@ -127,56 +117,49 @@ static void options_menu_create_compasswind_compass(SetupMenu *top) {
 }
 
 static void options_menu_create_compasswind_straightwind_filters(SetupMenu *top) {
-	SetupMenuValFloat *smgsm = new SetupMenuValFloat("Airspeed Lowpass", "", 0,
-			0.05, 0.001, nullptr, false, &wind_as_filter);
+	SetupMenuValFloat *smgsm = new SetupMenuValFloat("Airspeed Lowpass", "", nullptr, false, &wind_as_filter);
 	smgsm->setPrecision(3);
 	top->addEntry(smgsm);
 	smgsm->setHelp(
 			"Lowpass filter factor (per sec) for airspeed estimation from AS/Compass and GPS tracks");
 
-	SetupMenuValFloat *devlp = new SetupMenuValFloat("Deviation Lowpass", "", 0,
-			0.05, 0.001, nullptr, false, &wind_dev_filter);
+	SetupMenuValFloat *devlp = new SetupMenuValFloat("Deviation Lowpass", "", nullptr, false, &wind_dev_filter);
 	devlp->setPrecision(3);
 	top->addEntry(devlp);
 	devlp->setHelp(
 			"Lowpass filter factor (per sec) for deviation table correction from AS/Compass and GPS tracks");
 
-	SetupMenuValFloat *smgps = new SetupMenuValFloat("GPS Lowpass", "sec", 0.1,
-			10.0, 0.1, nullptr, false, &wind_gps_lowpass);
+	SetupMenuValFloat *smgps = new SetupMenuValFloat("GPS Lowpass", "sec", nullptr, false, &wind_gps_lowpass);
 	smgps->setPrecision(1);
 	top->addEntry(smgps);
 	smgps->setHelp(
 			"Lowpass filter factor for GPS track and speed, to correlate with Compass latency");
 
-	SetupMenuValFloat *wlpf = new SetupMenuValFloat("Averager", "", 5, 120, 1, nullptr, false, &wind_filter_lowpass);
+	SetupMenuValFloat *wlpf = new SetupMenuValFloat("Averager", "", nullptr, false, &wind_filter_lowpass);
 	wlpf->setPrecision(0);
 	top->addEntry(wlpf);
 	wlpf->setHelp("Number of measurements (seconds) averaged in straight flight live wind estimation");
 }
 
 static void options_menu_create_compasswind_straightwind_limits(SetupMenu *top) {
-	SetupMenuValFloat *smdev = new SetupMenuValFloat("Deviation Limit", "°",
-			0.0, 180.0, 1.0, nullptr, false, &wind_max_deviation);
+	SetupMenuValFloat *smdev = new SetupMenuValFloat("Deviation Limit", "°", nullptr, false, &wind_max_deviation);
 	smdev->setHelp(
 			"Maximum deviation change accepted when derived from AS/Compass and GPS tracks");
 	top->addEntry(smdev);
 
-	SetupMenuValFloat *smslip = new SetupMenuValFloat("Sideslip Limit", "°", 0,
-			45.0, 0.1, nullptr, false, &swind_sideslip_lim);
+	SetupMenuValFloat *smslip = new SetupMenuValFloat("Sideslip Limit", "°", nullptr, false, &swind_sideslip_lim);
 	smslip->setPrecision(1);
 	top->addEntry(smslip);
 	smslip->setHelp(
 			"Maximum side slip estimation in ° accepted in straight wind calculation");
 
-	SetupMenuValFloat *smcourse = new SetupMenuValFloat("Course Limit", "°",
-			2.0, 30.0, 0.1, nullptr, false, &wind_straight_course_tolerance);
+	SetupMenuValFloat *smcourse = new SetupMenuValFloat("Course Limit", "°", nullptr, false, &wind_straight_course_tolerance);
 	smcourse->setPrecision(1);
 	top->addEntry(smcourse);
 	smcourse->setHelp(
 			"Maximum delta angle in ° per second accepted for straight wind calculation");
 
-	SetupMenuValFloat *aslim = new SetupMenuValFloat("AS Delta Limit", "km/h",
-			1.0, 30.0, 1, nullptr, false, &wind_straight_speed_tolerance);
+	SetupMenuValFloat *aslim = new SetupMenuValFloat("AS Delta Limit", "km/h", nullptr, false, &wind_straight_speed_tolerance);
 	aslim->setPrecision(0);
 	top->addEntry(aslim);
 	aslim->setHelp(
@@ -197,28 +180,24 @@ void options_menu_create_compasswind_circlingwind(SetupMenu *top) {
 	ShowCirclingWind *scw = new ShowCirclingWind("Circling Wind Status");
 	top->addEntry(scw);
 
-	SetupMenuValFloat *cirwd = new SetupMenuValFloat("Max Delta", "°", 0, 90.0,
-			1.0, nullptr, false, &max_circle_wind_diff);
+	SetupMenuValFloat *cirwd = new SetupMenuValFloat("Max Delta", "°", nullptr, false, &max_circle_wind_diff);
 	top->addEntry(cirwd);
 	cirwd->setHelp(
 			"Maximum accepted value for heading error in circling wind calculation");
 
-	SetupMenuValFloat *cirlp = new SetupMenuValFloat("Averager", "", 1, 10, 1,
-			nullptr, false, &circle_wind_lowpass);
+	SetupMenuValFloat *cirlp = new SetupMenuValFloat("Averager", "", nullptr, false, &circle_wind_lowpass);
 	cirlp->setPrecision(0);
 	top->addEntry(cirlp);
 	cirlp->setHelp(
 			"Number of circles used for circling wind averager. A value of 1 means no average");
 
-	SetupMenuValFloat *cirwsd = new SetupMenuValFloat("Max Speed Delta", "km/h",
-			0.0, 20.0, 0.1, nullptr, false, &max_circle_wind_delta_speed);
+	SetupMenuValFloat *cirwsd = new SetupMenuValFloat("Max Speed Delta", "km/h", nullptr, false, &max_circle_wind_delta_speed);
 	top->addEntry(cirwsd);
 	cirwsd->setPrecision(1);
 	cirwsd->setHelp(
 			"Maximum wind speed delta from last measurement accepted for circling wind calculation");
 
-	SetupMenuValFloat *cirwdd = new SetupMenuValFloat("Max Dir Delta", "°", 0.0,
-			60.0, 0.1, nullptr, false, &max_circle_wind_delta_deg);
+	SetupMenuValFloat *cirwdd = new SetupMenuValFloat("Max Dir Delta", "°", nullptr, false, &max_circle_wind_delta_deg);
 	top->addEntry(cirwdd);
 	cirwdd->setPrecision(1);
 	cirwdd->setHelp(

@@ -135,18 +135,19 @@ bool StraightWind::calculateWind()
 
 	// Check, if we have a AS value > minimum, default is 25 km/h.
 	// If GS is nearly zero, the measurement makes also sense (wave), hence if we are not flying it doesn't
+	const float wind_as_min = 25.;
 
-	if( ctas < Units::Airspeed2Kmh( wind_as_min.get() ) )
+	if( ctas < Units::Airspeed2Kmh( wind_as_min ) )
 	{
 		// We start a new measurement cycle.
 		if( !lowAirspeed ) {
-			ESP_LOGI(FNAME,"Low Airspeed, stop wind calculation, AS %3.1f  < %3.1f Kmh", ctas,  Units::Airspeed2Kmh( wind_as_min.get() ) );
+			ESP_LOGI(FNAME,"Low Airspeed, stop wind calculation, AS %3.1f  < %3.1f Kmh", ctas,  Units::Airspeed2Kmh( wind_as_min ) );
 			lowAirspeed = true;
 		}
 		status="Low AS";
 	}else{
 		if( lowAirspeed ) {
-			ESP_LOGI(FNAME,"Airspeed OK, start wind calculation, AS %3.1f  < %3.1f Kmh", ctas,  Units::Airspeed2Kmh( wind_as_min.get() ) );
+			ESP_LOGI(FNAME,"Airspeed OK, start wind calculation, AS %3.1f  < %3.1f Kmh", ctas,  Units::Airspeed2Kmh( wind_as_min ) );
 			lowAirspeed = false;
 		}
 	}

@@ -18,7 +18,6 @@ typedef enum { RS232_NORMAL, RS232_TTL } rs232lm_t;
 
 union t_serial_cfg {
 	struct {
-		e_profile  profile:5;
 		e_baud     baud:4;
 		bool       polarity:1;
 		bool       pin_swp:1;
@@ -26,8 +25,8 @@ union t_serial_cfg {
 	};
 	uint16_t raw = 0;
 	constexpr t_serial_cfg(int r) : raw(r) {}
-	constexpr t_serial_cfg(int pfl, int b, bool pty, bool swp, bool tx) :
-		raw((pfl & 0x1f) | (b & 0xf)<<5 | (pty & 0x1)<<9 | (swp & 0x1)<<10 | (tx & 0x1)<<11) {}
+	constexpr t_serial_cfg(int b, bool pty, bool swp, bool tx) :
+		raw((b & 0xf) | (pty & 0x1)<<4 | (swp & 0x1)<<5 | (tx & 0x1)<<6) {}
 };
 
 struct t_serial_nvs_setup {

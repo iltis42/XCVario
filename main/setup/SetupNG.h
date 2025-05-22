@@ -72,12 +72,11 @@ typedef enum e_battery_display { BAT_PERCENTAGE, BAT_VOLTAGE, BAT_VOLTAGE_BIG } 
 typedef enum e_wind_display { WD_NONE, WD_DIGITS, WD_ARROW, WD_BOTH, WD_COMPASS } e_wind_display_t;
 typedef enum e_wind_reference { WR_NORTH, WR_HEADING, WR_GPS_COURSE } e_wind_reference_t;
 typedef enum e_wind_logging { WLOG_DISABLE, WLOG_WIND, WLOG_GYRO_MAG, WLOG_BOTH } e_wind_logging_t;
-typedef enum { UNIT_NONE, UNIT_TEMPERATURE, UNIT_ALT, UNIT_SPEED, UNIT_VARIO, UNIT_QNH } e_unit_type_t;
+typedef enum { QUANT_NONE, QUANT_TEMPERATURE, QUANT_ALT, QUANT_HSPEED, QUANT_VSPEED, QUANT_QNH, QUANT_MASS } e_quantity_t;
 typedef enum e_temperature_unit { T_CELCIUS, T_FAHRENHEIT, T_KELVIN } e_temperature_unit_t;
 typedef enum e_alt_unit { ALT_UNIT_METER, ALT_UNIT_FT, ALT_UNIT_FL } e_alt_unit_t;
 typedef enum e_dst_unit { DST_UNIT_M, DST_UNIT_FT, DST_UNIT_MILES, DST_UNIT_NAUTICAL_MILES } e_dst_unit_t;
-typedef enum e_speed_unit { SPEED_UNIT_KMH, SPEED_UNIT_MPH, SPEED_UNIT_KNOTS } e_speed_unit_t;
-typedef enum e_vario_unit { VARIO_UNIT_MS, VARIO_UNIT_FPM, VARIO_UNIT_KNOTS } e_vario_unit_t;
+typedef enum e_speed_unit { SPEED_UNIT_MS, SPEED_UNIT_KMH, SPEED_UNIT_FPM, SPEED_UNIT_MPH, SPEED_UNIT_KNOTS } e_speed_unit_t;
 typedef enum e_qnh_unit { QNH_HPA, QNH_INHG } e_qnh_unit_t;
 typedef enum e_compasss_sensor_type { CS_DISABLE=0, CS_I2C=1, CS_CAN=3 } e_compasss_sensor_type_t;
 typedef enum e_alt_quantisation { ALT_QUANT_DISABLE, ALT_QUANT_2, ALT_QUANT_5, ALT_QUANT_10, ALT_QUANT_20 } e_alt_quantisation_t;
@@ -127,14 +126,29 @@ struct t_tenchar_id {
 	}
 };
 
+struct limits_t
+{
+	float _min;
+	float _max;
+	float _step;
+	constexpr limits_t(float min, float max, float step)
+		: _min(min), _max(max), _step(step) {}
+};
+// create static pointers to limits that live only in flash
+#define LIMITS(min, max, step) ([]() -> const limits_t* { \
+    static constexpr limits_t _lim = { (min), (max), (step) }; \
+    return &_lim; \
+}())
+
 template<typename T>
 class SetupNG: public SetupCommon
 {
 public:
 	SetupNG( const char *akey, T adefault, bool reset=true, e_sync_t sync=SYNC_NONE, e_volatility vol=PERSISTENT,
-			void (* action)()=0, e_unit_type_t unit = UNIT_NONE) :
+			void (* action)()=0, e_quantity_t quant = QUANT_NONE, const limits_t *l = nullptr) :
 		SetupCommon(akey),
-		_default(adefault)
+		_default(adefault),
+		_limt(l)
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		// if( strlen( akey ) > 15 ) {
@@ -143,7 +157,7 @@ public:
 		flags._reset = reset;
 		flags._sync = sync;
 		flags._volatile = vol;
-		flags._unit = unit;
+		flags._quant = quant;
 		_action = action;
 	}
 	virtual ~SetupNG() = default;
@@ -257,17 +271,24 @@ public:
 		return true;
 	}
 
-	e_unit_type_t unitType() {
-		return (e_unit_type_t)flags._unit;
+	e_quantity_t quantityType() {
+		return (e_quantity_t)flags._quant;
 	}
 
 	T getDefault() const { return _default; }
 
+	bool hasLimits() const { return _limt != nullptr; }
+	float getMin() const { return _limt->_min; }
+	float getMax() const { return _limt->_max; }
+	float getStep() const { return _limt->_step; }
+
 private:
 	T       _value;   // the value
 	const T _default; // value applied with a factory reset
+	const limits_t *_limt = nullptr;
 };
 
+extern SetupNG<float> 		MC;
 extern SetupNG<float> 		QNH;
 extern SetupNG<float> 		polar_wingload;
 extern SetupNG<float> 		polar_speed1;
@@ -288,7 +309,7 @@ extern SetupNG<int>  		dual_tone;
 extern SetupNG<float>  		high_tone_var;
 extern SetupNG<float>  		deadband;
 extern SetupNG<float>  		deadband_neg;
-extern SetupNG<float>  		range;
+extern SetupNG<float>  		scale_range;
 extern SetupNG<int>			log_scale;
 extern SetupNG<float>  		ballast;
 extern SetupNG<float>  		ballast_kg;
@@ -490,7 +511,6 @@ extern SetupNG<float>		gload_alarm_volume;
 extern SetupNG<float>		airspeed_max;
 extern SetupNG<int> 		wind_enable;
 extern SetupNG<int> 		wind_logging;
-extern SetupNG<float> 		wind_as_min;
 extern SetupNG<float> 		wind_as_calibration;
 extern SetupNG<float> 		wind_filter_lowpass;
 extern SetupNG<float>       wind_gps_lowpass;
@@ -533,7 +553,6 @@ extern SetupNG<DeviceNVS>	radio_host_setup;
 extern SetupNG<DeviceNVS>	krt_devsetup;
 extern SetupNG<DeviceNVS>	atr_devsetup;
 
-extern float last_volume;   // is this used?
 
 void change_ballast();
 void change_mc();

@@ -204,15 +204,15 @@ const char* Units::AirspeedModeStr()
 
 float Units::Vario(const float te)
 { // standard is m/s
-	if (vario_unit.get() == VARIO_UNIT_MS)
+	if (vario_unit.get() == SPEED_UNIT_MS)
 	{
 		return (te);
 	}
-	else if (vario_unit.get() == VARIO_UNIT_FPM)
+	else if (vario_unit.get() == SPEED_UNIT_FPM)
 	{
 		return (te * 1.9685);
 	}
-	else if (vario_unit.get() == VARIO_UNIT_KNOTS)
+	else if (vario_unit.get() == SPEED_UNIT_KNOTS)
 	{
 		return (te * 1.94384); // knots
 	}
@@ -281,15 +281,15 @@ float Units::ms2fpm(float ms)
 
 float Units::Vario2ms(float var)
 {
-	if (vario_unit.get() == VARIO_UNIT_MS)
+	if (vario_unit.get() == SPEED_UNIT_MS)
 	{
 		return (var);
 	}
-	else if (vario_unit.get() == VARIO_UNIT_FPM)
+	else if (vario_unit.get() == SPEED_UNIT_FPM)
 	{
 		return (var / 196.85);
 	}
-	else if (vario_unit.get() == VARIO_UNIT_KNOTS)
+	else if (vario_unit.get() == SPEED_UNIT_KNOTS)
 	{
 		return (var / 1.94384); // knots
 	}
@@ -302,15 +302,15 @@ float Units::Vario2ms(float var)
 
 float Units::mcval2knots(float mc)
 { // returns MC, stored according to vario setting, in knots
-	if (vario_unit.get() == VARIO_UNIT_MS)
+	if (vario_unit.get() == SPEED_UNIT_MS)
 	{ // mc is in m/s
 		return (mc * 1.94384);
 	}
-	else if (vario_unit.get() == VARIO_UNIT_FPM)
+	else if (vario_unit.get() == SPEED_UNIT_FPM)
 	{ // mc is stored in feet per minute
 		return (mc * 0.00987472);
 	}
-	else if (vario_unit.get() == VARIO_UNIT_KNOTS)
+	else if (vario_unit.get() == SPEED_UNIT_KNOTS)
 	{ // knots we already have
 		return (mc);
 	}
@@ -323,15 +323,15 @@ float Units::mcval2knots(float mc)
 
 const char* Units::VarioUnit()
 {
-	if (vario_unit.get() == VARIO_UNIT_MS)
+	if (vario_unit.get() == SPEED_UNIT_MS)
 	{
 		return ("m/s");
 	}
-	else if (vario_unit.get() == VARIO_UNIT_FPM)
+	else if (vario_unit.get() == SPEED_UNIT_FPM)
 	{
 		return ("ft/m");
 	}
-	else if (vario_unit.get() == VARIO_UNIT_KNOTS)
+	else if (vario_unit.get() == SPEED_UNIT_KNOTS)
 	{
 		return ("kt");
 	}
@@ -370,15 +370,15 @@ const char* Units::VarioUnitLong(int unit)
 	{
 		u = vario_unit.get();
 	}
-	if (u == VARIO_UNIT_MS)
+	if (u == SPEED_UNIT_MS)
 	{
 		return ("m/s");
 	}
-	else if (u == VARIO_UNIT_FPM)
+	else if (u == SPEED_UNIT_FPM)
 	{
 		return ("x 100ft/m");
 	}
-	else if (u == VARIO_UNIT_KNOTS)
+	else if (u == SPEED_UNIT_KNOTS)
 	{
 		return ("knots");
 	}
@@ -508,42 +508,42 @@ const char* Units::DistanceUnit(int unit)
 	return "nan";
 }
 
-float Units::value(float val, e_unit_type_t u)
+float Units::value(float val, e_quantity_t u)
 {
 	switch (u)
 	{
-	case UNIT_NONE:
+	case QUANT_NONE:
 		return val;
-	case UNIT_TEMPERATURE:
+	case QUANT_TEMPERATURE:
 		return TemperatureUnit(val);
-	case UNIT_ALT:
+	case QUANT_ALT:
 		return Altitude(val);
-	case UNIT_SPEED:
+	case QUANT_HSPEED:
 		return Airspeed(val);
-	case UNIT_VARIO:
+	case QUANT_VSPEED:
 		return Vario(val);
-	case UNIT_QNH:
+	case QUANT_QNH:
 		return Qnh(val);
 	default:
 		return val;
 	}
 }
 
-const char* Units::unit(e_unit_type_t u)
+const char* Units::unit(e_quantity_t u)
 {
 	switch (u)
 	{
-	case UNIT_NONE:
+	case QUANT_NONE:
 		return "";
-	case UNIT_TEMPERATURE:
+	case QUANT_TEMPERATURE:
 		return TemperatureUnitStr();
-	case UNIT_ALT:
+	case QUANT_ALT:
 		return AltitudeUnit();
-	case UNIT_SPEED:
+	case QUANT_HSPEED:
 		return AirspeedUnitStr();
-	case UNIT_VARIO:
+	case QUANT_VSPEED:
 		return VarioUnit();
-	case UNIT_QNH:
+	case QUANT_QNH:
 		return QnhUnit();
 	default:
 		return "";

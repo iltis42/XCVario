@@ -768,7 +768,7 @@ void Audio::setup()
 	else if( audio_range.get() == AUDIO_RANGE_10_MS )
 		_range = 10.0;
 	else
-		_range = range.get();
+		_range = scale_range.get();
 	_tonemode = dual_tone.get();
 	_high_tone_var = ((high_tone_var.get() + 100.0)/100);
 

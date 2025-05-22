@@ -16,12 +16,9 @@
 #include "logdef.h"
 
 
-SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float min, float max, float step, 
-	int (*action)( SetupMenuValFloat *p ), bool end_menu, SetupNG<float> *anvs, e_restart_mode_t restart, bool sync, bool live_update ) :
+SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, int (*action)( SetupMenuValFloat *p ), 
+	bool end_menu, SetupNG<float> *anvs, e_restart_mode_t restart, bool sync, bool live_update ) :
 	MenuEntry(),
-	_min(min),
-	_max(max),
-	_step(step),
 	_action(action),
 	_nvs(anvs)
 {
@@ -30,18 +27,25 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, float
 	if( unit != 0 && *unit != '\0' ) {
 		_unit = unit;
 	}
-	else {
-		_unit = Units::unit( _nvs->unitType() );
+	else if ( _nvs ) {
+		_unit = Units::unit( _nvs->quantityType() );
 	}
+
+	if ( _nvs ) {
+		_value = _nvs->get();
+		if ( _nvs->hasLimits() ) {
+			_min = _nvs->getMin();
+			_max = _nvs->getMax();
+			_step = _nvs->getStep();
+		}
+	}
+
 	bits._restart = restart;
 	bits._end_menu = end_menu;
 	bits._precision = 2;
 	bits._live_update = live_update;
-	if( step >= 1 ) {
+	if( _step >= 1 ) {
 		bits._precision = 0;
-	}
-	if ( _nvs ) {
-		_value = _nvs->get();
 	}
 }
 
@@ -53,8 +57,8 @@ void SetupMenuValFloat::enter()
 
 const char *SetupMenuValFloat::value() const
 {
-	float uval = Units::value( _value, _nvs->unitType() );
-	// ESP_LOGI(FNAME,"value() ulen: %d val: %f, utype: %d unitval: %f", strlen( _unit ), _nvs->get(), _nvs->unitType(), uval  );
+	float uval = Units::value( _value, _nvs->quantityType() );
+	// ESP_LOGI(FNAME,"value() ulen: %d val: %f, utype: %d unitval: %f", strlen( _unit ), _nvs->get(), _nvs->quantityType(), uval  );
 	sprintf(_val_str,"%0.*f %s   ", bits._precision, uval, _unit );
 	return _val_str;
 }
@@ -94,13 +98,13 @@ void SetupMenuValFloat::displayVal()
 // fixme use si units and adapt only the display to locales
 float SetupMenuValFloat::step( float instep ){
 	float step = 1.0;
-	if( _nvs->unitType() == UNIT_ALT && alt_unit.get() == ALT_UNIT_FT )
+	if( _nvs->quantityType() == QUANT_ALT && alt_unit.get() == ALT_UNIT_FT )
 		step = 5.0;
 	else
 		step = instep;
-	if( _nvs->unitType() == UNIT_VARIO && vario_unit.get() == VARIO_UNIT_KNOTS )
+	if( _nvs->quantityType() == QUANT_VSPEED && vario_unit.get() == SPEED_UNIT_KNOTS )
 		step = Units::Vario2ms( instep*2 );
-	// ESP_LOGI(FNAME,"instep: %f, ut:%d ostep: %f", instep, _nvs->unitType(), step );
+	// ESP_LOGI(FNAME,"instep: %f, ut:%d ostep: %f", instep, _nvs->quantityType(), step );
 	return step;
 }
 

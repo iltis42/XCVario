@@ -204,15 +204,15 @@ const char* Units::AirspeedModeStr()
 
 float Units::Vario(const float te)
 { // standard is m/s
-	if (vario_unit.get() == SPEED_UNIT_MS)
+	if (vario_unit.get() == VARIO_UNIT_MS)
 	{
 		return (te);
 	}
-	else if (vario_unit.get() == SPEED_UNIT_FPM)
+	else if (vario_unit.get() == VARIO_UNIT_FPM)
 	{
 		return (te * 1.9685);
 	}
-	else if (vario_unit.get() == SPEED_UNIT_KNOTS)
+	else if (vario_unit.get() == VARIO_UNIT_KNOTS)
 	{
 		return (te * 1.94384); // knots
 	}
@@ -281,15 +281,15 @@ float Units::ms2fpm(float ms)
 
 float Units::Vario2ms(float var)
 {
-	if (vario_unit.get() == SPEED_UNIT_MS)
+	if (vario_unit.get() == VARIO_UNIT_MS)
 	{
 		return (var);
 	}
-	else if (vario_unit.get() == SPEED_UNIT_FPM)
+	else if (vario_unit.get() == VARIO_UNIT_FPM)
 	{
 		return (var / 196.85);
 	}
-	else if (vario_unit.get() == SPEED_UNIT_KNOTS)
+	else if (vario_unit.get() == VARIO_UNIT_KNOTS)
 	{
 		return (var / 1.94384); // knots
 	}
@@ -302,15 +302,15 @@ float Units::Vario2ms(float var)
 
 float Units::mcval2knots(float mc)
 { // returns MC, stored according to vario setting, in knots
-	if (vario_unit.get() == SPEED_UNIT_MS)
+	if (vario_unit.get() == VARIO_UNIT_MS)
 	{ // mc is in m/s
 		return (mc * 1.94384);
 	}
-	else if (vario_unit.get() == SPEED_UNIT_FPM)
+	else if (vario_unit.get() == VARIO_UNIT_FPM)
 	{ // mc is stored in feet per minute
 		return (mc * 0.00987472);
 	}
-	else if (vario_unit.get() == SPEED_UNIT_KNOTS)
+	else if (vario_unit.get() == VARIO_UNIT_KNOTS)
 	{ // knots we already have
 		return (mc);
 	}
@@ -323,15 +323,15 @@ float Units::mcval2knots(float mc)
 
 const char* Units::VarioUnit()
 {
-	if (vario_unit.get() == SPEED_UNIT_MS)
+	if (vario_unit.get() == VARIO_UNIT_MS)
 	{
 		return ("m/s");
 	}
-	else if (vario_unit.get() == SPEED_UNIT_FPM)
+	else if (vario_unit.get() == VARIO_UNIT_FPM)
 	{
 		return ("ft/m");
 	}
-	else if (vario_unit.get() == SPEED_UNIT_KNOTS)
+	else if (vario_unit.get() == VARIO_UNIT_KNOTS)
 	{
 		return ("kt");
 	}
@@ -370,15 +370,15 @@ const char* Units::VarioUnitLong(int unit)
 	{
 		u = vario_unit.get();
 	}
-	if (u == SPEED_UNIT_MS)
+	if (u == VARIO_UNIT_MS)
 	{
 		return ("m/s");
 	}
-	else if (u == SPEED_UNIT_FPM)
+	else if (u == VARIO_UNIT_FPM)
 	{
 		return ("x 100ft/m");
 	}
-	else if (u == SPEED_UNIT_KNOTS)
+	else if (u == VARIO_UNIT_KNOTS)
 	{
 		return ("knots");
 	}

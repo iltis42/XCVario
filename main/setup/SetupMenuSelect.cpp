@@ -29,7 +29,7 @@ SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, i
 	if( _nvs ) {
 		// ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
 		_select = _nvs->get();
-		if ( _select < -1 ) { _select = -1; }
+		if ( _select < 0 ) { _select = 0; }
 		else if ( _select > _values.size()-1) { _select = _values.size()-1; }
 	}
 	setRotDynamic(1.f);

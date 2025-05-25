@@ -1,5 +1,5 @@
 /*
- * Polars.h
+ * glider/Polars.h
  *
  *  Created on: Mar 1, 2019
  *      Author: iltis
@@ -26,8 +26,11 @@ struct t_polar {
 
 
 namespace Polars {
-	const t_polar getPolar( int x );
+	const t_polar getPolar();
 	int numPolars();
-	void begin();
+	const char *getPolarName(int i);
+	int getPolarIndex(int i);
+	void extract(int glider_index);
+	const char *getGliderType();
+	int getGliderEnumPos();
 };
-

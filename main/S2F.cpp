@@ -86,10 +86,8 @@ void S2F::recalculatePolar()
 
 void S2F::setPolar()
 {
-	int n = glider_type.get();
 	ESP_LOGI(FNAME,"S2F::setPolar()");
-	ESP_LOGI(FNAME,"Selected Polar N %d", n );
-	t_polar p = Polars::getPolar(n);
+	t_polar p = Polars::getPolar();
 	polar_speed1.set( p.speed1 );
 	polar_speed2.set( p.speed2 );
 	polar_speed3.set( p.speed3 );

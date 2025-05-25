@@ -328,9 +328,8 @@ int factv_adj(SetupMenuValFloat *p) {
 }
 
 int polar_select(SetupMenuSelect *p) {
-	int index = Polars::getPolar(p->getSelect()).index;
-	ESP_LOGI(FNAME,"glider-index %d, glider num %d", index, p->getSelect() );
-	glider_type_index.set(index);
+	ESP_LOGI(FNAME,"glider-index %d", p->getValue());
+	glider_type_index.set(p->getValue());
 	return 0;
 }
 
@@ -471,7 +470,7 @@ void SetupMenu::display(int mode)
 			MYUCG->setColor( COLOR_HEADER_LIGHT);
 		}
 		menuPrintLn(child->getTitle(), i+1);
-		// ESP_LOGI(FNAME,"Child Title: %s", child->getTitle() );
+		// ESP_LOGI(FNAME,"Child Title: %s - %p", child->getTitle(), child->value() );
 		if (child->value() && *child->value() != '\0') {
 			int fl = MYUCG->getStrWidth(child->getTitle());
 			menuPrintLn(": ", i+1, 1+fl);
@@ -1001,15 +1000,15 @@ void glider_menu_create_polarpoints(SetupMenu *top) {
 }
 
 void glider_menu_create(SetupMenu *poe) {
-	SetupMenuSelect *glt = new SetupMenuSelect("Glider-Type", RST_NONE,
-			polar_select, true, &glider_type);
+	SetupMenuSelect *glt = new SetupMenuSelect("Glider-Type", RST_NONE, polar_select, true, &glider_type_index);
 	poe->addEntry(glt);
+	ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
 	for (int x = 0; x < Polars::numPolars(); x++) {
-		glt->addEntry(Polars::getPolar(x).type);
+		ESP_LOGI(FNAME, "P: %s - %d", Polars::getPolarName(x), Polars::getPolarIndex(x));
+		glt->addEntry(Polars::getPolarName(x), Polars::getPolarIndex(x));
 	}
-	poe->setHelp(
-			"Weight and polar setup for best match with performance of glider",
-			220);
+	poe->setHelp("Weight and polar setup for best match with performance of glider");
+	glt->setSelect(Polars::getGliderEnumPos()); // Cannot set select from nvs variable value containing the magix index
 	ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
 
 	SetupMenu *pa = new SetupMenu("Polar Points", glider_menu_create_polarpoints);
@@ -1696,6 +1695,7 @@ void setup_create_root(SetupMenu *top) {
 
 		// Glider Setup
 		SetupMenu *po = new SetupMenu("Glider Details", glider_menu_create);
+		po->setBuzzword(Polars::getGliderType());
 		top->addEntry(po);
 
 		// Options Setup

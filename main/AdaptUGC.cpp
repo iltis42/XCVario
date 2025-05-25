@@ -104,9 +104,9 @@ void AdaptUGC::setFont(const uint8_t *f, bool filled ){    // adapter
 	case UCG_FONT_FUB25_HR:
 		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
 		break;
-	// case UCG_FONT_FUB25_HF:
-	// 	eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
-	// 	break;
+	case UCG_FONT_FUB25_HF:
+		eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
+	 	break;
 	// case UCG_FONT_FUR25_HF:
 	// 	eglib_SetFont(eglib, &font_FreeFont_FreeSansBold_32px);
 	// 	break;

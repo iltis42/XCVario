@@ -298,7 +298,8 @@ int qnh_adj(SetupMenuValFloat *p) {
 			delay(10);
 		}
 		alt = alt / (float) samples;
-	}ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, QNH.get() );
+	}
+	ESP_LOGI(FNAME,"Setup BA alt=%f QNH=%f hPa", alt, QNH.get() );
 	MYUCG->setFont(ucg_font_fub25_hr, true);
 	float altp;
 	const char *u = "m";
@@ -309,6 +310,7 @@ int qnh_adj(SetupMenuValFloat *p) {
 		altp = Units::meters2feet(alt);
 	}
 	MYUCG->setPrintPos(1, 120);
+	MYUCG->setColor( COLOR_WHITE );
 	MYUCG->printf("%5d %s  ", (int) (altp + 0.5), u);
 
 	MYUCG->setFont(ucg_font_ncenR14_hr);

@@ -24,7 +24,7 @@ public:
 	void enter() override;
 	void display( int mode=0 ) override;
 	bool isLeaf() const override { return false; }
-	const char *value() const override { return nullptr; };
+	const char *value() const override { return buzzword; };
 	int getHighlight() const { return highlight; }
 	int incHighlight() { return ++highlight; }
 	void highlightTop() { highlight = -1; }
@@ -35,6 +35,7 @@ public:
 	void setDynContent() { dyn_content = true; }
 	void setDirty() { dirty = true; }
 	int getContId() const { return content_id; }
+	void setBuzzword(const char *bz) { buzzword = bz; }
 	
 	// the submenu structure
 	MenuEntry* addEntry(MenuEntry* item);
@@ -63,5 +64,6 @@ protected:
 	bool dyn_content = false; // reentrant create routine required, call it when dirty
 	bool dirty = false; // need to refresh content/child list
 	int content_id;
+	const char *buzzword = nullptr;
 };
 

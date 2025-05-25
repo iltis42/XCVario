@@ -48,7 +48,7 @@ const MenuEntry* MenuEntry::findMenu(const char *title) const
 	return nullptr;
 }
 
-// y is the top reference of the line
+// ln is the line enumeration, starting with 0
 void MenuEntry::menuPrintLn(const char* str, int ln, int x) const {
 	// MYUCG->setColor(COLOR_WHITE);
 	if (x > 0) { MYUCG->setPrintPos(x,(ln+1)*25); }

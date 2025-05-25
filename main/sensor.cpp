@@ -916,7 +916,7 @@ void system_startup(void *args){
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %.1f hPa", QNH.get() );
 	// register_coredump();
-	Polars::begin();
+	Polars::extract(glider_type_index.get());
 
 	// menu_screens.set(0);
 	AverageVario::begin();

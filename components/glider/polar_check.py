@@ -1,3 +1,6 @@
+#!/usr/bin/python
+
+import argparse
 import re
 import struct
 
@@ -39,7 +42,7 @@ def process_line(line, line_num):
             output += tp
             errout += "P: %.4f " % err
 
-        ballast =  int(numbers[6])
+        ballast =  int(numbers[6]/2) # half of the max. ballast.
         wingarea = int(round(100 * numbers[7]))
         wingerr = 100 * numbers[7] - wingarea
 
@@ -49,16 +52,23 @@ def process_line(line, line_num):
         #print()
         #print(line.rstrip())
         #print (output)
-        print(errout)
+        #print(errout)
         return output
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--input', required=True)
+parser.add_argument('--output', required=True)
+args = parser.parse_args()
+
 output_lines = []
 
-with open("Polars.txt", "r") as f:
+print("Read polars from:", args.input)
+with open(args.input, 'r') as f:
     for line_num, line in enumerate(f, 1):
         output_lines.append(process_line(line, line_num))
 
-with open("Polar_pack.txt", "w") as outfile:
+print("Write packed polares to:", args.output)
+with open(args.output, 'w') as outfile:
     for line in output_lines:
         outfile.write(line + "\n")

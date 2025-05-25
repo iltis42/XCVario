@@ -47,6 +47,7 @@ public:
 	virtual void enter();
 	virtual void exit(int ups=1);
 	virtual void display( int mode=0 ) = 0;
+	virtual void refresh() {} // reread temp values coping with side efects on refreshing the display
 	virtual bool isLeaf() const { return true; }
 	virtual const char* value() const = 0; // content as string
 

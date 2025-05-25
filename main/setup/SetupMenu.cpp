@@ -97,9 +97,11 @@ float elev_step = 1;
 bool SetupMenu::focus = false;
 
 int gload_reset(SetupMenuSelect *p) {
-	gload_pos_max.set(0);
-	gload_neg_max.set(0);
-	airspeed_max.set(0);
+	if ( p->getSelect() == 0 ) {
+		gload_pos_max.set(1);
+		gload_neg_max.set(0);
+		airspeed_max.set(0);
+	}
 	return 0;
 }
 
@@ -330,6 +332,7 @@ int factv_adj(SetupMenuValFloat *p) {
 int polar_select(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"glider-index %d", p->getValue());
 	glider_type_index.set(p->getValue());
+	p->getParent()->setBuzzword(p->value());
 	return 0;
 }
 
@@ -446,6 +449,7 @@ void SetupMenu::enter()
 void SetupMenu::display(int mode)
 {
 	if ( dirty && populateMenu) {
+		// Cope with changes in menu item presence
 		ESP_LOGI(FNAME,"SetupMenu display() dirty %d", dirty );
 		dirty = false;
 		(populateMenu)(this);
@@ -466,6 +470,7 @@ void SetupMenu::display(int mode)
 	doHighlight(highlight);
 	for (int i = 0; i < _childs.size(); i++) {
 		MenuEntry *child = _childs[i];
+		child->refresh(); // cope with potential external change to the e.g. nvs representation of values
 		if (!child->isLeaf() || child->value()) {
 			MYUCG->setColor( COLOR_HEADER_LIGHT);
 		}
@@ -1134,27 +1139,22 @@ void options_menu_create_gload(SetupMenu *top) {
 	glnegl->setHelp(
 			"Negative g load factor limit the aircraft is able to handle above maneuvering speed, see manual");
 
-	SetupMenuValFloat *gmpos = new SetupMenuValFloat("Max Positive", "", nullptr, false, &gload_pos_max);
+	SetupMenuValFloat *gmpos = new SetupMenuValFloat("Peak Positive", "", nullptr, false, &gload_pos_max);
 	top->addEntry(gmpos);
-	gmpos->setPrecision(1);
-	gmpos->setHelp("Maximum positive G-Load measured since last reset");
+	gmpos->lock();
 
-	SetupMenuValFloat *gmneg = new SetupMenuValFloat("Max Negative", "", nullptr, false, &gload_neg_max);
+	SetupMenuValFloat *gmneg = new SetupMenuValFloat("Peak Negative", "", nullptr, false, &gload_neg_max);
 	top->addEntry(gmneg);
-	gmneg->setPrecision(1);
-	gmneg->setHelp("Maximum negative G-Load measured since last reset");
+	gmneg->lock();
+
+	SetupMenuSelect *gloadres = new SetupMenuSelect("Reset peak-hold", RST_NONE, gload_reset, false);
+	gloadres->addEntry("Reset");
+	gloadres->addEntry("Cancel");
+	top->addEntry(gloadres);
 
 	SetupMenuValFloat *gloadalvo = new SetupMenuValFloat("Alarm Volume", "%", nullptr, false, &gload_alarm_volume);
 	gloadalvo->setHelp("Maximum volume of G-Load alarm audio warning");
 	top->addEntry(gloadalvo);
-
-	SetupMenuSelect *gloadres = new SetupMenuSelect("G-Load reset", RST_NONE,
-			gload_reset, false, 0);
-	gloadres->setHelp(
-			"Option to reset stored maximum positive and negative G-load values");
-	gloadres->addEntry("Reset");
-	gloadres->addEntry("Cancel");
-	top->addEntry(gloadres);
 }
 
 void options_menu_create(SetupMenu *opt) {

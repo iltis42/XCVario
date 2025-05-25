@@ -385,9 +385,8 @@ SetupNG<float>			gload_pos_limit_low("GLOADPLL", 3, true, SYNC_NONE, PERSISTENT,
 SetupNG<float>			gload_neg_limit_low("GLOADNLL", -2, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &neg_g_limits);
 SetupNG<float>			gload_pos_limit("GLOADPL", 5, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &pos_g_limits);
 SetupNG<float>			gload_neg_limit("GLOADNL", -3, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &neg_g_limits);
-static const limits_t zero_limit = {0.0, 0.0, 0.0};
-SetupNG<float>			gload_pos_max("GLOADPM", 1, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &zero_limit);
-SetupNG<float>			gload_neg_max("GLOADNM", 1, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &zero_limit);
+SetupNG<float>			gload_pos_max("GLOADPM", 1);
+SetupNG<float>			gload_neg_max("GLOADNM", 0);
 SetupNG<float>			airspeed_max("ASMAX", 0 );
 SetupNG<float>		    gload_alarm_volume("GLOADAVOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &volume_limits);
 SetupNG<int>        	display_variant("DISPLAY_VARIANT", 0 );

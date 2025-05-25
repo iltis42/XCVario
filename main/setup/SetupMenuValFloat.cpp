@@ -31,6 +31,7 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, int (
 		_unit = Units::unit( _nvs->quantityType() );
 	}
 
+	assert(anvs); // the implementation does not allow
 	if ( _nvs ) {
 		_value = _nvs->get();
 		if ( _nvs->hasLimits() ) {
@@ -82,6 +83,11 @@ void SetupMenuValFloat::display(int mode)
 		(*_action)( this );
 	}
 	xSemaphoreGive(display_mutex);
+}
+
+void SetupMenuValFloat::refresh()
+{
+	_value = _nvs->get();
 }
 
 void SetupMenuValFloat::displayVal()

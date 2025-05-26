@@ -8,6 +8,7 @@
 #include "setup/SetupMenu.h"
 #include "setup/SubMenuDevices.h"
 #include "setup/SubMenuCompassWind.h"
+#include "setup/SetupRoot.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"
@@ -181,23 +182,9 @@ int config_gear_warning(SetupMenuSelect *p) {
 
 int upd_screens(SetupMenuSelect *p)
 {
-	int screens = menu_screens.get();
-	screens |= SCREEN_VARIO; // always
-	int mod_screen = p->getValue();
-	if ( p->getSelect() == 0 ) {
-		// disable
-		ESP_LOGI(FNAME,"disable screen: %d", mod_screen);
-		screens &= ~mod_screen;
-	}
-	else {
-		// enable
-		ESP_LOGI(FNAME,"enable screen: %d", mod_screen);
-		screens |= mod_screen;
-	}
-	menu_screens.set(screens);
+	Menu->initScreens();
 	return 0;
 }
-
 
 
 int do_display_test(SetupMenuSelect *p) {
@@ -489,6 +476,11 @@ void SetupMenu::display(int mode)
 	xSemaphoreGive(display_mutex);
 }
 
+int SetupMenu::freeBottomLines() const
+{
+    return dheight/25 - getNrChilds() - 1;
+}
+
 void SetupMenu::setHighlight(MenuEntry *value)
 {
 	int found = -1;
@@ -633,16 +625,13 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	vds2->setHelp("Time constant of S2F low pass filter");
 	top->addEntry(vds2);
 
-	SetupMenuSelect *blck = new SetupMenuSelect("Blockspeed", RST_NONE, 0, true,
-			&s2f_blockspeed);
+	SetupMenuSelect *blck = new SetupMenuSelect("Blockspeed", RST_NONE, nullptr, &s2f_blockspeed);
 	blck->setHelp(
 			"With Blockspeed enabled, vertical movement of airmass or G-load is not considered for speed to fly (S2F) calculation");
-	blck->addEntry("DISABLE");
-	blck->addEntry("ENABLE");
+	blck->mkEnable();
 	top->addEntry(blck);
 
-	SetupMenuSelect *s2fmod = new SetupMenuSelect("S2F Mode", RST_NONE, 0, true,
-			&s2f_switch_mode);
+	SetupMenuSelect *s2fmod = new SetupMenuSelect("S2F Mode", RST_NONE, nullptr, &s2f_switch_mode);
 	s2fmod->setHelp(
 			"Select data source for switching between S2F and Vario modes",
 			230);
@@ -655,8 +644,7 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	s2fmod->addEntry("AHRS-Gyro");
 	top->addEntry(s2fmod);
 
-	SetupMenuSelect *s2fsw = new SetupMenuSelect("S2F Switch", RST_NONE, 0,
-			false, &s2f_switch_type);
+	SetupMenuSelect *s2fsw = new SetupMenuSelect("S2F Switch", RST_NONE, nullptr, &s2f_switch_type);
 	top->addEntry(s2fsw);
 	s2fsw->setHelp(
 			"Select S2F switch type: normal switch, push button (toggling S2F mode on each press), or disabled");
@@ -684,8 +672,7 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	s2fhy->setHelp("Hysteresis (+- this value) for Autospeed S2F transition");
 	top->addEntry(s2fhy);
 
-	SetupMenuSelect *s2fnc = new SetupMenuSelect("Arrow Color", RST_NONE, 0,
-			true, &s2f_arrow_color);
+	SetupMenuSelect *s2fnc = new SetupMenuSelect("Arrow Color", RST_NONE, nullptr, &s2f_arrow_color);
 	s2fnc->setHelp(
 			"Select color of the S2F arrow when painted in Up/Down position");
 	s2fnc->addEntry("White/White");
@@ -695,8 +682,7 @@ void vario_menu_create_s2f(SetupMenu *top) {
 }
 
 void vario_menu_create_ec(SetupMenu *top) {
-	SetupMenuSelect *enac = new SetupMenuSelect("eCompensation", RST_NONE, 0,
-			false, &te_comp_enable);
+	SetupMenuSelect *enac = new SetupMenuSelect("eCompensation", RST_NONE, nullptr, &te_comp_enable);
 	enac->setHelp(
 			"Enable/Disable electronic TE compensation option; Enable only when TE port is connected to ST (static) pressure");
 	enac->addEntry("TEK Probe");
@@ -735,12 +721,11 @@ void vario_menu_create(SetupMenu *vae) {
 	vga->setPrecision(0);
 	vae->addEntry(vga);
 
-	SetupMenuSelect *vlogscale = new SetupMenuSelect("Log. Scale", RST_NONE, 0, true, &log_scale);
+	SetupMenuSelect *vlogscale = new SetupMenuSelect("Log. Scale", RST_NONE, nullptr, &log_scale);
 	vlogscale->mkEnable();
 	vae->addEntry(vlogscale);
 
-	SetupMenuSelect *vamod = new SetupMenuSelect("Mode", RST_NONE, 0, true,
-			&vario_mode);
+	SetupMenuSelect *vamod = new SetupMenuSelect("Mode", RST_NONE, nullptr, &vario_mode);
 	vamod->setHelp(
 			"Controls if vario considers polar sink (=Netto), or not (=Brutto), or if Netto vario applies only in Cruise Mode");
 	vamod->addEntry("Brutto");
@@ -748,28 +733,25 @@ void vario_menu_create(SetupMenu *vae) {
 	vamod->addEntry("Cruise-Netto");
 	vae->addEntry(vamod);
 
-	SetupMenuSelect *nemod = new SetupMenuSelect("Netto Mode", RST_NONE, 0,
-			true, &netto_mode);
+	SetupMenuSelect *nemod = new SetupMenuSelect("Netto Mode", RST_NONE, nullptr, &netto_mode);
 	nemod->setHelp(
 			"In 'Relative' mode (also called 'Super-Netto') circling sink is considered,  to show climb rate as if you were circling there");
 	nemod->addEntry("Normal");
 	nemod->addEntry("Relative");
 	vae->addEntry(nemod);
 
-	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, 0, true, &ps_display);
+	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, nullptr, &ps_display);
 	sink->setHelp("Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
 	sink->mkEnable();
 	vae->addEntry(sink);
 
-	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, 0,
-			true, &needle_color);
-	ncolor->setHelp("Choose the color of the vario needle");
+	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, nullptr, &needle_color);
 	ncolor->addEntry("White");
 	ncolor->addEntry("Orange");
 	ncolor->addEntry("Red");
 	vae->addEntry(ncolor);
 
-	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_ON_EXIT, 0, true, &screen_centeraid);
+	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_ON_EXIT, nullptr, &screen_centeraid);
 	scrcaid->setHelp("Enable/disable display of centering aid (reboots)");
 	scrcaid->mkEnable();
 	vae->addEntry(scrcaid);
@@ -798,7 +780,7 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	oc->setHelp("Maximum tone frequency variation");
 	top->addEntry(oc);
 
-	SetupMenuSelect *dt = new SetupMenuSelect("Dual Tone", RST_NONE, audio_setup_s, true, &dual_tone);
+	SetupMenuSelect *dt = new SetupMenuSelect("Dual Tone", RST_NONE, audio_setup_s, &dual_tone);
 	dt->setHelp(
 			"Select dual tone modue aka ilec sound (di/da/di), or single tone (di/di/di) mode");
 	dt->mkEnable();
@@ -809,8 +791,7 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 			"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
 	top->addEntry(htv);
 
-	SetupMenuSelect *tch = new SetupMenuSelect("Chopping", RST_NONE, eval_chop,
-			true, &chopping_mode);
+	SetupMenuSelect *tch = new SetupMenuSelect("Chopping", RST_NONE, eval_chop, &chopping_mode);
 	tch->setHelp(
 			"Select tone chopping option on positive values for Vario and or S2F");
 	tch->addEntry("Disabled");             // 0
@@ -819,16 +800,14 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	tch->addEntry("Vario and S2F");        // 3  default
 	top->addEntry(tch);
 
-	SetupMenuSelect *tchs = new SetupMenuSelect("Chopping Style", RST_NONE, 0,
-			true, &chopping_style);
+	SetupMenuSelect *tchs = new SetupMenuSelect("Chopping Style", RST_NONE, nullptr, &chopping_style);
 	tchs->setHelp(
 			"Select style of tone chopping either hard, or soft with fadein/fadeout");
 	tchs->addEntry("Soft");              // 0  default
 	tchs->addEntry("Hard");              // 1
 	top->addEntry(tchs);
 
-	SetupMenuSelect *advarto = new SetupMenuSelect("Variable Tone", RST_NONE, 0,
-			true, &audio_variable_frequency);
+	SetupMenuSelect *advarto = new SetupMenuSelect("Variable Tone", RST_NONE, nullptr, &audio_variable_frequency);
 	advarto->setHelp(
 			"Enable audio frequency updates within climbing tone intervals, disable keeps frequency constant");
 	advarto->mkEnable();
@@ -850,8 +829,7 @@ void audio_menu_create_deadbands(SetupMenu *top) {
 }
 
 void audio_menu_create_equalizer(SetupMenu *top) {
-	SetupMenuSelect *audeqt = new SetupMenuSelect("Equalizer", RST_ON_EXIT, 0,
-			true, &audio_equalizer);
+	SetupMenuSelect *audeqt = new SetupMenuSelect("Equalizer", RST_ON_EXIT, nullptr, &audio_equalizer);
 	audeqt->setHelp(
 			"Select the equalizer according to the type of loudspeaker used");
 	audeqt->addEntry("Disable");
@@ -876,8 +854,7 @@ void audio_menu_create_volume(SetupMenu *top) {
 	volume_menu = vol;     // but this allows changing the volume menu max later
 	top->addEntry(vol);
 
-	SetupMenuSelect *cdv = new SetupMenuSelect("Current->Default", RST_NONE,
-			cur_vol_dflt, true);
+	SetupMenuSelect *cdv = new SetupMenuSelect("Current->Default", RST_NONE, cur_vol_dflt);
 	cdv->addEntry("Cancel");
 	cdv->addEntry("Set");
 	cdv->setHelp("Set current volume as default volume when device is switched on");
@@ -895,8 +872,7 @@ void audio_menu_create_volume(SetupMenu *top) {
 	top->addEntry(audeq);
 	audeq->setHelp("Equalization parameters for a constant perceived volume over a wide frequency range", 220);
 
-	SetupMenuSelect *amspvol = new SetupMenuSelect("STF Volume", RST_NONE, 0,
-			true, &audio_split_vol);
+	SetupMenuSelect *amspvol = new SetupMenuSelect("STF Volume", RST_NONE, nullptr, &audio_split_vol);
 	amspvol->setHelp(
 			"Enable independent audio volume in SpeedToFly and Vario modes, disable for one volume for both");
 	amspvol->mkEnable();
@@ -904,23 +880,20 @@ void audio_menu_create_volume(SetupMenu *top) {
 }
 
 void audio_menu_create_mute(SetupMenu *top) {
-	SetupMenuSelect *asida = new SetupMenuSelect("In Sink", RST_NONE, 0, true,
-			&audio_mute_sink);
+	SetupMenuSelect *asida = new SetupMenuSelect("In Sink", RST_NONE, nullptr, &audio_mute_sink);
 	asida->setHelp("Select whether vario audio will be muted while in sink");
 	asida->addEntry("Stay On");  // 0
 	asida->addEntry("Mute");     // 1
 	top->addEntry(asida);
 
-	SetupMenuSelect *ameda = new SetupMenuSelect("In Setup", RST_NONE, 0, true,
-			&audio_mute_menu);
+	SetupMenuSelect *ameda = new SetupMenuSelect("In Setup", RST_NONE, nullptr, &audio_mute_menu);
 	ameda->setHelp(
 			"Select whether vario audio will be muted while Setup Menu is open");
 	ameda->addEntry("Stay On");  // 0
 	ameda->addEntry("Mute");     // 1
 	top->addEntry(ameda);
 
-	SetupMenuSelect *ageda = new SetupMenuSelect("Generally", RST_NONE, 0, true,
-			&audio_mute_gen);
+	SetupMenuSelect *ageda = new SetupMenuSelect("Generally", RST_NONE, nullptr, &audio_mute_gen);
 	ageda->setHelp(
 			"Select audio on, or vario audio muted, or all audio muted including alarms");
 	ageda->addEntry("Audio On");      // 0 = AUDIO_ON
@@ -928,8 +901,7 @@ void audio_menu_create_mute(SetupMenu *top) {
 	ageda->addEntry("Audio Off");     // 2 = AUDIO_OFF
 	top->addEntry(ageda);
 
-	SetupMenuSelect *amps = new SetupMenuSelect("Amplifier", RST_NONE, 0, true,
-			&amplifier_shutdown);
+	SetupMenuSelect *amps = new SetupMenuSelect("Amplifier", RST_NONE, nullptr, &amplifier_shutdown);
 	amps->setHelp(
 			"Select whether amplifier is shutdown during silences, or always stays on");
 	amps->addEntry("Stay On");   // 0 = AMP_STAY_ON
@@ -944,14 +916,12 @@ void audio_menu_create(SetupMenu *audio) {
 	volume_menu = 0;
 	SetupMenu *volumes = new SetupMenu("Volume options", audio_menu_create_volume);
 	audio->addEntry(volumes);
-	volumes->setHelp("Configure audio volume options", 240);
 
 	SetupMenu *mutes = new SetupMenu("Mute Audio", audio_menu_create_mute);
 	audio->addEntry(mutes);
 	mutes->setHelp("Configure audio muting options", 240);
 
-	SetupMenuSelect *abnm = new SetupMenuSelect("Cruise Audio", RST_NONE, 0,
-			true, &cruise_audio_mode);
+	SetupMenuSelect *abnm = new SetupMenuSelect("Cruise Audio", RST_NONE, nullptr, &cruise_audio_mode);
 	abnm->setHelp(
 			"Select either S2F command or Variometer (Netto/Brutto as selected) as audio source while cruising");
 	abnm->addEntry("Speed2Fly");       // 0
@@ -963,8 +933,7 @@ void audio_menu_create(SetupMenu *audio) {
 	audios->setHelp("Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
 
 	update_rentry(0);
-	audio_range_sm = new SetupMenuSelect("Range", RST_NONE, audio_setup_s, true,
-			&audio_range);
+	audio_range_sm = new SetupMenuSelect("Range", RST_NONE, audio_setup_s, &audio_range);
 	audio_range_sm->addEntry(rentry0);
 	audio_range_sm->addEntry(rentry1);
 	audio_range_sm->addEntry(rentry2);
@@ -1005,7 +974,7 @@ void glider_menu_create_polarpoints(SetupMenu *top) {
 }
 
 void glider_menu_create(SetupMenu *poe) {
-	SetupMenuSelect *glt = new SetupMenuSelect("Glider-Type", RST_NONE, polar_select, true, &glider_type_index);
+	SetupMenuSelect *glt = new SetupMenuSelect("Glider-Type", RST_NONE, polar_select, &glider_type_index);
 	poe->addEntry(glt);
 	ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
 	for (int x = 0; x < Polars::numPolars(); x++) {
@@ -1030,47 +999,45 @@ void glider_menu_create(SetupMenu *poe) {
 	fixball->setPrecision(0);
 	fixball->setHelp("Net rigged weight of the glider, according to the weight and balance plan");
 	poe->addEntry(fixball);
+
+	SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", nullptr, false, &v_max);
+	vmax->setHelp("Configure maximum speed for corresponding aircraft type");
+	poe->addEntry(vmax);
 }
 
 void options_menu_create_units(SetupMenu *top) {
-	SetupMenuSelect *alu = new SetupMenuSelect("Altimeter", RST_NONE, 0, true,
-			&alt_unit);
+	SetupMenuSelect *alu = new SetupMenuSelect("Altimeter", RST_NONE, nullptr, &alt_unit);
 	alu->addEntry("Meter (m)");
 	alu->addEntry("Feet (ft)");
 	alu->addEntry("FL (FL)");
 	top->addEntry(alu);
-	SetupMenuSelect *iau = new SetupMenuSelect("Airspeed", RST_NONE, 0, true,
-			&ias_unit);
+	SetupMenuSelect *iau = new SetupMenuSelect("Airspeed", RST_NONE, nullptr, &ias_unit);
 	iau->addEntry("Kilom./hour (Km/h)");
 	iau->addEntry("Miles/hour (mph)");
 	iau->addEntry("Knots (kt)");
 	top->addEntry(iau);
-	SetupMenuSelect *vau = new SetupMenuSelect("Vario", RST_NONE,
-			update_rentrys, true, &vario_unit);
+	SetupMenuSelect *vau = new SetupMenuSelect("Vario", RST_NONE, update_rentrys, &vario_unit);
 	vau->addEntry("Meters/sec (m/s)");
 	vau->addEntry("Feet/min x 100 (fpm)");
 	vau->addEntry("Knots (kt)");
 	top->addEntry(vau);
-	SetupMenuSelect *teu = new SetupMenuSelect("Temperature", RST_NONE, 0, true,
-			&temperature_unit);
+	SetupMenuSelect *teu = new SetupMenuSelect("Temperature", RST_NONE, nullptr, &temperature_unit);
 	teu->addEntry("Celcius");
 	teu->addEntry("Fahrenheit");
 	teu->addEntry("Kelvin");
 	top->addEntry(teu);
-	SetupMenuSelect *qnhi = new SetupMenuSelect("QNH", RST_NONE, 0, true, &qnh_unit);
+	SetupMenuSelect *qnhi = new SetupMenuSelect("QNH", RST_NONE, nullptr, &qnh_unit);
 	qnhi->addEntry("Hectopascal");
 	qnhi->addEntry("InchMercury");
 	top->addEntry(qnhi);
-	SetupMenuSelect *dst = new SetupMenuSelect("Distance", RST_NONE, 0, true,
-			&dst_unit);
+	SetupMenuSelect *dst = new SetupMenuSelect("Distance", RST_NONE, nullptr, &dst_unit);
 	dst->addEntry("Meter (m)");
 	dst->addEntry("Feet (ft)");
 	top->addEntry(dst);
 }
 
 void options_menu_create_flarm(SetupMenu *top) {
-	SetupMenuSelect *flarml = new SetupMenuSelect("Alarm Level", RST_NONE, 0,
-			true, &flarm_warning);
+	SetupMenuSelect *flarml = new SetupMenuSelect("Alarm Level", RST_NONE, nullptr, &flarm_warning);
 	flarml->setHelp(
 			"Level of FLARM alarm to enable: 1 is lowest (13-18 sec), 2 medium (9-12 sec), 3 highest (0-8 sec) until impact");
 	flarml->addEntry("Disable");
@@ -1088,7 +1055,7 @@ void options_menu_create_flarm(SetupMenu *top) {
 			"The time FLARM alarm warning keeps displayed after alarm went off");
 	top->addEntry(flarmt);
 
-	SetupMenuSelect *flarms = new SetupMenuSelect("Alarm Simulation", RST_NONE, startFlarmSimulation, false, nullptr, false, true);
+	SetupMenuSelect *flarms = new SetupMenuSelect("Alarm Simulation", RST_NONE, startFlarmSimulation, nullptr, false, true);
 	flarms->setHelp(
 			"Simulate an airplane crossing from left to right with different alarm levels and vertical distance 5 seconds after pressed (exits setup!)");
 	flarms->addEntry("Start Simulation");
@@ -1096,8 +1063,7 @@ void options_menu_create_flarm(SetupMenu *top) {
 }
 
 void options_menu_create_gload(SetupMenu *top) {
-	SetupMenuSelect *glmod = new SetupMenuSelect("Activation Mode", RST_NONE, 0,
-			true, &gload_mode);
+	SetupMenuSelect *glmod = new SetupMenuSelect("Activation Mode", RST_NONE, nullptr, &gload_mode);
 	glmod->setHelp(
 			"Switch off G-Force screen, or activate by threshold G-Force 'Dynamic', or static by 'Always-On'");
 	glmod->addEntry("Off");
@@ -1147,7 +1113,7 @@ void options_menu_create_gload(SetupMenu *top) {
 	top->addEntry(gmneg);
 	gmneg->lock();
 
-	SetupMenuSelect *gloadres = new SetupMenuSelect("Reset peak-hold", RST_NONE, gload_reset, false);
+	SetupMenuSelect *gloadres = new SetupMenuSelect("Reset peak-hold", RST_NONE, gload_reset);
 	gloadres->addEntry("Reset");
 	gloadres->addEntry("Cancel");
 	top->addEntry(gloadres);
@@ -1158,75 +1124,75 @@ void options_menu_create_gload(SetupMenu *top) {
 }
 
 void options_menu_create(SetupMenu *opt) {
-	if (student_mode.get() == 0) {
-		SetupMenuSelect *stumo = new SetupMenuSelect("Student Mode", RST_NONE, 0, true, &student_mode);
-		opt->addEntry(stumo);
-		stumo->setHelp(
-				"Student mode, disables all sophisticated setup to just basic pre-flight related items like MC, ballast or bugs");
-		stumo->mkEnable();
+	if ( opt->getNrChilds() == 0 ) {
+		if (student_mode.get() == 0) {
+			SetupMenuSelect *stumo = new SetupMenuSelect("Student Mode", RST_NONE, nullptr, &student_mode);
+			opt->addEntry(stumo);
+			stumo->setHelp(
+					"Student mode, disables all sophisticated setup to just basic pre-flight related items like MC, ballast or bugs");
+			stumo->mkEnable();
+		}
+		Flap::setupMenue(opt);
+		// Units
+		SetupMenu *un = new SetupMenu("Units", options_menu_create_units);
+		opt->addEntry(un);
+		un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
+
+		SetupMenuSelect *amode = new SetupMenuSelect("Airspeed Mode", RST_NONE, nullptr, &airspeed_mode);
+		opt->addEntry(amode);
+		amode->setHelp(
+				"Select mode of Airspeed indicator to display IAS (Indicated AirSpeed), TAS (True AirSpeed) or CAS (calibrated airspeed)",
+				180);
+		amode->addEntry("IAS");
+		amode->addEntry("TAS");
+		amode->addEntry("CAS");
+		amode->addEntry("Slip Angle");
+
+		SetupMenuSelect *atl = new SetupMenuSelect("Auto Transition", RST_NONE, nullptr, &fl_auto_transition);
+		opt->addEntry(atl);
+		atl->setHelp("Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
+		atl->mkEnable();
+
+		SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode", RST_NONE, nullptr, &alt_display_mode);
+		opt->addEntry(altDisplayMode);
+		altDisplayMode->setHelp("Select altitude display mode");
+		altDisplayMode->addEntry("QNH");
+		altDisplayMode->addEntry("QFE");
+
+		SetupMenuValFloat *tral = new SetupMenuValFloat("Transition Altitude", "FL", nullptr, false, &transition_alt);
+		tral->setHelp(
+				"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)",
+				100);
+		opt->addEntry(tral);
+
+		SetupMenu *flarm = new SetupMenu("FLARM", options_menu_create_flarm);
+		opt->addEntry(flarm);
+		flarm->setHelp("Option to display FLARM Warnings depending on FLARM alarm level");
+
+		SetupMenu *compassWindMenu = new SetupMenu("Compass/Wind", options_menu_create_compasswind);
+		compassWindMenu->setDynContent();
+		opt->addEntry(compassWindMenu);
+		compassWindMenu->setHelp("Setup Compass and Wind", 280);
+
+		SetupMenu *gload = new SetupMenu("G-Load Display", options_menu_create_gload);
+		opt->addEntry(gload);
 	}
-	Flap::setupMenue(opt);
-	// Units
-	SetupMenu *un = new SetupMenu("Units", options_menu_create_units);
-	opt->addEntry(un);
-	un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
-
-	SetupMenuSelect *amode = new SetupMenuSelect("Airspeed Mode", RST_NONE, 0,
-			true, &airspeed_mode);
-	opt->addEntry(amode);
-	amode->setHelp(
-			"Select mode of Airspeed indicator to display IAS (Indicated AirSpeed), TAS (True AirSpeed) or CAS (calibrated airspeed)",
-			180);
-	amode->addEntry("IAS");
-	amode->addEntry("TAS");
-	amode->addEntry("CAS");
-	amode->addEntry("Slip Angle");
-
-	SetupMenuSelect *atl = new SetupMenuSelect("Auto Transition", RST_NONE, 0,
-			true, &fl_auto_transition);
-	opt->addEntry(atl);
-	atl->setHelp("Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
-	atl->mkEnable();
-
-	SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode",
-			RST_NONE, 0, true, &alt_display_mode);
-	opt->addEntry(altDisplayMode);
-	altDisplayMode->setHelp("Select altitude display mode");
-	altDisplayMode->addEntry("QNH");
-	altDisplayMode->addEntry("QFE");
-
-	SetupMenuValFloat *tral = new SetupMenuValFloat("Transition Altitude", "FL", nullptr, false, &transition_alt);
-	tral->setHelp(
-			"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)",
-			100);
-	opt->addEntry(tral);
-
-	SetupMenu *flarm = new SetupMenu("FLARM", options_menu_create_flarm);
-	opt->addEntry(flarm);
-	flarm->setHelp(
-			"Option to display FLARM Warnings depending on FLARM alarm level");
-
-	SetupMenu *compassWindMenu = new SetupMenu("Compass/Wind", options_menu_create_compasswind);
-	compassWindMenu->setDynContent();
-	opt->addEntry(compassWindMenu);
-	compassWindMenu->setHelp("Setup Compass and Wind", 280);
-
-	// SetupMenu *wireless = new SetupMenu("Wireless", options_menu_create_wireless);
-	// opt->addEntry(wireless);
-
-	SetupMenu *gload = new SetupMenu("G-Load Display", options_menu_create_gload);
-	opt->addEntry(gload);
+	if ( DEVMAN->getDevice(FLARM_DEV) != nullptr ) {
+		opt->getEntry(7)->unlock();
+	}
+	else {
+		opt->getEntry(7)->lock();
+	}
 }
 
 void system_menu_create_software(SetupMenu *top) {
 	Version V;
-	SetupMenuSelect *ver = new SetupMenuSelect("Software Vers.", RST_NONE, 0,
-			false);
+	SetupMenuSelect *ver = new SetupMenuSelect("Software Vers.", RST_NONE, nullptr);
 	ver->addEntry(V.version());
+	ver->lock();
 	top->addEntry(ver);
 
-	SetupMenuSelect *upd = new SetupMenuSelect("Software Update", RST_IMMEDIATE,
-			0, true, &software_update);
+	SetupMenuSelect *upd = new SetupMenuSelect("Software Update", RST_IMMEDIATE, nullptr, &software_update);
 	upd->setHelp(
 			"Software Update over the air (OTA). Starts Wifi AP 'ESP32 OTA' - connect and open http://192.168.4.1 in browser");
 	upd->addEntry("Cancel");
@@ -1240,8 +1206,7 @@ void system_menu_create_battery(SetupMenu *top) {
 	SetupMenuValFloat *byellow = new SetupMenuValFloat("Battery Yellow", "Volt ", nullptr, false, &bat_yellow_volt);
 	SetupMenuValFloat *bfull = new SetupMenuValFloat("Battery Full", "Volt ", nullptr, false, &bat_full_volt);
 
-	SetupMenuSelect *batv = new SetupMenuSelect("Battery Display", RST_NONE, 0,
-			true, &battery_display);
+	SetupMenuSelect *batv = new SetupMenuSelect("Battery Display", RST_NONE, nullptr, &battery_display);
 	batv->setHelp(
 			"Option to display battery charge state either in Percentage e.g. 75% or Voltage e.g. 12.5V");
 	batv->addEntry("Percentage");
@@ -1257,8 +1222,7 @@ void system_menu_create_battery(SetupMenu *top) {
 
 void system_menu_create_hardware_type(SetupMenu *top) {
 	// UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
-	SetupMenuSelect *dtype = new SetupMenuSelect("HW Type", RST_NONE, 0, true,
-			&display_type);
+	SetupMenuSelect *dtype = new SetupMenuSelect("HW Type", RST_NONE, nullptr, &display_type);
 	dtype->setHelp("Factory setup for corresponding display type used");
 	dtype->addEntry("UNIVERSAL");
 	dtype->addEntry("RAYSTAR");
@@ -1266,8 +1230,7 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	dtype->addEntry("ILI9341");
 	top->addEntry(dtype);
 
-	SetupMenuSelect *disty = new SetupMenuSelect("Style", RST_NONE, 0, false,
-			&display_style);
+	SetupMenuSelect *disty = new SetupMenuSelect("Style", RST_NONE, nullptr, &display_style);
 	top->addEntry(disty);
 	disty->setHelp(
 			"Display style in more digital airliner stype or retro mode with classic vario meter needle");
@@ -1275,8 +1238,7 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	disty->addEntry("Retro");
 	disty->addEntry("UL");
 
-	SetupMenuSelect *disva = new SetupMenuSelect("Color Variant", RST_NONE, 0,
-			false, &display_variant);
+	SetupMenuSelect *disva = new SetupMenuSelect("Color Variant", RST_NONE, nullptr, &display_variant);
 	top->addEntry(disva);
 	disva->setHelp(
 			"Display variant white on black (W/B) or black on white (B/W)");
@@ -1284,7 +1246,7 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	disva->addEntry("B/W");
 
 	// Orientation   _display_orientation
-	SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", RST_ON_EXIT, 0, true, &display_orientation );
+	SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", RST_ON_EXIT, nullptr, &display_orientation );
 	top->addEntry( diso );
 	diso->setHelp( "Display Orientation.  NORMAL means Rotary on left, TOPDOWN means Rotary on right  (reboots). A change will reset the AHRS reference calibration.");
 	diso->addEntry( "NORMAL");
@@ -1292,16 +1254,14 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	diso->addEntry( "NINETY");
 
 	//
-	SetupMenuSelect *drawp = new SetupMenuSelect("Needle Alignment", RST_NONE,
-			0, true, &drawing_prio);
+	SetupMenuSelect *drawp = new SetupMenuSelect("Needle Alignment", RST_NONE, nullptr, &drawing_prio);
 	top->addEntry(drawp);
 	drawp->setHelp(
 			"Alignment of the variometer needle either in front of the displayed info, or in background");
 	drawp->addEntry("Front");
 	drawp->addEntry("Back");
 
-	SetupMenuSelect *dtest = new SetupMenuSelect("Display Test", RST_NONE,
-			do_display_test, true, &display_test);
+	SetupMenuSelect *dtest = new SetupMenuSelect("Display Test", RST_NONE, do_display_test, &display_test);
 	top->addEntry(dtest);
 	dtest->setHelp("Start display test screens, press rotary to cancel");
 	dtest->addEntry("Cancel");
@@ -1316,15 +1276,13 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 
 void system_menu_create_hardware_rotary_screens(SetupMenu *top)
 {
-	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens);
-	scrgmet->addEntry("disable");
-	scrgmet->addEntry("enable", SCREEN_GMETER);
+	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens, &screen_gmeter);
+	scrgmet->mkEnable();
 	top->addEntry(scrgmet);
 
 	if (gflags.ahrsKeyValid) {
-		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens);
-		horizon->addEntry("disable");
-		horizon->addEntry("enable", SCREEN_HORIZON);
+		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens, &screen_horizon);
+		horizon->mkEnable();
 		top->addEntry(horizon);
 	}
 }
@@ -1335,13 +1293,13 @@ void system_menu_create_hardware_rotary(SetupMenu *top) {
 	screens->setHelp("Select screens to be activated one after the other by short press");
 
 	SetupMenuSelect *rotype;
-	rotype = new SetupMenuSelect("Direction", RST_NONE, set_rotary_direction, false, &rotary_dir);
+	rotype = new SetupMenuSelect("Direction", RST_NONE, set_rotary_direction, &rotary_dir);
 	top->addEntry(rotype);
 	rotype->setHelp("Choose the direction of the rotary knob");
 	rotype->addEntry("Clockwise");
 	rotype->addEntry("Counterclockwise");
 
-	SetupMenuSelect *roinc = new SetupMenuSelect("Sensitivity", RST_NONE, set_rotary_increment, false, &rotary_inc);
+	SetupMenuSelect *roinc = new SetupMenuSelect("Sensitivity", RST_NONE, set_rotary_increment, &rotary_inc);
 	top->addEntry(roinc);
 	roinc->setHelp(
 			"Select rotary sensitivity in number of tick's for one increment, to your personal preference, 1 tick is most sensitive");
@@ -1350,15 +1308,14 @@ void system_menu_create_hardware_rotary(SetupMenu *top) {
 	roinc->addEntry("3 tick");
 
 	// Rotary Default
-	SetupMenuSelect *rd = new SetupMenuSelect("Rotation", RST_ON_EXIT, 0, true,
-			&rot_default);
+	SetupMenuSelect *rd = new SetupMenuSelect("Rotation", RST_ON_EXIT, nullptr, &rot_default);
 	top->addEntry(rd);
 	rd->setHelp(
 			"Select value to be altered at rotary movement outside of setup menu (reboots)");
 	rd->addEntry("Volume");
 	rd->addEntry("MC Value");
 
-	SetupMenuSelect *sact = new SetupMenuSelect("Enter Setup by", RST_NONE, nullptr, true, &menu_long_press);
+	SetupMenuSelect *sact = new SetupMenuSelect("Enter Setup by", RST_NONE, nullptr, &menu_long_press);
 	top->addEntry(sact);
 	sact->setHelp("Activate setup menu either by short or long button press");
 	sact->addEntry("Short Press");
@@ -1366,8 +1323,7 @@ void system_menu_create_hardware_rotary(SetupMenu *top) {
 }
 
 void system_menu_create_ahrs_calib(SetupMenu *top) {
-	SetupMenuSelect *ahrs_calib_collect = new SetupMenuSelect(
-			"Axis calibration", RST_NONE, imu_calib, false);
+	SetupMenuSelect *ahrs_calib_collect = new SetupMenuSelect("Axis calibration", RST_NONE, imu_calib);
 	ahrs_calib_collect->setHelp(
 			"Calibrate IMU axis on flat leveled ground ground with no inclination. Run the procedure by selecting Start.");
 	ahrs_calib_collect->addEntry("Cancel");
@@ -1388,14 +1344,10 @@ static const char  lkeys[][4] { "0", "1", "2", "3", "4", "5", "6", "7",
 		"T", "U", "V", "W", "X", "Y", "Z" };
 
 void system_menu_create_hardware_ahrs_lc(SetupMenu *top) {
-	SetupMenuSelect *ahrslc1 = new SetupMenuSelect("First    Letter", RST_NONE,
-			add_key, false, &ahrs_licence_dig1);
-	SetupMenuSelect *ahrslc2 = new SetupMenuSelect("Second Letter", RST_NONE,
-			add_key, false, &ahrs_licence_dig2);
-	SetupMenuSelect *ahrslc3 = new SetupMenuSelect("Third   Letter", RST_NONE,
-			add_key, false, &ahrs_licence_dig3);
-	SetupMenuSelect *ahrslc4 = new SetupMenuSelect("Last     Letter", RST_NONE,
-			add_key, false, &ahrs_licence_dig4);
+	SetupMenuSelect *ahrslc1 = new SetupMenuSelect("First    Letter", RST_NONE, add_key, &ahrs_licence_dig1);
+	SetupMenuSelect *ahrslc2 = new SetupMenuSelect("Second Letter", RST_NONE, add_key, &ahrs_licence_dig2);
+	SetupMenuSelect *ahrslc3 = new SetupMenuSelect("Third   Letter", RST_NONE, add_key, &ahrs_licence_dig3);
+	SetupMenuSelect *ahrslc4 = new SetupMenuSelect("Last     Letter", RST_NONE, add_key, &ahrs_licence_dig4);
 	top->addEntry(ahrslc1);
 	top->addEntry(ahrslc2);
 	top->addEntry(ahrslc3);
@@ -1422,8 +1374,7 @@ void system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
 			"Gyro dynamics factor, higher value trusts gyro more when load factor is different from one");
 	top->addEntry(ahrsdgf);
 
-	SetupMenuSelect *ahrsrollcheck = new SetupMenuSelect("Gyro Roll Check",
-			RST_NONE, nullptr, true, &ahrs_roll_check);
+	SetupMenuSelect *ahrsrollcheck = new SetupMenuSelect("Gyro Roll Check", RST_NONE, nullptr, &ahrs_roll_check);
 	ahrsrollcheck->setHelp("Switch to test the gyro roll check code.");
 	ahrsrollcheck->addEntry("Disable");
 	ahrsrollcheck->addEntry("Enable");
@@ -1439,8 +1390,7 @@ void system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
 			"Regulated target temperature of AHRS silicon chip, if supported in hardware (model > 2023), -1 means OFF");
 	top->addEntry(tcontrol);
 
-	SetupMenuSelect *ahrsdef = new SetupMenuSelect("Reset to Defaults",
-			RST_NONE, set_ahrs_defaults);
+	SetupMenuSelect *ahrsdef = new SetupMenuSelect("Reset to Defaults", RST_NONE, set_ahrs_defaults);
 	top->addEntry(ahrsdef);
 	ahrsdef->setHelp(
 			"Set optimum default values for all AHRS Parameters as determined to the best practice");
@@ -1450,13 +1400,11 @@ void system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
 }
 
 void system_menu_create_hardware_ahrs(SetupMenu *top) {
-	SetupMenuSelect *ahrsid = new SetupMenuSelect("AHRS ID", RST_NONE, 0,
-			false);
+	SetupMenuSelect *ahrsid = new SetupMenuSelect("AHRS ID", RST_NONE);
 	ahrsid->addEntry(Cipher::id());
 	top->addEntry(ahrsid);
 
-	mpu = new SetupMenuSelect("AHRS Option", RST_ON_EXIT, 0, true,
-			&attitude_indicator);
+	mpu = new SetupMenuSelect("AHRS Option", RST_ON_EXIT, nullptr, &attitude_indicator);
 	top->addEntry(mpu);
 	mpu->setHelp(
 			"Enable High Accuracy Attitude Sensor (AHRS) NMEA messages (need valid license key entered, reboots)");
@@ -1478,8 +1426,7 @@ void system_menu_create_hardware_ahrs(SetupMenu *top) {
 	ahrspa->setHelp("AHRS constants such as gyro trust and filtering", 275);
 	top->addEntry(ahrspa);
 
-	SetupMenuSelect *rpyl = new SetupMenuSelect("AHRS RPYL", RST_NONE, 0, true,
-			&ahrs_rpyl_dataset);
+	SetupMenuSelect *rpyl = new SetupMenuSelect("AHRS RPYL", RST_NONE, nullptr, &ahrs_rpyl_dataset);
 	top->addEntry(rpyl);
 	rpyl->setHelp("Send LEVIL AHRS like $RPYL sentence for artifical horizon");
 	rpyl->addEntry("Disable");
@@ -1493,8 +1440,7 @@ void system_menu_create_hardware(SetupMenu *top) {
 	SetupMenu *rotary = new SetupMenu("Rotary Setup", system_menu_create_hardware_rotary);
 	top->addEntry(rotary);
 
-	SetupMenuSelect *gear = new SetupMenuSelect("Gear Warn", RST_NONE,
-			config_gear_warning, false, &gear_warning);
+	SetupMenuSelect *gear = new SetupMenuSelect("Gear Warn", RST_NONE, config_gear_warning, &gear_warning);
 	top->addEntry(gear);
 	gear->setHelp(
 			"Enable gear warning on S2 flap sensor or serial RS232 pin (pos. or neg. signal) or by external command",
@@ -1511,7 +1457,7 @@ void system_menu_create_hardware(SetupMenu *top) {
 		top->addEntry(ahrs);
 	}
 
-	SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", RST_ON_EXIT, 0, false, &airspeed_sensor_type );
+	SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", RST_ON_EXIT, nullptr, &airspeed_sensor_type );
 	top->addEntry( pstype );
 	pstype->setHelp( "Factory default for type of pressure sensor, will not erase on factory reset (reboots)");
 	pstype->addEntry( "ABPMRR");
@@ -1525,8 +1471,7 @@ void system_menu_create_hardware(SetupMenu *top) {
 }
 
 void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
-	SetupMenuSelect *stawaen = new SetupMenuSelect("Stall Warning", RST_NONE, 0,
-			false, &stall_warning);
+	SetupMenuSelect *stawaen = new SetupMenuSelect("Stall Warning", RST_NONE, nullptr, &stall_warning);
 	stawaen->setHelp(
 			"Enable alarm sound when speed goes below configured stall speed (until 30% less)");
 	stawaen->mkEnable();
@@ -1538,8 +1483,7 @@ void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
 }
 
 void system_menu_create_altimeter_airspeed(SetupMenu *top) {
-	SetupMenuSelect *als = new SetupMenuSelect("Altimeter Source", RST_NONE, 0,
-			true, &alt_select);
+	SetupMenuSelect *als = new SetupMenuSelect("Altimeter Source", RST_NONE, nullptr, &alt_select);
 	top->addEntry(als);
 	als->setHelp(
 			"Select source for barometric altitude, either TE sensor or Baro sensor (recommended) or an external source e.g. FLARM (if avail)");
@@ -1552,16 +1496,14 @@ void system_menu_create_altimeter_airspeed(SetupMenu *top) {
 			"Calibration of airspeed sensor (AS). Normally not needed, unless pressure probes have systematic error");
 	top->addEntry(spc);
 
-	SetupMenuSelect *auze = new SetupMenuSelect("AutoZero AS Sensor",
-			RST_IMMEDIATE, 0, true, &autozero);
+	SetupMenuSelect *auze = new SetupMenuSelect("AutoZero AS Sensor", RST_IMMEDIATE, nullptr, &autozero);
 	top->addEntry(auze);
 	auze->setHelp(
 			"Recalculate zero point for airspeed sensor on next power on");
 	auze->addEntry("Cancel");
 	auze->addEntry("Start");
 
-	SetupMenuSelect *alq = new SetupMenuSelect("Alt. Quantization", RST_NONE, 0,
-			true, &alt_quantization);
+	SetupMenuSelect *alq = new SetupMenuSelect("Alt. Quantization", RST_NONE, nullptr, &alt_quantization);
 	alq->setHelp(
 			"Set altimeter mode with discrete steps and rolling last digits");
 	alq->addEntry("Disable");
@@ -1573,18 +1515,13 @@ void system_menu_create_altimeter_airspeed(SetupMenu *top) {
 
 	SetupMenu *stallwa = new SetupMenu("Stall Warning", system_menu_create_altimeter_airspeed_stallwa);
 	top->addEntry(stallwa);
-	stallwa->setHelp("Configure stall warning parameters");
-
-	SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", nullptr, false, &v_max);
-	vmax->setHelp("Configure maximum speed for corresponding aircraft type");
-	top->addEntry(vmax);
 }
 
 void system_menu_create(SetupMenu *sye) {
 	SetupMenu *soft = new SetupMenu("Software Update", system_menu_create_software);
 	sye->addEntry(soft);
 
-	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, 0, false, &factory_reset);
+	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, nullptr, &factory_reset);
 	fa->setHelp("Option to reset all settings to factory defaults, means metric system, 5 m/s vario range and more");
 	fa->addEntry("Cancel");
 	fa->addEntry("ResetAll");
@@ -1608,7 +1545,7 @@ void system_menu_create(SetupMenu *sye) {
 	sye->addEntry(ad);
 
 	// XCV role
-	SetupMenuSelect *role = new SetupMenuSelect("XCV device role", RST_IMMEDIATE, role_change_action, true, &xcv_role);
+	SetupMenuSelect *role = new SetupMenuSelect("XCV device role", RST_IMMEDIATE, role_change_action, &xcv_role);
 	role->setHelp("Set the intended role of this device first (needs a reboot)");
 	role->addEntry("None");
 	role->addEntry("Master");
@@ -1621,7 +1558,7 @@ void system_menu_create(SetupMenu *sye) {
 	devices->setDynContent();
 	sye->addEntry(devices);
 
-	SetupMenuSelect *logg = new SetupMenuSelect("Logging", RST_NONE, 0, true, &logging);
+	SetupMenuSelect *logg = new SetupMenuSelect("Logging", RST_NONE, nullptr, &logging);
 	logg->setHelp("R&D option, do not use!\n Collect raw sensor data with NMEA logger in XCSoar");
 	logg->mkEnable("Sensor RAW Data");
 	sye->addEntry(logg);
@@ -1700,6 +1637,7 @@ void setup_create_root(SetupMenu *top) {
 
 		// Options Setup
 		SetupMenu *opt = new SetupMenu("Options", options_menu_create);
+		opt->setDynContent();
 		top->addEntry(opt);
 
 		// System Setup

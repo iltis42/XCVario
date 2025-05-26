@@ -44,6 +44,9 @@ static SetupMenuCreator_t get_itf_menu_creator(InterfaceId iid)
     if ( iid == WIFI_AP ) {
         return options_menu_create_wifi;
     }
+    else if ( iid == BT_SPP ) {
+        return options_menu_create_bluetooth;
+    }
     else if ( iid == S1_RS232 ) {
         return system_menu_create_interfaceS1;
     }
@@ -76,14 +79,14 @@ static int update_id(SetupMenuChar *p) {
 	return 0;
 }
 
-void options_menu_create_wireless_custom_id(SetupMenu *top)
+static void options_menu_create_wireless_custom_id(SetupMenu *top)
 {
-    SetupMenuChar *c1 = new SetupMenuChar("Letter 1", RST_NONE, update_id, false, custom_wireless_id.get().id, 0);
-    SetupMenuChar *c2 = new SetupMenuChar("Letter 2", RST_NONE, update_id, false, custom_wireless_id.get().id, 1);
-    SetupMenuChar *c3 = new SetupMenuChar("Letter 3", RST_NONE, update_id, false, custom_wireless_id.get().id, 2);
-    SetupMenuChar *c4 = new SetupMenuChar("Letter 4", RST_NONE, update_id, false, custom_wireless_id.get().id, 3);
-    SetupMenuChar *c5 = new SetupMenuChar("Letter 5", RST_NONE, update_id, false, custom_wireless_id.get().id, 4);
-    SetupMenuChar *c6 = new SetupMenuChar("Letter 6", RST_NONE, update_id, false, custom_wireless_id.get().id, 5);
+    SetupMenuChar *c1 = new SetupMenuChar("Letter 1", RST_NONE, update_id, custom_wireless_id.get().id, 0);
+    SetupMenuChar *c2 = new SetupMenuChar("Letter 2", RST_NONE, update_id, custom_wireless_id.get().id, 1);
+    SetupMenuChar *c3 = new SetupMenuChar("Letter 3", RST_NONE, update_id, custom_wireless_id.get().id, 2);
+    SetupMenuChar *c4 = new SetupMenuChar("Letter 4", RST_NONE, update_id, custom_wireless_id.get().id, 3);
+    SetupMenuChar *c5 = new SetupMenuChar("Letter 5", RST_NONE, update_id, custom_wireless_id.get().id, 4);
+    SetupMenuChar *c6 = new SetupMenuChar("Letter 6", RST_NONE, update_id, custom_wireless_id.get().id, 5);
     top->addEntry(c1);
     top->addEntry(c2);
     top->addEntry(c3);
@@ -112,62 +115,33 @@ static int master_xcv_lock(SetupMenuSelect *p) {
 	return 0;
 }
 
-void options_menu_create_wifi(SetupMenu *top)
+static void options_menu_custom_id(SetupMenu *top)
+{
+    SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
+    top->addEntry(cusid);
+    cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate");
+}
+
+static void options_menu_create_wifi(SetupMenu *top)
 {
     SetupMenuValFloat *wifip = new SetupMenuValFloat("WIFI Power", "%", update_wifi_power, false, &wifi_max_power);
     wifip->setPrecision(0);
     top->addEntry(wifip);
     wifip->setHelp("Maximum Wifi Power to be used 10..100% or 2..20dBm");
 
-    SetupMenuSelect *wifimal = new SetupMenuSelect("Lock Master", RST_NONE,
-                                                   master_xcv_lock, true, &master_xcvario_lock);
+    SetupMenuSelect *wifimal = new SetupMenuSelect("Lock Master", RST_NONE, master_xcv_lock, &master_xcvario_lock);
     wifimal->setHelp(
         "In wireless client role, lock this client to the scanned master XCVario ID above");
     wifimal->addEntry("Unlock");
     wifimal->addEntry("Lock");
     top->addEntry(wifimal);
 
-    SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
-    top->addEntry(cusid);
-    cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate");
+    options_menu_custom_id(top);
 }
 
-void options_menu_create_bluetooth(SetupMenu *top)
+static void options_menu_create_bluetooth(SetupMenu *top)
 {
-    // SetupMenuSelect *btm = new SetupMenuSelect("Wireless", RST_ON_EXIT, 0, true,
-    //                                            &wireless_type);
-    // btm->setHelp(
-    //     "Activate wireless interface type to connect navigation devices, or to another XCVario as client (reboots)",
-    //     220);
-    // btm->addEntry("Disable");
-    // btm->addEntry("Bluetooth");
-    // btm->addEntry("Wireless Master");
-    // btm->addEntry("Wireless Client");
-    // btm->addEntry("Wireless Standalone");
-    // btm->addEntry("Bluetooth LE");
-    // top->addEntry(btm);
-
-    // SetupMenuValFloat *wifip = new SetupMenuValFloat("WIFI Power", "%", 10.0,
-    //                                                  100.0, 5.0, update_wifi_power, false, &wifi_max_power);
-    // wifip->setPrecision(0);
-    // top->addEntry(wifip);
-    // wifip->setHelp("Maximum Wifi Power to be used 10..100% or 2..20dBm");
-
-    // SetupMenuSelect *wifimal = new SetupMenuSelect("Lock Master", RST_NONE,
-    //                                                master_xcv_lock, true, &master_xcvario_lock);
-    // wifimal->setHelp(
-    //     "In wireless client role, lock this client to the scanned master XCVario ID above");
-    // wifimal->addEntry("Unlock");
-    // wifimal->addEntry("Lock");
-    // top->addEntry(wifimal);
-
-    // SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
-    // top->addEntry(cusid);
-    // cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate", 215);
-
-    // // SetupMenuSelect *clearcore = new SetupMenuSelect("Clear coredump", RST_NONE, reinterpret_cast<int (*)(SetupMenuSelect*)>(clear_coredump), false, nullptr);
-    // // clearcore->addEntry("doit");
-    // // top->addEntry(clearcore);
+    options_menu_custom_id(top);
 }
 
 static int update_s1_baud(SetupMenuSelect *p)
@@ -200,7 +174,7 @@ static int update_s1_txena(SetupMenuSelect *p)
 
 void system_menu_create_interfaceS1(SetupMenu *top)
 {
-    SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s1_baud, true, &serial1_speed);
+    SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s1_baud, &serial1_speed);
     s1sp2->addEntry("4800 baud");
     s1sp2->addEntry("9600 baud");
     s1sp2->addEntry("19200 baud");
@@ -209,20 +183,20 @@ void system_menu_create_interfaceS1(SetupMenu *top)
     s1sp2->addEntry("115200 baud");
     top->addEntry(s1sp2);
 
-    SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE, update_s1_pol, true, &serial1_ttl_signals);
+    SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE, update_s1_pol, &serial1_ttl_signals);
     stxi2->setHelp("A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL "
                     "uses a positive voltage");
     stxi2->addEntry("RS232 Standard");
     stxi2->addEntry("RS232 TTL");
     top->addEntry(stxi2);
 
-    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX", RST_NONE, update_s1_pin, true, &serial1_pin_swap);
+    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX", RST_NONE, update_s1_pin, &serial1_pin_swap);
     srxtw2->setHelp("Option to swap RX and TX line, a Flarm needs Normal, a Navi usually swapped.");
     srxtw2->addEntry("Normal");
     srxtw2->addEntry("Swapped");
     top->addEntry(srxtw2);
 
-    SetupMenuSelect *stxdis1 = new SetupMenuSelect("TX line", RST_NONE, update_s1_txena, true, &serial1_tx_enable);
+    SetupMenuSelect *stxdis1 = new SetupMenuSelect("TX line", RST_NONE, update_s1_txena, &serial1_tx_enable);
     stxdis1->setHelp("Option to listen only on the RX line, disables TX line to receive only data");
     stxdis1->mkEnable();
     top->addEntry(stxdis1);
@@ -258,7 +232,7 @@ static int update_s2_txena(SetupMenuSelect *p)
 
 void system_menu_create_interfaceS2(SetupMenu *top)
 {
-    SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s2_baud, true, &serial2_speed);
+    SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s2_baud, &serial2_speed);
     s2sp2->addEntry("4800 baud");
     s2sp2->addEntry("9600 baud");
     s2sp2->addEntry("19200 baud");
@@ -267,21 +241,21 @@ void system_menu_create_interfaceS2(SetupMenu *top)
     s2sp2->addEntry("115200 baud");
     top->addEntry(s2sp2);
 
-    SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE, update_s2_pol, true, &serial2_ttl_signals);
+    SetupMenuSelect *stxi2 = new SetupMenuSelect("Signaling", RST_NONE, update_s2_pol, &serial2_ttl_signals);
     stxi2->setHelp("A logical '1' is represented by a negative voltage in RS232 Standard, whereas in RS232 TTL "
                     "uses a positive voltage");
     stxi2->addEntry("RS232 Standard");
     stxi2->addEntry("RS232 TTL");
     top->addEntry(stxi2);
 
-    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX", RST_NONE, update_s2_pin, true, &serial2_pin_swap);
+    SetupMenuSelect *srxtw2 = new SetupMenuSelect("Swap RX/TX", RST_NONE, update_s2_pin, &serial2_pin_swap);
     srxtw2->setHelp("Option to swap RX and TX line, a Flarm needs Normal, a Navi usually swapped.");
     srxtw2->addEntry("Normal");
     srxtw2->addEntry("Swapped");
     top->addEntry(srxtw2);
 
     ESP_LOGI(FNAME,"menu creation tx_ena %d", serial2_tx_enable.get() );
-    SetupMenuSelect *stxdis2 = new SetupMenuSelect("TX line", RST_NONE, update_s2_txena, true, &serial2_tx_enable);
+    SetupMenuSelect *stxdis2 = new SetupMenuSelect("TX line", RST_NONE, update_s2_txena, &serial2_tx_enable);
     stxdis2->setHelp("Option to listen only on the RX line, disables TX line to receive only data");
     stxdis2->mkEnable();
     top->addEntry(stxdis2);
@@ -296,7 +270,7 @@ static int update_can_datarate(SetupMenuSelect *p)
 
 void system_menu_create_interfaceCAN(SetupMenu *top)
 {
-    SetupMenuSelect *canmode = new SetupMenuSelect("Datarate", RST_NONE, update_can_datarate, true, &can_speed);
+    SetupMenuSelect *canmode = new SetupMenuSelect("Datarate", RST_NONE, update_can_datarate, &can_speed);
     top->addEntry(canmode);
     canmode->setHelp("Datarate on high speed serial CAN interace in kbit per second");
     canmode->addEntry("250 kbit");
@@ -421,10 +395,10 @@ static void system_menu_add_device(SetupMenu *top)
     ESP_LOGI(FNAME,"Create new device menu");
     SetupMenuSelect *ndev = static_cast<SetupMenuSelect*>(top->getEntry(0));
     if ( ! ndev ) {
-        ndev = new SetupMenuSelect("Device", RST_NONE, select_device_action, false);
+        ndev = new SetupMenuSelect("Device", RST_NONE, select_device_action);
         top->addEntry(ndev);
         // flavor
-        SetupMenuSelect *text = new SetupMenuSelect("Flavor", RST_NONE, select_flavor_action, false);
+        SetupMenuSelect *text = new SetupMenuSelect("Flavor", RST_NONE, select_flavor_action);
         text->addEntry("---", 0);
         text->lock();
         top->addEntry(text);
@@ -505,7 +479,7 @@ static void system_menu_device(SetupMenu *top)
     }
 
     // list protocols
-    SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE, remove_device, false, nullptr, false, false);
+    SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE, remove_device);
     remove->mkConfirm();
     top->addEntry(remove);
 }

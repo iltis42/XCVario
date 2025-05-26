@@ -15,7 +15,7 @@
 
 
 SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuSelect *p), 
-									bool save, SetupNG<int> *anvs, bool ext_handler, bool end_menu ) :
+									SetupNG<int> *anvs, bool ext_handler, bool end_menu ) :
 	MenuEntry(),
 	_action(action),
 	_nvs(anvs)
@@ -25,7 +25,6 @@ SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, i
 	bits._ext_handler = ext_handler;
 	bits._end_setup = end_menu;
 	bits._restart = restart;
-	bits._save = save;
 	if( _nvs ) {
 		// ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
 		_select = _nvs->get();
@@ -96,7 +95,7 @@ void SetupMenuSelect::press()
 		_nvs->set(_values[_select].second, false ); // do sync in next step
 	}
 	if ( helptext ) {
-		SavedDelay(bits._save);
+		SavedDelay(_select_save != _select);
 	}
 	if( _action ){
 		ESP_LOGI(FNAME,"calling action in press %d", _select );

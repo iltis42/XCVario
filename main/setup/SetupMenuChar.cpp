@@ -15,7 +15,7 @@
 
 
 SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuChar *p), 
-								bool save, char *achar, uint32_t index, bool ext_handler, bool end_menu ) :
+								char *achar, uint32_t index, bool ext_handler, bool end_menu ) :
 	MenuEntry(),
 	_char_index(index),
 	_action(action)
@@ -28,7 +28,6 @@ SetupMenuChar::SetupMenuChar( const char* title, e_restart_mode_t restart, int (
 	bits._ext_handler = ext_handler;
 	bits._end_setup = end_menu;
 	bits._restart = restart;
-	bits._save = save;
 }
 
 void SetupMenuChar::display(int mode)
@@ -77,7 +76,7 @@ void SetupMenuChar::press()
 	ESP_LOGI(FNAME,"press() ext handler: %d _select: %d", bits._ext_handler, _select );
 
 	if ( helptext ) {
-		SavedDelay(bits._save);
+		SavedDelay(_select_save != _select);
 	}
 	if( _action ){
 		ESP_LOGI(FNAME,"calling action in press %d", _select );

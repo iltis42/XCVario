@@ -399,8 +399,10 @@ SetupNG<int> 			can_speed( "CANSPEED", CAN_SPEED_1MBIT, true, SYNC_NONE, PERSIST
 SetupNG<float> 			master_xcvario( "MSXCV", 0 );
 SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
 SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
-SetupNG<int> 			menu_screens("MENU_SCR", 0 );
-SetupNG<int> 			screen_centeraid("SCR_CA", 0, false, SYNC_NONE );
+SetupNG<int> 			menu_screens("MENU_SCR", 0, false, SYNC_NONE, VOLATILE);
+SetupNG<int> 			screen_gmeter("SCR_GMET", 0, false );
+SetupNG<int> 			screen_horizon("SCR_HORIZ", 0 );
+SetupNG<int> 			screen_centeraid("SCR_CA", 0, false);
 SetupNG<bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
 SetupNG<t_tenchar_id>	custom_wireless_id("WLID", t_tenchar_id("") );

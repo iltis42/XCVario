@@ -14,8 +14,8 @@ class SetupMenuChar:  public MenuEntry
 {
 public:
 	SetupMenuChar() = delete;
-	SetupMenuChar( const char* title, e_restart_mode_t restart=RST_NONE, int (*action)(SetupMenuChar *p) = 0,
-	bool save=true, char *achar=0, uint32_t index=0, bool ext_handler=false, bool end_menu=false );
+	SetupMenuChar( const char* title, e_restart_mode_t restart=RST_NONE, int (*action)(SetupMenuChar *p) = nullptr,
+		char *achar=0, uint32_t index=0, bool ext_handler=false, bool end_menu=false );
 	virtual ~SetupMenuChar() = default;
 	void display(int mode=0) override;
 	void rot(int count);

@@ -25,6 +25,8 @@ public:
 	void display( int mode=0 ) override;
 	bool isLeaf() const override { return false; }
 	const char *value() const override { return buzzword; };
+	int freeBottomLines() const override ;
+	// accessors
 	int getHighlight() const { return highlight; }
 	int incHighlight() { return ++highlight; }
 	void highlightTop() { highlight = -1; }

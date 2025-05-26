@@ -33,7 +33,7 @@ private:
 	void printString(e_dir_t dir, const char *s, int len );
 	void header(int len=0, e_dir_t dir=DIR_RX);
 	void scroll(int scroll);
-	int scrollpos;
+	int map_pos;
 	bool paused = true;
 	ItfTarget channel = {};
 	int rx_total = 0;

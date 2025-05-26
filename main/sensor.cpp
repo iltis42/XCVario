@@ -957,6 +957,7 @@ void system_startup(void *args){
 	Display->begin();
 	Display->bootDisplay();
 	Menu = new SetupRoot(Display); // the root setup menu
+	Menu->initScreens();
 
 	// int valid;
 	std::string logged_tests("\n\n\n");

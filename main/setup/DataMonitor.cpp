@@ -17,7 +17,6 @@ DataMonitor::DataMonitor() :
 	LINE_WIDTH(MYUCG->getDisplayWidth()),
 	SCROLL_BOTTOM(MYUCG->getDisplayHeight())
 {
-	scrollpos = MYUCG->getDisplayHeight();
 	DM = this;
 }
 
@@ -83,7 +82,8 @@ void DataMonitor::monitorString(e_dir_t dir, bool binary, const char *str, int l
 
 void DataMonitor::printString(e_dir_t dir, const char *str, int len ){
 	// ESP_LOGI(FNAME,"DM ch:%x dir:%d len:%d data:%s", (unsigned)ch.raw, dir, len, str );
-	const int scroll_lines = 20;
+	const int16_t scroll_lines = 20;
+	const int16_t clear_lines = (display_orientation.get() == DISPLAY_NINETY ) ? 2*scroll_lines : scroll_lines;
 	char dirsym = 0;
 	if( dir == DIR_RX ){
 		dirsym = '>';
@@ -104,9 +104,9 @@ void DataMonitor::printString(e_dir_t dir, const char *str, int len ){
 			memcpy( (void*)hunk, (void*)(str+pos), hunklen );
 			// ESP_LOGI(FNAME,"DM 2 hunklen: %d pos: %d  h:%s", hunklen, pos, hunk );
 			MYUCG->setColor( COLOR_BLACK );
-			MYUCG->drawBox( 0, scrollpos, LINE_WIDTH, scroll_lines );
+			MYUCG->drawBox( 0, map_pos, LINE_WIDTH, clear_lines );
 			MYUCG->setColor( COLOR_WHITE );
-			MYUCG->setPrintPos( 0, scrollpos+scroll_lines );
+			MYUCG->setPrintPos( 0, map_pos+scroll_lines );
 			MYUCG->setFont(ucg_font_fub11_tr, true );
 			char txt[256];
 			int hpos = 0;
@@ -134,11 +134,11 @@ void DataMonitor::printString(e_dir_t dir, const char *str, int len ){
 }
 
 void DataMonitor::scroll(int scroll){
-	scrollpos+=scroll;
-	if( scrollpos >= SCROLL_BOTTOM ) {
-		scrollpos = scroll;
+	map_pos+=scroll;
+	if( map_pos >= SCROLL_BOTTOM ) {
+		map_pos = scroll;
 	}
-	MYUCG->scrollLines( scrollpos );  // set frame origin
+	MYUCG->scrollLines( map_pos );  // set frame origin fixme
 }
 
 void DataMonitor::press(){
@@ -179,6 +179,7 @@ void DataMonitor::start(SetupAction *p, ItfTarget ch)
 	else {
 		MYUCG->scrollSetMargins( SCROLL_TOP, 0 );
 	}
+	map_pos = SCROLL_TOP;
 	paused = false; // will resume with press()
 	DEVMAN->startMonitoring(channel);
 	ESP_LOGI(FNAME,"started");

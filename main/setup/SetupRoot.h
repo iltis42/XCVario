@@ -21,6 +21,7 @@ public:
     const char* value() const override { return nullptr; }
 
     // API
+    void initScreens();
     void begin(MenuEntry *setup=nullptr);
     void exit(int levels=0) override;
     int getActiveScreen() const  { return active_screen; }

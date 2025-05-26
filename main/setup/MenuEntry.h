@@ -15,7 +15,6 @@
 struct bitfield {
     e_restart_mode_t _restart :2;
     bool _ext_handler         :1; // ??
-    bool _save                :1; // fixme show the save word -> needed?
     bool _end_setup           :1; // roll setup on exit
     bool _end_menu            :1; // just terminate the containing menu (two levels up)
     bool _locked              :1; // cannot enter
@@ -50,10 +49,11 @@ public:
 	virtual void refresh() {} // reread temp values coping with side efects on refreshing the display
 	virtual bool isLeaf() const { return true; }
 	virtual const char* value() const = 0; // content as string
+	virtual int freeBottomLines() const;
 
-	virtual void lock() { bits._locked = true; }
-	virtual void unlock() { bits._locked = false; }
-	virtual bool isLocked() const { return bits._locked; }
+	void lock() { bits._locked = true; }
+	void unlock() { bits._locked = false; }
+	bool isLocked() const { return bits._locked; }
 
 	// helper
 	const char* getTitle() const { return _title.c_str(); }
@@ -67,7 +67,6 @@ public:
     void indentHighlight(int sel);
 	void indentPrintLn(const char *str) const;
 	bool canInline() const;
-	int freeBottomLines() const;
 	int nrOfHelpLines() const;
 	bool showhelp(bool inln=false);
 	void clear();

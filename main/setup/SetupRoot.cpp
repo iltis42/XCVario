@@ -25,6 +25,19 @@ SetupRoot::~SetupRoot()
     detach();
 }
 
+void SetupRoot::initScreens()
+{
+    int screens = 0;
+    if ( screen_gmeter.get() ) {
+        screens |= SCREEN_GMETER;
+    }
+    if ( screen_horizon.get() ) {
+        screens |= SCREEN_HORIZON;
+    }
+    screens |= SCREEN_VARIO; // always
+	menu_screens.set( screens );
+}
+
 void SetupRoot::begin(MenuEntry *setup)
 {
     ESP_LOGI(FNAME,"SetupMenu %s", _title.c_str());

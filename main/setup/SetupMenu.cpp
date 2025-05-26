@@ -8,6 +8,7 @@
 #include "setup/SetupMenu.h"
 #include "setup/SubMenuDevices.h"
 #include "setup/SubMenuCompassWind.h"
+#include "setup/SetupRoot.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"
@@ -181,23 +182,9 @@ int config_gear_warning(SetupMenuSelect *p) {
 
 int upd_screens(SetupMenuSelect *p)
 {
-	int screens = menu_screens.get();
-	screens |= SCREEN_VARIO; // always
-	int mod_screen = p->getValue();
-	if ( p->getSelect() == 0 ) {
-		// disable
-		ESP_LOGI(FNAME,"disable screen: %d", mod_screen);
-		screens &= ~mod_screen;
-	}
-	else {
-		// enable
-		ESP_LOGI(FNAME,"enable screen: %d", mod_screen);
-		screens |= mod_screen;
-	}
-	menu_screens.set(screens);
+	Menu->initScreens();
 	return 0;
 }
-
 
 
 int do_display_test(SetupMenuSelect *p) {
@@ -1289,15 +1276,13 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 
 void system_menu_create_hardware_rotary_screens(SetupMenu *top)
 {
-	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens);
-	scrgmet->addEntry("disable");
-	scrgmet->addEntry("enable", SCREEN_GMETER);
+	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens, &screen_gmeter);
+	scrgmet->mkEnable();
 	top->addEntry(scrgmet);
 
 	if (gflags.ahrsKeyValid) {
-		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens);
-		horizon->addEntry("disable");
-		horizon->addEntry("enable", SCREEN_HORIZON);
+		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens, &screen_horizon);
+		horizon->mkEnable();
 		top->addEntry(horizon);
 	}
 }

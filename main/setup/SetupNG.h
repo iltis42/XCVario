@@ -530,6 +530,8 @@ extern SetupNG<float> 		master_xcvario;
 extern SetupNG<int> 		master_xcvario_lock;
 extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		menu_screens;
+extern SetupNG<int> 		screen_gmeter;
+extern SetupNG<int> 		screen_horizon;
 extern SetupNG<int> 		screen_centeraid;
 extern SetupNG<bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;

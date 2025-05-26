@@ -489,6 +489,11 @@ void SetupMenu::display(int mode)
 	xSemaphoreGive(display_mutex);
 }
 
+int SetupMenu::freeBottomLines() const
+{
+    return dheight/25 - getNrChilds() - 1;
+}
+
 void SetupMenu::setHighlight(MenuEntry *value)
 {
 	int found = -1;

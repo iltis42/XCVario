@@ -42,8 +42,7 @@ static void options_menu_create_compasswind_compass_dev(SetupMenu *top) {
 	const char *skydirs[8] = { "0°", "45°", "90°", "135°", "180°", "225°",
 			"270°", "315°" };
 	for (int i = 0; i < 8; i++) {
-		SetupMenuSelect *sms = new SetupMenuSelect("Direction", RST_NONE,
-				compassDeviationAction, false, 0);
+		SetupMenuSelect *sms = new SetupMenuSelect("Direction", RST_NONE, compassDeviationAction);
 		sms->setHelp("Push button to start deviation action");
 		sms->addEntry(skydirs[i]);
 		top->addEntry(sms);
@@ -51,16 +50,14 @@ static void options_menu_create_compasswind_compass_dev(SetupMenu *top) {
 }
 
 static void options_menu_create_compasswind_compass_nmea(SetupMenu *top) {
-	SetupMenuSelect *nmeaHdm = new SetupMenuSelect("Magnetic Heading", RST_NONE,
-			0, true, &compass_nmea_hdm);
+	SetupMenuSelect *nmeaHdm = new SetupMenuSelect("Magnetic Heading", RST_NONE, nullptr, &compass_nmea_hdm);
 	nmeaHdm->addEntry("Disable");
 	nmeaHdm->addEntry("Enable");
 	nmeaHdm->setHelp(
 			"Enable/disable NMEA '$HCHDM' sentence generation for magnetic heading");
 	top->addEntry(nmeaHdm);
 
-	SetupMenuSelect *nmeaHdt = new SetupMenuSelect("True Heading", RST_NONE, 0,
-			true, &compass_nmea_hdt);
+	SetupMenuSelect *nmeaHdt = new SetupMenuSelect("True Heading", RST_NONE, nullptr, &compass_nmea_hdt);
 	nmeaHdt->addEntry("Disable");
 	nmeaHdt->addEntry("Enable");
 	nmeaHdt->setHelp(
@@ -69,7 +66,7 @@ static void options_menu_create_compasswind_compass_nmea(SetupMenu *top) {
 }
 
 static void options_menu_create_compasswind_compass(SetupMenu *top) {
-	SetupMenuSelect *compSensorCal = new SetupMenuSelect("Sensor Calibration", RST_NONE, compassSensorCalibrateAction, false);
+	SetupMenuSelect *compSensorCal = new SetupMenuSelect("Sensor Calibration", RST_NONE, compassSensorCalibrateAction);
 	compSensorCal->addEntry("Cancel");
 	compSensorCal->addEntry("Start");
 	compSensorCal->addEntry("Show");
@@ -82,7 +79,7 @@ static void options_menu_create_compasswind_compass(SetupMenu *top) {
 	cd->setHelp("Set compass declination in degrees");
 	top->addEntry(cd);
 
-	SetupMenuSelect *devMenuA = new SetupMenuSelect("AutoDeviation", RST_NONE, 0, true, &compass_dev_auto);
+	SetupMenuSelect *devMenuA = new SetupMenuSelect("AutoDeviation", RST_NONE, nullptr, &compass_dev_auto);
 	devMenuA->setHelp("Automatic adaptive deviation and precise airspeed evaluation method using data from circling wind");
 	devMenuA->addEntry("Disable");
 	devMenuA->addEntry("Enable");
@@ -96,8 +93,7 @@ static void options_menu_create_compasswind_compass(SetupMenu *top) {
 	DisplayDeviations *smd = new DisplayDeviations("Show Deviations");
 	top->addEntry(smd);
 
-	SetupMenuSelect *sms = new SetupMenuSelect("Reset Deviations ", RST_NONE,
-			compassResetDeviationAction, false, 0);
+	SetupMenuSelect *sms = new SetupMenuSelect("Reset Deviations ", RST_NONE, compassResetDeviationAction);
 	sms->setHelp("Reset all deviation data to zero");
 	sms->addEntry("Cancel");
 	sms->addEntry("Reset");
@@ -210,8 +206,7 @@ void options_menu_create_compasswind(SetupMenu *top) {
 		top->addEntry(compassMenu);
 
 		// Wind speed observation window
-		SetupMenuSelect *windcal = new SetupMenuSelect("Wind Calculation", RST_NONE,
-				0, true, &wind_enable);
+		SetupMenuSelect *windcal = new SetupMenuSelect("Wind Calculation", RST_NONE, nullptr, &wind_enable);
 		windcal->addEntry("Disable");
 		windcal->addEntry("Straight");
 		windcal->addEntry("Circling");
@@ -221,8 +216,7 @@ void options_menu_create_compasswind(SetupMenu *top) {
 		top->addEntry(windcal);
 
 		// Display option
-		SetupMenuSelect *winddis = new SetupMenuSelect("Display", RST_NONE, 0, true,
-				&wind_display);
+		SetupMenuSelect *winddis = new SetupMenuSelect("Display", RST_NONE, nullptr, &wind_display);
 		winddis->addEntry("Disable");
 		winddis->addEntry("Wind Digits");
 		winddis->addEntry("Wind Arrow");
@@ -233,8 +227,7 @@ void options_menu_create_compasswind(SetupMenu *top) {
 		top->addEntry(winddis);
 
 		// Wind speed observation window
-		SetupMenuSelect *windref = new SetupMenuSelect("Arrow Ref", RST_NONE, 0,
-				true, &wind_reference);
+		SetupMenuSelect *windref = new SetupMenuSelect("Arrow Ref", RST_NONE, nullptr, &wind_reference);
 		windref->addEntry("North");
 		windref->addEntry("Mag Heading");
 		windref->addEntry("GPS Course");
@@ -249,8 +242,7 @@ void options_menu_create_compasswind(SetupMenu *top) {
 		SetupMenu *cirWindM = new SetupMenu("Circling Wind", options_menu_create_compasswind_circlingwind);
 		top->addEntry(cirWindM);
 
-		SetupMenuSelect *windlog = new SetupMenuSelect("Wind Logging", RST_NONE, 0,
-				true, &wind_logging);
+		SetupMenuSelect *windlog = new SetupMenuSelect("Wind Logging", RST_NONE, nullptr, &wind_logging);
 		windlog->addEntry("Disable");
 		windlog->addEntry("Enable WIND");
 		windlog->addEntry("Enable GYRO/MAG");

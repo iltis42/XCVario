@@ -163,7 +163,7 @@ static SetupMenuSelect *wkcal = 0;
 
 void Flap::setupSensorMenueEntries(SetupMenu *wkm)
 {
-	wkes = new SetupMenuSelect( "Flap Sensor", RST_NONE, select_flap_sens_pin, true, &flap_sensor );
+	wkes = new SetupMenuSelect( "Flap Sensor", RST_NONE, select_flap_sens_pin, &flap_sensor );
 	wkes->addEntry( "Disable");
 	wkes->addEntry( "Enable IO-2");
 	wkes->addEntry( "Enable IO-34");
@@ -171,7 +171,7 @@ void Flap::setupSensorMenueEntries(SetupMenu *wkm)
 	wkes->setHelp("Option to enable Flap sensor on corresponding IO pin, hardware may differ: check where you get a valid reading");
 	wkm->addEntry( wkes );
 
-	wkcal = new SetupMenuSelect( "Sensor Calibration", RST_NONE, flap_cal_act, false  );
+	wkcal = new SetupMenuSelect( "Sensor Calibration", RST_NONE, flap_cal_act );
 	wkcal->addEntry( "Cancel");
 	wkcal->addEntry( "Start");
 	wkcal->setHelp(  "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
@@ -205,25 +205,25 @@ void Flap::speeds_setup_menu_create(SetupMenu* top){
 }
 
 void Flap::position_labels_menu_create(SetupMenu* top){
-	SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label +3", RST_NONE, flap_lab_act, false, &wk_label_plus_3 );
+	SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label +3", RST_NONE, flap_lab_act, &wk_label_plus_3 );
 	top->addEntry( flab );
 	flab->addEntryList( flap_labels, sizeof(flap_labels)/4 ); // Initialize Flap Label Entries
-	flab = new SetupMenuSelect( "Flap Label +2", RST_NONE, flap_lab_act, false, &wk_label_plus_2 );
+	flab = new SetupMenuSelect( "Flap Label +2", RST_NONE, flap_lab_act, &wk_label_plus_2 );
 	top->addEntry( flab );
 	flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
-	flab = new SetupMenuSelect( "Flap Label +1", RST_NONE, flap_lab_act, false, &wk_label_plus_1 );
+	flab = new SetupMenuSelect( "Flap Label +1", RST_NONE, flap_lab_act, &wk_label_plus_1 );
 	top->addEntry( flab );
 	flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
-	flab = new SetupMenuSelect( "Flap Label  0", RST_NONE, flap_lab_act, false, &wk_label_null_0 );
+	flab = new SetupMenuSelect( "Flap Label  0", RST_NONE, flap_lab_act, &wk_label_null_0 );
 	top->addEntry( flab );
 	flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
-	flab = new SetupMenuSelect( "Flap Label -1", RST_NONE, flap_lab_act, false, &wk_label_minus_1 );
+	flab = new SetupMenuSelect( "Flap Label -1", RST_NONE, flap_lab_act, &wk_label_minus_1 );
 	top->addEntry( flab );
 	flab->addEntryList( flap_labels, sizeof(flap_labels)/4 );
-	flab = new SetupMenuSelect( "Flap Label -2", RST_NONE, flap_lab_act, false, &wk_label_minus_2 );
+	flab = new SetupMenuSelect( "Flap Label -2", RST_NONE, flap_lab_act, &wk_label_minus_2 );
 	top->addEntry( flab );
 	flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
-	flab = new SetupMenuSelect( "Flap Label -3", RST_NONE, flap_lab_act, false, &wk_label_minus_3 );
+	flab = new SetupMenuSelect( "Flap Label -3", RST_NONE, flap_lab_act, &wk_label_minus_3 );
 	top->addEntry( flab );
 	flab->addEntryList( flap_labels, sizeof(flap_labels)/4  );
 }
@@ -232,7 +232,7 @@ void Flap::setupIndicatorMenueEntries(SetupMenu *wkm)
 {
 	ESP_LOGI(FNAME,"Flap Indicator Menu");
 
-	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", RST_NONE, 0, true, &flap_enable );
+	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", RST_NONE, nullptr, &flap_enable );
 	wke->addEntry( "Disable");
 	wke->addEntry( "Enable");
 	wke->setHelp("Option to enable Flap (WK) Indicator to assist optimum flap setting depending on speed and ballast");

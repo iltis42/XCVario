@@ -29,7 +29,7 @@
 #include "setup/DataMonitor.h"
 #include "protocol/AliveMonitor.h"
 #include "setup/SetupNG.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <array>
 

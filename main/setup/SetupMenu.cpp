@@ -1133,61 +1133,65 @@ void options_menu_create_gload(SetupMenu *top) {
 }
 
 void options_menu_create(SetupMenu *opt) {
-	if (student_mode.get() == 0) {
-		SetupMenuSelect *stumo = new SetupMenuSelect("Student Mode", RST_NONE, nullptr, &student_mode);
-		opt->addEntry(stumo);
-		stumo->setHelp(
-				"Student mode, disables all sophisticated setup to just basic pre-flight related items like MC, ballast or bugs");
-		stumo->mkEnable();
+	if ( opt->getNrChilds() == 0 ) {
+		if (student_mode.get() == 0) {
+			SetupMenuSelect *stumo = new SetupMenuSelect("Student Mode", RST_NONE, nullptr, &student_mode);
+			opt->addEntry(stumo);
+			stumo->setHelp(
+					"Student mode, disables all sophisticated setup to just basic pre-flight related items like MC, ballast or bugs");
+			stumo->mkEnable();
+		}
+		Flap::setupMenue(opt);
+		// Units
+		SetupMenu *un = new SetupMenu("Units", options_menu_create_units);
+		opt->addEntry(un);
+		un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
+
+		SetupMenuSelect *amode = new SetupMenuSelect("Airspeed Mode", RST_NONE, nullptr, &airspeed_mode);
+		opt->addEntry(amode);
+		amode->setHelp(
+				"Select mode of Airspeed indicator to display IAS (Indicated AirSpeed), TAS (True AirSpeed) or CAS (calibrated airspeed)",
+				180);
+		amode->addEntry("IAS");
+		amode->addEntry("TAS");
+		amode->addEntry("CAS");
+		amode->addEntry("Slip Angle");
+
+		SetupMenuSelect *atl = new SetupMenuSelect("Auto Transition", RST_NONE, nullptr, &fl_auto_transition);
+		opt->addEntry(atl);
+		atl->setHelp("Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
+		atl->mkEnable();
+
+		SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode", RST_NONE, nullptr, &alt_display_mode);
+		opt->addEntry(altDisplayMode);
+		altDisplayMode->setHelp("Select altitude display mode");
+		altDisplayMode->addEntry("QNH");
+		altDisplayMode->addEntry("QFE");
+
+		SetupMenuValFloat *tral = new SetupMenuValFloat("Transition Altitude", "FL", nullptr, false, &transition_alt);
+		tral->setHelp(
+				"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)",
+				100);
+		opt->addEntry(tral);
+
+		SetupMenu *flarm = new SetupMenu("FLARM", options_menu_create_flarm);
+		opt->addEntry(flarm);
+		flarm->setHelp("Option to display FLARM Warnings depending on FLARM alarm level");
+
+		SetupMenu *compassWindMenu = new SetupMenu("Compass/Wind", options_menu_create_compasswind);
+		compassWindMenu->setDynContent();
+		opt->addEntry(compassWindMenu);
+		compassWindMenu->setHelp("Setup Compass and Wind", 280);
+
+		SetupMenu *gload = new SetupMenu("G-Load Display", options_menu_create_gload);
+		opt->addEntry(gload);
 	}
-	Flap::setupMenue(opt);
-	// Units
-	SetupMenu *un = new SetupMenu("Units", options_menu_create_units);
-	opt->addEntry(un);
-	un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
-
-	SetupMenuSelect *amode = new SetupMenuSelect("Airspeed Mode", RST_NONE, nullptr, &airspeed_mode);
-	opt->addEntry(amode);
-	amode->setHelp(
-			"Select mode of Airspeed indicator to display IAS (Indicated AirSpeed), TAS (True AirSpeed) or CAS (calibrated airspeed)",
-			180);
-	amode->addEntry("IAS");
-	amode->addEntry("TAS");
-	amode->addEntry("CAS");
-	amode->addEntry("Slip Angle");
-
-	SetupMenuSelect *atl = new SetupMenuSelect("Auto Transition", RST_NONE, nullptr, &fl_auto_transition);
-	opt->addEntry(atl);
-	atl->setHelp("Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
-	atl->mkEnable();
-
-	SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode", RST_NONE, nullptr, &alt_display_mode);
-	opt->addEntry(altDisplayMode);
-	altDisplayMode->setHelp("Select altitude display mode");
-	altDisplayMode->addEntry("QNH");
-	altDisplayMode->addEntry("QFE");
-
-	SetupMenuValFloat *tral = new SetupMenuValFloat("Transition Altitude", "FL", nullptr, false, &transition_alt);
-	tral->setHelp(
-			"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)",
-			100);
-	opt->addEntry(tral);
-
-	SetupMenu *flarm = new SetupMenu("FLARM", options_menu_create_flarm);
-	opt->addEntry(flarm);
-	flarm->setHelp(
-			"Option to display FLARM Warnings depending on FLARM alarm level");
-
-	SetupMenu *compassWindMenu = new SetupMenu("Compass/Wind", options_menu_create_compasswind);
-	compassWindMenu->setDynContent();
-	opt->addEntry(compassWindMenu);
-	compassWindMenu->setHelp("Setup Compass and Wind", 280);
-
-	// SetupMenu *wireless = new SetupMenu("Wireless", options_menu_create_wireless);
-	// opt->addEntry(wireless);
-
-	SetupMenu *gload = new SetupMenu("G-Load Display", options_menu_create_gload);
-	opt->addEntry(gload);
+	if ( DEVMAN->getDevice(FLARM_DEV) != nullptr ) {
+		opt->getEntry(7)->unlock();
+	}
+	else {
+		opt->getEntry(7)->lock();
+	}
 }
 
 void system_menu_create_software(SetupMenu *top) {
@@ -1648,6 +1652,7 @@ void setup_create_root(SetupMenu *top) {
 
 		// Options Setup
 		SetupMenu *opt = new SetupMenu("Options", options_menu_create);
+		opt->setDynContent();
 		top->addEntry(opt);
 
 		// System Setup

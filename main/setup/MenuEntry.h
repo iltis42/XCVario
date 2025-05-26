@@ -15,7 +15,6 @@
 struct bitfield {
     e_restart_mode_t _restart :2;
     bool _ext_handler         :1; // ??
-    bool _save                :1; // fixme show the save word -> needed?
     bool _end_setup           :1; // roll setup on exit
     bool _end_menu            :1; // just terminate the containing menu (two levels up)
     bool _locked              :1; // cannot enter

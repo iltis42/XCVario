@@ -31,14 +31,12 @@ SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, int (
 		_unit = Units::unit( _nvs->quantityType() );
 	}
 
-	assert(anvs); // the implementation does not allow
-	if ( _nvs ) {
-		_value = _nvs->get();
-		if ( _nvs->hasLimits() ) {
-			_min = _nvs->getMin();
-			_max = _nvs->getMax();
-			_step = _nvs->getStep();
-		}
+	assert(_nvs); // the implementation does not allow
+	_value = _nvs->get();
+	if ( _nvs->hasLimits() ) {
+		_min = _nvs->getMin();
+		_max = _nvs->getMax();
+		_step = _nvs->getStep();
 	}
 
 	bits._restart = restart;

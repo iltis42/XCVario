@@ -74,8 +74,8 @@ void MenuEntry::SavedDelay(bool showit)
 {
 	if ( showit ) {
 		MYUCG->setColor( COLOR_BLACK );
-		MYUCG->drawBox(1, dheight-40, dwidth, 40);
-		MYUCG->setPrintPos(1, dheight-20);
+		MYUCG->drawBox(1, dheight-50, dwidth, 50);
+		MYUCG->setPrintPos(1, dheight-3);
 		MYUCG->setColor( COLOR_WHITE );
 		MYUCG->print("Saved");
 	}
@@ -194,7 +194,7 @@ int MenuEntry::nrOfHelpLines() const
 
 // In case inline is requested: Try to squeeze the help under
 // the parents menu lines, 
-// returns true when inlining is possible
+// returns true when inlining
 bool MenuEntry::showhelp(bool inln)
 {
 	bool ret = true; // inlining w/o help text is always possible
@@ -215,6 +215,7 @@ bool MenuEntry::showhelp(bool inln)
 		else {
 			ret = false;
 		}
+		clearHelpLines();
 
 		int line_length = dwidth;
 		int w=0;

@@ -1012,6 +1012,10 @@ void glider_menu_create(SetupMenu *poe) {
 	fixball->setPrecision(0);
 	fixball->setHelp("Net rigged weight of the glider, according to the weight and balance plan");
 	poe->addEntry(fixball);
+
+	SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", nullptr, false, &v_max);
+	vmax->setHelp("Configure maximum speed for corresponding aircraft type");
+	poe->addEntry(vmax);
 }
 
 void options_menu_create_units(SetupMenu *top) {
@@ -1526,10 +1530,6 @@ void system_menu_create_altimeter_airspeed(SetupMenu *top) {
 
 	SetupMenu *stallwa = new SetupMenu("Stall Warning", system_menu_create_altimeter_airspeed_stallwa);
 	top->addEntry(stallwa);
-
-	SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", nullptr, false, &v_max);
-	vmax->setHelp("Configure maximum speed for corresponding aircraft type");
-	top->addEntry(vmax);
 }
 
 void system_menu_create(SetupMenu *sye) {

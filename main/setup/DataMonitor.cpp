@@ -151,8 +151,8 @@ void DataMonitor::longPress()
 	ESP_LOGI(FNAME,"stop");
 	DEVMAN->stopMonitoring();
 	paused = true;
-	delay(100); // streaming and controlling tasks are different ones ..
 	MYUCG->scrollLines( 0 );
+	delay(100); // streaming and controlling tasks are different ones ..
 	DM = nullptr;
 	exit();
 	delete this;

@@ -118,8 +118,9 @@ static int master_xcv_lock(SetupMenuSelect *p) {
 static void options_menu_custom_id(SetupMenu *top)
 {
     SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
-    top->addEntry(cusid);
+    cusid->setBuzzword(static_cast<t_tenchar_id*>(custom_wireless_id.getPtr())->id);
     cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate");
+    top->addEntry(cusid);
 }
 
 static void options_menu_create_wifi(SetupMenu *top)

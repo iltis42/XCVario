@@ -30,15 +30,15 @@ jobs:
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
 
-      run:  touch $PWD/main/Version.h;
-            echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >$PWD/main/cipherkey.h;
-            docker run --rm -v $PWD:/project -w /project espressif/idf:release-v5.4 bash -c ". \$IDF_PATH/export.sh && idf.py build"
+      run:  touch main/Version.h;
+            echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >main/cipherkey.h;
+            docker run --rm -v ${{ github.workspace }}:/project -w /project espressif/idf:release-v5.4 bash -c ". \$IDF_PATH/export.sh && idf.py build"
             mkdir -p artifacts;
-            ls $PWD/build/sensor.bin || echo "$PWD/build/sensor.bin fehlt!"
-            ls $PWD/build/sensor.elf || echo "$PWD/build/sensor.elf fehlt!"
-            cp $PWD/build/sensor.bin artifacts/sensor-${{ env.FILE_VERSION }}.bin;
-            cp $PWD/build/sensor.elf artifacts/sensor-${{ env.FILE_VERSION }}.elf;
-            gzip $PWD/artifacts/sensor-${{ env.FILE_VERSION }}.elf;
+            ls build/sensor.bin || echo "build/sensor.bin fehlt!"
+            ls build/sensor.elf || echo "build/sensor.elf fehlt!"
+            cp build/sensor.bin artifacts/sensor-${{ env.FILE_VERSION }}.bin;
+            cp build/sensor.elf artifacts/sensor-${{ env.FILE_VERSION }}.elf;
+            gzip artifacts/sensor-${{ env.FILE_VERSION }}.elf;
             ls artifacts/*;
 
     - name: Upload binary & ELF

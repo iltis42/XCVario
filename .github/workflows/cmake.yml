@@ -30,18 +30,22 @@ jobs:
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
 
-      run:  touch main/Version.h;
-            echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >main/cipherkey.h;
-            docker run --rm -v ${{ github.workspace }}:/project -w /project espressif/idf:release-v5.4 \
-            bash -c ". \$IDF_PATH/export.sh && idf.py build && \
-            mkdir -p artifacts && \
-            cp build/sensor.elf artifacts/sensor-${{ env.FILE_VERSION }}.elf && \
-            cp build/sensor.bin artifacts/sensor-${{ env.FILE_VERSION }}.bin && \
-            gzip artifacts/sensor-${{ env.FILE_VERSION }}.elf"
+      run: |
+        touch main/Version.h
+        echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >main/cipherkey.h
+        docker run --rm -v ${{ github.workspace }}:/project -w /project espressif/idf:release-v5.4 \
+        bash -c ". \$IDF_PATH/export.sh && idf.py build"
             
-            echo "--- Inhalt von artifacts/ nach Build ---";
-            ls -lh artifacts/;
-         
+        echo "--- Inhalt von build/ nach Build ---"
+        ls -lh build/
+            
+        mkdir -p artifacts
+        cp build/sensor.elf artifacts/sensor-${{ env.FILE_VERSION }}.elf
+        cp build/sensor.bin artifacts/sensor-${{ env.FILE_VERSION }}.bin
+        gzip artifacts/sensor-${{ env.FILE_VERSION }}.elf
+            
+        echo "--- Inhalt von artifacts/ auf Host ---"
+        ls -lh artifacts/
 
     - name: Upload binary & ELF
       uses: actions/upload-artifact@v4

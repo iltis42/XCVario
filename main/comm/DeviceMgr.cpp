@@ -45,10 +45,10 @@ static TaskHandle_t SendTask = nullptr;
 //
 // entries with zero termination, entirely as ro flash data
 static constexpr RoutingTarget flarm_routes_synch[] = { 
-    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {XCVARIOSECOND_DEV, CAN_BUS, 0}, 
+    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {XCVARIOSECOND_DEV, CAN_BUS, 0}, 
     {XCVARIOFIRST_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget flarm_routes[] = { 
-    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
+    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
 static constexpr RoutingTarget radio_routes[] = { 
     {RADIO_KRT2_DEV, S2_RS232, 0}, {RADIO_ATR833_DEV, S2_RS232, 0}, {XCVARIOFIRST_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget navi_routes[] = { 
@@ -56,7 +56,7 @@ static constexpr RoutingTarget navi_routes[] = {
 static constexpr RoutingTarget fhost_routes[] = { 
     {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget proxy_routes[] = { 
-    {NAVI_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_AP, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
+    {NAVI_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
 static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(FLARM_DEV, S1_RS232, 0), flarm_routes_synch },
     { RoutingTarget(FLARM_DEV, CAN_BUS, 0), flarm_routes },
@@ -95,27 +95,27 @@ constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
     {DeviceId::FLARM_DEV,  {"Flarm", {{S1_RS232, S2_RS232}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, IS_REAL, &flarm_devsetup}},
     // {DeviceId::FLARM_DEV,  {"", {{XCVPROXY}}, {{FLARM_P, FLARMBIN_P}, 2}, 0, 0, &flarm_devsetup}},
     {DeviceId::JUMBO_DEV,  {"jumbo putzi", {{CAN_BUS}}, {{JUMBOCMD_P}, 1} , 0, 0, nullptr}}, // auto dev
-    {DeviceId::XCVARIOFIRST_DEV, {"Master XCV", {{WIFI_CLIENT, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL, &master_devsetup}},
+    {DeviceId::XCVARIOFIRST_DEV, {"Master XCV", {{WIFI_APSTA, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL, &master_devsetup}},
     {DeviceId::XCVARIOFIRST_DEV, {"", {{CAN_BUS}}, {{XCVQUERY_P}, 1}, CAN_REG_PORT, IS_VARIANT, nullptr}}, // auto through XCV role
     {DeviceId::XCVARIOFIRST_DEV, {"", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|SECOND_ONLY, &master_devsetup}},
-    {DeviceId::XCVARIOSECOND_DEV, {"Second XCV", {{WIFI_AP, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL|MASTER_ONLY, &second_devsetup}},
+    {DeviceId::XCVARIOSECOND_DEV, {"Second XCV", {{WIFI_APSTA, BT_SPP, S1_RS232, S2_RS232}}, {{XCVSYNC_P}, 1}, 8884, IS_REAL|MASTER_ONLY, &second_devsetup}},
     {DeviceId::XCVARIOSECOND_DEV, {"", {{S2_RS232}}, {{XCVSYNC_P}, 1}, 0, IS_REAL|MASTER_ONLY, &second_devsetup}},
     {DeviceId::MAGLEG_DEV, {"MagSens rev0", {{I2C, CAN_BUS}}, {{MAGSENSBIN_P}, 1}, 0, IS_REAL, &magleg_devsetup}},
     {DeviceId::MAGLEG_DEV, {"", {{CAN_BUS}}, {{MAGSENSBIN_P}, 1}, MagSensBin::LEGACY_MAGSTREAM_ID, IS_REAL, &magleg_devsetup}},
     {DeviceId::MAGLEG_DEV, {"", {{I2C}}, {{MAGSENSBIN_P}, 0}, 0, IS_REAL, &magleg_devsetup}},
     {DeviceId::MAGSENS_DEV, {"MagSens rev1", {{CAN_BUS}}, {{MAGSENS_P}, 1}, 0, IS_REAL, nullptr}}, // auto start
-    {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
+    {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_APSTA, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
                                     {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1}, 
                                     8880, IS_REAL, &navi_devsetup}},
     {DeviceId::NAVI_DEV,   {"", {{S2_RS232}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1}, 
                                     0, IPTOS_RELIABILITY, &navi_devsetup}},
     {DeviceId::NAVI_DEV,   {"", {{BT_SPP}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1}, 
                                     0, IS_REAL, &navi_devsetup}},
-    {DeviceId::FLARM_HOST_DEV, {"Flarm host", {{WIFI_AP, S2_RS232, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, MULTI_CONF, &flarm_host_setup}},
+    {DeviceId::FLARM_HOST_DEV, {"Flarm Host", {{WIFI_APSTA, S2_RS232, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, MULTI_CONF, &flarm_host_setup}},
     // {DeviceId::FLARM_HOST_DEV, {"", {{CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
     {DeviceId::FLARM_HOST_DEV, {"", {{S2_RS232}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
     {DeviceId::FLARM_HOST_DEV, {"", {{BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
-    {DeviceId::RADIO_REMOTE_DEV, {"Radio remote", {{WIFI_AP}}, {{KRT2_REMOTE_P}, 1}, 8882, 0, &radio_host_setup}},
+    {DeviceId::RADIO_REMOTE_DEV, {"Radio remote", {{WIFI_APSTA}}, {{KRT2_REMOTE_P}, 1}, 8882, 0, &radio_host_setup}},
     {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL, &krt_devsetup}},
     {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL, &atr_devsetup}}
 };
@@ -367,13 +367,13 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
     //         send_port = dev->getSendPort(XCVSYNC_P);
     //     }
     // }
-    else if ( iid == WIFI_AP) {
-        if ( ! Wifi ) {
-            WifiAP::createWifiAP();
+    else if ( iid == WIFI_APSTA ) {
+        if ( ! WIFI ) {
+            WifiApSta::createWifiApSta();
         }
-        if ( Wifi ) {
-            Wifi->ConfigureIntf(listen_port);
-            itf = Wifi;
+        if ( WIFI ) {
+            WIFI->ConfigureIntf(listen_port);
+            itf = WIFI;
         }
     }
     else if ( iid == S1_RS232) {
@@ -529,10 +529,10 @@ bool DeviceManager::removeDevice(DeviceId did)
                 ESP_LOGI(FNAME, "stopping CAN");
                 CAN->stop();
             }
-            else if ( itf == Wifi ) { // fixme, restart not reliably working
+            else if ( itf == WIFI ) { // fixme, restart not reliably working
             //     ESP_LOGI(FNAME, "stopping Wifi");
-            //     WifiAP *tmp = Wifi;
-            //     Wifi = nullptr;
+            //     WIFI *tmp = WIFI;
+            //     WIFI = nullptr;
             //     delete tmp;
                 ret = true; // restart needed
             }
@@ -599,10 +599,10 @@ bool DeviceManager::isAvail(InterfaceId iid) const
         return false;
     }
     // BT and WIFI are mutually exclusive
-    else if ( (iid == BT_SPP || iid == BT_LE) && isIntf(WIFI_AP) ) {
+    else if ( (iid == BT_SPP || iid == BT_LE) && isIntf(WIFI_APSTA) ) {
         return false;
     }
-    else if ( iid == WIFI_AP && (isIntf(BT_SPP) || isIntf(BT_LE)) ) {
+    else if ( iid == WIFI_APSTA && (isIntf(BT_SPP) || isIntf(BT_LE)) ) {
         return false;
     }
     return true;

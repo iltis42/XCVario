@@ -14,8 +14,8 @@
 #include "comm/DeviceMgr.h"
 #include "comm/CanBus.h"
 #include "comm/SerialLine.h"
+#include "comm/WifiAP.h"
 #include "setup/DataMonitor.h"
-#include "WifiClient.h"
 #include "sensor.h"
 #include "logdef.h"
 
@@ -55,7 +55,7 @@ static void connected_devices_menu_create_interfaceI2C(SetupMenu *top);
 
 static SetupMenuCreator_t get_itf_menu_creator(InterfaceId iid)
 {
-    if ( iid == WIFI_AP ) {
+    if ( iid == WIFI_APSTA ) {
         return connected_devices_menu_create_wifi;
     }
     else if ( iid == BT_SPP ) {
@@ -119,14 +119,15 @@ static void wifi_menu_create_wireless_custom_id(SetupMenu *top)
     c6->addEntryList(keys, sizeof(keys) / 4);
 }
 
-static int master_xcv_lock(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"master_xcv_lock");
-	MYUCG->setPrintPos(1, 130);
-	int mxcv = WifiClient::getScannedMasterXCV();
-	MYUCG->printf("Scanned: XCVario-%d", mxcv);
-	if (master_xcvario_lock.get() == 1)
-		master_xcvario.set(mxcv);
-	return 0;
+static int scan_for_master(SetupMenuSelect *p) {
+    if ( p->getSelect() == 1 ) {
+        ESP_LOGI(FNAME, "scan_for_master");
+        MYUCG->setPrintPos(1, 130);
+        if ( WIFI->scanMaster(0) ) {
+            MYUCG->printf("Scanned: XCVario-%d", (int)master_xcvario.get());
+        }
+    }
+    return 0;
 }
 
 static void options_menu_custom_id(SetupMenu *top)
@@ -141,16 +142,22 @@ static void connected_devices_menu_create_wifi(SetupMenu *top)
 {
     SetupMenuValFloat *wifip = new SetupMenuValFloat("WIFI Power", "%", update_wifi_power, false, &wifi_max_power);
     wifip->setPrecision(0);
-    top->addEntry(wifip);
     wifip->setHelp("Maximum Wifi Power to be used 10..100% or 2..20dBm");
+    top->addEntry(wifip);
 
-    SetupMenuSelect *wifimal = new SetupMenuSelect("Lock Master", RST_NONE, master_xcv_lock, &master_xcvario_lock);
-    wifimal->setHelp(
-        "In wireless client role, lock this client to the scanned master XCVario ID above");
-    wifimal->addEntry("Unlock");
-    wifimal->addEntry("Lock");
-    top->addEntry(wifimal);
-
+    if ( xcv_role.get() == SECOND_ROLE ) {
+        SetupMenuValFloat *masterid = new SetupMenuValFloat("Master Id XCVario-", "", nullptr, false, &master_xcvario);
+        masterid->setHelp("Connect only to this master XCVario ID");
+        masterid->lock();
+        top->addEntry(masterid);
+    
+        SetupMenuSelect *wifimal = new SetupMenuSelect("Scan for Master", RST_NONE, scan_for_master);
+        wifimal->setHelp("As second XCVario, scan for a master XCVario, connect and lock to it");
+        wifimal->addEntry("Cancel");
+        wifimal->addEntry("Scan&Set");
+        wifimal->setSelect(0); // default to cancel
+        top->addEntry(wifimal);
+    }
     options_menu_custom_id(top);
 }
 

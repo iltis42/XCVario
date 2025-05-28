@@ -111,9 +111,6 @@ extern float mpu_target_temp;
 
 extern MPU_t MPU;
 
-// The XCV access point password
-constexpr const char* PASSPHARSE = "xcvario-21";
-
 // Arduino.h remains
 inline unsigned long millis()
 {

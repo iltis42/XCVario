@@ -333,7 +333,7 @@ bool SetupCommon::isMaster()
 }
 
 bool SetupCommon::haveWLAN(){
-	return DEVMAN->isIntf(WIFI_AP) || DEVMAN->isIntf(WIFI_CLIENT);
+	return DEVMAN->isIntf(WIFI_APSTA);
 }
 
 bool SetupCommon::isClient()

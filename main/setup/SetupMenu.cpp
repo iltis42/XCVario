@@ -26,7 +26,6 @@
 #include "esp_wifi.h"
 #include "Flarm.h"
 #include "protocol/FlarmSim.h"
-#include "WifiClient.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
 #include "setup/SetupNG.h"

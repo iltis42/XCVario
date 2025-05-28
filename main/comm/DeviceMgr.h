@@ -50,7 +50,7 @@ struct Device
     // Attributes
     const DeviceId      _id;
     DataLink           *_link = nullptr; // can have only one link layer, but it might be shared with other devs
-    EnumList            _protos = {}; // list of protocols belonging to this device
+    EnumList            _protos = {}; // list of protocols belonging to this device, needed to remove a devices properly
     InterfaceCtrl      *_itf = nullptr;
 };
 
@@ -119,7 +119,7 @@ private:
     // Restriction: It can only contain one element of one device type
     // Hash table for routing purpose
     DevMap _device_map;
-    ItfMap _interface_map;
+    ItfMap _interface_map; // as convenience cashed access to interfaces, dev map is primary source of info
     mutable SemaphoreHandle_t _devmap_mutex;
     // Flarm specific trace to handle the Flarm binary protocol
     DataLink *_flarm_bp = nullptr; // the flarm binary protocol initiator

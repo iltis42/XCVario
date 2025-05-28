@@ -30,7 +30,7 @@ const char* pwd = "xcvario-21";
 // OTA
 void OTA::doSoftwareUpdate(IpsDisplay * disp ){
 	ESP_LOGI(FNAME,"Now start Wifi OTA");
-	WifiAP *wifi = WifiAP::createWifiAP();
+	WifiApSta *wifi = WifiApSta::createWifiApSta();
 	wifi->ConfigureIntf(80);
 
 	// Break the cycle of booting into OTA mode early

@@ -11,7 +11,6 @@
 #include "comm/DeviceMgr.h"
 #include "BLESender.h"
 #include "OneWireESP32.h"
-#include "WifiClient.h"
 #include "sensor.h"
 #include "Units.h"
 #include "Flap.h"
@@ -994,21 +993,19 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 }
 
 void IpsDisplay::drawWifi( int x, int y ) {
-	if( _menu  )
+	if( _menu  ) {
 		return;
-	if( !SetupCommon::haveWLAN() )
+	}
+	if( !DEVMAN->isIntf(WIFI_APSTA) ) {
 		return;
-	int btq=1;
+	}
+	int btq = WIFI->queueFull();
 	// ESP_LOGI(FNAME,"wireless %d", wireless );
-	if ( DEVMAN->isIntf(WIFI_CLIENT) ) {
-		if( WifiClient::isConnected(8884) ) // fixme
-			btq=0;
-	}
-	else if ( DEVMAN->isIntf(WIFI_AP) && Wifi ) {
-		btq=Wifi->queueFull();
-	} else {
-		return;
-	}
+	// if ( DEVMAN->isIntf(WIFI_CLIENT) ) {
+	// 	if( WIFI->isConnected(8884) ) // fixme
+	// 		btq=0;
+	// }
+	
 	if( btq != btqueue || flarm_alive.get() > ALIVE_NONE ){
 		ESP_LOGD(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,btq);
 		if( btq ) {
@@ -1037,7 +1034,7 @@ void IpsDisplay::drawConnection( int16_t x, int16_t y )
 	if ( DEVMAN->isIntf(BT_SPP) || DEVMAN->isIntf(BT_LE) ) {
 		drawBT();
 	}
-	else if( DEVMAN->isIntf(WIFI_AP) || DEVMAN->isIntf(WIFI_CLIENT) ) {
+	else if( DEVMAN->isIntf(WIFI_APSTA) ) {
 		drawWifi(x, y);
 	}
 	else if( SetupCommon::isWired() ) {

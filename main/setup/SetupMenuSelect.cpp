@@ -92,10 +92,10 @@ void SetupMenuSelect::press()
 	ESP_LOGI(FNAME,"press() ext handler: %d _select: %d", bits._ext_handler, _select );
 
 	if( _nvs ) {
-		_nvs->set(_values[_select].second, false ); // do sync in next step
-	}
-	if ( helptext ) {
-		SavedDelay(_select_save != _select);
+		_nvs->set(_values[_select].second);
+		if ( helptext ) {
+			SavedDelay(_select_save != _select);
+		}
 	}
 	if( _action ){
 		ESP_LOGI(FNAME,"calling action in press %d", _select );

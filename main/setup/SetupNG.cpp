@@ -396,8 +396,7 @@ SetupNG<float>       	max_circle_wind_delta_deg("CIMDELD", 20.0, true, SYNC_NONE
 SetupNG<float>       	max_circle_wind_delta_speed("CIMDELS", 5.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.0, 20.0, 0.1));
 SetupNG<float>       	circle_wind_lowpass("CI_WINDLOW", 5, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1, 10, 1));
 SetupNG<int> 			can_speed( "CANSPEED", CAN_SPEED_1MBIT, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(CAN_SPEED_250KBIT, CAN_SPEED_1MBIT, 1));
-SetupNG<float> 			master_xcvario( "MSXCV", 0 );
-SetupNG<int> 			master_xcvario_lock( "MSXCVL", 0 );
+SetupNG<float> 			master_xcvario( "MSXCV", 0, false, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1000, 9999, 1));
 SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
 SetupNG<int> 			menu_screens("MENU_SCR", 0, false, SYNC_NONE, VOLATILE);
 SetupNG<int> 			screen_gmeter("SCR_GMET", 0, false );

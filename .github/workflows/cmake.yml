@@ -34,6 +34,10 @@ jobs:
             echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >main/cipherkey.h;
             docker run --rm -v ${{ github.workspace }}:/project -w /project espressif/idf:release-v5.4 bash -c ". \$IDF_PATH/export.sh && idf.py build"
             mkdir -p artifacts;
+            echo "--- Inhalt von build/ nach Build ---";
+            ls -lh build/;
+            echo "--- Inhalt von CMakeFiles nach Build ---";
+            find . -name "*.elf" -exec ls -lh {} \;
             ls build/sensor.bin || echo "build/sensor.bin fehlt!"
             ls build/sensor.elf || echo "build/sensor.elf fehlt!"
             cp build/sensor.bin artifacts/sensor-${{ env.FILE_VERSION }}.bin;

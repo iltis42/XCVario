@@ -34,8 +34,11 @@ jobs:
             echo "#define CIPHER_KEY \"${{ secrets.AHRS_CIPHER_KEY }}\"" >$PWD/main/cipherkey.h;
             docker run --rm -v $PWD:/project -w /project espressif/idf:release-v5.4 bash -c ". \$IDF_PATH/export.sh && idf.py build"
             mkdir -p artifacts;
-            cp $PWD/build/sensor.bin artifacts/sensor-${{ env.FILE_VERSION }}.bin;
-            cp $PWD/build/sensor.elf artifacts/sensor-${{ env.FILE_VERSION }}.elf;
+            ls $PWD/build/sensor.bin || echo "$PWD/build/sensor.bin fehlt!"
+            ls $PWD/project/build/sensor.bin || echo "$PWD/project/build/sensor.bin fehlt!"
+            ls /project/build/sensor.bin || echo "/project/build/sensor.bin fehlt!"
+            cp $PWD/project/build/sensor.bin artifacts/sensor-${{ env.FILE_VERSION }}.bin;
+            cp $PWD/project/build/sensor.elf artifacts/sensor-${{ env.FILE_VERSION }}.elf;
             gzip $PWD/artifacts/sensor-${{ env.FILE_VERSION }}.elf;
             ls artifacts/*;
 

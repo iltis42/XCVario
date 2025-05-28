@@ -44,7 +44,10 @@ jobs:
             cp build/sensor.elf artifacts/sensor-${{ env.FILE_VERSION }}.elf &&
             cp build/sensor.bin artifacts/sensor-${{ env.FILE_VERSION }}.bin &&
             gzip artifacts/sensor-${{ env.FILE_VERSION }}.elf"
-            
+
+    - name: Verify build artifacts
+      run: ls -lh artifacts/
+      
     - name: Upload binary & ELF
       uses: actions/upload-artifact@v4
       with:

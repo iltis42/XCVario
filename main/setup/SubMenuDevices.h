@@ -12,3 +12,4 @@
 class MenuEntry;
 
 void system_menu_connected_devices(SetupMenu *top);
+void free_connected_devices_menu();

@@ -7,6 +7,7 @@
  ***********************************************************/
 
 #include "SetupRoot.h"
+#include "setup/SubMenuDevices.h"
 #include "IpsDisplay.h"
 
 #include "sensor.h"
@@ -66,6 +67,7 @@ void SetupRoot::begin(MenuEntry *setup)
 void SetupRoot::exit(int levels)
 {
     ESP_LOGI(FNAME,"End Setup Menu");
+    free_connected_devices_menu();
 
     screens_init = INIT_DISPLAY_NULL;
     if (_restart) {

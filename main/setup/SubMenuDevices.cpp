@@ -23,41 +23,42 @@
 
 #include <cinttypes>
 #include <string_view>
+#include "SubMenuDevices.h"
 
 static DeviceId new_device;
 static InterfaceId new_interface;
 // static SetupNG<float> tmp_value( "TMP_VAL", 0.0, SYNC_NONE, VOLATILE);
+static std::string device_details;
 
 //
 // Interfaces
 //
-static void options_menu_create_wireless_custom_id(SetupMenu *top);
-static void options_menu_create_wifi(SetupMenu *top);
-static void options_menu_create_bluetooth(SetupMenu *top);
-static void system_menu_create_interfaceS1(SetupMenu *top);
-static void system_menu_create_interfaceS2(SetupMenu *top);
-static void system_menu_create_interfaceCAN(SetupMenu *top);
-static void system_menu_create_interfaceI2C(SetupMenu *top);
+static void connected_devices_menu_create_wifi(SetupMenu *top);
+static void connected_devices_menu_create_bluetooth(SetupMenu *top);
+static void connected_devices_menu_create_interfaceS1(SetupMenu *top);
+static void connected_devices_menu_create_interfaceS2(SetupMenu *top);
+static void connected_devices_menu_create_interfaceCAN(SetupMenu *top);
+static void connected_devices_menu_create_interfaceI2C(SetupMenu *top);
 
 static SetupMenuCreator_t get_itf_menu_creator(InterfaceId iid)
 {
     if ( iid == WIFI_AP ) {
-        return options_menu_create_wifi;
+        return connected_devices_menu_create_wifi;
     }
     else if ( iid == BT_SPP ) {
-        return options_menu_create_bluetooth;
+        return connected_devices_menu_create_bluetooth;
     }
     else if ( iid == S1_RS232 ) {
-        return system_menu_create_interfaceS1;
+        return connected_devices_menu_create_interfaceS1;
     }
     else if ( iid == S2_RS232 ) {
-        return system_menu_create_interfaceS2;
+        return connected_devices_menu_create_interfaceS2;
     }
     else if ( iid == CAN_BUS ) {
-        return system_menu_create_interfaceCAN;
+        return connected_devices_menu_create_interfaceCAN;
     }
     else if ( iid == I2C ) {
-        return system_menu_create_interfaceI2C;
+        return connected_devices_menu_create_interfaceI2C;
     }
     return nullptr;
 }
@@ -79,7 +80,7 @@ static int update_id(SetupMenuChar *p) {
 	return 0;
 }
 
-static void options_menu_create_wireless_custom_id(SetupMenu *top)
+static void wifi_menu_create_wireless_custom_id(SetupMenu *top)
 {
     SetupMenuChar *c1 = new SetupMenuChar("Letter 1", RST_NONE, update_id, custom_wireless_id.get().id, 0);
     SetupMenuChar *c2 = new SetupMenuChar("Letter 2", RST_NONE, update_id, custom_wireless_id.get().id, 1);
@@ -117,13 +118,13 @@ static int master_xcv_lock(SetupMenuSelect *p) {
 
 static void options_menu_custom_id(SetupMenu *top)
 {
-    SetupMenu *cusid = new SetupMenu("Custom-ID", options_menu_create_wireless_custom_id);
+    SetupMenu *cusid = new SetupMenu("Custom-ID", wifi_menu_create_wireless_custom_id);
     cusid->setBuzzword(static_cast<t_tenchar_id*>(custom_wireless_id.getPtr())->id);
     cusid->setHelp("Select custom ID (SSID) for wireless BT (or WIFI) interface, e.g. D-1234. Restart device to activate");
     top->addEntry(cusid);
 }
 
-static void options_menu_create_wifi(SetupMenu *top)
+static void connected_devices_menu_create_wifi(SetupMenu *top)
 {
     SetupMenuValFloat *wifip = new SetupMenuValFloat("WIFI Power", "%", update_wifi_power, false, &wifi_max_power);
     wifip->setPrecision(0);
@@ -140,7 +141,7 @@ static void options_menu_create_wifi(SetupMenu *top)
     options_menu_custom_id(top);
 }
 
-static void options_menu_create_bluetooth(SetupMenu *top)
+static void connected_devices_menu_create_bluetooth(SetupMenu *top)
 {
     options_menu_custom_id(top);
 }
@@ -173,7 +174,7 @@ static int update_s1_txena(SetupMenuSelect *p)
     return 0;
 }
 
-void system_menu_create_interfaceS1(SetupMenu *top)
+static void connected_devices_menu_create_interfaceS1(SetupMenu *top)
 {
     SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s1_baud, &serial1_speed);
     s1sp2->addEntry("4800 baud");
@@ -231,7 +232,7 @@ static int update_s2_txena(SetupMenuSelect *p)
     return 0;
 }
 
-void system_menu_create_interfaceS2(SetupMenu *top)
+void connected_devices_menu_create_interfaceS2(SetupMenu *top)
 {
     SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s2_baud, &serial2_speed);
     s2sp2->addEntry("4800 baud");
@@ -269,7 +270,7 @@ static int update_can_datarate(SetupMenuSelect *p)
     return 0;
 }
 
-void system_menu_create_interfaceCAN(SetupMenu *top)
+void connected_devices_menu_create_interfaceCAN(SetupMenu *top)
 {
     SetupMenuSelect *canmode = new SetupMenuSelect("Datarate", RST_NONE, update_can_datarate, &can_speed);
     top->addEntry(canmode);
@@ -279,7 +280,7 @@ void system_menu_create_interfaceCAN(SetupMenu *top)
     canmode->addEntry("1000 kbit (default)");
 }
 
-void system_menu_create_interfaceI2C(SetupMenu *top)
+void connected_devices_menu_create_interfaceI2C(SetupMenu *top)
 {
 	SetupMenuValFloat *compi2c = new SetupMenuValFloat("I2C Clock", "KHz", nullptr, false, &compass_i2c_cl, RST_ON_EXIT);
 	top->addEntry(compi2c);
@@ -391,7 +392,7 @@ static int create_device_action(SetupMenuSelect *p)
     p->getParent()->getParent()->setDirty();
     return 0;
 }
-static void system_menu_add_device(SetupMenu *top)
+static void connected_devices_menu_add_device(SetupMenu *top)
 {
     ESP_LOGI(FNAME,"Create new device menu");
     SetupMenuSelect *ndev = static_cast<SetupMenuSelect*>(top->getEntry(0));
@@ -454,15 +455,16 @@ static int start_dm_action(SetupAction* p)
     dm->start(p, (ItfTarget)p->getCode());
     return 0;
 }
-static void system_menu_device(SetupMenu *top)
+static void connected_devices_menu_device(SetupMenu *top)
 {
     DeviceId did = (DeviceId)top->getContId();
     Device *dev = DEVMAN->getDevice(did);
-    // Interface
+
+    // the interface
     SetupMenu *itf = new SetupMenu(DEVMAN->getItfName(dev->_itf->getId()).data(), get_itf_menu_creator(dev->_itf->getId()));
     top->addEntry(itf);
 
-    // all data links
+    // all data links to monitor
     std::string tmp;
     int lport = dev->_link->getPort();
     tmp = "Data Monitor";
@@ -479,10 +481,31 @@ static void system_menu_device(SetupMenu *top)
         }
     }
 
-    // list protocols
+    // remove device
     SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE, remove_device);
     remove->mkConfirm();
     top->addEntry(remove);
+
+    // list protocols
+    NmeaPrtcl *nmea = dev->_link->getNmea();
+    device_details.assign("Protocols: ");
+    if ( nmea ) {
+        const std::vector<NmeaPlugin *> plglist = nmea->getAllPlugs();
+        for (auto it : plglist) {
+            if ( it != *plglist.begin() ) {
+                device_details += ", ";
+            }
+            std::string_view tmp = DeviceManager::getPrtclName(it->getPtyp());
+            device_details += tmp.data();
+        }
+    }
+    ProtocolItf *binary = dev->_link->getBinary();
+    if ( binary ) {
+        device_details += "; ";
+        std::string_view tmp = DeviceManager::getPrtclName(binary->getProtocolId());
+        device_details += tmp.data();
+    }
+    top->setHelp(device_details.c_str());
 }
 
 ///////////////////////////////////
@@ -491,7 +514,7 @@ void system_menu_connected_devices(SetupMenu *top)
 {
     SetupMenu *adddev = static_cast<SetupMenu*>(top->getEntry(0));
     if ( ! adddev ) {
-        adddev = new SetupMenu("Add Device", system_menu_add_device);
+        adddev = new SetupMenu("Add Device", connected_devices_menu_add_device);
         adddev->setHelp("Get XCVario to know about your devices, it will handle data routing automatically");
         adddev->setDynContent();
         top->addEntry(adddev);
@@ -508,9 +531,14 @@ void system_menu_connected_devices(SetupMenu *top)
         if ( ! dnam.empty() ) {
             std::string tmp(dnam);
             tmp += " - " + std::string(dev->_itf->getStringId());
-            SetupMenu *devmenu = new SetupMenu(tmp.c_str(), system_menu_device, dev->_id);
-            devmenu->setHelp("Device details.");
+            SetupMenu *devmenu = new SetupMenu(tmp.c_str(), connected_devices_menu_device, dev->_id);
             top->addEntry(devmenu);
         }
     }
+}
+
+void free_connected_devices_menu()
+{
+    device_details.clear();
+    device_details.shrink_to_fit();
 }

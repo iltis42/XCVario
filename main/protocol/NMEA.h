@@ -166,3 +166,5 @@ private:
     AliveMonitor *_alive = nullptr; // alive monitor for the protocol
 };
 
+extern NmeaPrtcl *ToyNmeaPrtcl;
+

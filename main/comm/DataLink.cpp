@@ -147,6 +147,7 @@ EnumList DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
         _nmea->addPlugin(new XCVarioMsg(*_nmea));
         _nmea->addPlugin(new CambridgeMsg(*_nmea, true));
         ret.insert(CAMBRIDGE_P);
+        ToyNmeaPrtcl = _nmea;
         tmp = _nmea;
         break;
     }
@@ -167,6 +168,8 @@ EnumList DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
         enforceNmea(did, sendport, ptyp);
         _nmea->addPlugin(new OpenVarioMsg(*_nmea));
         _nmea->addPlugin(new CambridgeMsg(*_nmea, true));
+        ret.insert(CAMBRIDGE_P);
+        ToyNmeaPrtcl = _nmea;
         tmp = _nmea;
         break;
     }
@@ -176,6 +179,8 @@ EnumList DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
         enforceNmea(did, sendport, ptyp);
         _nmea->addPlugin(new BorgeltMsg(*_nmea));
         _nmea->addPlugin(new CambridgeMsg(*_nmea, true));
+        ret.insert(CAMBRIDGE_P);
+        ToyNmeaPrtcl = _nmea;
         tmp = _nmea;
         break;
     }
@@ -184,6 +189,7 @@ EnumList DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
         ESP_LOGI(FNAME, "New Cambridge");
         enforceNmea(did, sendport, ptyp);
         _nmea->addPlugin(new CambridgeMsg(*_nmea, false));
+        ToyNmeaPrtcl = _nmea;
         tmp = _nmea;
         break;
     }

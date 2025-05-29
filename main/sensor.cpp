@@ -457,45 +457,32 @@ static void grabMPU()
 
 static void toyFeed()
 {
-	xSemaphoreTake(xMutex,portMAX_DELAY );
-
-	if( ahrs_rpyl_dataset.get() ){
-		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
-		if ( prtcl ) {
-			prtcl->sendXcvRPYL(IMU::getRoll(), IMU::getPitch(), IMU::getYaw(), IMU::getGliderAccelZ());
-			prtcl->sendXcvAPENV1( ias.get(), altitude.get(), te_vario.get() );
+	if ( ToyNmeaPrtcl ) {
+		xSemaphoreTake(xMutex,portMAX_DELAY );
+		if( ahrs_rpyl_dataset.get() ){
+			ToyNmeaPrtcl->sendXcvRPYL(IMU::getRoll(), IMU::getPitch(), IMU::getYaw(), IMU::getGliderAccelZ());
+			ToyNmeaPrtcl->sendXcvAPENV1( ias.get(), altitude.get(), te_vario.get() );
 		}
-	}
-	if( nmea_protocol.get() == BORGELT_P ) {
-		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
-		if ( prtcl ) {
-			prtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), gflags.validTemperature );
-			prtcl->sendXcvGeneric(te_vario.get(), altSTD, tas);
+		switch( nmea_protocol.get() ) {
+		case BORGELT_P:
+			ToyNmeaPrtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), gflags.validTemperature );
+			ToyNmeaPrtcl->sendXcvGeneric(te_vario.get(), altSTD, tas);
+			break;
+		case OPENVARIO_P:
+			ToyNmeaPrtcl->sendOpenVario(baroP, dynamicP, te_vario.get(), OAT.get(), gflags.validTemperature );
+			break;
+		case CAMBRIDGE_P:
+			ToyNmeaPrtcl->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
+			break;
+		case XCVARIO_P:
+			ToyNmeaPrtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
+				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
+			break;
+		default:
+			ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
 		}
+		xSemaphoreGive(xMutex);
 	}
-	else if( nmea_protocol.get() == OPENVARIO_P ){
-		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
-		if ( prtcl ) {
-			prtcl->sendOpenVario(baroP, dynamicP, te_vario.get(), OAT.get(), gflags.validTemperature );
-		}
-	}
-	else if( nmea_protocol.get() == CAMBRIDGE_P ) {
-		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
-		if ( prtcl ) {
-			prtcl->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
-		}
-	}
-	else if( nmea_protocol.get() == XCVARIO_P ) {
-		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
-		if ( prtcl ) {
-			prtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
-			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
-		}
-	}
-	else {
-		ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
-	}
-	xSemaphoreGive(xMutex);
 }
 
 
@@ -714,7 +701,6 @@ void readSensors(void *pvParameters){
 
 		if( (count % 2) == 0 ){
 			toyFeed();
-			vTaskDelay(2/portTICK_PERIOD_MS);
 		}
 
 		if( compass ){

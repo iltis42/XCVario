@@ -13,7 +13,7 @@
 class BorgeltMsg final : public NmeaPlugin
 {
 public:
-    BorgeltMsg(NmeaPrtcl &nr, bool as) : NmeaPlugin(nr, BORGELT_P, as) {};
+    BorgeltMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, BORGELT_P, false) {};
     virtual ~BorgeltMsg() = default;
     const ParserEntry* getPT() const override { return _pt; }
 

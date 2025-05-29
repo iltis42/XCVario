@@ -481,17 +481,23 @@ int SetupMenu::freeBottomLines() const
     return dheight/25 - getNrChilds() - 1;
 }
 
-void SetupMenu::setHighlight(MenuEntry *value)
+// void SetupMenu::setHighlight(MenuEntry *value)
+// {
+// 	int found = -1;
+// 	for (int i = 0; i < _childs.size(); ++i) {
+// 		if (_childs[i] == value) {
+// 			found = i;
+// 			break;
+// 		}
+// 	}
+// 	if ( found >= 0 ) {
+// 		highlight = found;
+// 	}
+// }
+void SetupMenu::setHighlight(int chnr)
 {
-	int found = -1;
-	for (int i = 0; i < _childs.size(); ++i) {
-		if (_childs[i] == value) {
-			found = i;
-			break;
-		}
-	}
-	if ( found >= 0 ) {
-		highlight = found;
+	if ( chnr >= 0 && chnr < (int)_childs.size() ) {
+		highlight = chnr;
 	}
 }
 
@@ -1123,7 +1129,7 @@ void options_menu_create_gload(SetupMenu *top) {
 	top->addEntry(gloadalvo);
 }
 
-void options_menu_create(SetupMenu *opt) {
+void options_menu_create(SetupMenu *opt) { // dynamic!
 	if ( opt->getNrChilds() == 0 ) {
 		if (student_mode.get() == 0) {
 			SetupMenuSelect *stumo = new SetupMenuSelect("Student Mode", RST_NONE, nullptr, &student_mode);
@@ -1477,7 +1483,6 @@ void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
 	stawaen->mkEnable();
 	top->addEntry(stawaen);
 
-	// Fixme no need to reboot
 	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", nullptr, true, &stall_speed);
 	top->addEntry(staspe);
 }
@@ -1563,8 +1568,8 @@ void system_menu_create(SetupMenu *sye) {
 	logg->mkEnable("Sensor RAW Data");
 	sye->addEntry(logg);
 
-	SetupAction *devdump = new SetupAction("Device Setup Dump", deviceDumpAction, 0);
-	sye->addEntry(devdump);
+	// SetupAction *devdump = new SetupAction("Device Setup Dump", deviceDumpAction, 0);
+	// sye->addEntry(devdump);
 }
 
 void setup_create_root(SetupMenu *top) {

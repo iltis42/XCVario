@@ -282,7 +282,7 @@ SetupNG<int>  			serial2_tx_enable( "SER2_TX_ENA", 1 );
 SetupNG<int>  			software_update( "SOFTWARE_UPDATE", 0 );
 SetupNG<int>  			battery_display( "BAT_DISPLAY", 0 );
 SetupNG<int>  			airspeed_mode( "AIRSPEED_MODE", MODE_IAS );
-SetupNG<int>  			nmea_protocol( "NMEA_PROTOCOL", XCVARIO ); // fixme
+SetupNG<int>  			nmea_protocol( "NMEA_PROTOCOL", XCVARIO_P );
 SetupNG<int>		    log_level( "LOG_LEVEL", 3 );
 SetupNG<float>		    audio_factor( "AUDIO_FACTOR", 1, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.1, 2, 0.025));
 SetupNG<float>		    te_comp_adjust ( "TECOMP_ADJ", 0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-100, 100, 0.1));

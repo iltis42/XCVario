@@ -13,11 +13,17 @@
 #include "nmea_util.h"
 #include "logdefnone.h"
 
+// global variables
+NmeaPrtcl *ToyNmeaPrtcl = nullptr; // set to trigger a navi data stream
 
 // A generic and extendable NMEA message parser.
 
 NmeaPrtcl::~NmeaPrtcl()
 {
+    if ( this == ToyNmeaPrtcl ) {
+        // reset the global toy protocol pointer
+        ToyNmeaPrtcl = nullptr;
+    }
     for (auto parser : _plugs) {
         // all parser tables
         delete parser;

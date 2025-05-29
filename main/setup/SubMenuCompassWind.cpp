@@ -200,7 +200,7 @@ void options_menu_create_compasswind_circlingwind(SetupMenu *top) {
 			"Maximum wind direction delta from last measurement accepted for circling wind calculation");
 }
 
-void options_menu_create_compasswind(SetupMenu *top) {
+void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
 	if ( top->getNrChilds() == 0 ) {
 		SetupMenu *compassMenu = new SetupMenu("Compass", options_menu_create_compasswind_compass);
 		top->addEntry(compassMenu);

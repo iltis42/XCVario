@@ -147,6 +147,7 @@ EnumList DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
         _nmea->addPlugin(new XCVarioMsg(*_nmea));
         _nmea->addPlugin(new CambridgeMsg(*_nmea, true));
         ret.insert(CAMBRIDGE_P);
+        ToyNmeaPrtcl = _nmea;
         tmp = _nmea;
         break;
     }
@@ -164,27 +165,31 @@ EnumList DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
     case OPENVARIO_P:
     {
         ESP_LOGI(FNAME, "New OpenVario");
-        // bool auto_setup = _nmea == nullptr;
         enforceNmea(did, sendport, ptyp);
-        _nmea->addPlugin(new OpenVarioMsg(*_nmea, false));
+        _nmea->addPlugin(new OpenVarioMsg(*_nmea));
+        _nmea->addPlugin(new CambridgeMsg(*_nmea, true));
+        ret.insert(CAMBRIDGE_P);
+        ToyNmeaPrtcl = _nmea;
         tmp = _nmea;
         break;
     }
     case BORGELT_P:
     {
         ESP_LOGI(FNAME, "New Borgelt");
-        // bool auto_setup = _nmea == nullptr;
         enforceNmea(did, sendport, ptyp);
-        _nmea->addPlugin(new BorgeltMsg(*_nmea, false));
+        _nmea->addPlugin(new BorgeltMsg(*_nmea));
+        _nmea->addPlugin(new CambridgeMsg(*_nmea, true));
+        ret.insert(CAMBRIDGE_P);
+        ToyNmeaPrtcl = _nmea;
         tmp = _nmea;
         break;
     }
     case CAMBRIDGE_P:
     {
         ESP_LOGI(FNAME, "New Cambridge");
-        // bool auto_setup = _nmea == nullptr;
         enforceNmea(did, sendport, ptyp);
         _nmea->addPlugin(new CambridgeMsg(*_nmea, false));
+        ToyNmeaPrtcl = _nmea;
         tmp = _nmea;
         break;
     }
@@ -369,7 +374,7 @@ void DataLink::dumpProto()
     ESP_LOGI(FNAME, "    listen port %d", getPort());
     if ( _nmea ) {
         ESP_LOGI(FNAME, "       nm did%d\tpid%d\tsp%d%c", _nmea->getDeviceId(), _nmea->getProtocolId(), _nmea->getSendPort(), (_nmea==_active)?'<':' ');
-        for (auto it : static_cast<NmeaPrtcl*>(_nmea)->getAllPlugs() ) {
+        for (auto it : _nmea->getAllPlugs() ) {
             ESP_LOGI(FNAME, "       nm plugin %d%c", it->getPtyp(), it->getAuto()?'a':'x');
         }
     }

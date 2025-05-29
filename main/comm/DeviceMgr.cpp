@@ -105,11 +105,11 @@ constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
     {DeviceId::MAGLEG_DEV, {"", {{I2C}}, {{MAGSENSBIN_P}, 0}, 0, IS_REAL, &magleg_devsetup}},
     {DeviceId::MAGSENS_DEV, {"MagSens rev1", {{CAN_BUS}}, {{MAGSENS_P}, 1}, 0, IS_REAL, nullptr}}, // auto start
     {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_AP, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
-                                    {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
+                                    {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1}, 
                                     8880, IS_REAL, &navi_devsetup}},
-    {DeviceId::NAVI_DEV,   {"", {{S2_RS232}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
+    {DeviceId::NAVI_DEV,   {"", {{S2_RS232}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1}, 
                                     0, IPTOS_RELIABILITY, &navi_devsetup}},
-    {DeviceId::NAVI_DEV,   {"", {{BT_SPP}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, FLARMHOST_P, FLARMBIN_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 2}, 
+    {DeviceId::NAVI_DEV,   {"", {{BT_SPP}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1}, 
                                     0, IS_REAL, &navi_devsetup}},
     {DeviceId::FLARM_HOST_DEV, {"Flarm host", {{WIFI_AP, S2_RS232, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, MULTI_CONF, &flarm_host_setup}},
     // {DeviceId::FLARM_HOST_DEV, {"", {{CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
@@ -185,21 +185,24 @@ std::vector<InterfaceId> DeviceManager::allKnownIntfs()
 }
 
 constexpr std::pair<ProtocolType, std::string_view> PRTCLS[] = {
-    {REGISTRATION_P, "Auto registration."},
+    {REGISTRATION_P, "Auto registration"},
     {XCVSYNC_P, "XCV sync"},
-    {JUMBOCMD_P, "jumbo command"},
+    {JUMBOCMD_P, "jumbo cmd"},
     {ANEMOI_P, "Anemoi"},
     {FLARM_P, "Flarm"},
     {FLARMHOST_P, "Flarm host"},
     {FLARMBIN_P, "Flarm BP"},
+    {GARMIN_P, "Garmin"},
     {MAGSENS_P, "Magsens"},
     {MAGSENSBIN_P, "Magsens BP"},
+    {NMEASTD_P, "NMEA std"},
     {XCVARIO_P, "XCVario"},
     {OPENVARIO_P, "Open-Vario"},
     {BORGELT_P, "Borgelt"},
     {CAMBRIDGE_P, "Cambridge"},
     {KRT2_REMOTE_P, "KRT2"},
-    {ATR833_REMOTE_P, "ATR833"}
+    {ATR833_REMOTE_P, "ATR833"},
+    {XCVQUERY_P, "XCV query"},
 };
 
 std::string_view DeviceManager::getPrtclName(ProtocolType pid) {
@@ -715,6 +718,13 @@ void DeviceManager::reserectFromNvs()
         if ( dev ) {
             // save it to nvs
             flarm_devsetup.set(dev->getNvsData());
+        }
+        if ( S2 ) {
+            S2->ConfigureIntf(SM_XCTNAV_S3); // load XCTouchNav serial default profile
+            dev = DEVMAN->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, S2_RS232);
+            if ( dev ) { navi_devsetup.set(dev->getNvsData()); }
+            dev = DEVMAN->addDevice(FLARM_HOST_DEV, FLARMHOST_P, 0, 0, S2_RS232);
+            if ( dev ) { flarm_host_setup.set(dev->getNvsData()); }
         }
     }
 }

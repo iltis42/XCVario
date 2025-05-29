@@ -719,6 +719,13 @@ void DeviceManager::reserectFromNvs()
             // save it to nvs
             flarm_devsetup.set(dev->getNvsData());
         }
+        if ( S2 ) {
+            S2->ConfigureIntf(SM_XCTNAV_S3); // load XCTouchNav serial default profile
+            dev = DEVMAN->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, S2_RS232);
+            if ( dev ) { navi_devsetup.set(dev->getNvsData()); }
+            dev = DEVMAN->addDevice(FLARM_HOST_DEV, FLARMHOST_P, 0, 0, S2_RS232);
+            if ( dev ) { flarm_host_setup.set(dev->getNvsData()); }
+        }
     }
 }
 

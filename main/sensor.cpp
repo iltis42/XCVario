@@ -466,33 +466,33 @@ static void toyFeed()
 			prtcl->sendXcvAPENV1( ias.get(), altitude.get(), te_vario.get() );
 		}
 	}
-	if( nmea_protocol.get() == BORGELT ) {
+	if( nmea_protocol.get() == BORGELT_P ) {
 		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
 			prtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), gflags.validTemperature );
 			prtcl->sendXcvGeneric(te_vario.get(), altSTD, tas);
 		}
 	}
-	else if( nmea_protocol.get() == OPENVARIO ){
+	else if( nmea_protocol.get() == OPENVARIO_P ){
 		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
 			prtcl->sendOpenVario(baroP, dynamicP, te_vario.get(), OAT.get(), gflags.validTemperature );
 		}
 	}
-	if( nmea_protocol.get() == CAMBRIDGE ) {
+	else if( nmea_protocol.get() == CAMBRIDGE_P ) {
 		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
 			prtcl->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
 		}
 	}
-	else if( nmea_protocol.get() == XCVARIO ) {
+	else if( nmea_protocol.get() == XCVARIO_P ) {
 		NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
 		if ( prtcl ) {
 			prtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
 			IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 		}
 	}
-	else if( nmea_protocol.get() != NMEA_OFF ) {
+	else {
 		ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
 	}
 	xSemaphoreGive(xMutex);

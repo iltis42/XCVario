@@ -32,7 +32,8 @@ public:
 	void highlightTop() { highlight = -1; }
 	void highlightFirst() { highlight = 0; }
 	void highlightLast() { highlight = _childs.size()-1; }
-	void setHighlight(MenuEntry*);
+	// void setHighlight(MenuEntry*);
+	void setHighlight(int chnr);
 	int getNrChilds() const { return _childs.size(); }
 	void setDynContent() { dyn_content = true; }
 	void setDirty() { dirty = true; }

@@ -13,7 +13,7 @@
 class OpenVarioMsg final : public NmeaPlugin
 {
 public:
-    OpenVarioMsg(NmeaPrtcl &nr, bool as) : NmeaPlugin(nr, OPENVARIO_P, as) {};
+    OpenVarioMsg(NmeaPrtcl &nr) : NmeaPlugin(nr, OPENVARIO_P, false) {};
     virtual ~OpenVarioMsg() = default;
     const ParserEntry* getPT() const override { return _pt; }
 

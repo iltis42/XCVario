@@ -27,8 +27,21 @@
 
 static DeviceId new_device;
 static InterfaceId new_interface;
-// static SetupNG<float> tmp_value( "TMP_VAL", 0.0, SYNC_NONE, VOLATILE);
 static std::string device_details;
+
+//
+// Navi flavors
+//
+static constexpr std::array<ProtocolType, 4> all_flavors = { XCVARIO_P, OPENVARIO_P, BORGELT_P, CAMBRIDGE_P };
+static int getFlvEnumFromProto(ProtocolType ptyp)
+{
+    for (int i=0; i<all_flavors.size(); i++) {
+        if ( all_flavors[i] == ptyp ) {
+            return i;
+        }
+    }
+    return 0; // default to XCVARIO_P
+}
 
 //
 // Interfaces
@@ -325,6 +338,21 @@ static int select_device_action(SetupMenuSelect *p)
     new_device = (DeviceId)p->getValue();
     p->lock();
 
+    if ( new_device == NAVI_DEV ) {
+        // need the navi flavor input, default to current nvs setup
+        SetupMenuSelect *flavor = static_cast<SetupMenuSelect*>(top->getEntry(1));
+        flavor->delAllEntries();
+        for ( ProtocolType p : all_flavors ) {
+            flavor->addEntry(DeviceManager::getPrtclName(p).data(), p);
+        }
+        flavor->unlock();
+        flavor->setSelect(getFlvEnumFromProto((ProtocolType)nmea_protocol.get()));
+        top->setHighlight(1);
+    }
+    else {
+        top->setHighlight(3);
+    }
+
     SetupMenuSelect *interface = static_cast<SetupMenuSelect*>(top->getEntry(3));
     const DeviceAttributes &dattr = DeviceManager::getDevAttr(new_device);
     interface->delAllEntries();
@@ -338,19 +366,13 @@ static int select_device_action(SetupMenuSelect *p)
         }
     }
     interface->unlock();
-    // if ( new_device > 0 && new_interface > 0) {
-    //     SetupMenuSelect *confirm = static_cast<SetupMenuSelect*>(top->getEntry(3));
-    //     confirm->unlock();
-    //     top->highlightLast();
-    // }
-    // else 
-    {
-        top->setHighlight(interface);
-    }
     return 0;
 }
 static int select_flavor_action(SetupMenuSelect *p)
 {
+    SetupMenu *top = p->getParent();
+    nmea_protocol.set(p->getValue());
+    top->setHighlight(3);
     return 0;
 }
 static int select_interface_action(SetupMenuSelect *p)
@@ -375,6 +397,9 @@ static int create_device_action(SetupMenuSelect *p)
         Device *dev = nullptr;
         for (int i=0; i<da.prcols.getExtra(); ++i) {
             ProtocolType pid = da.prcols.proto(i);
+            if ( new_device == NAVI_DEV ) {
+                pid = (ProtocolType)nmea_protocol.get(); // navi flavor, override protocol table
+            }
             if ( pid != NO_ONE ) {
                 ESP_LOGI(FNAME,"add protocol %d for device id %d", pid, new_device);
                 dev = DEVMAN->addDevice(new_device, pid, da.port, da.port, new_interface);
@@ -392,26 +417,31 @@ static int create_device_action(SetupMenuSelect *p)
     p->getParent()->getParent()->setDirty();
     return 0;
 }
-static void connected_devices_menu_add_device(SetupMenu *top)
+static void connected_devices_menu_add_device(SetupMenu *top) // dynamic!
 {
     ESP_LOGI(FNAME,"Create new device menu");
     SetupMenuSelect *ndev = static_cast<SetupMenuSelect*>(top->getEntry(0));
+    SetupMenuSelect *flavor = static_cast<SetupMenuSelect*>(top->getEntry(1));
     if ( ! ndev ) {
         ndev = new SetupMenuSelect("Device", RST_NONE, select_device_action);
         top->addEntry(ndev);
         // flavor
-        SetupMenuSelect *text = new SetupMenuSelect("Flavor", RST_NONE, select_flavor_action);
-        text->addEntry("---", 0);
-        text->lock();
-        top->addEntry(text);
+        flavor = new SetupMenuSelect("Flavor", RST_NONE, select_flavor_action);
+        top->addEntry(flavor);
         // text
-        text = new SetupMenuSelect("connected to", RST_NONE);
+        SetupMenuSelect *text = new SetupMenuSelect("connected to", RST_NONE);
         text->lock();
         top->addEntry(text);
     }
     else {
         ndev->delAllEntries();
+        flavor->delAllEntries();
     }
+    // navi flavor always a locked and empty select menu
+    flavor->addEntry("---", 0);
+    flavor->lock();
+
+    // list all available devices for configuration
     for ( auto did : DeviceManager::allKnownDevs() ) {
         ESP_LOGI(FNAME,"Dev %d", did);
         const DeviceAttributes &da = DeviceManager::getDevAttr(did);
@@ -425,7 +455,7 @@ static void connected_devices_menu_add_device(SetupMenu *top)
     }
     ndev->unlock();
 
-    // empty interfaces list
+    // create/get&empty interfaces list
     SetupMenuSelect *interface = static_cast<SetupMenuSelect*>(top->getEntry(3));
     SetupMenuSelect *confirm = static_cast<SetupMenuSelect*>(top->getEntry(4));
     if ( ! interface ) {
@@ -455,36 +485,38 @@ static int start_dm_action(SetupAction* p)
     dm->start(p, (ItfTarget)p->getCode());
     return 0;
 }
-static void connected_devices_menu_device(SetupMenu *top)
+static void connected_devices_menu_device(SetupMenu *top) // dynamic!
 {
     DeviceId did = (DeviceId)top->getContId();
     Device *dev = DEVMAN->getDevice(did);
+    if ( top->getNrChilds() == 0 ) {
 
-    // the interface
-    SetupMenu *itf = new SetupMenu(DEVMAN->getItfName(dev->_itf->getId()).data(), get_itf_menu_creator(dev->_itf->getId()));
-    top->addEntry(itf);
+        // the interface
+        SetupMenu *itf = new SetupMenu(DEVMAN->getItfName(dev->_itf->getId()).data(), get_itf_menu_creator(dev->_itf->getId()));
+        top->addEntry(itf);
 
-    // all data links to monitor
-    std::string tmp;
-    int lport = dev->_link->getPort();
-    tmp = "Data Monitor";
-    if ( ! dev->_itf->isOneToOne() ) {
-        tmp += " port: " + std::to_string(lport);
-    }
-    SetupAction *monitor = new SetupAction(tmp.c_str(), start_dm_action, (int)dev->_link->getTarget().raw);
-    top->addEntry(monitor);
-    for ( int sp : dev->_link->getAllSendPorts() ) {
-        if ( sp != lport ) {
-            tmp = "Data Monitor port: " + std::to_string(sp);
-            SetupAction *monitor = new SetupAction(tmp.c_str(), start_dm_action, (int)ItfTarget(dev->_itf->getId(), sp).raw);
-            top->addEntry(monitor);
+        // all data links to monitor
+        std::string tmp;
+        int lport = dev->_link->getPort();
+        tmp = "Data Monitor";
+        if ( ! dev->_itf->isOneToOne() ) {
+            tmp += " port: " + std::to_string(lport);
         }
-    }
+        SetupAction *monitor = new SetupAction(tmp.c_str(), start_dm_action, (int)dev->_link->getTarget().raw);
+        top->addEntry(monitor);
+        for ( int sp : dev->_link->getAllSendPorts() ) {
+            if ( sp != lport ) {
+                tmp = "Data Monitor port: " + std::to_string(sp);
+                SetupAction *monitor = new SetupAction(tmp.c_str(), start_dm_action, (int)ItfTarget(dev->_itf->getId(), sp).raw);
+                top->addEntry(monitor);
+            }
+        }
 
-    // remove device
-    SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE, remove_device);
-    remove->mkConfirm();
-    top->addEntry(remove);
+        // remove device
+        SetupMenuSelect *remove = new SetupMenuSelect("Remove device", RST_NONE, remove_device);
+        remove->mkConfirm();
+        top->addEntry(remove);
+    }
 
     // list protocols
     NmeaPrtcl *nmea = dev->_link->getNmea();
@@ -510,7 +542,7 @@ static void connected_devices_menu_device(SetupMenu *top)
 
 ///////////////////////////////////
 // Connected Devices
-void system_menu_connected_devices(SetupMenu *top)
+void system_menu_connected_devices(SetupMenu *top) // dynamic!
 {
     SetupMenu *adddev = static_cast<SetupMenu*>(top->getEntry(0));
     if ( ! adddev ) {
@@ -532,6 +564,7 @@ void system_menu_connected_devices(SetupMenu *top)
             std::string tmp(dnam);
             tmp += " - " + std::string(dev->_itf->getStringId());
             SetupMenu *devmenu = new SetupMenu(tmp.c_str(), connected_devices_menu_device, dev->_id);
+            devmenu->setDynContent();
             top->addEntry(devmenu);
         }
     }

@@ -164,25 +164,24 @@ EnumList DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
     case OPENVARIO_P:
     {
         ESP_LOGI(FNAME, "New OpenVario");
-        // bool auto_setup = _nmea == nullptr;
         enforceNmea(did, sendport, ptyp);
-        _nmea->addPlugin(new OpenVarioMsg(*_nmea, false));
+        _nmea->addPlugin(new OpenVarioMsg(*_nmea));
+        _nmea->addPlugin(new CambridgeMsg(*_nmea, true));
         tmp = _nmea;
         break;
     }
     case BORGELT_P:
     {
         ESP_LOGI(FNAME, "New Borgelt");
-        // bool auto_setup = _nmea == nullptr;
         enforceNmea(did, sendport, ptyp);
-        _nmea->addPlugin(new BorgeltMsg(*_nmea, false));
+        _nmea->addPlugin(new BorgeltMsg(*_nmea));
+        _nmea->addPlugin(new CambridgeMsg(*_nmea, true));
         tmp = _nmea;
         break;
     }
     case CAMBRIDGE_P:
     {
         ESP_LOGI(FNAME, "New Cambridge");
-        // bool auto_setup = _nmea == nullptr;
         enforceNmea(did, sendport, ptyp);
         _nmea->addPlugin(new CambridgeMsg(*_nmea, false));
         tmp = _nmea;

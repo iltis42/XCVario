@@ -1568,8 +1568,8 @@ void system_menu_create(SetupMenu *sye) {
 	logg->mkEnable("Sensor RAW Data");
 	sye->addEntry(logg);
 
-	SetupAction *devdump = new SetupAction("Device Setup Dump", deviceDumpAction, 0);
-	sye->addEntry(devdump);
+	// SetupAction *devdump = new SetupAction("Device Setup Dump", deviceDumpAction, 0);
+	// sye->addEntry(devdump);
 }
 
 void setup_create_root(SetupMenu *top) {

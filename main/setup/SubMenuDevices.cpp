@@ -410,6 +410,11 @@ static int create_device_action(SetupMenuSelect *p)
             da.nvsetup->set(dev->getNvsData());
             da.nvsetup->commit();
         }
+        // make sure there is a flarm host for any navi 
+        if ( new_device == NAVI_DEV ) {
+            new_device = FLARM_HOST_DEV;
+            create_device_action(p); // recursive call to create the flarm host
+        }
     
     }
     p->setTerminateMenu();
@@ -478,7 +483,7 @@ static void connected_devices_menu_add_device(SetupMenu *top) // dynamic!
 }
 
 /////////////////////////////////
-// Dvice Details
+// Device Details
 static int start_dm_action(SetupAction* p)
 {
     DataMonitor *dm = new DataMonitor();

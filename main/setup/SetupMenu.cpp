@@ -1410,7 +1410,7 @@ void system_menu_create_hardware_ahrs(SetupMenu *top) {
 	ahrsid->addEntry(Cipher::id());
 	top->addEntry(ahrsid);
 
-	mpu = new SetupMenuSelect("AHRS Option", RST_ON_EXIT, nullptr, &attitude_indicator);
+	mpu = new SetupMenuSelect("AHRS Option", RST_NONE, nullptr, &attitude_indicator);
 	top->addEntry(mpu);
 	mpu->setHelp(
 			"Enable High Accuracy Attitude Sensor (AHRS) NMEA messages (need valid license key entered, reboots)");

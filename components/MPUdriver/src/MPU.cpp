@@ -1053,7 +1053,10 @@ esp_err_t MPU::rotation(int16_t* x, int16_t* y, int16_t* z)
 float MPU::getTemperature(){
 	int16_t t;
 	temperature( &t );
-	return( (float)t/340.0 + 36.53 );
+	if( whoAmI() == 0x12 )  // ICM 20602 uses a different formula
+		return( (float)t/326.8 + 25.00 );
+	else
+		return( (float)t/340.0 + 36.53 );
 }
 
 /**

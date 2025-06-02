@@ -110,13 +110,10 @@ public:
 				}
 
 				config = wifi->_socks[n];
-				// if ( config->sock_hndl < 0 ) {
-				// 	config->sock_hndl = 0; // connect_sta_to_server(config->port); fixme
-				// }
 				if ( config->sock_hndl >= 0 ) {
 					ESP_LOGI(FNAME, "sock server, port: %d, clients: %d", 8880+n, config->peers.size() );
-					max_fd = std::max(max_fd, config->sock_hndl);
 					FD_SET(config->sock_hndl, &read_fds);
+					max_fd = std::max(max_fd, config->sock_hndl);
 				}
 				for (auto &client_rec : config->peers) {
 					if (client_rec.peer >= 0) {
@@ -146,6 +143,7 @@ public:
 					continue;
 				}
 				config = wifi->_socks[n];
+				bool tmp_alive = false;
 
 				if ( FD_ISSET(config->sock_hndl, &read_fds) ) {
 					ESP_LOGI(FNAME, "FD_ISSET socket: %d num clients %d, port %d", config->sock_hndl, config->peers.size(), config->port );
@@ -174,6 +172,7 @@ public:
 						ssize_t sizeRead = recv(config->sock_hndl, r, ProtocolItf::MAX_LEN - 1, MSG_DONTWAIT);
 						if (sizeRead > 0) {
 							ESP_LOGI(FNAME, "FD socket recv: connection %d, port %d, read:%d bytes", config->sock_hndl, config->port, sizeRead );
+							tmp_alive = true;
 							xSemaphoreTake(wifi->_dlink_mutex, portMAX_DELAY);
 							auto dl = wifi->_dlink.find(config->port);
 							bool valid = dl != wifi->_dlink.end();
@@ -186,6 +185,7 @@ public:
 							ESP_LOGI(FNAME, "Client %d error", config->sock_hndl);
 							shutdown(config->sock_hndl, SHUT_RDWR);
 							close(config->sock_hndl);
+							config->alive = false; // mark as dead
 							config->sock_hndl = -1; // mark as disconnected
 						}
 					}
@@ -199,6 +199,7 @@ public:
 						ssize_t sizeRead = recv(client_rec.peer, r, ProtocolItf::MAX_LEN - 1, MSG_DONTWAIT);
 						if (sizeRead > 0) {
 							ESP_LOGI(FNAME, "FD socket recv: connection %d, port %d, read:%d bytes", client_rec.peer, config->port, sizeRead );
+							tmp_alive = true;
 							xSemaphoreTake(wifi->_dlink_mutex, portMAX_DELAY);
 							auto dl = wifi->_dlink.find(config->port);
 							bool valid = dl != wifi->_dlink.end();
@@ -215,7 +216,7 @@ public:
 							continue; // Skip to the next iteration
 						}
 					}
-					if (client_rec.retries > 100) {
+					if (client_rec.retries > 50) {
 						ESP_LOGW(FNAME, "tcp client %d (port %d) permanent send error: %s, removing!", client_rec.peer, config->port, strerror(errno));
 						close(client_rec.peer);
 						it = config->peers.erase(it);
@@ -223,6 +224,8 @@ public:
 					}
 					it++;
 				}
+				config->alive = tmp_alive; // mark as alive if we got some data
+
 				if (uxTaskGetStackHighWaterMark(wifi->socket_server_task_pid) < 128) {
 					ESP_LOGW(FNAME, "Warning wifi task stack low: %d bytes, port %d", uxTaskGetStackHighWaterMark(wifi->socket_server_task_pid), config->port);
 				}
@@ -242,9 +245,10 @@ public:
 		else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
 			ESP_LOGI(FNAME,"SYSTEM_EVENT_STA_DISCONNECTED");
 			sock_server_t *xcvcl = mywifi->_socks[4];
-			if( xcvcl->sock_hndl > 0 ) {
+			if( xcvcl && xcvcl->sock_hndl > 0 ) {
 				close( xcvcl->sock_hndl );
 				xcvcl->sock_hndl = -1;
+				xcvcl->alive = false; // mark as dead
 				xcvcl->peers.clear();
 			}
 			esp_wifi_connect(); // provoke a reconnect and a new IP_EVENT_STA_GOT_IP event
@@ -253,7 +257,7 @@ public:
 			[[maybe_unused]] ip_event_got_ip_t* event = (ip_event_got_ip_t*)event_data;
 			ESP_LOGI(FNAME, "SYSTEM_EVENT_STA_GOT_IP ip:" IPSTR, IP2STR(&event->ip_info.ip));
 			sock_server_t *xcvcl = mywifi->_socks[4];
-			if( xcvcl->sock_hndl < 0 ) {
+			if( xcvcl && xcvcl->sock_hndl < 0 ) {
 				xcvcl->connect_sta_socket(&event->ip_info);
 			}
 		}
@@ -322,17 +326,28 @@ WifiApSta::~WifiApSta()
 	}
 }
 
-int  WifiApSta::queueFull(){
+bool  WifiApSta::isAlive(){
 	int ret = 0;
 	for ( int i=0; i<NUM_TCP_PORTS; i++ ) {
-		if( _socks[i] && _socks[i]->full ) {
+		if( _socks[i] && _socks[i]->alive ) {
 			// ESP_LOGI(FNAME, "WQF: %d is full", 8880+i );
-			ret = 1;
+			ret = true;
 			break;
 		}
 	}
 	
 	return ret;
+}
+
+bool WifiApSta::isConnected(int port) const
+{
+	if (port >= 8880 && port <= 8884) {
+		int socket_num = port - 8880;
+		if (_socks[socket_num]) {
+			return _socks[socket_num]->alive;
+		}
+	}
+	return false;
 }
 
 bool WifiApSta::scanMaster(int master_xcv_num)
@@ -434,8 +449,7 @@ int WifiApSta::Send(const char *msg, int &len, int port)
 		return -1;   // erratic port, socket unavail -> return, do not try ever again
 	}
 	// here we go
-	socks->full = true; // init state means busy
-	bool sendOK=false;
+	bool sendOK = false;
 	if ( ! socks->is_ap ) {
 		// a STA socket
 		if ( socks->sock_hndl > 0 ) {
@@ -443,7 +457,6 @@ int WifiApSta::Send(const char *msg, int &len, int port)
 			ESP_LOGI(FNAME, "sta %d, num send %d", socks->port, num );
 			if( num == len ){  // at least once we needed to sent the rest in one step for okay status
 				sendOK = true;
-				socks->full = false; // if at leat one client works, we say wifi is okay -> blue symbol
 				ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", socks->sock_hndl, port, num );
 			}
 			else {
@@ -462,15 +475,15 @@ int WifiApSta::Send(const char *msg, int &len, int port)
 				if( num == len ){  // at least once we needed to sent the rest in one step for okay status
 					sendOK = true;
 					rec.retries = 0;
-					socks->full = false; // if at leat one client works, we say wifi is okay -> blue symbol
 					ESP_LOGI(FNAME, "tcp send to client %d (port: %d), bytes %d success", rec.peer, port, num );
 				}
 				else {
-					ESP_LOGW(FNAME, "tcp send to  %d (port: %d), bytes %d fail", rec.peer, port, num );
+					ESP_LOGW(FNAME, "tcp send to  %d (port: %d), %d retries", rec.peer, port, rec.retries );
 				}
 			}
 		}
 	}
+	socks->alive = sendOK; // if at least one client works, we say wifi is okay -> blue symbol
 	if( sendOK ) {
 		return 0;
 	}

@@ -30,10 +30,8 @@ struct sock_server_t {
 	const int port;
 	bool is_ap = true;
 	int sock_hndl = -1;
-	// int idle = 0;
 	std::list<peer_record_t> peers;
-	// bool connected = false;
-	bool full = true;
+	bool alive = false;
 };
 
 class WifiApSta final : public InterfaceCtrl
@@ -53,9 +51,8 @@ public:
 	void ConfigureIntf(int port) override; // 8880, 8881, 8882, 8883, 8884, 80
 	virtual int Send(const char *msg, int &len, int port = 0) override;
 
-	// returns 1 if queue is full, changes color of WiFi symbol, connection is stuck
-	int queueFull();
-	bool isConnected(int p) const { return true; } // fixme
+	bool isAlive(); // returns true if AP is up and running
+	bool isConnected(int p) const;
 	bool scanMaster(int master_xcv_num);
 
 private:

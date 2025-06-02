@@ -457,8 +457,10 @@ static void connected_devices_menu_add_device(SetupMenu *top) // dynamic!
     for ( auto did : DeviceManager::allKnownDevs() ) {
         ESP_LOGI(FNAME,"Dev %d", did);
         const DeviceAttributes &da = DeviceManager::getDevAttr(did);
-        ESP_LOGI(FNAME,"Itf %lx Prot %lx", (unsigned long)(da.itfs.data), (unsigned long)(da.prcols.data));
+        ESP_LOGI(FNAME,"Itf %lx Prot %lx Flags %x", (unsigned long)(da.itfs.data), (unsigned long)(da.prcols.data), (unsigned int)(da.flags));
+        // ESP_LOGI(FNAME,"Criteria: Sel %d Role %d rDep %d DEV %d multi %d", da.isSelectable(), xcv_role.get(), da.getRoleDep(), DEVMAN->getDevice(did)!=nullptr, da.multipleConf);
         if ( da.isSelectable() && da.roleFit(xcv_role.get()) && (!DEVMAN->getDevice(did) || da.multipleConf) ) {
+            ESP_LOGI(FNAME,"Add device %d", did);
             ndev->addEntry(da.name.data(), did);
         }
     }

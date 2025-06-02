@@ -1501,14 +1501,22 @@ void system_startup(void *args){
 		}
 	}
 	else if ( SetupCommon::isClient() ) {
-		// just sit, wait, show a little message
-		MBOX->newMessage(1, "Waiting for XCV Master");
-
+		bool already_connected = false;
 		Device *dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
-		ESP_LOGI(FNAME,"Client Mode: Wait for Master XCVario %p", dev);
+		if ( dev ) {
+			NmeaPlugin *plg = dev->_link->getNmeaPlugin(XCVSYNC_P);
+			if ( plg ) {
+				already_connected = static_cast<XCVSyncMsg*>(plg)->syncStarted();
+			}
+		}
+		if ( ! already_connected ) {
+			// just sit, wait, show a little message
+			MBOX->newMessage(1, "Waiting for XCV Master");
+			ESP_LOGI(FNAME,"Client Mode: Wait for Master XCVario %p", dev);
+		}
 
 		delete boot_screen;
-		sleep(2);
+		sleep(1);
 		gflags.inSetup = false;
 		Display->clear();
 	}

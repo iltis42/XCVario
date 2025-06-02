@@ -349,6 +349,14 @@ void DataLink::switchProtocol()
     }
 }
 
+NmeaPlugin *DataLink::getNmeaPlugin(ProtocolType pid) const
+{
+    if ( _nmea ) {
+        return _nmea->getPlugin(_active->getProtocolId());
+    }
+    return nullptr;
+}
+
 // called from different contexts
 void DataLink::updateRoutes(DeviceId did)
 {

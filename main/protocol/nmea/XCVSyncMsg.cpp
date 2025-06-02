@@ -11,11 +11,11 @@
 #include "protocol/nmea_util.h"
 #include "comm/Messages.h"
 #include "setup/SetupNG.h"
+#include "sensor.h"
 
 #include "logdefnone.h"
 
 #include <cstring>
-#include "XCVarioMsg.h"
 
 // The XCV sync messages to synchronize a client vario.
 
@@ -23,6 +23,8 @@ XCVSyncMsg::XCVSyncMsg(NmeaPrtcl &nr, bool master, bool as) :
     NmeaPlugin(nr, XCVSYNC_P, as),
     _is_master(master)
 {
+    // for XCV clients: kick a sync request with the very first message received from the master
+    _kick_sync = ! master; // master does not need to kick a sync, the client does
     // tell the only user of this
     SetupCommon::setSyncProto(this);
     // route diverse protocols further (e.g. Flarm to master-second-BT...)
@@ -34,9 +36,25 @@ XCVSyncMsg::~XCVSyncMsg()
     SetupCommon::setSyncProto(nullptr);
 }
 
+bool XCVSyncMsg::isSyncNeeded()
+{
+    bool tmp = _kick_sync;
+    _kick_sync = false; // only once
+    return tmp;
+}
+
 //
 // The sync transmitter routine
 //
+
+bool XCVSyncMsg::sendSyncRequest()
+{
+    // a XCV Scondary will send this message to the master to initialize the sync
+    Message* msg = _nmeaRef.newMessage();
+    msg->buffer.assign("!xsSIinit");
+    return DEV::Send(msg);
+}
+
 bool XCVSyncMsg::sendItem(const char *key, char type, void *value, int len)
 {
     Message* msg = _nmeaRef.newMessage();
@@ -69,7 +87,7 @@ dl_action_t XCVSyncMsg::parseExcl_xsX(NmeaPlugin *plg)
     const std::vector<int> *word = &sm->_word_start;
 
     ESP_LOGI(FNAME,"parseXS %s", sm->_frame.c_str() );
-    // char sender_role = sm->_frame[3]; // Master | Client
+    [[maybe_unused]] char sender_role = sm->_frame[3]; // Master | Client
     int pos = word->at(0);
     std::string key = NMEA::extractWord(sm->_frame, pos);
     char type = sm->_frame[word->at(1)];
@@ -85,6 +103,11 @@ dl_action_t XCVSyncMsg::parseExcl_xsX(NmeaPlugin *plg)
             SetupNG<int> *mi = static_cast<SetupNG<int> *>(item);
             mi->set( (int)val, false );
         }
+
+        // Once
+        if ( static_cast<XCVSyncMsg*>(plg)->isSyncNeeded() ) {
+            static_cast<XCVSyncMsg*>(plg)->sendSyncRequest();
+        }
     }
     else {
         ESP_LOGW(FNAME,"Setup item with key %s not found", key.c_str() );
@@ -93,9 +116,19 @@ dl_action_t XCVSyncMsg::parseExcl_xsX(NmeaPlugin *plg)
     return NOACTION; // never forward the XCV internal blabla
 }
 
+dl_action_t XCVSyncMsg::parseExcl_xsSyncInit(NmeaPlugin *plg)
+{
+    if ( static_cast<XCVSyncMsg*>(plg)->isMaster() ) {
+        ESP_LOGI(FNAME, "Master received xsSyncInit request from client");
+        startClientSync();
+    }
+    return NOACTION;
+}
+
 const ParserEntry XCVSyncMsg::_pt[] = {
     {Key("xsA"), XCVSyncMsg::parseExcl_xsX},
     {Key("xsC"), XCVSyncMsg::parseExcl_xsX},
     {Key("xsM"), XCVSyncMsg::parseExcl_xsX},
+    {Key("xsSI"), XCVSyncMsg::parseExcl_xsSyncInit},
     {}
 };

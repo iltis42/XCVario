@@ -13,23 +13,26 @@
 class XCVSyncMsg  final : public NmeaPlugin
 {
 public:
-
     explicit XCVSyncMsg(NmeaPrtcl &nr, bool master, bool as);
     virtual ~XCVSyncMsg();
     const ParserEntry* getPT() const override { return _pt; }
 
     bool isMaster() const { return _is_master; }
+    bool isSyncNeeded();
+    bool syncStarted() const { return !_kick_sync; }
 
 public:
     // only needed from SetupNG
     bool sendItem(const char *key, char type, void *value, int len);
-    // bool sendAck(uint8_t sync, const char *key, char type, void *value, int len);
- 
+    bool sendSyncRequest();
+
 private:
     bool _is_master;
+    bool _kick_sync; // a once to flip variable
 
     // Received messages
     static dl_action_t parseExcl_xsX(NmeaPlugin *plg);
+    static dl_action_t parseExcl_xsSyncInit(NmeaPlugin *plg);
     static const ParserEntry _pt[];
 };
 

@@ -14,7 +14,7 @@
 #include "comm/DeviceMgr.h"
 #include "comm/CanBus.h"
 #include "comm/SerialLine.h"
-#include "comm/WifiAP.h"
+#include "comm/WifiApSta.h"
 #include "setup/DataMonitor.h"
 #include "sensor.h"
 #include "logdef.h"

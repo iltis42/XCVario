@@ -17,7 +17,7 @@
 #include "Flarm.h"
 #include "Compass.h"
 #include "CircleWind.h"
-#include "comm/WifiAP.h"
+#include "comm/WifiApSta.h"
 #include "comm/BTspp.h"
 #include "comm/CanBus.h"
 #include "protocol/AliveMonitor.h"

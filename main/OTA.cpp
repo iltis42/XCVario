@@ -10,7 +10,7 @@
 
 #include "ESPRotary.h"
 
-#include "comm/WifiAP.h"
+#include "comm/WifiApSta.h"
 #include "IpsDisplay.h"
 #include "setup/SetupNG.h"
 #include "OTA.h"

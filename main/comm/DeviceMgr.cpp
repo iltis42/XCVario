@@ -11,7 +11,7 @@
 #include "comm/Configuration.h"
 #include "comm/Messages.h"
 #include "comm/CanBus.h"
-#include "comm/WifiAP.h"
+#include "comm/WifiApSta.h"
 #include "comm/BTspp.h"
 #include "comm/I2CWrapper.h"
 #include "BLESender.h"

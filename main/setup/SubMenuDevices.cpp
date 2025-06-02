@@ -460,7 +460,7 @@ static void connected_devices_menu_add_device(SetupMenu *top) // dynamic!
         ESP_LOGI(FNAME,"Itf %lx Prot %lx Flags %x", (unsigned long)(da.itfs.data), (unsigned long)(da.prcols.data), (unsigned int)(da.flags));
         // ESP_LOGI(FNAME,"Criteria: Sel %d Role %d rDep %d DEV %d multi %d", da.isSelectable(), xcv_role.get(), da.getRoleDep(), DEVMAN->getDevice(did)!=nullptr, da.multipleConf);
         if ( da.isSelectable() && da.roleFit(xcv_role.get()) && (!DEVMAN->getDevice(did) || da.multipleConf) ) {
-            ESP_LOGI(FNAME,"Add device %d", did);
+            // ESP_LOGI(FNAME,"Add device %d", did);
             ndev->addEntry(da.name.data(), did);
         }
     }
@@ -534,7 +534,9 @@ static void connected_devices_menu_device(SetupMenu *top) // dynamic!
 
     // list protocols
     NmeaPrtcl *nmea = dev->_link->getNmea();
-    device_details.assign("Protocols: ");
+    device_details.assign("Protocols on ");
+    device_details += dev->_itf->getStringId();
+    device_details += ": ";
     if ( nmea ) {
         const std::vector<NmeaPlugin *> plglist = nmea->getAllPlugs();
         for (auto it : plglist) {

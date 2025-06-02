@@ -185,24 +185,24 @@ std::vector<InterfaceId> DeviceManager::allKnownIntfs()
 }
 
 constexpr std::pair<ProtocolType, std::string_view> PRTCLS[] = {
-    {REGISTRATION_P, "Auto registration"},
-    {XCVSYNC_P, "XCV sync"},
-    {JUMBOCMD_P, "jumbo cmd"},
+    {REGISTRATION_P, "Auto Registration"},
+    {XCVSYNC_P, "XCV Sync"},
+    {JUMBOCMD_P, "Jumbo"},
     {ANEMOI_P, "Anemoi"},
     {FLARM_P, "Flarm"},
-    {FLARMHOST_P, "Flarm host"},
-    {FLARMBIN_P, "Flarm BP"},
+    {FLARMHOST_P, "Flarm Host"},
+    {FLARMBIN_P, "Flarm Download"},
     {GARMIN_P, "Garmin"},
     {MAGSENS_P, "Magsens"},
-    {MAGSENSBIN_P, "Magsens BP"},
-    {NMEASTD_P, "NMEA std"},
+    {MAGSENSBIN_P, "Magsens Data"},
+    {NMEASTD_P, "NMEA Std"},
     {XCVARIO_P, "XCVario"},
     {OPENVARIO_P, "Open-Vario"},
     {BORGELT_P, "Borgelt"},
     {CAMBRIDGE_P, "Cambridge"},
     {KRT2_REMOTE_P, "KRT2"},
     {ATR833_REMOTE_P, "ATR833"},
-    {XCVQUERY_P, "XCV query"},
+    {XCVQUERY_P, "XCV Query"},
 };
 
 std::string_view DeviceManager::getPrtclName(ProtocolType pid) {

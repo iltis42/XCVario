@@ -195,15 +195,15 @@ void SetupMenuSelect::mkEnable(const char *what)
 {
 	// precondition: _values is empty
 	// val can be read out to know "what" to en/disable
-	addEntry("disable");
-	addEntry(what? what : "enable");
+	addEntry("Disable");
+	addEntry(what? what : "Enable");
 }
 
 void SetupMenuSelect::mkConfirm()
 {
 	// precondition: _values is empty
-	addEntry("cancel");
-	addEntry("yes");
+	addEntry("Cancel");
+	addEntry("Yes");
 }
 
 void SetupMenuSelect::updateEntry(const char *ent, int num)

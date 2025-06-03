@@ -43,8 +43,7 @@
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "I2Cbus.hpp"
 #include "KalmanMPU6050.h"
-#include "comm/WifiAP.h"
-#include "WifiClient.h"
+#include "comm/WifiApSta.h"
 #include "LeakTest.h"
 #include "Units.h"
 #include "Flap.h"
@@ -1067,9 +1066,9 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Start BLE");
 		// blesender.begin(); fixme
 	}
-	else  if( DEVMAN->isIntf(WIFI_AP) ) {
+	else  if( DEVMAN->isIntf(WIFI_APSTA) ) {
 		ESP_LOGI(FNAME,"Start WiFi");
-		wireless_id.assign("WLAN SID: ");
+		wireless_id.assign("WLAN SSID: ");
 	}
 	if ( ! gflags.schedule_reboot && custom_wireless_id.get().id[0] == '\0' ) {
 		custom_wireless_id.set(SetupCommon::getDefaultID()); // Default ID created from MAC address CRC
@@ -1501,59 +1500,23 @@ void system_startup(void *args){
 			Menu->begin(SetupMenu::createQNHMenu());
 		}
 	}
-	else
-	{
-		// just sit, wait, show a little message
+	else if ( SetupCommon::isClient() ) {
+		bool already_connected = false;
+		Device *dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
+		if ( dev ) {
+			NmeaPlugin *plg = dev->_link->getNmeaPlugin(XCVSYNC_P);
+			if ( plg ) {
+				already_connected = static_cast<XCVSyncMsg*>(plg)->syncStarted();
+			}
+		}
+		if ( ! already_connected ) {
+			// just sit, wait, show a little message
+			MBOX->newMessage(1, "Waiting for XCV Master");
+			ESP_LOGI(FNAME,"Client Mode: Wait for Master XCVario %p", dev);
+		}
 
-		// if ( SetupCommon::isClient() ) {
-		// 	// Wait for master to release the vario screen
-		// 	Device *dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
-		// 	Display->clear();
-		// 	if (dev && dev->_itf->getId() == WIFI_CLIENT) {
-		// 		int line=1;
-		// 		Display->writeText( line++, "Wait for WiFi Master" );
-		// 		char mxcv[30] = "";
-		// 		if( master_xcvario.get() != 0 ){
-		// 			sprintf( mxcv+strlen(mxcv), "XCVario-%d", (int) master_xcvario.get() );
-		// 			Display->writeText( line++, mxcv );
-		// 		}
-		// 		line++;
-		// 		std::string ssid = WifiClient::scan( master_xcvario.get() );
-		// 		if( ssid.length() ){
-		// 			Display->writeText( line++, "Master XCVario found" );
-		// 			char id[30];
-		// 			sprintf( id, "Wifi ID: %s", ssid.c_str() );
-		// 			Display->writeText( line++, id );
-		// 			Display->writeText( line++, "Now start, sync" );
-		// 			WifiClient::start();
-		// 			delay( 5000 );
-		// 		}
-		// 		else{
-		// 			Display->writeText( 3, "Abort Wifi Scan" );
-		// 		}
-		// 	}
-		// 	else if ( !dev && CAN ) {
-		// 		Display->writeText( 1, "Wait for CAN Master" );
-		// 		while( ! dev ) {
-		// 			dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
-		// 			if( dev ) {
-		// 				Display->writeText( 3, "Master XCVario found" );
-		// 				Display->writeText( 4, "start synchronization ..." );
-		// 				delay( 3000 );
-		// 				break;
-		// 			}
-		// 			delay( 100 );
-		// 			if( Rotary->readSwitch() ){
-		// 				Display->writeText( 3, "Abort CAN bus wait" );
-		// 				break;
-		// 			}
-		// 		}
-		// 	}
-		// }
-
-		MBOX->newMessage(1, "Waiting for XCV Master");
 		delete boot_screen;
-		sleep(2);
+		sleep(1);
 		gflags.inSetup = false;
 		Display->clear();
 	}

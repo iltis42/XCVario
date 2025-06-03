@@ -20,8 +20,8 @@
 // Target device, or routing targets
 union RoutingTarget {
     struct {
-        DeviceId    did  : 7;
-        int         intf_port : 25;
+        DeviceId did       : 7;
+        unsigned intf_port : 25;
     };
     uint32_t raw = 0; // Access the packed 32-bit value
 
@@ -66,7 +66,7 @@ using RoutingList = std::set<RoutingTarget>;
 union PackedInt5Array {
     struct{
         uint64_t value  : 60;
-        int      flags  : 4;
+        unsigned flags  : 4;
     };
     uint64_t data = 0; // 64-bit storage
 
@@ -132,8 +132,8 @@ union PackedInt5Array {
 // a small protocol list (up to 6 x 5bit items)
 union ProtocolList {
     struct{
-        int proto   : 30;
-        int flags   : 2;
+        unsigned proto : 30;
+        unsigned flags : 2;
     };
     uint32_t data = 0; // 32-bit storage
 
@@ -241,13 +241,13 @@ struct DeviceAttributes
 
     union {
         struct {
-            int isReal      : 1; // a device with a physical realastate and meant to be selectable
-            int multipleConf: 1; // can be configured in multiple steps (e.g. Navi)
-            int profileConf : 1; // protocols are organized through a profile, instead of a list
-            int aVariant    : 1; // just a variant of the connection details, not a new device entry
-            int roleDepndent: 2; // 0=independant, 1=master only, 2=second only
+            unsigned isReal      : 1; // a device with a physical realastate and meant to be selectable
+            unsigned multipleConf: 1; // can be configured in multiple steps (e.g. Navi)
+            unsigned profileConf : 1; // protocols are organized through a profile, instead of a list
+            unsigned aVariant    : 1; // just a variant of the connection details, not a new device entry
+            unsigned roleDepndent: 2; // 0=independant, 1=master only, 2=second only
         };
-        int flags;
+        uint8_t flags;
     };
     NvsPtr nvsetup;             // the persistent version of the current device setup
 
@@ -258,7 +258,7 @@ struct DeviceAttributes
     bool isMultiConf() const { return (bool)multipleConf; }
     bool hasProfile() const { return (bool)profileConf; }
     bool isVariant() const { return (bool)aVariant; }
-    int  getRoleDep() const { return roleDepndent; }
+    unsigned getRoleDep() const { return roleDepndent; }
     bool roleFit(int role) const { return ( !roleDepndent || !role || (roleDepndent == role) ); }
 };
 

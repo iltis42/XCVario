@@ -84,7 +84,7 @@ private:
 	static int alt_prev;
 	static float pref_qnh;
 	static int chargealt;
-	static int btqueue;
+	static bool wireless_alive;
 	static int tempalt;
 	static int mcalt;
 	static bool s2fmodealt;

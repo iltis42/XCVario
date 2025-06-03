@@ -19,6 +19,7 @@ struct bitfield {
     bool _end_menu            :1; // just terminate the containing menu (two levels up)
     bool _locked              :1; // cannot enter
     bool _is_inline           :1; // inline menu
+	bool _never_inline        :1; // never inline menu
     bool _live_update         :1;
     uint8_t _precision        :4;
 };
@@ -54,6 +55,7 @@ public:
 	void lock() { bits._locked = true; }
 	void unlock() { bits._locked = false; }
 	bool isLocked() const { return bits._locked; }
+	void setNeverInline() { bits._never_inline = true; }
 
 	// helper
 	const char* getTitle() const { return _title.c_str(); }
@@ -90,7 +92,6 @@ protected:
 	std::string _title;
 	const char *helptext = nullptr;
 	bitfield bits = {};
-	// bool        is_inline = false;
 	static int16_t cur_indent;
 	static int16_t cur_row;
 

@@ -113,6 +113,7 @@ public:
     // house keeping
     void addPlugin(NmeaPlugin *pm);
     void removeProtocol(ProtocolType p);
+    NmeaPlugin* getPlugin(ProtocolType p);
     int getNrPlugs() const { return _plugs.size(); }
     const std::vector<NmeaPlugin*>& getAllPlugs() const { return _plugs; }
     ProtocolItf* asPrtclItfPtr() { return static_cast<ProtocolItf*>(this); }

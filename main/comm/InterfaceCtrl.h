@@ -24,8 +24,7 @@ typedef enum {
     S0_RS232,
     S1_RS232,
     S2_RS232,
-    WIFI_AP,
-    WIFI_CLIENT,
+    WIFI_APSTA,
     BT_SPP,
     BT_LE,
     XCVPROXY // not yet implemented

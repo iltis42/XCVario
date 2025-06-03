@@ -19,7 +19,7 @@
 
 using EnumList = std::set<int>;
 class NmeaPrtcl;
-class ProtocolItf;
+class NmeaPlugin;
 
 // Data link layer to multiplex data stream to proper protocol parser.
 class DataLink
@@ -37,6 +37,7 @@ public:
     void switchProtocol();
     ProtocolItf *getBinary() const { return _binary; };
     NmeaPrtcl *getNmea() const { return _nmea; };
+    NmeaPlugin *getNmeaPlugin(ProtocolType pid) const;
     void updateRoutes(DeviceId did);
     int getPort() const { return _itf_id.port; } // the listen port
     InterfaceId getItfId() const { return _itf_id.iid; }

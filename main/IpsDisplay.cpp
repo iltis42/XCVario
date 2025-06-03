@@ -11,14 +11,13 @@
 #include "comm/DeviceMgr.h"
 #include "BLESender.h"
 #include "OneWireESP32.h"
-#include "WifiClient.h"
 #include "sensor.h"
 #include "Units.h"
 #include "Flap.h"
 #include "Flarm.h"
 #include "Compass.h"
 #include "CircleWind.h"
-#include "comm/WifiAP.h"
+#include "comm/WifiApSta.h"
 #include "comm/BTspp.h"
 #include "comm/CanBus.h"
 #include "protocol/AliveMonitor.h"
@@ -168,7 +167,7 @@ int IpsDisplay::s2f_level_prev=0;
 int IpsDisplay::s2fmode_prev=100;
 int IpsDisplay::alt_prev=0;
 int IpsDisplay::chargealt=-1;
-int IpsDisplay::btqueue=-1;
+bool IpsDisplay::wireless_alive = false;
 int IpsDisplay::tempalt = -2000;
 int IpsDisplay::mcalt = -100;
 bool IpsDisplay::s2fmodealt = false;
@@ -689,7 +688,7 @@ void IpsDisplay::redrawValues()
 	s2falt = -1;
 	s2fdalt = -1;
 	s2f_level_prev = 0;
-	btqueue = -1;
+	wireless_alive = false;
 	_te=-200;
 	indicator->forceRedraw();
 	indicator->setColor(needlecolor[needle_color.get()]);
@@ -933,15 +932,15 @@ void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
 void IpsDisplay::drawBT() {
 	if( _menu )
 		return;
-	int btq=0;
+	bool bta=true;
 	if( DEVMAN->isIntf(BT_SPP) && BTspp )
-		btq = BTspp->isConnected() ? 0 : 1;
+		bta = BTspp->isConnected();
 	else if( DEVMAN->isIntf(BT_LE) )
-		btq=BLESender::queueFull();
-	if( btq != btqueue || flarm_alive.get() > ALIVE_NONE ){
+		bta=BLESender::queueFull() ? false : true;
+	if( bta != wireless_alive || flarm_alive.get() > ALIVE_NONE ) {
 		int16_t btx=DISPLAY_W-18;
 		int16_t bty=(BTH/2) + 6;
-		if( btq )
+		if( ! bta )
 			ucg->setColor( COLOR_MGREY );
 		else
 			ucg->setColor( COLOR_BLUE );  // blue
@@ -957,7 +956,7 @@ void IpsDisplay::drawBT() {
 		ucg->drawLine( btx, bty, btx-BTSIZE, bty-BTSIZE );
 		ucg->drawLine( btx, bty, btx-BTSIZE, bty+BTSIZE );
 
-		btqueue = btq;
+		wireless_alive = bta;
 		flarm_connected = flarm_alive.get();
 	}
 	if( SetupCommon::isWired() ) {
@@ -994,24 +993,16 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 }
 
 void IpsDisplay::drawWifi( int x, int y ) {
-	if( _menu  )
-		return;
-	if( !SetupCommon::haveWLAN() )
-		return;
-	int btq=1;
-	// ESP_LOGI(FNAME,"wireless %d", wireless );
-	if ( DEVMAN->isIntf(WIFI_CLIENT) ) {
-		if( WifiClient::isConnected(8884) ) // fixme
-			btq=0;
-	}
-	else if ( DEVMAN->isIntf(WIFI_AP) && Wifi ) {
-		btq=Wifi->queueFull();
-	} else {
+	if( _menu  ) {
 		return;
 	}
-	if( btq != btqueue || flarm_alive.get() > ALIVE_NONE ){
-		ESP_LOGD(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,btq);
-		if( btq ) {
+	if( !DEVMAN->isIntf(WIFI_APSTA) ) {
+		return;
+	}
+	bool wla = WIFI->isAlive();
+	if( wla != wireless_alive || flarm_alive.get() > ALIVE_NONE ){
+		ESP_LOGD(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,wla);
+		if( ! wla ) {
 			ucg->setColor(COLOR_MGREY);
 		} else {
 			ucg->setColor( COLOR_BLUE );
@@ -1025,7 +1016,7 @@ void IpsDisplay::drawWifi( int x, int y ) {
 		}
 		ucg->drawDisc( x, y, 3, UCG_DRAW_ALL );
 		flarm_connected = flarm_alive.get();
-		btqueue = btq;
+		wireless_alive = wla;
 	}
 	if( SetupCommon::isWired() ) {
 		drawCable(DISPLAY_W-20, y+18);
@@ -1037,7 +1028,7 @@ void IpsDisplay::drawConnection( int16_t x, int16_t y )
 	if ( DEVMAN->isIntf(BT_SPP) || DEVMAN->isIntf(BT_LE) ) {
 		drawBT();
 	}
-	else if( DEVMAN->isIntf(WIFI_AP) || DEVMAN->isIntf(WIFI_CLIENT) ) {
+	else if( DEVMAN->isIntf(WIFI_APSTA) ) {
 		drawWifi(x, y);
 	}
 	else if( SetupCommon::isWired() ) {

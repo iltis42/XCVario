@@ -26,7 +26,6 @@
 #include "esp_wifi.h"
 #include "Flarm.h"
 #include "protocol/FlarmSim.h"
-#include "WifiClient.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
 #include "setup/SetupNG.h"
@@ -323,39 +322,25 @@ int polar_select(SetupMenuSelect *p) {
 	return 0;
 }
 
-void print_fb(SetupMenuValFloat *p, float wingload) {
+static int start_weight_adj(SetupMenuValFloat *p) {
+	float wingload = (ballast_kg.get() + crew_weight.get() + empty_weight.get()) / polar_wingarea.get();
+	ESP_LOGI(FNAME,"wingload:%.1f empty: %.1f cw:%.1f water:%.1f", wingload, empty_weight.get(), crew_weight.get(), ballast_kg.get() );
 	MYUCG->setFont(ucg_font_fub25_hr, true);
 	MYUCG->setPrintPos(1, 110);
 	MYUCG->printf("%0.2f kg/m2  ", wingload);
 	MYUCG->setFont(ucg_font_ncenR14_hr);
+	return 0;
 }
 
 int water_adj(SetupMenuValFloat *p) {
-	if ((ballast_kg.get() > polar_max_ballast.get())
-			|| (ballast_kg.get() < 0)) {
+	if ( ballast_kg.get() > polar_max_ballast.get() ) {
+		ballast_kg.set(polar_max_ballast.get());
+	}
+	else if ( ballast_kg.get() < 0 ) {
 		ballast_kg.set(0);
-		ballast_kg.commit();
-		delay(1000);
 	}
 	p->setMax(polar_max_ballast.get());
-	float wingload = (ballast_kg.get() + crew_weight.get() + empty_weight.get())
-			/ polar_wingarea.get();
-	ESP_LOGI(FNAME,"water_adj() wingload:%.1f empty: %.1f cw:%.1f water:%.1f", wingload, empty_weight.get(), crew_weight.get(), ballast_kg.get() );
-	print_fb(p, wingload);
-	return 0;
-}
-
-int empty_weight_adj(SetupMenuValFloat *p) {
-	float wingload = (ballast_kg.get() + crew_weight.get() + empty_weight.get())
-			/ polar_wingarea.get();
-	print_fb(p, wingload);
-	return 0;
-}
-
-int crew_weight_adj(SetupMenuValFloat *p) {
-	float wingload = (ballast_kg.get() + empty_weight.get() + crew_weight.get())
-			/ polar_wingarea.get();
-	print_fb(p, wingload);
+	start_weight_adj(p);
 	return 0;
 }
 
@@ -980,7 +965,7 @@ void glider_menu_create_polarpoints(SetupMenu *top) {
 }
 
 void glider_menu_create(SetupMenu *poe) {
-	SetupMenuSelect *glt = new SetupMenuSelect("Glider-Type", RST_NONE, polar_select, &glider_type_index);
+	SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type_index);
 	poe->addEntry(glt);
 	ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
 	for (int x = 0; x < Polars::numPolars(); x++) {
@@ -1001,9 +986,10 @@ void glider_menu_create(SetupMenu *poe) {
 	SetupMenuValFloat *wingarea = new SetupMenuValFloat("Wing Area", "m2", nullptr, false, &polar_wingarea);
 	poe->addEntry(wingarea);
 
-	SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", empty_weight_adj, false, &empty_weight);
+	SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", start_weight_adj, false, &empty_weight);
 	fixball->setPrecision(0);
 	fixball->setHelp("Net rigged weight of the glider, according to the weight and balance plan");
+	fixball->setNeverInline();
 	poe->addEntry(fixball);
 
 	SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", nullptr, false, &v_max);
@@ -1410,7 +1396,7 @@ void system_menu_create_hardware_ahrs(SetupMenu *top) {
 	ahrsid->addEntry(Cipher::id());
 	top->addEntry(ahrsid);
 
-	mpu = new SetupMenuSelect("AHRS Option", RST_ON_EXIT, nullptr, &attitude_indicator);
+	mpu = new SetupMenuSelect("AHRS Option", RST_NONE, nullptr, &attitude_indicator);
 	top->addEntry(mpu);
 	mpu->setHelp(
 			"Enable High Accuracy Attitude Sensor (AHRS) NMEA messages (need valid license key entered, reboots)");
@@ -1601,12 +1587,14 @@ void setup_create_root(SetupMenu *top) {
 	SetupMenuValFloat *bal = new SetupMenuValFloat("Ballast", "litre", water_adj, true, &ballast_kg);
 	bal->setHelp("Amount of water ballast added to the over all weight");
 	bal->setPrecision(0);
+	bal->setNeverInline();
 	top->addEntry(bal);
 
-	SetupMenuValFloat *crewball = new SetupMenuValFloat("Crew Weight", "kg", crew_weight_adj, false, &crew_weight);
+	SetupMenuValFloat *crewball = new SetupMenuValFloat("Crew Weight", "kg", start_weight_adj, false, &crew_weight);
 	crewball->setPrecision(0);
 	crewball->setHelp(
 			"Weight of the pilot(s) including parachute (everything on top of the empty weight apart from ballast)");
+	crewball->setNeverInline();
 	top->addEntry(crewball);
 
 	SetupMenuValFloat *qnh_menu = SetupMenu::createQNHMenu();

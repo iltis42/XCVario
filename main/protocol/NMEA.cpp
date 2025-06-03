@@ -99,6 +99,16 @@ void NmeaPrtcl::removeProtocol(ProtocolType p)
     }
 }
 
+NmeaPlugin *NmeaPrtcl::getPlugin(ProtocolType p)
+{
+    for ( NmeaPlugin* it : _plugs ) {
+        if ( it->getPtyp() == p ) {
+            return it;
+        }
+    }
+    return nullptr;
+}
+
 dl_control_t NmeaPrtcl::nextBytes(const char* c, int len)
 {
     int pos = _sm._frame.size();

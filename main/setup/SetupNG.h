@@ -526,7 +526,6 @@ extern SetupNG<float>      	max_circle_wind_delta_deg;
 extern SetupNG<float>      	max_circle_wind_delta_speed;
 extern SetupNG<int> 		can_speed;
 extern SetupNG<float> 		master_xcvario;
-extern SetupNG<int> 		master_xcvario_lock;
 extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		menu_screens;
 extern SetupNG<int> 		screen_gmeter;

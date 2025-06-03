@@ -94,7 +94,8 @@ void MenuEntry::enter()
 	// enter a level of setup menu
 	attach(); // set rotary focus
 	if ( isLeaf() && canInline() ) {
-		bits._is_inline = showhelp(true);
+		showhelp(true);
+		bits._is_inline = true;
 	} else {
 		clear();
 		showhelp();
@@ -157,7 +158,7 @@ void MenuEntry::indentPrintLn(const char *str) const
 
 bool MenuEntry::canInline() const
 {
-	return freeBottomLines() >= nrOfHelpLines() && ! isRoot();
+	return freeBottomLines() >= nrOfHelpLines() && !isRoot() && !bits._never_inline;
 }
 
 int MenuEntry::freeBottomLines() const

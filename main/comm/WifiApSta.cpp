@@ -398,7 +398,7 @@ bool WifiApSta::scanMaster(int master_xcv_num)
 // it's mostly static IP a cfg depending of port so give here port minus 8880
 void WifiApSta::ConfigureIntf(int port)
 {
-	bool is_ap = xcv_role.get()==MASTER_ROLE;
+	bool is_ap = (xcv_role.get()!=SECOND_ROLE) || (port!=8884);
 	if (port >= 8880 && port <= 8884) {
 		initialize_wifi(is_ap, MAX_CLIENTS, SetupCommon::getID());
 	}

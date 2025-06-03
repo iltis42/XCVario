@@ -965,7 +965,7 @@ void glider_menu_create_polarpoints(SetupMenu *top) {
 }
 
 void glider_menu_create(SetupMenu *poe) {
-	SetupMenuSelect *glt = new SetupMenuSelect("Glider-Type", RST_NONE, polar_select, &glider_type_index);
+	SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type_index);
 	poe->addEntry(glt);
 	ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
 	for (int x = 0; x < Polars::numPolars(); x++) {

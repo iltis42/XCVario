@@ -726,6 +726,11 @@ void DeviceManager::reserectFromNvs()
             dev = DEVMAN->addDevice(FLARM_HOST_DEV, FLARMHOST_P, 0, 0, S2_RS232);
             if ( dev ) { flarm_host_setup.set(dev->getNvsData()); }
         }
+        if ( CAN && (can_speed.get()!=CAN_SPEED_1MBIT) ) {
+            // Set it once to 1Mbit
+            can_speed.set(CAN_SPEED_1MBIT);
+            CAN->ConfigureIntf(1);
+        }
     }
 }
 

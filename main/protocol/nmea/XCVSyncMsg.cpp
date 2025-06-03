@@ -51,7 +51,7 @@ bool XCVSyncMsg::sendSyncRequest()
 {
     // a XCV Scondary will send this message to the master to initialize the sync
     Message* msg = _nmeaRef.newMessage();
-    msg->buffer.assign("!xsSIinit");
+    msg->buffer.assign("!xsSI,nit");
     return DEV::Send(msg);
 }
 

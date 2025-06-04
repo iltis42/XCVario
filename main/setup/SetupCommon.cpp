@@ -268,15 +268,10 @@ bool SetupCommon::factoryReset(){
 	return retsum;
 }
 
-bool SetupCommon::initSetup( bool& ahrs_lic_present ) {
+bool SetupCommon::initSetup() {
 	bool ret=true;
 	ESP_LOGI(FNAME,"SetupCommon::initSetup()");
 	NVS.begin();
-	if( ahrs_licence_dig1.exists() ) {
-		ahrs_lic_present = true;
-	} else {
-		ahrs_lic_present = false;
-	}
 
 	for(int i = 0; i < instances.size(); i++ ) {
 		if( ! instances[i]->init() ) {

@@ -47,7 +47,7 @@ public:
 	void setDirty() { flags._dirty = true; }
 	uint8_t getSync() const { return flags._sync; }
 
-	static bool initSetup( bool &ahrs_lic_present );  // returns false if FLASH was completely blank
+	static bool initSetup();  // returns false if FLASH was completely blank
 	static char *getID();
 	static char *getDefaultID();
 	static const char *getFixedID();

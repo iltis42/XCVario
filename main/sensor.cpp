@@ -1076,13 +1076,10 @@ void system_startup(void *args){
 	wireless_id += SetupCommon::getID();
 	MBOX->newMessage(2, wireless_id.c_str() );
 
-	Cipher::begin();
-	if( Cipher::checkKeyAHRS() ){
+	{
+		Cipher crypt;
+		gflags.ahrsKeyValid = crypt.checkKeyAHRS();
 		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
-	}else{
-		ESP_LOGI( FNAME, "AHRS key invalid=%d, disable AHRS Sensor", gflags.ahrsKeyValid );
-		if( attitude_indicator.get() )
-			attitude_indicator.set(0);
 	}
 	boot_screen->finish(0);
 
@@ -1566,16 +1563,7 @@ extern "C" void  app_main(void)
 	ESP_LOGI(FNAME,"app_main" );
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	DeviceManager::Instance(); // Create a blank DM, because on a cleard flash initSetup starts to access it.
-	bool setupPresent;
-	SetupCommon::initSetup( setupPresent );
-	Cipher::begin();
-	if( !setupPresent ){
-		if( Cipher::init() )
-			attitude_indicator.set(1);
-	}
-	else {
-		ESP_LOGI(FNAME,"Setup already present");
-	}
+	SetupCommon::initSetup();
 
 	// Instance to a simple esp timer based clock
 	MY_CLOCK = new Clock();

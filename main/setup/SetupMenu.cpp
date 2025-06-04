@@ -231,13 +231,8 @@ int update_rentrys(SetupMenuSelect *p) {
 
 int add_key(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"add_key( %d ) ", p->getSelect() );
-	if (Cipher::checkKeyAHRS()) {
-		if (!mpu->existsEntry("Enable"))
-			mpu->addEntry("Enable");
-	} else {
-		if (mpu->existsEntry("Enable"))
-			mpu->delEntry("Enable");
-	}
+	Cipher crypt;
+	gflags.ahrsKeyValid = crypt.checkKeyAHRS();
 	return 0;
 }
 
@@ -1392,37 +1387,29 @@ void system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
 }
 
 void system_menu_create_hardware_ahrs(SetupMenu *top) {
-	SetupMenuSelect *ahrsid = new SetupMenuSelect("AHRS ID", RST_NONE);
-	ahrsid->addEntry(Cipher::id());
+	SetupMenuSelect *ahrsid = new SetupMenuSelect("XCV unique Id", RST_NONE);
+	ahrsid->addEntry(SetupCommon::getDefaultID());
+	ahrsid->lock();
 	top->addEntry(ahrsid);
 
-	mpu = new SetupMenuSelect("AHRS Option", RST_NONE, nullptr, &attitude_indicator);
-	top->addEntry(mpu);
-	mpu->setHelp(
-			"Enable High Accuracy Attitude Sensor (AHRS) NMEA messages (need valid license key entered, reboots)");
-	mpu->addEntry("Disable");
-	if (gflags.ahrsKeyValid)
-		mpu->addEntry("Enable");
-
-	SetupMenu *ahrscalib = new SetupMenu("AHRS Calibration", system_menu_create_ahrs_calib);
+	SetupMenu *ahrscalib = new SetupMenu("Calibration", system_menu_create_ahrs_calib);
 	ahrscalib->setHelp(
 			 "Bias & Reference of the AHRS Sensor: Place glider on horizontal underground, first the right wing down, then the left wing.");
 	top->addEntry(ahrscalib);
 
-	SetupMenu *ahrslc = new SetupMenu("AHRS License Key", system_menu_create_hardware_ahrs_lc);
+	SetupMenu *ahrslc = new SetupMenu("License Key", system_menu_create_hardware_ahrs_lc);
 	ahrslc->setHelp(
 			"Enter valid AHRS License Key, then AHRS feature can be enabled under 'AHRS Option'");
 	top->addEntry(ahrslc);
 
-	SetupMenu *ahrspa = new SetupMenu("AHRS Parameters", system_menu_create_hardware_ahrs_parameter);
+	SetupMenu *ahrspa = new SetupMenu("Parameters", system_menu_create_hardware_ahrs_parameter);
 	ahrspa->setHelp("AHRS constants such as gyro trust and filtering", 275);
 	top->addEntry(ahrspa);
 
 	SetupMenuSelect *rpyl = new SetupMenuSelect("AHRS RPYL", RST_NONE, nullptr, &ahrs_rpyl_dataset);
 	top->addEntry(rpyl);
 	rpyl->setHelp("Send LEVIL AHRS like $RPYL sentence for artifical horizon");
-	rpyl->addEntry("Disable");
-	rpyl->addEntry("Enable");
+	rpyl->mkEnable();
 }
 
 void system_menu_create_hardware(SetupMenu *top) {

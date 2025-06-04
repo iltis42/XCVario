@@ -1054,20 +1054,20 @@ void system_startup(void *args){
 	DEVMAN->reserectFromNvs();
 	if ( CAN ) {
 		// just allways, it respects the XCV role setting
-		DEVMAN->addDevice(DeviceId::CANREGISTRAR_DEV, ProtocolType::REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+		DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
 	}
 
 	ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
 	std::string wireless_id("BT ID: ");
 	if( DEVMAN->isIntf(BT_SPP) ) {
-		ESP_LOGI(FNAME,"Start BT");
+		ESP_LOGI(FNAME,"Use BT");
 	}
 	else if( DEVMAN->isIntf(BT_LE) ) {
-		ESP_LOGI(FNAME,"Start BLE");
+		ESP_LOGI(FNAME,"Use BLE");
 		// blesender.begin(); fixme
 	}
 	else  if( DEVMAN->isIntf(WIFI_APSTA) ) {
-		ESP_LOGI(FNAME,"Start WiFi");
+		ESP_LOGI(FNAME,"Use WiFi");
 		wireless_id.assign("WLAN SSID: ");
 	}
 	if ( ! gflags.schedule_reboot && custom_wireless_id.get().id[0] == '\0' ) {

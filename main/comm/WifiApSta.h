@@ -25,7 +25,7 @@ typedef struct client_record {
 struct sock_server_t {
 	sock_server_t(int p) : port(p) {};
 	int create_ap_socket();
-	int connect_sta_socket(esp_netif_ip_info_t *ip_info);
+	int connect_sta_socket();
 	// This should store the handle to send data of the port
 	const int port;
 	bool is_ap = true;
@@ -52,7 +52,9 @@ public:
 	virtual int Send(const char *msg, int &len, int port = 0) override;
 
 	bool isAlive(); // returns true if AP is up and running
-	bool isConnected(int p) const;
+	bool isAP() const { return _ap_netif != nullptr; }
+	bool isSTA() const { return _sta_netif != nullptr; }
+	// bool isConnected(int p) const;
 	bool scanMaster(int master_xcv_num);
 
 private:
@@ -61,10 +63,11 @@ private:
 	bool _terminte_sock_server = false;
 	esp_netif_t *_ap_netif = nullptr;
 	esp_netif_t *_sta_netif = nullptr;
-	esp_event_handler_instance_t _evnt_handler = nullptr;
+	esp_event_handler_instance_t _wifi_evnt_handler = nullptr;
+	esp_event_handler_instance_t _ip_evnt_handler = nullptr;
 
 	// internal functionality
-	void initialize_wifi(bool ap_mode, int maxcon, const char* ssid);
+	bool initialize_wifi(bool ap_mode, int maxcon, const char* ssid);
 	void client_connect();
 };
 

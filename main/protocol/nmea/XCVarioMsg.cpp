@@ -129,7 +129,7 @@ void NmeaPrtcl::sendStdXCVario(float baro, float dp, float te, float temp, float
     msg->buffer += buffer;
 
     // optional IMU additions
-    if (gflags.haveMPU && attitude_indicator.get())
+    if (gflags.haveMPU && gflags.ahrsKeyValid)
     {
         std::sprintf(buffer, ",%3.1f", IMU::getRoll());
         msg->buffer += buffer;

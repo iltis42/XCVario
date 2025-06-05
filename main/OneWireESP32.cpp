@@ -1,6 +1,6 @@
 #include "OneWireESP32.h"
 #include "driver/gpio.h"
-#include "logdefnone.h"
+#include "logdef.h"
 
 #define OWR_OK	0
 #define OWR_CRC	1
@@ -175,7 +175,6 @@ bool OneWire32::reset(){
 		.duration1 = OW_RESET_WAIT,
 		.level1 = 1
 	};
-
 	rmt_rx_done_event_data_t evt;
 	rmt_receive(owrx, owbuf, sizeof(owbuf), &owrxconf);
 	rmt_transmit(owtx, owcenc, &symbol_reset, sizeof(rmt_symbol_word_t), &owtxconf);
@@ -183,14 +182,12 @@ bool OneWire32::reset(){
 	if(xQueueReceive(owqueue, &evt, pdMS_TO_TICKS(OW_TIMEOUT)) == pdTRUE) {
 		size_t symbol_num = evt.num_symbols;
 		rmt_symbol_word_t *symbols = evt.received_symbols;
-
-		if (symbol_num > 1) {
-			if (symbols[0].level1 == 1) {
-				if (symbols[0].duration1 > OW_RESET_PRESENCE_WAIT_MIN && symbols[1].duration0 > OW_RESET_PRESENCE_MIN) {
-					found = true;
-				}
-			} else {
-				if (symbols[0].duration0 > OW_RESET_PRESENCE_WAIT_MIN && symbols[1].duration1 > OW_RESET_PRESENCE_MIN) {
+		for (uint8_t i = 0; i < symbol_num && i < 8; i++) {
+				ESP_LOGI(FNAME,"OneWire32::reset() symbol %d bit sample time 0:%d  1:%d", i, symbols[i].duration0, symbols[i].duration1 );
+		}
+		if (symbol_num > 1) {  // hunt for a second low puls > 60 uS, typically 100 uS, measured 105 uS
+			if (symbols[1].level0 == 0) {
+				if (symbols[1].duration0 > OW_RESET_PRESENCE_MIN) {
 					found = true;
 				}
 			}
@@ -200,7 +197,7 @@ bool OneWire32::reset(){
 		}
 		
 	}
-	// ESP_LOGI(FNAME,"OneWire32::reset() found: %d", found );
+	ESP_LOGI(FNAME,"OneWire32::reset() presence pulse found: %d", found );
 	return found;	
 }
 
@@ -218,16 +215,16 @@ bool OneWire32::read(uint8_t &data, uint8_t len){
 	rmt_symbol_word_t *symbol = evt.received_symbols;
 	data = 0;
 	for (uint8_t i = 0; i < symbol_num && i < 8; i++) {
-		// ESP_LOGI(FNAME,"OneWire32::read() symbol %d bit sample time 0:%d  1:%d", i, symbol[i].duration0, symbol[i].duration1 );
+		ESP_LOGI(FNAME,"OneWire32::read() symbol %d bit sample time 0:%d  1:%d, Bit:%d", i, symbol[i].duration0, symbol[i].duration1, !(symbol[i].duration0 > OW_SLOT_BIT_SAMPLE_TIME) );
 		if(!(symbol[i].duration0 > OW_SLOT_BIT_SAMPLE_TIME)){
 			data |= 1 << i;
 		}
 	}
 
 	if(len != 8){ data = data & 0x01;
-	    // ESP_LOGI(FNAME,"OneWire32::read() len!=8: %d", len );
+	    ESP_LOGI(FNAME,"OneWire32::read() len!=8: %d", len );
 	}
-	// ESP_LOGI(FNAME,"OneWire32::read() %02X", data );
+	ESP_LOGI(FNAME,"OneWire32::read() %02X", data );
 	return true;
 }
 

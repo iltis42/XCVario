@@ -373,9 +373,6 @@ static int eval_chop(SetupMenuSelect *p) {
 	return 0;
 }
 
-static int role_change_action(SetupMenuSelect *p) {
-	return 0;
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // SetupMenu
@@ -1523,11 +1520,11 @@ void system_menu_create(SetupMenu *sye) {
 	sye->addEntry(ad);
 
 	// XCV role
-	SetupMenuSelect *role = new SetupMenuSelect("XCV device role", RST_IMMEDIATE, role_change_action, &xcv_role);
+	SetupMenuSelect *role = new SetupMenuSelect("XCV device role", RST_IMMEDIATE, nullptr, &xcv_role);
 	role->setHelp("Set the intended role of this device first (needs a reboot)");
-	role->addEntry("None");
-	role->addEntry("Master");
-	role->addEntry("Second");
+	// role->addEntry("None", NO_ROLE); hidden, because there is no use case currently
+	role->addEntry("Master", MASTER_ROLE);
+	role->addEntry("Second", SECOND_ROLE);
 	sye->addEntry(role);
 
 	// Devices menu

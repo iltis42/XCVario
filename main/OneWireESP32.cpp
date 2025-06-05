@@ -1,6 +1,7 @@
 #include "OneWireESP32.h"
 #include "driver/gpio.h"
 #include "logdef.h"
+#include "driver/rmt_rx.h"
 
 #define OWR_OK	0
 #define OWR_CRC	1
@@ -9,9 +10,12 @@
 #define OWR_DRIVER	4
 
 #define OW_RESET_PULSE  500            // 500
+#define OW_RESET_PULSE_MIN  480        // according to spec
 #define OW_RESET_WAIT	200
 #define OW_RESET_PRESENCE_WAIT_MIN	15  // 15
-#define OW_RESET_PRESENCE_MIN	60      // 60
+#define OW_RESET_PRESENCE_MIN	60      // minimum presence pulse
+#define OW_RESET_PRESENCE_MAX	240     // maximum presence pulse
+
 
 #define OW_SLOT_BIT_SAMPLE_TIME	15      // 15
 #define OW_SLOT_START	2               // 2
@@ -182,22 +186,29 @@ bool OneWire32::reset(){
 	if(xQueueReceive(owqueue, &evt, pdMS_TO_TICKS(OW_TIMEOUT)) == pdTRUE) {
 		size_t symbol_num = evt.num_symbols;
 		rmt_symbol_word_t *symbols = evt.received_symbols;
-		for (uint8_t i = 0; i < symbol_num && i < 8; i++) {
-				ESP_LOGI(FNAME,"OneWire32::reset() symbol %d bit sample time 0:%d  1:%d", i, symbols[i].duration0, symbols[i].duration1 );
+		// for (uint8_t i = 0; i < symbol_num && i < 8; i++) {
+		//		ESP_LOGI(FNAME,"OneWire32::reset() symbol %d bit sample time 0:%d  1:%d", i, symbols[i].duration0, symbols[i].duration1 );
+		// }
+		if (symbol_num > 1) {
+		    // symbol[0]: Reset-Pulse (Low-Level, lange Dauer)
+		    bool reset_pulse_ok = (symbols[0].level0 == 0 && symbols[0].duration0 >= OW_RESET_PULSE_MIN); // measured 501
+
+		    // symbol[0]: danach High-Level (Bus frei nach Reset)
+		    bool reset_high_ok = (symbols[0].level1 == 1 && symbols[0].duration1 >= OW_RESET_PRESENCE_WAIT_MIN );  // measured 26
+
+		    // symbol[1]: Presence-Pulse (Low-Level, min. Dauer)
+		    bool presence_pulse_ok = (symbols[1].level0 == 0 && symbols[1].duration0 >= OW_RESET_PRESENCE_MIN && symbols[1].duration0 < OW_RESET_PRESENCE_MAX );  // measured 104
+
+		    if (reset_pulse_ok && reset_high_ok && presence_pulse_ok) {
+		        found = true;
+		    }
 		}
-		if (symbol_num > 1) {  // hunt for a second low puls > 60 uS, typically 100 uS, measured 105 uS
-			if (symbols[1].level0 == 0) {
-				if (symbols[1].duration0 > OW_RESET_PRESENCE_MIN) {
-					found = true;
-				}
-			}
-		}		
 		if(rmt_tx_wait_all_done(owtx, OW_TIMEOUT) != ESP_OK) {
 			found = false;
 		}
 		
 	}
-	ESP_LOGI(FNAME,"OneWire32::reset() presence pulse found: %d", found );
+	// ESP_LOGI(FNAME,"OneWire32::reset() presence pulse found: %d", found );
 	return found;	
 }
 
@@ -215,7 +226,7 @@ bool OneWire32::read(uint8_t &data, uint8_t len){
 	rmt_symbol_word_t *symbol = evt.received_symbols;
 	data = 0;
 	for (uint8_t i = 0; i < symbol_num && i < 8; i++) {
-		ESP_LOGI(FNAME,"OneWire32::read() symbol %d bit sample time 0:%d  1:%d, Bit:%d", i, symbol[i].duration0, symbol[i].duration1, !(symbol[i].duration0 > OW_SLOT_BIT_SAMPLE_TIME) );
+		// ESP_LOGI(FNAME,"OneWire32::read() symbol %d bit sample time 0:%d  1:%d, Bit:%d", i, symbol[i].duration0, symbol[i].duration1, !(symbol[i].duration0 > OW_SLOT_BIT_SAMPLE_TIME) );
 		if(!(symbol[i].duration0 > OW_SLOT_BIT_SAMPLE_TIME)){
 			data |= 1 << i;
 		}
@@ -224,7 +235,7 @@ bool OneWire32::read(uint8_t &data, uint8_t len){
 	if(len != 8){ data = data & 0x01;
 	    ESP_LOGI(FNAME,"OneWire32::read() len!=8: %d", len );
 	}
-	ESP_LOGI(FNAME,"OneWire32::read() %02X", data );
+	// ESP_LOGI(FNAME,"OneWire32::read() %02X", data );
 	return true;
 }
 

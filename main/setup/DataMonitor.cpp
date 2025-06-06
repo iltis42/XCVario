@@ -149,10 +149,10 @@ void DataMonitor::press(){
 void DataMonitor::longPress()
 {
 	ESP_LOGI(FNAME,"stop");
-	DEVMAN->stopMonitoring();
-	paused = true;
-	MYUCG->scrollLines( 0 );
+	paused = true; // stop scrolled output
+	DEVMAN->stopMonitoring(); // stop the feed
 	delay(100); // streaming and controlling tasks are different ones ..
+	MYUCG->scrollLines( 0 ); // then reset scroll lines
 	DM = nullptr;
 	exit();
 	delete this;

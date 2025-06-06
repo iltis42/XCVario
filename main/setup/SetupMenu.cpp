@@ -40,7 +40,8 @@
 #include <inttypes.h>
 #include <iterator>
 #include <algorithm>
-#include <cstring>
+// #include <cstring>
+#include <string>
 
 static void setup_create_root(SetupMenu *top);
 
@@ -81,17 +82,8 @@ static void system_menu_create_ahrs_calib(SetupMenu *top);
 static void system_menu_create_hardware_ahrs_lc(SetupMenu *top);
 static void system_menu_create_hardware_ahrs_parameter(SetupMenu *top);
 
-SetupMenuSelect *audio_range_sm = nullptr;
-SetupMenuSelect *mpu = nullptr;
-
-SetupMenuValFloat *volume_menu = nullptr;
-void update_volume_menu_max() {
-	if (volume_menu)
-		volume_menu->setMax(max_volume.get());
-}
 
 // Menu for flap setup
-
 float elev_step = 1;
 
 bool SetupMenu::focus = false;
@@ -216,11 +208,10 @@ static char rentry1[32];
 static char rentry2[32];
 
 int update_rentry(SetupMenuValFloat *p) {
-	// ESP_LOGI(FNAME,"update_rentry() vu:%s ar:%p", Units::VarioUnit(), audio_range_sm );
+	// ESP_LOGI(FNAME,"update_rentry() vu:%s", Units::VarioUnit() );
 	sprintf(rentry0, "Fixed (5  %s)", Units::VarioUnit());
 	sprintf(rentry1, "Fixed (10 %s)", Units::VarioUnit());
-	sprintf(rentry2, "Variable (%d %s)", (int) (scale_range.get()),
-			Units::VarioUnit());
+	sprintf(rentry2, "Variable (%d %s)", (int) (scale_range.get()), Units::VarioUnit());
 	return 0;
 }
 
@@ -359,11 +350,6 @@ int wiper_button(SetupAction *p) {
 }
 
 int bug_adj(SetupMenuValFloat *p) {
-	return 0;
-}
-
-int vol_adj(SetupMenuValFloat *p) {
-	// AUDIO->setVolume( (*(p->_value)) );
 	return 0;
 }
 
@@ -840,19 +826,9 @@ void audio_menu_create_equalizer(SetupMenu *top) {
 
 void audio_menu_create_volume(SetupMenu *top) {
 
-	SetupMenuValFloat *vol = new SetupMenuValFloat("Current Volume", "%", vol_adj, false, &audio_volume);
-	// unlike top-level menu volume which exits setup, this returns to parent menu
-	vol->setHelp(
-			"Audio volume level for variometer tone on internal and external speaker");
-	vol->setMax(max_volume.get()); // this only works after leaving *parent* menu and returning
-	volume_menu = vol;     // but this allows changing the volume menu max later
+	SetupMenuValFloat *vol = new SetupMenuValFloat("Current Volume", "%", nullptr, false, &audio_volume);
+	vol->lock();
 	top->addEntry(vol);
-
-	SetupMenuSelect *cdv = new SetupMenuSelect("Current->Default", RST_NONE, cur_vol_dflt);
-	cdv->addEntry("Cancel");
-	cdv->addEntry("Set");
-	cdv->setHelp("Set current volume as default volume when device is switched on");
-	top->addEntry(cdv);
 
 	SetupMenuValFloat *dv = new SetupMenuValFloat("Default Volume", "%", nullptr, false, &default_volume);
 	top->addEntry(dv);
@@ -866,7 +842,7 @@ void audio_menu_create_volume(SetupMenu *top) {
 	top->addEntry(audeq);
 	audeq->setHelp("Equalization parameters for a constant perceived volume over a wide frequency range", 220);
 
-	SetupMenuSelect *amspvol = new SetupMenuSelect("STF Volume", RST_NONE, nullptr, &audio_split_vol);
+	SetupMenuSelect *amspvol = new SetupMenuSelect("S2F Volume", RST_NONE, nullptr, &audio_split_vol);
 	amspvol->setHelp(
 			"Enable independent audio volume in SpeedToFly and Vario modes, disable for one volume for both");
 	amspvol->mkEnable();
@@ -905,10 +881,8 @@ void audio_menu_create_mute(SetupMenu *top) {
 
 void audio_menu_create(SetupMenu *audio) {
 
-	// volume menu has gone out of scope by now
-	// make sure update_volume_menu_max() does not try and dereference it
-	volume_menu = 0;
 	SetupMenu *volumes = new SetupMenu("Volume options", audio_menu_create_volume);
+	volumes->setHelp("Audio volume for variometer tone on internal and external speaker");
 	audio->addEntry(volumes);
 
 	SetupMenu *mutes = new SetupMenu("Mute Audio", audio_menu_create_mute);
@@ -927,7 +901,7 @@ void audio_menu_create(SetupMenu *audio) {
 	audios->setHelp("Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
 
 	update_rentry(0);
-	audio_range_sm = new SetupMenuSelect("Range", RST_NONE, audio_setup_s, &audio_range);
+	SetupMenuSelect *audio_range_sm = new SetupMenuSelect("Range", RST_NONE, audio_setup_s, &audio_range);
 	audio_range_sm->addEntry(rentry0);
 	audio_range_sm->addEntry(rentry1);
 	audio_range_sm->addEntry(rentry2);
@@ -1562,9 +1536,8 @@ void setup_create_root(SetupMenu *top) {
 		mc->setPrecision(1);
 		top->addEntry(mc);
 	} else {
-		SetupMenuValFloat *vol = new SetupMenuValFloat("Audio Volume", "%", vol_adj, true, &audio_volume);
-		vol->setHelp(
-				"Audio volume level for variometer tone on internal and external speaker");
+		SetupMenuValFloat *vol = new SetupMenuValFloat("Audio Volume", "%", nullptr, true, &audio_volume);
+		vol->setHelp("Audio volume level for variometer tone on internal and external speaker");
 		vol->setMax(max_volume.get());
 		top->addEntry(vol);
 	}

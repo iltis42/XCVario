@@ -555,4 +555,3 @@ extern SetupNG<DeviceNVS>	atr_devsetup;
 
 void change_ballast();
 void change_mc();
-void update_volume_menu_max();

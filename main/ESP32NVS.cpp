@@ -1,21 +1,35 @@
 #include "ESP32NVS.h"
-#include <stdlib.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include <freertos/portmacro.h>
+
+#include "logdef.h"
+
+#include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
-#include <logdef.h>
+#include <esp_partition.h>
+#include <esp_err.h>
+#include <nvs_flash.h>
+
+#include <cstdlib>
 
 
-SemaphoreHandle_t nvMutex=NULL;
-ESP32NVS *ESP32NVS::Instance = 0;
+SemaphoreHandle_t nvMutex = NULL;
+ESP32NVS *ESP32NVS::Instance = nullptr;
 
 ESP32NVS::ESP32NVS(){
 	nvMutex=xSemaphoreCreateMutex();
+	Instance->begin(); // ensure NVS is initialized only once
 }
 
-bool ESP32NVS::begin(){
-	ESP_LOGI(FNAME,"ESP32NVS::begin()");
+ESP32NVS &ESP32NVS::CreateInstance()
+{
+	if( Instance == 0 ) {
+		Instance = new ESP32NVS();
+	}
+	return *Instance;
+}
+
+bool ESP32NVS::begin()
+{
+    ESP_LOGI(FNAME,"ESP32NVS::begin()");
 	esp_err_t _err = nvs_flash_init();
 	if (_err == ESP_ERR_NVS_NO_FREE_PAGES) {
 		const esp_partition_t* nvs_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS, NULL);

@@ -95,7 +95,17 @@ static std::string Decrypt(std::string key, std::string plaintext) {
 
 Cipher::Cipher()
 {
-	_id.assign(SetupCommon::getDefaultID());
+	_id.assign(SetupCommon::getDefaultID(true)); // four diggits ID
+}
+
+void Cipher::initTest(){
+	std::string encid = Encrypt(CIPHER_KEY, _id );
+	ESP_LOGI(FNAME,"initTest Encrypted ID %s", encid.c_str() );
+	ahrs_licence_dig1.set( encid[0]-'0' );
+	ahrs_licence_dig2.set( encid[1]-'0' );
+	ahrs_licence_dig3.set( encid[2]-'0' );
+	ahrs_licence_dig4.set( encid[3]-'0' );
+	SetupCommon::commitDirty();
 }
 
 bool Cipher::checkKeyAHRS()

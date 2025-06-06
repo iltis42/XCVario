@@ -1561,8 +1561,14 @@ extern "C" void  app_main(void)
 
 	// Access to the non volatile setup
 	ESP_LOGI(FNAME,"app_main" );
-	ESP_LOGI(FNAME,"Now init all Setup elements");
 	DeviceManager::Instance(); // Create a blank DM, because on a cleard flash initSetup starts to access it.
+	ESP32NVS::CreateInstance(); // NVS is needed for the SetupCommon::initSetup() to work, and to query nvs var existance
+	// Check on the existance of some nvs variables
+	if ( ! ahrs_licence_dig1.exists() ) {
+		Cipher crypt;
+		crypt.initTest();
+	}
+	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();
 
 	// Instance to a simple esp timer based clock

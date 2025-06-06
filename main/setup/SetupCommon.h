@@ -47,9 +47,9 @@ public:
 	void setDirty() { flags._dirty = true; }
 	uint8_t getSync() const { return flags._sync; }
 
-	static bool initSetup();  // returns false if FLASH was completely blank
+	static bool initSetup();  // returns false if at least one entry was blank
 	static char *getID();
-	static char *getDefaultID();
+	static char *getDefaultID(bool enforce_four_diggits = false);
 	static const char *getFixedID();
 	static SetupCommon * getMember( const char * key );
 	static bool syncEntry( int entry );
@@ -67,7 +67,6 @@ public:
     static void prepareFactoryReset();
 
     // variables
-
 protected:
 	const std::string_view _key; // unique identification TAG
 	t_setup_flags flags = {false, false, 0, 0, false};

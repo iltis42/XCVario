@@ -28,6 +28,9 @@ dl_action_t CambridgeMsg::parseExcl_g(NmeaPlugin *plg)
         ESP_LOGI(FNAME,"parseNMEA, BORGELT, ballast modification");
         // Its obviously only possible to change in fraction's by 10% in CA302 (issue: 464)
         float liters = (atof(s+4)/10.0) * polar_max_ballast.get();
+        if ( std::isnan(liters) ) {
+            liters = 0.f;
+        }
         ESP_LOGI(FNAME,"New Ballast in liters/kg: %.1f ", liters);
         ballast_kg.set( liters );
     }

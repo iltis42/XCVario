@@ -232,8 +232,19 @@ static void setAHRSBuzz(SetupMenu *p)
 }
 static int add_key(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"add_key( %d ) ", p->getSelect() );
-	Cipher crypt;
-	gflags.ahrsKeyValid = crypt.checkKeyAHRS();
+	if ( ahrs_licence_dig1.get() == ('@'-'0') ) {
+		// hidden short-cut to delete the license key
+		ahrs_licence_dig1.set(0);
+		ahrs_licence_dig2.set(0);
+		ahrs_licence_dig3.set(0);
+		ahrs_licence_dig4.set(0);
+		p->setSelect(0);
+		p->setTerminateMenu();
+	}
+	else {
+		Cipher crypt;
+		gflags.ahrsKeyValid = crypt.checkKeyAHRS();
+	}
 	setAHRSBuzz(p->getParent());
 	return 0;
 }

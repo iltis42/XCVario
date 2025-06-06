@@ -32,7 +32,7 @@ typedef struct global_flags{
 	bool haveMPU :1;
 	bool ahrsKeyValid  :1;
 	bool gload_alarm :1;
-	bool  standard_setting :1;
+	bool standard_setting :1;
 	bool stall_warning_active :1;
 	bool stall_warning_armed :1;
 	bool flarmWarning :1 ;
@@ -43,6 +43,7 @@ typedef struct global_flags{
 	bool mpu_pwm_initalized: 1;
 	bool gear_warn_external :1;
 	bool schedule_reboot :1;
+	bool intrDevices :1;
 } t_global_flags;
 
 class CANbus;

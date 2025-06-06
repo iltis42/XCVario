@@ -161,7 +161,7 @@ uint16_t gear_warning_holdoff = 0;
 uint8_t gyro_flash_savings=0;
 
 // boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.
-t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -1052,6 +1052,9 @@ void system_startup(void *args){
 
 	// DEVMAN serialization, read in all configured devices.
 	DEVMAN->reserectFromNvs();
+	if ( gflags.intrDevices ) {
+		DEVMAN->introduceDevices(); // create a flarm etc.
+	}
 	if ( CAN ) {
 		// just allways, it respects the XCV role setting
 		DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
@@ -1567,6 +1570,10 @@ extern "C" void  app_main(void)
 	if ( ! ahrs_licence_dig1.exists() ) {
 		Cipher crypt;
 		crypt.initTest();
+	}
+	if ( ! flarm_devsetup.exists() ) {
+		ESP_LOGI(FNAME,"Init devices" );
+		gflags.intrDevices = true;
 	}
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();

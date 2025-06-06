@@ -709,28 +709,30 @@ void DeviceManager::reserectFromNvs()
         }
     }
     ESP_LOGI(FNAME, "Reserected %d dev entries from NVS", nr_set_up);
-    if ( nr_set_up == 0 ) {
-        // A very first start w/ devices. Add a Flarm automatically
-        assert(S1);
-        S1->ConfigureIntf(SM_FLARM); // load flarm serial default profile
-        Device *dev = DEVMAN->addDevice(FLARM_DEV, FLARM_P, 0, 0, S1_RS232);
-        DEVMAN->addDevice(FLARM_DEV, FLARMBIN_P, 0, 0, NO_PHY);
-        if ( dev ) {
-            // save it to nvs
-            flarm_devsetup.set(dev->getNvsData());
-        }
-        if ( S2 ) {
-            S2->ConfigureIntf(SM_XCTNAV_S3); // load XCTouchNav serial default profile
-            dev = DEVMAN->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, S2_RS232);
-            if ( dev ) { navi_devsetup.set(dev->getNvsData()); }
-            dev = DEVMAN->addDevice(FLARM_HOST_DEV, FLARMHOST_P, 0, 0, S2_RS232);
-            if ( dev ) { flarm_host_setup.set(dev->getNvsData()); }
-        }
-        if ( CAN && (can_speed.get()!=CAN_SPEED_1MBIT) ) {
-            // Set it once to 1Mbit
-            can_speed.set(CAN_SPEED_1MBIT);
-            CAN->ConfigureIntf(1);
-        }
+}
+
+void DeviceManager::introduceDevices()
+{
+    // A very first start w/ devices. Add a Flarm automatically
+    assert(S1);
+    S1->ConfigureIntf(SM_FLARM); // load flarm serial default profile
+    Device *dev = DEVMAN->addDevice(FLARM_DEV, FLARM_P, 0, 0, S1_RS232);
+    DEVMAN->addDevice(FLARM_DEV, FLARMBIN_P, 0, 0, NO_PHY);
+    if ( dev ) {
+        // save it to nvs
+        flarm_devsetup.set(dev->getNvsData());
+    }
+    if ( S2 ) {
+        S2->ConfigureIntf(SM_XCTNAV_S3); // load XCTouchNav serial default profile
+        dev = DEVMAN->addDevice(NAVI_DEV, XCVARIO_P, 0, 0, S2_RS232);
+        if ( dev ) { navi_devsetup.set(dev->getNvsData()); }
+        dev = DEVMAN->addDevice(FLARM_HOST_DEV, FLARMHOST_P, 0, 0, S2_RS232);
+        if ( dev ) { flarm_host_setup.set(dev->getNvsData()); }
+    }
+    if ( CAN && (can_speed.get()!=CAN_SPEED_1MBIT) ) {
+        // Set it once to 1Mbit
+        can_speed.set(CAN_SPEED_1MBIT);
+        CAN->ConfigureIntf(1);
     }
 }
 

@@ -1061,9 +1061,10 @@ void system_startup(void *args){
 	}
 
 	ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
-	std::string wireless_id("BT ID: ");
+	std::string wireless_id;
 	if( DEVMAN->isIntf(BT_SPP) ) {
 		ESP_LOGI(FNAME,"Use BT");
+		wireless_id.assign("BT ID: ");
 	}
 	else if( DEVMAN->isIntf(BT_LE) ) {
 		ESP_LOGI(FNAME,"Use BLE");
@@ -1077,7 +1078,9 @@ void system_startup(void *args){
 		custom_wireless_id.set(SetupCommon::getDefaultID()); // Default ID created from MAC address CRC
 	}
 	wireless_id += SetupCommon::getID();
-	MBOX->newMessage(2, wireless_id.c_str() );
+	if ( wireless_id.length() > 0 ) {
+		MBOX->newMessage(2, wireless_id.c_str() );
+	}
 
 	{
 		Cipher crypt;

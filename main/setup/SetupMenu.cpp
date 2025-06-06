@@ -229,10 +229,21 @@ int update_rentrys(SetupMenuSelect *p) {
 	return 0;
 }
 
-int add_key(SetupMenuSelect *p) {
+static void setAHRSBuzz(SetupMenu *p)
+{
+	static char ahrs_buzzword_buf[5];
+	ahrs_buzzword_buf[0] = char(ahrs_licence_dig1.get()+'0');
+	ahrs_buzzword_buf[1] = char(ahrs_licence_dig2.get()+'0');
+	ahrs_buzzword_buf[2] = char(ahrs_licence_dig3.get()+'0');
+	ahrs_buzzword_buf[3] = char(ahrs_licence_dig4.get()+'0');
+	ahrs_buzzword_buf[4] = '\0';
+	p->setBuzzword(ahrs_buzzword_buf);
+}
+static int add_key(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"add_key( %d ) ", p->getSelect() );
 	Cipher crypt;
 	gflags.ahrsKeyValid = crypt.checkKeyAHRS();
+	setAHRSBuzz(p->getParent());
 	return 0;
 }
 
@@ -1395,8 +1406,8 @@ void system_menu_create_hardware_ahrs(SetupMenu *top) {
 	top->addEntry(ahrscalib);
 
 	SetupMenu *ahrslc = new SetupMenu("License Key", system_menu_create_hardware_ahrs_lc);
-	ahrslc->setHelp(
-			"Enter valid AHRS License Key, then AHRS feature can be enabled under 'AHRS Option'");
+	ahrslc->setHelp("Enter valid AHRS License Key, then AHRS feature can be enabled under 'AHRS Option'");
+	setAHRSBuzz(ahrslc);
 	top->addEntry(ahrslc);
 
 	SetupMenu *ahrspa = new SetupMenu("Parameters", system_menu_create_hardware_ahrs_parameter);

@@ -57,7 +57,6 @@ int sock_server_t::create_ap_socket()
 		ESP_LOGE(FNAME, "listen: %d %s", rc, strerror(errno));
 		return -1;
 	}
-	vTaskDelay(pdMS_TO_TICKS(5000)); // that seems to avout the select errno 22
 	int flag = 1; // prepare for short telegram transmission
 	setsockopt(mysock, IPPROTO_TCP, TCP_NODELAY, (char *) &flag, sizeof(int));
 
@@ -106,7 +105,8 @@ public:
 	{
 		WifiApSta *wifi = static_cast<WifiApSta *>(arg);
 		int nosock_counter = 0;
-
+		vTaskDelay(pdMS_TO_TICKS(3000)); // AP socket just got created, wait a bit for wifi to settle
+	
 		while (1) {
 			sock_server_t *config;
 			int max_fd = 0;

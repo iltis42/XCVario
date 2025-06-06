@@ -1438,7 +1438,7 @@ void system_menu_create_hardware(SetupMenu *top) {
 	pstype->addEntry( "MCPH21");
 	pstype->addEntry( "Autodetect");
 
-	SetupMenuValFloat *met_adj = top->createVoltmeterAdjustMenu();
+	SetupMenuValFloat *met_adj = SetupMenu::createVoltmeterAdjustMenu();
 	top->addEntry(met_adj);
 }
 
@@ -1632,6 +1632,7 @@ SetupMenuValFloat* SetupMenu::createQNHMenu() {
 SetupMenuValFloat* SetupMenu::createVoltmeterAdjustMenu() {
 	SetupMenuValFloat *met_adj = new SetupMenuValFloat("Voltmeter Adjust", "%", factv_adj, false, &factory_volt_adjust, RST_NONE, false, true);
 	met_adj->setHelp("Option to factory fine-adjust voltmeter");
+	met_adj->setNeverInline();
 	return met_adj;
 }
 

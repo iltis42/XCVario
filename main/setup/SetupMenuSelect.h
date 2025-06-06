@@ -43,6 +43,7 @@ public:
 	int numEntries() const { return _values.size(); };
 
 private:
+	void initSelect() const;
 	mutable int  _select = 0;
 	int  _select_save = 0;
 	int  _char_index = 0;   // position of character to be altered

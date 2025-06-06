@@ -97,6 +97,7 @@ public:
     int getNrDevs() const { return _device_map.size(); }
     // void makePersistent();
     void reserectFromNvs();
+    void introduceDevices();
     // Search for the next free CAN id, organized in chunks of four in 5 prio categories.
     static int reserveCANId(int prio);
     static void undoReserveCANId(int prio);

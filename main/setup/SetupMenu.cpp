@@ -40,7 +40,8 @@
 #include <inttypes.h>
 #include <iterator>
 #include <algorithm>
-#include <cstring>
+// #include <cstring>
+#include <string>
 
 static void setup_create_root(SetupMenu *top);
 
@@ -81,17 +82,8 @@ static void system_menu_create_ahrs_calib(SetupMenu *top);
 static void system_menu_create_hardware_ahrs_lc(SetupMenu *top);
 static void system_menu_create_hardware_ahrs_parameter(SetupMenu *top);
 
-SetupMenuSelect *audio_range_sm = nullptr;
-SetupMenuSelect *mpu = nullptr;
-
-SetupMenuValFloat *volume_menu = nullptr;
-void update_volume_menu_max() {
-	if (volume_menu)
-		volume_menu->setMax(max_volume.get());
-}
 
 // Menu for flap setup
-
 float elev_step = 1;
 
 bool SetupMenu::focus = false;
@@ -216,11 +208,10 @@ static char rentry1[32];
 static char rentry2[32];
 
 int update_rentry(SetupMenuValFloat *p) {
-	// ESP_LOGI(FNAME,"update_rentry() vu:%s ar:%p", Units::VarioUnit(), audio_range_sm );
+	// ESP_LOGI(FNAME,"update_rentry() vu:%s", Units::VarioUnit() );
 	sprintf(rentry0, "Fixed (5  %s)", Units::VarioUnit());
 	sprintf(rentry1, "Fixed (10 %s)", Units::VarioUnit());
-	sprintf(rentry2, "Variable (%d %s)", (int) (scale_range.get()),
-			Units::VarioUnit());
+	sprintf(rentry2, "Variable (%d %s)", (int) (scale_range.get()), Units::VarioUnit());
 	return 0;
 }
 
@@ -229,10 +220,32 @@ int update_rentrys(SetupMenuSelect *p) {
 	return 0;
 }
 
-int add_key(SetupMenuSelect *p) {
+static void setAHRSBuzz(SetupMenu *p)
+{
+	static char ahrs_buzzword_buf[5];
+	ahrs_buzzword_buf[0] = char(ahrs_licence_dig1.get()+'0');
+	ahrs_buzzword_buf[1] = char(ahrs_licence_dig2.get()+'0');
+	ahrs_buzzword_buf[2] = char(ahrs_licence_dig3.get()+'0');
+	ahrs_buzzword_buf[3] = char(ahrs_licence_dig4.get()+'0');
+	ahrs_buzzword_buf[4] = '\0';
+	p->setBuzzword(ahrs_buzzword_buf);
+}
+static int add_key(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"add_key( %d ) ", p->getSelect() );
-	Cipher crypt;
-	gflags.ahrsKeyValid = crypt.checkKeyAHRS();
+	if ( ahrs_licence_dig1.get() == ('@'-'0') ) {
+		// hidden short-cut to delete the license key
+		ahrs_licence_dig1.set(0);
+		ahrs_licence_dig2.set(0);
+		ahrs_licence_dig3.set(0);
+		ahrs_licence_dig4.set(0);
+		p->setSelect(0);
+		p->setTerminateMenu();
+	}
+	else {
+		Cipher crypt;
+		gflags.ahrsKeyValid = crypt.checkKeyAHRS();
+	}
+	setAHRSBuzz(p->getParent());
 	return 0;
 }
 
@@ -351,11 +364,6 @@ int bug_adj(SetupMenuValFloat *p) {
 	return 0;
 }
 
-int vol_adj(SetupMenuValFloat *p) {
-	// AUDIO->setVolume( (*(p->_value)) );
-	return 0;
-}
-
 int cur_vol_dflt(SetupMenuSelect *p) {
 	if (p->getSelect() != 0)  // "set"
 		default_volume.set(audio_volume.get());
@@ -373,9 +381,6 @@ static int eval_chop(SetupMenuSelect *p) {
 	return 0;
 }
 
-static int role_change_action(SetupMenuSelect *p) {
-	return 0;
-}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // SetupMenu
@@ -832,19 +837,9 @@ void audio_menu_create_equalizer(SetupMenu *top) {
 
 void audio_menu_create_volume(SetupMenu *top) {
 
-	SetupMenuValFloat *vol = new SetupMenuValFloat("Current Volume", "%", vol_adj, false, &audio_volume);
-	// unlike top-level menu volume which exits setup, this returns to parent menu
-	vol->setHelp(
-			"Audio volume level for variometer tone on internal and external speaker");
-	vol->setMax(max_volume.get()); // this only works after leaving *parent* menu and returning
-	volume_menu = vol;     // but this allows changing the volume menu max later
+	SetupMenuValFloat *vol = new SetupMenuValFloat("Current Volume", "%", nullptr, false, &audio_volume);
+	vol->lock();
 	top->addEntry(vol);
-
-	SetupMenuSelect *cdv = new SetupMenuSelect("Current->Default", RST_NONE, cur_vol_dflt);
-	cdv->addEntry("Cancel");
-	cdv->addEntry("Set");
-	cdv->setHelp("Set current volume as default volume when device is switched on");
-	top->addEntry(cdv);
 
 	SetupMenuValFloat *dv = new SetupMenuValFloat("Default Volume", "%", nullptr, false, &default_volume);
 	top->addEntry(dv);
@@ -858,7 +853,7 @@ void audio_menu_create_volume(SetupMenu *top) {
 	top->addEntry(audeq);
 	audeq->setHelp("Equalization parameters for a constant perceived volume over a wide frequency range", 220);
 
-	SetupMenuSelect *amspvol = new SetupMenuSelect("STF Volume", RST_NONE, nullptr, &audio_split_vol);
+	SetupMenuSelect *amspvol = new SetupMenuSelect("S2F Volume", RST_NONE, nullptr, &audio_split_vol);
 	amspvol->setHelp(
 			"Enable independent audio volume in SpeedToFly and Vario modes, disable for one volume for both");
 	amspvol->mkEnable();
@@ -897,10 +892,8 @@ void audio_menu_create_mute(SetupMenu *top) {
 
 void audio_menu_create(SetupMenu *audio) {
 
-	// volume menu has gone out of scope by now
-	// make sure update_volume_menu_max() does not try and dereference it
-	volume_menu = 0;
 	SetupMenu *volumes = new SetupMenu("Volume options", audio_menu_create_volume);
+	volumes->setHelp("Audio volume for variometer tone on internal and external speaker");
 	audio->addEntry(volumes);
 
 	SetupMenu *mutes = new SetupMenu("Mute Audio", audio_menu_create_mute);
@@ -919,7 +912,7 @@ void audio_menu_create(SetupMenu *audio) {
 	audios->setHelp("Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
 
 	update_rentry(0);
-	audio_range_sm = new SetupMenuSelect("Range", RST_NONE, audio_setup_s, &audio_range);
+	SetupMenuSelect *audio_range_sm = new SetupMenuSelect("Range", RST_NONE, audio_setup_s, &audio_range);
 	audio_range_sm->addEntry(rentry0);
 	audio_range_sm->addEntry(rentry1);
 	audio_range_sm->addEntry(rentry2);
@@ -1398,8 +1391,8 @@ void system_menu_create_hardware_ahrs(SetupMenu *top) {
 	top->addEntry(ahrscalib);
 
 	SetupMenu *ahrslc = new SetupMenu("License Key", system_menu_create_hardware_ahrs_lc);
-	ahrslc->setHelp(
-			"Enter valid AHRS License Key, then AHRS feature can be enabled under 'AHRS Option'");
+	ahrslc->setHelp("Enter valid AHRS License Key, then AHRS feature can be enabled under 'AHRS Option'");
+	setAHRSBuzz(ahrslc);
 	top->addEntry(ahrslc);
 
 	SetupMenu *ahrspa = new SetupMenu("Parameters", system_menu_create_hardware_ahrs_parameter);
@@ -1445,7 +1438,7 @@ void system_menu_create_hardware(SetupMenu *top) {
 	pstype->addEntry( "MCPH21");
 	pstype->addEntry( "Autodetect");
 
-	SetupMenuValFloat *met_adj = top->createVoltmeterAdjustMenu();
+	SetupMenuValFloat *met_adj = SetupMenu::createVoltmeterAdjustMenu();
 	top->addEntry(met_adj);
 }
 
@@ -1523,11 +1516,11 @@ void system_menu_create(SetupMenu *sye) {
 	sye->addEntry(ad);
 
 	// XCV role
-	SetupMenuSelect *role = new SetupMenuSelect("XCV device role", RST_IMMEDIATE, role_change_action, &xcv_role);
+	SetupMenuSelect *role = new SetupMenuSelect("XCV device role", RST_IMMEDIATE, nullptr, &xcv_role);
 	role->setHelp("Set the intended role of this device first (needs a reboot)");
-	role->addEntry("None");
-	role->addEntry("Master");
-	role->addEntry("Second");
+	// role->addEntry("None", NO_ROLE); hidden, because there is no use case currently
+	role->addEntry("Master", MASTER_ROLE);
+	role->addEntry("Second", SECOND_ROLE);
 	sye->addEntry(role);
 
 	// Devices menu
@@ -1554,9 +1547,8 @@ void setup_create_root(SetupMenu *top) {
 		mc->setPrecision(1);
 		top->addEntry(mc);
 	} else {
-		SetupMenuValFloat *vol = new SetupMenuValFloat("Audio Volume", "%", vol_adj, true, &audio_volume);
-		vol->setHelp(
-				"Audio volume level for variometer tone on internal and external speaker");
+		SetupMenuValFloat *vol = new SetupMenuValFloat("Audio Volume", "%", nullptr, true, &audio_volume);
+		vol->setHelp("Audio volume level for variometer tone on internal and external speaker");
 		vol->setMax(max_volume.get());
 		top->addEntry(vol);
 	}
@@ -1640,6 +1632,7 @@ SetupMenuValFloat* SetupMenu::createQNHMenu() {
 SetupMenuValFloat* SetupMenu::createVoltmeterAdjustMenu() {
 	SetupMenuValFloat *met_adj = new SetupMenuValFloat("Voltmeter Adjust", "%", factv_adj, false, &factory_volt_adjust, RST_NONE, false, true);
 	met_adj->setHelp("Option to factory fine-adjust voltmeter");
+	met_adj->setNeverInline();
 	return met_adj;
 }
 

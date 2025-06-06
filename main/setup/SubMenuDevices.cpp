@@ -583,10 +583,8 @@ void system_menu_connected_devices(SetupMenu *top) // dynamic!
     for ( auto dev : DEVMAN->allDevs() ) {
         std::string_view dnam = DeviceManager::getDevName(dev->_id);
         if ( ! dnam.empty() ) {
-            std::string tmp(dnam);
-            tmp += " - " + std::string(dev->_itf->getStringId());
-            SetupMenu *devmenu = new SetupMenu(tmp.c_str(), connected_devices_menu_device, dev->_id);
-            devmenu->setDynContent();
+            SetupMenu *devmenu = new SetupMenu(dnam.data(), connected_devices_menu_device, dev->_id);
+            devmenu->setBuzzword(dev->_itf->getStringId());
             top->addEntry(devmenu);
         }
     }

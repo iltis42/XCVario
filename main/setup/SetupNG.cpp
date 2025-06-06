@@ -127,7 +127,6 @@ void change_max_volume() {
 		audio_volume.set( max );
 		ESP_LOGI(FNAME,"change volume -> %f to fit max", max );
 	}
-	update_volume_menu_max();   // make volume menu use the new max
 }
 
 void flap_act() {
@@ -413,7 +412,7 @@ SetupNG<Quaternion>			imu_reference("IMU_REFERENCE", Quaternion(), false);
 SetupNG<mpud::raw_axes_t>	gyro_bias("GYRO_BIAS", {} );
 SetupNG<mpud::raw_axes_t>	accl_bias("ACCL_BIAS", {} );
 SetupNG<float>              mpu_temperature("MPUTEMP", 45.0, true, SYNC_FROM_MASTER, PERSISTENT, chg_mpu_target, QUANT_NONE, LIMITS(-1, 60, 1)); // default for AHRS chip temperature (XCV 2023)
-SetupNG<int> 			xcv_role("XCVROLE", MASTER_ROLE, true);
+SetupNG<int> 			xcv_role("XCVROLE", MASTER_ROLE, false, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(MASTER_ROLE, SECOND_ROLE, 1));
 // Those device entries are serving as factory reset minimum configuration
 SetupNG<DeviceNVS>		anemoi_devsetup("ANEMOI", DeviceNVS() );
 SetupNG<DeviceNVS>		auto_connect("AUTOCON", DeviceNVS() );

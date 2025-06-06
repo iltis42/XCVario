@@ -25,18 +25,18 @@ SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, i
 	bits._ext_handler = ext_handler;
 	bits._end_setup = end_menu;
 	bits._restart = restart;
-	if( _nvs ) {
-		// ESP_LOGI(FNAME,"_nvs->key(): %s val: %d", _nvs->key(), (int)(_nvs->get()) );
-		_select = _nvs->get();
-		if ( _select < 0 ) { _select = 0; }
-		else if ( _select > _values.size()-1) { _select = _values.size()-1; }
-	}
+	_select = -1; // no selection, init. can only be done when the menu items are added completely
+		// initialization postponed to first enter(), or value() call
 	setRotDynamic(1.f);
 }
 
 void SetupMenuSelect::enter()
 {
 	if ( isLocked() ) { return; }
+
+	if ( _select < 0 ) {
+		initSelect(); // initialize selection
+	}
 
 	_select_save = _select;
 	_select = (_select > _values.size()-1) ? _values.size()-1 : _select;
@@ -131,7 +131,11 @@ void SetupMenuSelect::longPress(){
 
 const char *SetupMenuSelect::value() const 
 {
-	if ( _values.size() > 0 ) {
+	if ( _select < 0 ) {
+		// lazy initialization
+		initSelect();
+	}
+	if (_select < _values.size()) {
 		return _values[_select].first;
 	}
 	return "";
@@ -216,7 +220,11 @@ void SetupMenuSelect::updateEntry(const char *ent, int num)
 
 int SetupMenuSelect::getValue() const
 {
-	if (_select >=0  && _select < _values.size()) {
+	if ( _select < 0 ) {
+		// lazy initialization
+		initSelect();
+	}
+	if (_select < _values.size()) {
 		return _values[_select].second;
 	}
 	ESP_LOGW(FNAME, "Out of bounds");
@@ -226,4 +234,25 @@ int SetupMenuSelect::getValue() const
 void SetupMenuSelect::setSelect(int sel)
 {
 	_select = sel;
+}
+
+void SetupMenuSelect::initSelect() const
+{
+	// no selection yet, select nvs stored entry, or the first entry
+	if ( _nvs ) {
+		int val = _nvs->get();
+		// translate nvs value to selection index
+		for (int i = 0; i < _values.size(); i++) {
+			if ( _values[i].second == val ) {
+				_select = i;
+				ESP_LOGI(FNAME,"selecting nvs entry %d: %s", _select, _values[_select].first );
+				break;
+			}
+		}
+	}
+	else {
+		// no nvs, select first entry
+		_select = 0;
+		ESP_LOGI(FNAME,"no nvs, selecting first entry");
+	}
 }

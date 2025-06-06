@@ -99,7 +99,10 @@ void SetupMenuChar::longPress(){
 const char *SetupMenuChar::value() const
 {
 	// ESP_LOGI(FNAME,"getEntry() select:%d", _select );
-	return _values[ _select ];
+	if ( _select > 0 && _select < _values.size() ) {
+		return _values[_select];
+	}
+	return "";
 }
 
 bool SetupMenuChar::existsEntry( std::string ent ){

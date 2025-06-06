@@ -382,7 +382,7 @@ void DataLink::dumpProto()
     ESP_LOGI(FNAME, "    listen port %d", getPort());
     if ( _nmea ) {
         ESP_LOGI(FNAME, "       nm did%d\tpid%d\tsp%d%c", _nmea->getDeviceId(), _nmea->getProtocolId(), _nmea->getSendPort(), (_nmea==_active)?'<':' ');
-        for (auto it : _nmea->getAllPlugs() ) {
+        for ([[maybe_unused]] auto it : _nmea->getAllPlugs() ) {
             ESP_LOGI(FNAME, "       nm plugin %d%c", it->getPtyp(), it->getAuto()?'a':'x');
         }
     }

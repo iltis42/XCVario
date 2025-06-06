@@ -161,7 +161,7 @@ uint16_t gear_warning_holdoff = 0;
 uint8_t gyro_flash_savings=0;
 
 // boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.
-t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -1052,15 +1052,19 @@ void system_startup(void *args){
 
 	// DEVMAN serialization, read in all configured devices.
 	DEVMAN->reserectFromNvs();
+	if ( gflags.intrDevices ) {
+		DEVMAN->introduceDevices(); // create a flarm etc.
+	}
 	if ( CAN ) {
 		// just allways, it respects the XCV role setting
 		DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
 	}
 
 	ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
-	std::string wireless_id("BT ID: ");
+	std::string wireless_id;
 	if( DEVMAN->isIntf(BT_SPP) ) {
 		ESP_LOGI(FNAME,"Use BT");
+		wireless_id.assign("BT ID: ");
 	}
 	else if( DEVMAN->isIntf(BT_LE) ) {
 		ESP_LOGI(FNAME,"Use BLE");
@@ -1074,7 +1078,9 @@ void system_startup(void *args){
 		custom_wireless_id.set(SetupCommon::getDefaultID()); // Default ID created from MAC address CRC
 	}
 	wireless_id += SetupCommon::getID();
-	MBOX->newMessage(2, wireless_id.c_str() );
+	if ( wireless_id.length() > 0 ) {
+		MBOX->newMessage(2, wireless_id.c_str() );
+	}
 
 	{
 		Cipher crypt;
@@ -1561,8 +1567,18 @@ extern "C" void  app_main(void)
 
 	// Access to the non volatile setup
 	ESP_LOGI(FNAME,"app_main" );
-	ESP_LOGI(FNAME,"Now init all Setup elements");
 	DeviceManager::Instance(); // Create a blank DM, because on a cleard flash initSetup starts to access it.
+	ESP32NVS::CreateInstance(); // NVS is needed for the SetupCommon::initSetup() to work, and to query nvs var existance
+	// Check on the existance of some nvs variables
+	if ( ! ahrs_licence_dig1.exists() ) {
+		Cipher crypt;
+		crypt.initTest();
+	}
+	if ( ! flarm_devsetup.exists() ) {
+		ESP_LOGI(FNAME,"Init devices" );
+		gflags.intrDevices = true;
+	}
+	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();
 
 	// Instance to a simple esp timer based clock

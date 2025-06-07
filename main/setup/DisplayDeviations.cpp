@@ -109,5 +109,5 @@ void DisplayDeviations::display( int mode )
   MYUCG->setPrintPos( 40, 317 );
   MYUCG->setColor( COLOR_WHITE );
   MYUCG->setPrintPos( 40, 317 );
-  MYUCG->printf( "Press button to exit" );
+  MYUCG->print("Press button to exit");
 }

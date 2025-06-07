@@ -17,6 +17,8 @@
 #include <hal/gpio_types.h>
 #include <esp_timer.h>
 
+#include <string>
+
 // Display 4 Wire SPI and Display CS
 #define RESET_Display  GPIO_NUM_5       // Reset pin for Display
 #define CS_Display     GPIO_NUM_13      // CS pin 13 is for Display
@@ -67,6 +69,8 @@ extern CenterAid *centeraid;
 extern AirspeedSensor *asSensor;
 extern PressureSensor *baroSensor;
 extern SetupRoot *Menu;
+
+extern std::string logged_tests;
 
 extern SemaphoreHandle_t display_mutex;
 

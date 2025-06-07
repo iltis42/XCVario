@@ -8,6 +8,7 @@
 #include "setup/SetupMenu.h"
 #include "setup/SubMenuDevices.h"
 #include "setup/SubMenuCompassWind.h"
+#include "setup/ShowBootMsg.h"
 #include "setup/SetupRoot.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
@@ -1195,6 +1196,11 @@ void system_menu_create_software(SetupMenu *top) {
 	upd->addEntry("Cancel");
 	upd->addEntry("Start");
 	top->addEntry(upd);
+
+	if ( logged_tests.size() > 0 ) {
+		SetupMenuDisplay *dis = new ShowBootMsg("Show Boot Messages");
+		top->addEntry(dis);
+	}
 }
 
 void system_menu_create_battery(SetupMenu *top) {
@@ -1506,7 +1512,7 @@ void system_menu_create_altimeter_airspeed(SetupMenu *top) {
 }
 
 void system_menu_create(SetupMenu *sye) {
-	SetupMenu *soft = new SetupMenu("Software Update", system_menu_create_software);
+	SetupMenu *soft = new SetupMenu("Software", system_menu_create_software);
 	sye->addEntry(soft);
 
 	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, nullptr, &factory_reset);

@@ -118,10 +118,7 @@ PressureSensor *teSensor = nullptr;
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *Display = 0;
 CenterAid  *centeraid = 0;
-
-
 OTA *ota = 0;
-
 SetupRoot  *Menu = nullptr;
 
 // Gyro and acceleration sensor
@@ -134,7 +131,10 @@ SerialLine *S1 = NULL;
 SerialLine *S2 = NULL;
 Clock *MY_CLOCK = nullptr;
 
+//boot log
+std::string logged_tests;
 
+// global variables
 float baroP=0; // barometric pressure
 static float teP=0;   // TE pressure
 static float temperature=15.0;
@@ -183,6 +183,9 @@ unsigned long int flarm_alarm_holdtime=0;
 float mpu_target_temp=45.0;
 
 AdaptUGC *egl = 0;
+
+const constexpr char passed_text[] = "PASSED\n"; 
+const constexpr char failed_text[] = "FAILED\n"; 
 
 int IRAM_ATTR sign(int num) {
     return (num > 0) - (num < 0);
@@ -944,8 +947,6 @@ void system_startup(void *args){
 	Menu = new SetupRoot(Display); // the root setup menu
 	Menu->initScreens();
 
-	// int valid;
-	std::string logged_tests("\n\n\n");
 	Version V;
 	std::string ver( " Ver.: " );
 	ver += V.version();
@@ -954,6 +955,9 @@ void system_startup(void *args){
 	std::string hwrev( hw );
 	ver += hwrev;
 	Display->writeText(1, ver.c_str() );
+	logged_tests.assign(ver);
+	logged_tests += "\n";
+
 	BootUpScreen *boot_screen = new BootUpScreen();
 	MessageBox::createMessageBox();
 	if ( gflags.schedule_reboot ) {
@@ -974,7 +978,8 @@ void system_startup(void *args){
 		ota = new OTA();
 		ota->doSoftwareUpdate( Display ); // fixme -> missing the drawDisplay to process button at this point in time
 	}
-	if( hardwareRevision.get() >= XCVARIO_21 ){
+	if( hardwareRevision.get() >= XCVARIO_21 )
+	{
 		gflags.haveMPU = true;
 		mpu_target_temp = mpu_temperature.get();
 		ESP_LOGI( FNAME,"MPU initialize");
@@ -1012,21 +1017,20 @@ void system_startup(void *args){
 			delay( 10 );
 		}
 		accelG /= samples;
-		// float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
-		logged_tests += "MPU6050 AHRS test: PASSED\n";
+		float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
+		char ahrs[10];
+		sprintf(ahrs, "%.2f", accel);
+		logged_tests += "MPU6050 AHRS (" + std::string(ahrs) + "g): ";
+		if ( accel >0.8 && accel < 1.1 ) {
+			logged_tests += passed_text;
+		} else {
+			logged_tests += failed_text;
+		}
 		IMU::init();
 		if ( IMU::MPU6050Read() == ESP_OK) {
 			IMU::Process();
 		}
 		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-	}
-	else{
-		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );
-		if( hardwareRevision.get() >= XCVARIO_21 ) {
-			ESP_LOGI( FNAME,"hardwareRevision detected = 3, XCVario-21+");
-			MBOX->newMessage(1, "AHRS Sensor: NOT FOUND");
-			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
-		}
 	}
 
 	// Create serial interfaces
@@ -1041,11 +1045,11 @@ void system_startup(void *args){
 		CANbus::createCAN();
 		logged_tests += "CAN Interface: ";
 		if( CAN->selfTest() ) {
-			logged_tests += "OK\n";
+			logged_tests += passed_text;
 		}
 		else {
 			MBOX->newMessage(1, "CAN bus: Fail");
-			logged_tests += "CAN Bus selftest: FAILED\n";
+			logged_tests += failed_text;
 			ESP_LOGE(FNAME,"Error: CAN Interface failed");
 		}
 	}
@@ -1187,6 +1191,7 @@ void system_startup(void *args){
 			}
 		}
 	}
+	logged_tests += "AS Sensor offset: ";
 	if( found ){
 		ESP_LOGI(FNAME,"AS Speed sensors self test PASSED, offset=%d", offset);
 		asSensor->doOffset();
@@ -1200,19 +1205,19 @@ void system_startup(void *args){
 		if( !offset_plausible && ( ias.get() < 50 ) ){
 			ESP_LOGE(FNAME,"Error: air speed presure sensor offset out of bounds, act value=%d", offset );
 			MBOX->newMessage(2, "AS Sensor: NEED ZERO");
-			logged_tests += "AS Sensor offset test: FAILED\n";
+			logged_tests += failed_text;
 			selftestPassed = false;
 		}
 		else {
 			ESP_LOGI(FNAME,"air speed offset test PASSED, readout value in bounds=%d", offset );
-			logged_tests += "AS Sensor offset test: PASSED\n";
+			logged_tests += passed_text;
 			boot_screen->finish(1);
 		}
 	}
 	else{
 		ESP_LOGE(FNAME,"Error with air speed pressure sensor, no working sensor found!");
 		MBOX->newMessage(2, "AS Sensor: NOT FOUND");
-		logged_tests += "AS Sensor: NOT FOUND\n";
+		logged_tests += "NOT FOUND\n";
 		selftestPassed = false;
 		asSensor = 0;
 	}
@@ -1234,16 +1239,17 @@ void system_startup(void *args){
 			}
 		}
 		ESP_LOGI(FNAME,"End T sensor test");
+		logged_tests += "Ext. Temp. Sensor: ";
 		if( temperature == DEVICE_DISCONNECTED_C ) {
 			ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
 			MBOX->newMessage(1, "Temp Sensor: NOT FOUND");
 			gflags.validTemperature = false;
-			logged_tests += "External Temperature Sensor: NOT FOUND\n";
+			logged_tests += "NOT FOUND\n";
 		}else
 		{
 			ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
 			gflags.validTemperature = true;
-			logged_tests += "External Temperature Sensor:PASSED\n";
+			logged_tests += passed_text;
 
 		}
 	}
@@ -1282,53 +1288,58 @@ void system_startup(void *args){
 	bool batest=true;
 	delay(200);
 
+	logged_tests += "Baro Sensor: ";
 	if( !baroSensor->selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
 		MBOX->newMessage(2, "Baro Sensor: NOT FOUND");
 		selftestPassed = false;
 		batest=false;
-		logged_tests += "Baro Sensor Test: NOT FOUND\n";
+		logged_tests += "NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"Baro Sensor test OK, T=%f P=%f", ba_t, ba_p);
-		logged_tests += "Baro Sensor Test: PASSED\n";
+		logged_tests += passed_text;
 	}
+	logged_tests += "TE Sensor: ";
 	if( !teSensor->selfTest(te_t, te_p) ) {
 		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
 		MBOX->newMessage(2, "TE Sensor: NOT FOUND");
 		selftestPassed = false;
 		tetest=false;
-		logged_tests += "TE Sensor Test: NOT FOUND\n";
+		logged_tests += "NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"TE Sensor test OK,   T=%f P=%f", te_t, te_p);
-		logged_tests += "TE Sensor Test: PASSED\n";
+		logged_tests += passed_text;
 	}
 	if( tetest && batest ) {
 		ESP_LOGI(FNAME,"Both absolute pressure sensor TESTs SUCCEEDED, now test deltas");
+		logged_tests += "TE/Baro Sens. T d. <4'C: ";
 		if( (abs(ba_t - te_t) >4.0)  && ( ias.get() < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
 			selftestPassed = false;
 			ESP_LOGE(FNAME,"Severe T delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
 			MBOX->newMessage(1, "TE/Baro Temp: Unequal");
-			logged_tests += "TE/Baro Sensor T diff. <4°C: FAILED\n";
+			logged_tests += failed_text;
 		}
 		else{
 			ESP_LOGI(FNAME,"Abs p sensors temp. delta test PASSED, delta: %f °C",  abs(ba_t - te_t));
-			logged_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
+			logged_tests += passed_text;
 		}
 		float delta = 2.5; // in factory we test at normal temperature, so temperature change is ignored.
-		if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 )
+		if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ) {
 			delta += 1.8; // plus 1.5 Pa per Kelvin, for 60K T range = 90 Pa or 0.9 hPa per Sensor, for both there is 2.5 plus 1.8 hPa to consider
+		}
+		logged_tests += "TE/Baro Sens. P d. <2hPa: ";
 		if( (abs(ba_p - te_p) >delta)  && ( ias.get() < 50 ) ) {
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Abs p sensors deviation delta > 2.5 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
 			MBOX->newMessage(1, "TE/Baro P: Unequal");
-			logged_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
+			logged_tests += failed_text;
 		}
 		else {
-			ESP_LOGI(FNAME,"Abs p sensor deta test PASSED, delta: %f hPa", abs(ba_p - te_p) );
+			ESP_LOGI(FNAME,"AbsP sensor deta test PASSED, D: %f hPa", abs(ba_p - te_p) );
+			logged_tests += passed_text;
 		}
-		logged_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 		boot_screen->finish(2);
 	}
 	else {
@@ -1340,15 +1351,16 @@ void system_startup(void *args){
 	ESP_LOGI(FNAME,"Audio begin");
 	AUDIO->begin( DAC_CHAN_0 );
 	ESP_LOGI(FNAME,"Poti and Audio test");
+	logged_tests += "Digi. Audio Poti test: ";
 	if( !AUDIO->selfTest() ) {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
 		MBOX->newMessage(1, "Digital Poti: Failure");
 		selftestPassed = false;
-		logged_tests += "Digital Audio Poti test: FAILED\n";
+		logged_tests += failed_text;
 	}
 	else{
 		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
-		logged_tests += "Digital Audio Poti test: PASSED\n";
+		logged_tests += passed_text;
 	}
 	audio_volume.set(default_volume.get());
 
@@ -1390,38 +1402,40 @@ void system_startup(void *args){
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
 		MBOX->newMessage(1, "Bat Meter: Fail");
-		logged_tests += "Battery Voltage Sensor: FAILED\n";
+		logged_tests += failed_text;
 		selftestPassed = false;
 	}
 	else{
 		ESP_LOGI(FNAME,"Battery voltage metering test PASSED, act value=%f", bat );
-		logged_tests += "Battery Voltage Sensor: PASSED\n";
+		logged_tests += passed_text;
 	}
 	
 	if ( BTspp) {
+			logged_tests += "Bluetooth test: ";
 		if ( BTspp->selfTest() ) {
-			logged_tests += "Bluetooth test: PASSED\n";
+			logged_tests += passed_text;
 		}
 		else {
 			MBOX->newMessage(1, "Bluetooth: FAILED");
-			logged_tests += "Bluetooth test: FAILED\n";
+			logged_tests += failed_text;
 		}
 	}
 
 	// magnetic sensor / compass selftest
 	if( compass ) {
+		logged_tests += "Compass test: ";
 		compass->begin();
 		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
 		esp_err_t err = compass->selfTest();
 		if( err == ESP_OK )		{
 			// Activate working of magnetic sensor
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
-			logged_tests += "Compass test: OK\n";
+			logged_tests += passed_text;
 		}
 		else{
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
 			MBOX->newMessage(1, "Compass: FAILED");
-			logged_tests += "Compass test: FAILED\n";
+			logged_tests += failed_text;
 			selftestPassed = false;
 		}
 		compass->start();  // start task
@@ -1436,7 +1450,7 @@ void system_startup(void *args){
 	Speed2Fly.begin();
 	Version myVersion;
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
-	ESP_LOGI(FNAME,"%s", logged_tests.c_str());
+	ESP_LOGI(FNAME,"\n\n%s", logged_tests.c_str());
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");

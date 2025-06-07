@@ -16,15 +16,13 @@ constexpr int UARTEVENTQ_LEN = 10;
 
 static constexpr std::array<int, 6> baud_rate_table = { 4800, 9600, 19200, 38400, 57600, 115200 };
 
-// enumeration is: SM_FLARM, SM_RADIO, SM_XCTNAV_S3, SM_OPENVARIO, SM_XCFLARMBIN, SM_XCFLARMVIEW
-static constexpr std::array<t_serial_cfg, 6>  sm_serial_config = {{
+// enumeration is: SM_FLARM, SM_RADIO, SM_XCTNAV_S3, SM_OPENVARIO
+static constexpr std::array<t_serial_cfg, NR_OF_SER_PROFILES>  sm_serial_config = {{
 		// baud,      polarity,  pinswp, tx enable
 		{ BAUD_19200, RS232_TTL, false, true },
 		{ BAUD_9600,  RS232_TTL, false, true },
 		{ BAUD_19200, RS232_TTL, false, true },
-		{ BAUD_19200, RS232_TTL, false, true },
-		{ BAUD_38400, RS232_TTL, false, true },
-		{ BAUD_57600, RS232_TTL, false, true }
+		{ BAUD_19200, RS232_TTL, false, true }
 }};
 
 static constexpr std::array<std::string_view, 3> MEMOS = { "S0", "S1", "S2" };
@@ -135,7 +133,7 @@ void SerialLine::ConfigureIntf(int profile)
 		start();
 	}
 	else {
-		if ( profile >= 0 && profile < 6 ) {
+		if ( profile >= 0 && profile < NR_OF_SER_PROFILES ) {
 			const t_serial_cfg *newcfg = &sm_serial_config[profile];
 			if ( cfg.baud != newcfg->baud ) {
 				cfg.baud = newcfg->baud;

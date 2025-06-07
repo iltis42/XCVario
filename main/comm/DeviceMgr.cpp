@@ -824,6 +824,44 @@ std::vector<const Device*> DeviceManager::allDevs() const
     return ret;
 }
 
+void DeviceManager::EnforceIntfConfig(InterfaceId iid, DeviceId did)
+{
+    if ( iid == S1_RS232 || iid == S2_RS232 ) {
+        InterfaceCtrl *itf = (iid == S1_RS232) ? S1 : ((iid == S2_RS232) ? S2 : nullptr);
+        if ( ! itf ) { return; } // no interface, nothing to do
+        switch (did) {
+        case FLARM_DEV:
+            itf->ConfigureIntf(SM_FLARM); // load flarm serial default profile
+            break;
+        case NAVI_DEV: // todo respect flavors
+        case FLARM_HOST_DEV:
+        case RADIO_REMOTE_DEV:
+            itf->ConfigureIntf(SM_XCTNAV_S3); // load XCTouchNav serial default profile
+            break;
+        case RADIO_KRT2_DEV:
+        case RADIO_ATR833_DEV:
+            itf->ConfigureIntf(SM_RADIO); // load radio serial default profile
+            break;
+        default:
+            break;
+        }
+    }
+    else if ( iid == CAN_BUS ) {
+        // CAN bus, set 1000kbit
+        can_speed.set(CAN_SPEED_1MBIT); // 1000 kbit/s
+        if ( CAN ) {
+            CAN->ConfigureIntf(1);
+        }
+    }
+    else if ( iid == I2C ) {
+        // I2C interface
+    }
+    else {
+        ESP_LOGW(FNAME, "no interface config needed %d", iid);
+    }
+}
+
+
 //
 // A Device
 //

@@ -416,33 +416,41 @@ static int select_interface_action(SetupMenuSelect *p)
     }
     return 0;
 }
+static void create_dev(DeviceId did, InterfaceId iid)
+{
+    // get default protocols and port
+    const DeviceAttributes &da = DeviceManager::getDevAttr(did, iid);
+    Device *dev = nullptr;
+    for (int i=0; i<da.prcols.getExtra(); ++i) {
+        ProtocolType pid = da.prcols.proto(i);
+        if ( new_device == NAVI_DEV ) {
+            // this does noly work for one protocol long protocol list (!)
+            pid = (ProtocolType)nmea_protocol.get(); // navi flavor, override protocol table
+        }
+        if ( pid != NO_ONE ) {
+            ESP_LOGI(FNAME,"add protocol %d for device id %d", pid, new_device);
+            dev = DEVMAN->addDevice(new_device, pid, da.port, da.port, new_interface, true);
+        }
+    }
+}
 static int create_device_action(SetupMenuSelect *p)
 {
     if ( p->getSelect() == 1 ) {
-        // Confirmed; default protocols and port
-        const DeviceAttributes &da = DeviceManager::getDevAttr(new_device, new_interface);
-        Device *dev = nullptr;
-        for (int i=0; i<da.prcols.getExtra(); ++i) {
-            ProtocolType pid = da.prcols.proto(i);
-            if ( new_device == NAVI_DEV ) {
-                pid = (ProtocolType)nmea_protocol.get(); // navi flavor, override protocol table
-            }
-            if ( pid != NO_ONE ) {
-                ESP_LOGI(FNAME,"add protocol %d for device id %d", pid, new_device);
-                dev = DEVMAN->addDevice(new_device, pid, da.port, da.port, new_interface, true);
-            }
+        // Confirmed
+        if ( ! DEVMAN->isIntf(new_interface) ) { // check if interface is not yet created
+            // Enforce the proper interface configuration then
+            DeviceManager::EnforceIntfConfig(new_interface, new_device);
         }
-
+        create_dev(new_device, new_interface);
         // make sure there is a flarm host for any navi 
         if ( new_device == NAVI_DEV ) {
             new_device = FLARM_HOST_DEV;
-            create_device_action(p); // recursive call to create the flarm host
+            create_dev(FLARM_HOST_DEV, new_interface);
         }
-    
+        p->getParent()->getParent()->setDirty();
     }
     p->setTerminateMenu();
     p->setSelect(0); // reset to cancel
-    p->getParent()->getParent()->setDirty();
     return 0;
 }
 static void connected_devices_menu_add_device(SetupMenu *top) // dynamic!

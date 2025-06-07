@@ -114,6 +114,8 @@ public:
     static std::vector<InterfaceId> allKnownIntfs();
     static std::string_view getPrtclName(ProtocolType pid);
     std::vector<const Device *> allDevs() const;
+    // Enforce the proper interface configuration
+    static void EnforceIntfConfig(InterfaceId iid, DeviceId did);
 
 private:
     // Complete list of all devices known at runtime

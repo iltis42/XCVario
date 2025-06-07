@@ -46,9 +46,10 @@ static TaskHandle_t SendTask = nullptr;
 // entries with zero termination, entirely as ro flash data
 static constexpr RoutingTarget flarm_routes_synch[] = { 
     {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {XCVARIOSECOND_DEV, CAN_BUS, 0}, 
-    {XCVARIOFIRST_DEV, CAN_BUS, 0}, {XCVARIOSECOND_DEV, WIFI_APSTA, 8884}, {XCVARIOFIRST_DEV, WIFI_APSTA, 8884}, {} };
+    {XCVARIOFIRST_DEV, CAN_BUS, 0}, {XCVARIOSECOND_DEV, WIFI_APSTA, 8884}, {XCVARIOFIRST_DEV, WIFI_APSTA, 8884}, 
+    {FLARM_HOST2_DEV, WIFI_APSTA, 8881}, {FLARM_HOST2_DEV, BT_SPP, 0}, {} };
 static constexpr RoutingTarget flarm_routes[] = { 
-    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
+    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {FLARM_HOST2_DEV, WIFI_APSTA, 8881}, {FLARM_HOST2_DEV, BT_SPP, 0}, {} };
 static constexpr RoutingTarget radio_routes[] = { 
     {RADIO_KRT2_DEV, S2_RS232, 0}, {RADIO_ATR833_DEV, S2_RS232, 0}, {XCVARIOFIRST_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget navi_routes[] = { 
@@ -63,6 +64,7 @@ static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(RADIO_REMOTE_DEV, NO_PHY, 0), radio_routes },
     { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes },
     { RoutingTarget(FLARM_HOST_DEV, NO_PHY, 0), fhost_routes },
+    { RoutingTarget(FLARM_HOST2_DEV, NO_PHY, 0), fhost_routes },
     { RoutingTarget(XCVARIOFIRST_DEV, NO_PHY, 0), proxy_routes },
     { RoutingTarget(XCVARIOSECOND_DEV, NO_PHY, 0), proxy_routes }
 };
@@ -112,10 +114,12 @@ constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
                                     0, IS_REAL, &navi_devsetup}},
     {DeviceId::NAVI_DEV,   {"", {{BT_SPP}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1}, 
                                     0, IS_REAL, &navi_devsetup}},
-    {DeviceId::FLARM_HOST_DEV, {"Flarm Consumer", {{WIFI_APSTA, S2_RS232, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, MULTI_CONF, &flarm_host_setup}},
+    {DeviceId::FLARM_HOST_DEV, {"Flarm Consumer", {{WIFI_APSTA, S2_RS232, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, 0, &flarm_host_setup}},
     // {DeviceId::FLARM_HOST_DEV, {"", {{CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
     {DeviceId::FLARM_HOST_DEV, {"", {{S2_RS232}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
     {DeviceId::FLARM_HOST_DEV, {"", {{BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
+    {DeviceId::FLARM_HOST2_DEV, {"Flarm Download", {{WIFI_APSTA, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, 0, &flarm_host2_setup}},
+    {DeviceId::FLARM_HOST2_DEV, {"", {{BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host2_setup}},
     {DeviceId::RADIO_REMOTE_DEV, {"Radio remote", {{WIFI_APSTA}}, {{KRT2_REMOTE_P}, 1}, 8882, 0, &radio_host_setup}},
     {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL, &krt_devsetup}},
     {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL, &atr_devsetup}}

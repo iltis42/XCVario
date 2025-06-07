@@ -550,7 +550,7 @@ static int client_sync_dataIdx = 10000;
 void startClientSync()
 {
 	// Start the client sync in a moment
-	client_sync_dataIdx = -4;
+	client_sync_dataIdx = 0;
 }
 
 void readSensors(void *pvParameters){

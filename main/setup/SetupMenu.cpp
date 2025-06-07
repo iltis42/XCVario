@@ -42,6 +42,7 @@
 #include <algorithm>
 // #include <cstring>
 #include <string>
+#include "SetupMenu.h"
 
 static void setup_create_root(SetupMenu *top);
 
@@ -504,23 +505,39 @@ void SetupMenu::delEntry( MenuEntry * item ) {
 	}
 }
 
-const MenuEntry* SetupMenu::findMenu(const char *title) const
-{
-	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title, this );
-	if( _title == title ) {
-		ESP_LOGI(FNAME,"Menu entry found for start %s", title );
-		return this;
-	}
-	for (const MenuEntry* child : static_cast<const SetupMenu*>(this)->_childs) {
-		const MenuEntry* m = child->findMenu(title);
-		if( m != nullptr ) {
-			ESP_LOGI(FNAME,"Menu entry found for %s", title);
-			return m;
-		}
-	}
-	ESP_LOGW(FNAME,"Menu entry not found for %s", title);
-	return nullptr;
-}
+// not yet used
+// const MenuEntry* SetupMenu::findMenu(const char *title) const
+// {
+// 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title, this );
+// 	if( _title == title ) {
+// 		ESP_LOGI(FNAME,"Menu entry found for start %s", title );
+// 		return this;
+// 	}
+// 	for (const MenuEntry* child : static_cast<const SetupMenu*>(this)->_childs) {
+// 		const MenuEntry* m = child->findMenu(title);
+// 		if( m != nullptr ) {
+// 			ESP_LOGI(FNAME,"Menu entry found for %s", title);
+// 			return m;
+// 		}
+// 	}
+// 	ESP_LOGW(FNAME,"Menu entry not found for %s", title);
+// 	return nullptr;
+// }
+//
+// int SetupMenu::findMenuIdx(int contId) const
+// {
+// 	int idx = 0;
+// 	for (const MenuEntry* child : _childs) {
+// 		if( !child->isLeaf() && static_cast<const SetupMenu*>(child)->getContId() == contId ) {
+// 			ESP_LOGI(FNAME,"Menu entry found for %s", title);
+// 			return idx;
+// 		}
+// 		idx++;
+// 	}
+
+// 	return -1; // not found
+// }
+
 
 MenuEntry *SetupMenu::getEntry(int n) const
 {

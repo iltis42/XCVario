@@ -78,14 +78,14 @@ public:
     ~DeviceManager();
     static DeviceManager* Instance();
     // API
-    Device* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid);
+    Device* addDevice(DeviceId dev, ProtocolType proto, int listen_port, int send_port, InterfaceId iid, bool nvsave=false);
     Device* getDevice(DeviceId did);
     Device* getXCVPeer();
     ProtocolItf *getProtocol(DeviceId dev, ProtocolType proto);
     NmeaPrtcl *getNMEA(DeviceId did);
     int getSendPort(DeviceId did, ProtocolType proto);
     // Remove device of this type
-    bool removeDevice(DeviceId did);
+    bool removeDevice(DeviceId did, bool nvsave=false);
     InterfaceCtrl* getIntf(DeviceId did);
     bool isIntf(ItfTarget iid) const;
     bool isAvail(InterfaceId iid) const;

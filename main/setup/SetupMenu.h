@@ -43,7 +43,8 @@ public:
 	// the submenu structure
 	MenuEntry* addEntry(MenuEntry* item);
 	void       delEntry(MenuEntry* item);
-	const MenuEntry* findMenu(const char *title) const;
+	// const MenuEntry* findMenu(const char *title) const;
+	// int findMenuIdx(int contId) const;
 	MenuEntry* getEntry(int n) const;
 
 	void rot( int count ) override;

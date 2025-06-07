@@ -340,7 +340,7 @@ DeviceManager* DeviceManager::Instance()
 
 // Do all it needs to prepare comm with device and route data
 // It returns the pointer to the device
-Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_port, int send_port, InterfaceId iid)
+Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_port, int send_port, InterfaceId iid, bool nvsave)
 {
     // On first device a send task needs to be created
     if ( ! SendTask ) {
@@ -439,7 +439,7 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
             Compass::createCompass(itf->getId());
         }
     }
-
+    
     EnumList pl = dev->_link->addProtocol(proto, did, send_port); // Add proto, if not yet there
     dev->_protos.insert(pl.begin(), pl.end());
 
@@ -451,6 +451,14 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
     }
     xSemaphoreGive(_devmap_mutex);
     refreshRouteCache();
+
+    if ( nvsave) {
+        const DeviceAttributes &da = getDevAttr(did, iid);
+        if ( da.nvsetup && dev ) {
+            // save it to nvs
+            da.nvsetup->set(dev->getNvsData());
+        }
+    }
 
     // ESP_LOGI(FNAME, "After add device %d.", did);
     // dumpMap();
@@ -506,7 +514,7 @@ int DeviceManager::getSendPort(DeviceId did, ProtocolType proto)
 
 // Remove device from map, delete device and all resources
 // returns true, when a reboot is needed
-bool DeviceManager::removeDevice(DeviceId did)
+bool DeviceManager::removeDevice(DeviceId did, bool nvsave)
 {
     xSemaphoreTake(_devmap_mutex, portMAX_DELAY);
     DevMap::iterator it = _device_map.find(did);
@@ -552,6 +560,14 @@ bool DeviceManager::removeDevice(DeviceId did)
             else if ( itf == I2Cext ) {
                 ESP_LOGI(FNAME, "stopping I2C");
                 delete I2Cext;
+            }
+        }
+
+        if ( nvsave ) {
+            const DeviceAttributes &da = getDevAttr(did);
+            if ( da.nvsetup ) {
+                // clear entry in nvs
+                da.nvsetup->set(DeviceNVS(), false, false);
             }
         }
     }

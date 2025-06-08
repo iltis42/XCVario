@@ -9,7 +9,7 @@
 #include "setup/SubMenuDevices.h"
 #include "setup/SubMenuCompassWind.h"
 #include "setup/ShowBootMsg.h"
-#include "setup/SetupRoot.h"
+#include "screen/SetupRoot.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"

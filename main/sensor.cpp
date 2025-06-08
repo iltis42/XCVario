@@ -29,7 +29,7 @@
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
 #include "protocol/WatchDog.h"
-#include "setup/SetupRoot.h"
+#include "screen/SetupRoot.h"
 #include "screen/BootUpScreen.h"
 #include "screen/MessageBox.h"
 

@@ -7,12 +7,18 @@
  ***********************************************************/
 
 #include "SetupRoot.h"
+
+#include "DrawDisplay.h"
+#include "UiEvents.h"
 #include "setup/SubMenuDevices.h"
 #include "IpsDisplay.h"
 
 #include "sensor.h"
 #include "logdef.h"
 
+// bit field of all configured screens
+// set to zero for boot-up
+static uint32_t all_screens;
 
 SetupRoot::SetupRoot(IpsDisplay *display) :
     SetupMenu("Setup Root", nullptr),
@@ -30,21 +36,20 @@ SetupRoot::~SetupRoot()
 
 void SetupRoot::barked()
 {
-    int exitMenu = ESCAPE;
-    xQueueSend(Rotary->getQueue(), &exitMenu, 0);
+    int exitMenu = ButtonEvent(ButtonEvent::ESCAPE).raw;
+    xQueueSend(uiEventQueue, &exitMenu, 0);
 }
 
 void SetupRoot::initScreens()
 {
-    int screens = 0;
+    all_screens = 0;
     if ( screen_gmeter.get() ) {
-        screens |= SCREEN_GMETER;
+        all_screens |= SCREEN_GMETER;
     }
     if ( screen_horizon.get() ) {
-        screens |= SCREEN_HORIZON;
+        all_screens |= SCREEN_HORIZON;
     }
-    screens |= SCREEN_VARIO; // always
-	menu_screens.set( screens );
+    all_screens |= SCREEN_VARIO; // always
 }
 
 void SetupRoot::begin(MenuEntry *setup)
@@ -131,7 +136,10 @@ void SetupRoot::rot(int count)
 
 void SetupRoot::press()
 {
-    ESP_LOGI(FNAME,"root press active_srceen %d (0x%x)", active_screen, menu_screens.get());
+    ESP_LOGI(FNAME,"root press active_srceen %d (0x%x)", active_screen, (unsigned)all_screens);
+    if ( active_screen == NO_SCREEN ) {
+        active_screen = SCREEN_VARIO;
+    }
 
     // cycle through screens, incl. setup
     if (!gflags.inSetup)
@@ -139,7 +147,7 @@ void SetupRoot::press()
         while (active_screen < SCREEN_THERMAL_ASSISTANT)
         {
             active_screen <<= 1;
-            if (menu_screens.get() & active_screen)
+            if (all_screens & active_screen)
             {
                 ESP_LOGI(FNAME, "New active_screen: %x", active_screen);
                 break;

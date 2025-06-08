@@ -8,6 +8,8 @@
 
 #include "BootUpScreen.h"
 
+#include "DrawDisplay.h"
+#include "UiEvents.h"
 #include "protocol/Clock.h"
 #include "AdaptUGC.h"
 #include "sensor.h"
@@ -16,6 +18,8 @@
 
 #include <cinttypes>
 #include <ctime>
+
+BootUpScreen *BootUpScreen::inst = nullptr;
 
 #define LOGO_WIDTH 216
 #define LOGO_HEIGHT 191
@@ -161,6 +165,14 @@ BootUpScreen::BootUpScreen() :
     Clock::start(this);
 }
 
+BootUpScreen *BootUpScreen::create()
+{
+    if ( ! inst ) {
+        inst = new BootUpScreen();
+    }
+    return inst;
+}
+
 BootUpScreen::~BootUpScreen()
 {
     Clock::stop(this);
@@ -178,7 +190,14 @@ void BootUpScreen::finish(int part)
     fini_part = part;
 }
 
-bool BootUpScreen::tick()
+void BootUpScreen::draw()
+{
+    if ( inst ) {
+        inst->animate();
+    }
+}
+
+void BootUpScreen::animate()
 {
 	xSemaphoreTake(display_mutex,portMAX_DELAY);
     MYUCG->setColor(COLOR_WHITE);
@@ -214,7 +233,12 @@ bool BootUpScreen::tick()
         }
     }
     xSemaphoreGive(display_mutex);
-    return false;
 }
 
 
+bool BootUpScreen::tick()
+{
+    int evt = ScreenEvent(ScreenEvent::BOOT_SCREEN).raw;
+    xQueueSend(uiEventQueue, &evt, 0);
+    return false;
+}

@@ -8,19 +8,18 @@
 
 #include "MessageBox.h"
 
+#include "DrawDisplay.h"
+#include "UiEvents.h"
 #include "protocol/Clock.h"
 #include "sensor.h"
 
 MessageBox *MBOX; // the global representation
 
+const int CLOCK_DIVIDER = 4;
+
 // A message is represented throught 
 // - alert level (1,2,3)
 // - and a text message
-struct Message {
-    int alert_level;
-    std::string text;
-    Message(int a, const char *str) : alert_level(a), text(str) {}
-};
 
 void MessageBox::createMessageBox()
 {
@@ -28,8 +27,6 @@ void MessageBox::createMessageBox()
         MBOX = new MessageBox();
     }
 }
-
-const int CLOCK_DIVIDER = 4;
 
 MessageBox::MessageBox() :
     Clock_I(CLOCK_DIVIDER),
@@ -46,7 +43,7 @@ MessageBox::~MessageBox()
 
 void MessageBox::newMessage(int alert_level, const char *str)
 {
-    std::unique_ptr<Message> msg = std::make_unique<Message>(alert_level, str);
+    std::unique_ptr<ScreenMsg> msg = std::make_unique<ScreenMsg>(alert_level, str);
     if ( alert_level == 3 ) {
         _msg_list.push_front(std::move(msg));
     }
@@ -115,10 +112,14 @@ void MessageBox::removeMsg()
     MYUCG->drawBox(0, height - 26, width, 26);
 }
 
-bool MessageBox::tick()
+// drive and draw the message box
+// only call when there are messages queued
+// returns true when the message box is finished
+bool MessageBox::draw()
 {
     if ( _msg_to <= 0 ) {
         if ( ! nextMsg() ) {
+            Clock::stop(this);
             return true;
         }
     }
@@ -141,3 +142,11 @@ bool MessageBox::tick()
     }
     return false;
 }
+
+bool MessageBox::tick()
+{
+    int evt = ScreenEvent(ScreenEvent::MSG_BOX).raw;
+    xQueueSend(uiEventQueue, &evt, 0);
+    return false;
+}
+

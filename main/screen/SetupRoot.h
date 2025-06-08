@@ -11,6 +11,16 @@
 #include "setup/SetupMenu.h"
 #include "protocol/WatchDog.h"
 
+enum ScreenTypes
+{
+    NO_SCREEN = 0,
+    SCREEN_VARIO = 1,
+    SCREEN_GMETER = 2,
+    SCREEN_HORIZON = 4,
+    SCREEN_FLARM = 8,
+    SCREEN_THERMAL_ASSISTANT = 16
+}; // all regular screens
+
 class IpsDisplay;
 
 class SetupRoot final : public SetupMenu, public WDBark_I
@@ -23,7 +33,7 @@ public:
     void barked() override;
 
     // API
-    void initScreens();
+    static void initScreens();
     void begin(MenuEntry *setup=nullptr);
     void exit(int levels=0) override;
     int getActiveScreen() const  { return active_screen; }
@@ -34,6 +44,6 @@ public:
 
 private:
     IpsDisplay* _display;
-    int active_screen = SCREEN_VARIO;
+    int active_screen = NO_SCREEN;
     WatchDog_C  _ui_mon_wd;
 };

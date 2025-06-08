@@ -3,6 +3,8 @@
 
 #include "setup/SetupNG.h"
 #include "sensor.h"
+#include "screen/DrawDisplay.h"
+#include "screen/UiEvents.h"
 #include "protocol/Clock.h"
 #include "logdefnone.h"
 
@@ -33,9 +35,9 @@ bool IRAM_ATTR ESPRotary::tick()
 	if ( holdCount > 0 ) {
 		holdCount++; // hold timer
 		if ( holdCount > lp_duration ) {
-			gotEvent = LONG_PRESS;
+			gotEvent = ButtonEvent(ButtonEvent::LONG_PRESS).raw;
 			holdCount = -1; // go for a "release"
-			xQueueSend(buttonQueue, &gotEvent, 0);
+			xQueueSend(uiEventQueue, &gotEvent, 0);
 		}
 	}
 	if ( debounceCount < 2 || (buttonRead == state) ) {
@@ -49,12 +51,12 @@ bool IRAM_ATTR ESPRotary::tick()
 	}
 	else { // Button released
 		if( holdCount < 0 ) {
-			gotEvent = BUTTON_RELEASED;
-			xQueueSend(buttonQueue, &gotEvent, 0);
+			gotEvent = ButtonEvent(ButtonEvent::BUTTON_RELEASED).raw;
+			xQueueSend(uiEventQueue, &gotEvent, 0);
 		}
 		else {
-			gotEvent = SHORT_PRESS;
-			xQueueSend(buttonQueue, &gotEvent, 0);
+			gotEvent = ButtonEvent(ButtonEvent::SHORT_PRESS).raw;
+			xQueueSend(uiEventQueue, &gotEvent, 0);
 		}
 		holdCount = 0; // stop counting
 	}
@@ -81,8 +83,8 @@ static bool IRAM_ATTR pcnt_event_handler(pcnt_unit_handle_t unit, const pcnt_wat
 	if ( step == 1 ) {
 		wp_value = sign(edata->watch_point_value);
 	}
-		//else suppress all of a sudden changes in rotational direction
-	int evt = (step * wp_value) << 4;
+	//else suppress all of a sudden changes in rotational direction
+	int evt = RotaryEvent(step * wp_value).raw;
 	BaseType_t high_task_wakeup = pdFALSE;
 	xQueueSendFromISR((QueueHandle_t)user_ctx, &evt, &high_task_wakeup);
 	lastPulseTime = currentTime;
@@ -119,13 +121,10 @@ ESPRotary::ESPRotary(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw) :
 	gpio_set_direction(dt, GPIO_MODE_INPUT);
 	gpio_pulldown_en(clk);
 	gpio_pulldown_en(dt);
-
-	buttonQueue = xQueueCreate(10, sizeof(int));
 }
 
 ESPRotary::~ESPRotary()
 {
-	vQueueDelete(buttonQueue);
 	Clock::stop(this);
 }
 
@@ -174,7 +173,7 @@ void ESPRotary::begin()
 	pcnt_event_callbacks_t cbs = {
 		.on_reach = pcnt_event_handler
 	};
-	ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(pcnt_unit, &cbs, buttonQueue));
+	ESP_ERROR_CHECK(pcnt_unit_register_event_callbacks(pcnt_unit, &cbs, uiEventQueue));
 
 	// Enable & start PCNT
 	pcnt_unit_enable(pcnt_unit);
@@ -261,7 +260,7 @@ void ESPRotary::sendLongPress() const
 
 void ESPRotary::sendEscape() const
 {
-	// ESP_LOGI(FNAME,"Rotary up action");
+	// ESP_LOGI(FNAME,"Escape action");
 	if (!observers.empty()) {
 		observers.top()->escape();
 	}
@@ -273,12 +272,12 @@ bool ESPRotary::readSwitch() const
 	// return true for any button event in the queue, except a release
 	int event;
 	bool ret = false;
-	if (xQueueReceive(buttonQueue, &event, 0) == pdTRUE) {
-		if (event == SHORT_PRESS
-			|| event == LONG_PRESS) {
+	if (xQueueReceive(uiEventQueue, &event, 0) == pdTRUE) {
+		if (event == ButtonEvent(ButtonEvent::SHORT_PRESS).raw
+			|| event == ButtonEvent(ButtonEvent::LONG_PRESS).raw) {
 			ret = true;
 		}
 	}
-	xQueueReset(buttonQueue); // clear the queue
+	xQueueReset(uiEventQueue); // clear the queue
 	return ret;
 }

@@ -32,6 +32,7 @@
 #include "screen/SetupRoot.h"
 #include "screen/BootUpScreen.h"
 #include "screen/MessageBox.h"
+#include "screen/DrawDisplay.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
@@ -145,7 +146,7 @@ static unsigned long _millis = 0;
 unsigned long _gps_millis = 0;
 
 
-static float battery=0.0;
+float batteryVoltage = 0.;
 float dynamicP; // Pitot
 
 float slipAngle = 0.0;
@@ -159,7 +160,6 @@ uint8_t g_col_header_b=g_col_highlight;
 uint8_t g_col_header_light_r=161-g_col_background/4;
 uint8_t g_col_header_light_g=168-g_col_background/3;
 uint8_t g_col_header_light_b=g_col_highlight;
-uint16_t gear_warning_holdoff = 0;
 uint8_t gyro_flash_savings=0;
 
 // boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.
@@ -176,11 +176,7 @@ float as2f = 0;
 float s2f_delta = 0;
 float polar_sink = 0;
 
-float      stall_alarm_off_kmh=0;
-uint16_t   stall_alarm_off_holddown=0;
-
 int count=0;
-unsigned long int flarm_alarm_holdtime=0;
 
 float mpu_target_temp=45.0;
 
@@ -198,210 +194,6 @@ int IRAM_ATTR sign(int num) {
 AnalogInput* getBattery() { return &Battery;}
 
 float getTAS() { return tas; }
-
-void drawDisplay(void *arg)
-{
-	ESPRotary &knob = *static_cast<ESPRotary*>(arg);
-	QueueHandle_t buton_event_queue = knob.getQueue();
-
-	// esp_task_wdt_add(NULL); // incompatible with current setup implementation, e.g. all calib procedures would trigger the wd
-
-	int event = 0;
-	while (1) {
-		// handle button events in this context
-		if (xQueueReceive(buton_event_queue, &event, pdMS_TO_TICKS(20)) == pdTRUE) {
-			if (event == SHORT_PRESS) {
-				// ESP_LOGI(FNAME,"Button short press detected");
-				knob.sendPress();
-			} else if (event == LONG_PRESS) {
-				// ESP_LOGI(FNAME,"Button long press detected");
-				knob.sendLongPress();
-			} else if (event == BUTTON_RELEASED) {
-				// ESP_LOGI(FNAME, "Button released");
-				knob.sendRelease();
-			} else if (event == ESCAPE) {
-				// ESP_LOGI(FNAME, "Escape event");
-				knob.sendEscape();
-			} else if (event & ROTARY_EVTMASK) {
-				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
-				// ESP_LOGI(FNAME, "Rotation step %d", step);
-				knob.sendRot(step);
-			} else {
-				// ESP_LOGI(FNAME, "Unknown button event %x", event);
-			}
-			if ( uiMonitor ) {
-				uiMonitor->pet();
-			}
-		}
-		
-		// TickType_t dLastWakeTime = xTaskGetTickCount();
-		if( gflags.inSetup != true ) {
-			float t=OAT.get();
-			if( gflags.validTemperature == false )
-				t = DEVICE_DISCONNECTED_C;
-			float airspeed = 0;
-			if( airspeed_mode.get() == MODE_IAS )
-				airspeed = ias.get();
-			else if( airspeed_mode.get() == MODE_TAS )
-				airspeed = tas;
-			else if( airspeed_mode.get() == MODE_CAS )
-				airspeed = cas;
-			else
-				airspeed = ias.get();
-
-			// Stall Warning Screen
-			if( stall_warning.get() && gload_mode.get() != GLOAD_ALWAYS_ON ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
-				if( gflags.stall_warning_armed ){
-					float acceleration=IMU::getGliderAccelZ();
-					if( acceleration < 0.3 )
-						acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
-					float acc_stall= stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
-					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
-						if( !gflags.stall_warning_active ){
-							AUDIO->alarm( true, max_volume.get() );
-							Display->drawWarning( "! STALL !", true );
-							gflags.stall_warning_active = true;
-						}
-					}
-					else{
-						if( gflags.stall_warning_active ){
-							AUDIO->alarm( false );
-							Display->clear();
-							gflags.stall_warning_active = false;
-						}
-					}
-					if( ias.get() < stall_alarm_off_kmh ){
-						stall_alarm_off_holddown++;
-						if( stall_alarm_off_holddown > 1200 ){  // ~30 seconds holddown
-							gflags.stall_warning_armed = false;
-							stall_alarm_off_holddown=0;
-						}
-					}
-					else{
-						stall_alarm_off_holddown=0;
-					}
-				}
-				else{
-					if( ias.get() > stall_speed.get() ){
-						gflags.stall_warning_armed = true;
-						stall_alarm_off_holddown=0;
-					}
-				}
-			}
-			if( gear_warning.get() ){
-				if( !gear_warning_holdoff ){
-					int gw = 0;
-					if( gear_warning.get() == GW_EXTERNAL ){
-						gw = gflags.gear_warn_external;
-					}else{
-						gw = gpio_get_level( SetupMenu::getGearWarningIO() );
-						if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
-							gw = !gw;
-						}
-					}
-					if( gw ){
-						if( Rotary->readBootupStatus() ){   // Acknowledge Warning -> Warning OFF
-							gear_warning_holdoff = 25000;  // ~500 sec
-							AUDIO->alarm( false );
-							Display->clear();
-							gflags.gear_warning_active = false;
-						}
-						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
-							AUDIO->alarm( true, max_volume.get() );
-							Display->drawWarning( "! GEAR !", false );
-							gflags.gear_warning_active = true;
-						}
-					}
-					else{
-						if( gflags.gear_warning_active ){
-							AUDIO->alarm( false );
-							Display->clear();
-							gflags.gear_warning_active = false;
-						}
-					}
-				}
-				else{
-					gear_warning_holdoff--;
-				}
-			}
-
-			// Flarm Warning Screen
-			if( flarm_warning.get() && !gflags.stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get() ){ // 0 -> Disable
-				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
-				if( !gflags.flarmWarning ) {
-					gflags.flarmWarning = true;
-					delay(100);
-					Display->clear();
-				}
-				flarm_alarm_holdtime = millis()+flarm_alarm_time.get()*1000;
-			}
-			else{
-				if( gflags.flarmWarning && (millis() > flarm_alarm_holdtime) ){
-					gflags.flarmWarning = false;
-					Display->clear();
-					AUDIO->alarm( false );
-				}
-			}
-			if( gflags.flarmWarning )
-				Flarm::drawFlarmWarning();
-			// G-Load Display
-			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
-			if( ((IMU::getGliderAccelZ() > gload_pos_thresh.get() || IMU::getGliderAccelZ() < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
-					( gload_mode.get() == GLOAD_ALWAYS_ON ) || (Menu->getActiveScreen() == SCREEN_GMETER)  )
-			{
-				if( !gflags.gLoadDisplay ){
-					gflags.gLoadDisplay = true;
-				}
-			}
-			else{
-				if( gflags.gLoadDisplay ) {
-					gflags.gLoadDisplay = false;
-				}
-			}
-			if( gflags.gLoadDisplay ) {
-				Display->drawLoadDisplay( IMU::getGliderAccelZ() );
-			}
-			if( Menu->getActiveScreen() == SCREEN_HORIZON ) {
-				float roll =  IMU::getRollRad();
-				float pitch = IMU::getPitchRad();
-				Display->drawHorizon( pitch, roll, 0 );
-				gflags.horizon = true;
-			}
-			else{
-				gflags.horizon = false;
-			}
-			// G-Load Alarm when limits reached
-			if( gload_mode.get() != GLOAD_OFF  ){
-				if( IMU::getGliderAccelZ() > gload_pos_limit.get() || IMU::getGliderAccelZ() < gload_neg_limit.get()  ){
-					if( !gflags.gload_alarm ) {
-						AUDIO->alarm( true, gload_alarm_volume.get() );
-						gflags.gload_alarm = true;
-					}
-				}else
-				{
-					if( gflags.gload_alarm ) {
-						AUDIO->alarm( false );
-						gflags.gload_alarm = false;
-					}
-				}
-			}
-			// Vario Screen
-			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon )  ) {
-				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
-				Display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
-			}
-			if( screen_centeraid.get() ){
-				if( centeraid ){
-					centeraid->tick();
-				}
-			}
-		}
-		// esp_task_wdt_reset();
-		if( uxTaskGetStackHighWaterMark( dpid ) < 512  ) {
-			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
-		}
-	}
-}
 
 
 static void grabMPU()
@@ -789,7 +581,7 @@ void readTemp(void *pvParameters)
 	esp_task_wdt_add(NULL);
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		battery = Battery.get();
+		batteryVoltage = Battery.get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
 		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
 			if( !t_devices ){
@@ -913,9 +705,7 @@ void system_startup(void *args){
 	// register_coredump();
 	Polars::extract(glider_type_index.get());
 
-	// menu_screens.set(0);
 	AverageVario::begin();
-	stall_alarm_off_kmh = stall_speed.get()/3;
 
 	Battery.begin();  // for battery voltage
 	xMutex=xSemaphoreCreateMutex();
@@ -951,8 +741,7 @@ void system_startup(void *args){
 	Flarm::setDisplay( MYUCG );
 	Display->begin();
 	Display->bootDisplay();
-	Menu = new SetupRoot(Display); // the root setup menu
-	Menu->initScreens();
+	Menu = new SetupRoot(Display); // the root setup menu, screens still disabled
 
 	Version V;
 	std::string ver( " Ver.: " );
@@ -965,7 +754,10 @@ void system_startup(void *args){
 	logged_tests.assign(ver);
 	logged_tests += "\n";
 
-	BootUpScreen *boot_screen = new BootUpScreen();
+	// Start UI task responsible to manage screens and display. Needed to habe the boot screen and message box working
+	xTaskCreate(&drawDisplay, "drawDisplay", 6144, Rotary, 4, &dpid); // increase stack by 1K
+
+	BootUpScreen *boot_screen = BootUpScreen::create();
 	MessageBox::createMessageBox();
 	if ( gflags.schedule_reboot ) {
 		MBOX->newMessage(3, "Detecting XCV hardware");
@@ -1097,6 +889,10 @@ void system_startup(void *args){
 		Cipher crypt;
 		gflags.ahrsKeyValid = crypt.checkKeyAHRS();
 		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
+		if ( ! gflags.ahrsKeyValid ) {
+			// make sure the AHRS screen is not set
+			screen_horizon.set(false);
+		}
 	}
 	boot_screen->finish(0);
 
@@ -1545,6 +1341,9 @@ void system_startup(void *args){
 		Display->clear();
 	}
 
+	// Init the vario screens
+	SetupRoot::initScreens();
+
 	if ( flap_enable.get() ) {
 		Flap::init(MYUCG);
 	}
@@ -1562,8 +1361,7 @@ void system_startup(void *args){
 	}
 
 	// enter normal operation
-	// empty the button queue before starting the task listening to it
-	Rotary->flushQueue();
+	
 
 	if( SetupCommon::isClient() ){
 		xTaskCreate(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid);
@@ -1571,8 +1369,7 @@ void system_startup(void *args){
 	else {
 		xTaskCreate(&readSensors, "readSensors", 5120, NULL, 12, &bpid);
 	}
-	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid);       // increase stack by 500 byte
-	xTaskCreate(&drawDisplay, "drawDisplay", 6144, Rotary, 4, &dpid); // increase stack by 1K
+	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid); // increase stack by 500 byte
 
 	AUDIO->startAudio();
 }
@@ -1626,6 +1423,10 @@ extern "C" void  app_main(void)
 	}
 	ESP_LOGI( FNAME,"Hardware revision %d", hardwareRevision.get());
 	MPU.clearpwm(); // Stop MPU heating
+
+	// Init ui and screen drawDisplay task recources
+	uiEventQueue = xQueueCreate(10, sizeof(int));
+
 	// Init of rotary
 	if( hardwareRevision.get() == XCVARIO_20 ){
 		Rotary = new ESPRotary( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0); // XCV-20 uses GPIO_2 for Rotary

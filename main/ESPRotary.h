@@ -14,23 +14,6 @@
 #include <driver/gpio.h>
 
 
-// use this to build an event infrastructure
-constexpr const int SHORT_PRESS     = 1;
-constexpr const int LONG_PRESS      = 2;
-constexpr const int BUTTON_RELEASED = 3;
-constexpr const int ESCAPE          = 4;
-constexpr const int ROTARY_EVTMASK  = 0xf0;
-
-union KnobEvent {
-	struct {
-		int ButtonEvent : 4; // 1,2,3
-		int RotaryEvent : 4; // -3,-2,-1, 1,2,3
-	};
-	int raw = 0;
-	KnobEvent() = default;
-	constexpr KnobEvent(const int v) : raw(v) {}
-};
-
 
 class RotaryObserver
 {
@@ -63,11 +46,9 @@ public:
 	~ESPRotary();
 	void begin();
 	void stop();
-	QueueHandle_t getQueue() const { return buttonQueue; }
 	esp_err_t updateRotDir();
 	void updateIncrement(int inc);
 	void setLongPressTimeout(int lptime_ms) { lp_duration = lptime_ms/10; }
-	void flushQueue() { xQueueReset(buttonQueue); }
 
 	// observer feed
 	void sendRot(int diff) const;
@@ -86,7 +67,6 @@ public:
 	bool tick() override;
 
 private:
-	QueueHandle_t buttonQueue = nullptr;
 	gpio_num_t clk, dt, sw; // actually used pins
 	pcnt_unit_handle_t pcnt_unit = nullptr;
 	pcnt_channel_handle_t pcnt_chan = nullptr;

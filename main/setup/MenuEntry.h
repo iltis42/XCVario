@@ -41,7 +41,7 @@ public:
 
 	// from Observer
 	void release() override {} // not used
-	void escape() override {} // not used
+	void escape() override;
 
 	// own API
 	virtual void enter();

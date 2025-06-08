@@ -374,6 +374,7 @@ extern SetupNG<float>  		te_vario;
 extern SetupNG<int>  		xcv_alive;
 extern SetupNG<int>  		mags_alive;
 extern SetupNG<int>  		flarm_alive;
+extern SetupNG<int>  		airborne;
 
 extern SetupNG<int>  		display_type;
 extern SetupNG<int>  		display_test;

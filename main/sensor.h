@@ -55,6 +55,7 @@ class ESPRotary;
 class AnalogInput;
 class PressureSensor;
 class SetupRoot;
+class WatchDog_C;
 
 AnalogInput* getBattery();
 
@@ -69,6 +70,7 @@ extern CenterAid *centeraid;
 extern AirspeedSensor *asSensor;
 extern PressureSensor *baroSensor;
 extern SetupRoot *Menu;
+extern WatchDog_C *uiMonitor;
 
 extern std::string logged_tests;
 

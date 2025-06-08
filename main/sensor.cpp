@@ -28,6 +28,7 @@
 #include "protocol/Clock.h"
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
+#include "protocol/WatchDog.h"
 #include "setup/SetupRoot.h"
 #include "screen/BootUpScreen.h"
 #include "screen/MessageBox.h"
@@ -120,6 +121,7 @@ IpsDisplay *Display = 0;
 CenterAid  *centeraid = 0;
 OTA *ota = 0;
 SetupRoot  *Menu = nullptr;
+WatchDog_C *uiMonitor = nullptr;
 
 // Gyro and acceleration sensor
 I2C_t& i2c = i2c1;
@@ -184,8 +186,10 @@ float mpu_target_temp=45.0;
 
 AdaptUGC *egl = 0;
 
-const constexpr char passed_text[] = "PASSED\n"; 
-const constexpr char failed_text[] = "FAILED\n"; 
+const constexpr char passed_text[] = "PASSED\n";
+const constexpr char failed_text[] = "FAILED\n";
+
+const float glider_min_ias = 50.f; // todo replace with speed derived from glider type
 
 int IRAM_ATTR sign(int num) {
     return (num > 0) - (num < 0);
@@ -224,6 +228,9 @@ void drawDisplay(void *arg)
 				knob.sendRot(step);
 			} else {
 				// ESP_LOGI(FNAME, "Unknown button event %x", event);
+			}
+			if ( uiMonitor ) {
+				uiMonitor->pet();
 			}
 		}
 		
@@ -699,9 +706,9 @@ void readSensors(void *pvParameters){
 		}
 
 		aTE = bmpVario.readAVGTE();
-		// doAudio(); fixme
 
 		if( (count % 2) == 0 ){
+			airborne.set(ias.get() > glider_min_ias);
 			toyFeed();
 		}
 

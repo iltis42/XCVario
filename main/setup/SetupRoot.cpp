@@ -14,7 +14,9 @@
 #include "logdef.h"
 
 
-SetupRoot::SetupRoot(IpsDisplay *display) : SetupMenu("Setup Root", nullptr)
+SetupRoot::SetupRoot(IpsDisplay *display) :
+    SetupMenu("Setup Root", nullptr),
+    _ui_mon_wd(this)
 {
     _display = display;
     ESP_LOGI(FNAME,"Init root menu");
@@ -24,6 +26,12 @@ SetupRoot::SetupRoot(IpsDisplay *display) : SetupMenu("Setup Root", nullptr)
 SetupRoot::~SetupRoot()
 {
     detach();
+}
+
+void SetupRoot::barked()
+{
+    int exitMenu = ESCAPE;
+    xQueueSend(Rotary->getQueue(), &exitMenu, 0);
 }
 
 void SetupRoot::initScreens()
@@ -54,6 +62,11 @@ void SetupRoot::begin(MenuEntry *setup)
         addEntry(setup);
     } else {
         addEntry(SetupMenu::createTopSetup());
+        if ( airborne.get() ) {
+            // exit setup after timeout w/o user activity
+            _ui_mon_wd.start(16000); // 16 seconds
+            uiMonitor = &_ui_mon_wd;
+        }
     }
 
     gflags.inSetup = true;
@@ -67,13 +80,17 @@ void SetupRoot::begin(MenuEntry *setup)
 void SetupRoot::exit(int levels)
 {
     ESP_LOGI(FNAME,"End Setup Menu");
+    if ( uiMonitor ) {
+        uiMonitor->stop();
+        uiMonitor = nullptr;
+    }
     free_connected_devices_menu();
 
     screens_init = INIT_DISPLAY_NULL;
     if (_restart) {
         reBoot();
     }
-    delete _childs.front();
+    delete _childs.front(); // hook to the entire setup tree
     _childs.clear();
     gflags.inSetup = false;
     _display->doMenu(false);
@@ -148,12 +165,3 @@ void SetupRoot::longPress()
     }
 }
 
-void SetupRoot::escape()
-{
-    if (gflags.inSetup) {
-		ESP_LOGI(FNAME,"escape now Setup Menu - really, need to unroll");
-		// _display->clear();
-		// _display->doMenu(false);
-		// gflags.inSetup = false;
-	}
-}

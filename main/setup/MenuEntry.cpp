@@ -38,6 +38,12 @@ MenuEntry::MenuEntry()
 	dheight = MYUCG->getDisplayHeight();
 }
 
+void MenuEntry::escape()
+{
+	exit(-1); // exit all levels
+}
+
+
 const MenuEntry* MenuEntry::findMenu(const char *title) const
 {
 	ESP_LOGI(FNAME,"MenuEntry findMenu() %s %p", title, this );

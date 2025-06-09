@@ -1320,25 +1320,26 @@ void system_startup(void *args){
 			Menu->begin(SetupMenu::createQNHMenu());
 		}
 	}
-	else if ( SetupCommon::isClient() ) {
-		bool already_connected = false;
-		Device *dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
-		if ( dev ) {
-			NmeaPlugin *plg = dev->_link->getNmeaPlugin(XCVSYNC_P);
-			if ( plg ) {
-				already_connected = static_cast<XCVSyncMsg*>(plg)->syncStarted();
+	else {
+		if ( SetupCommon::isClient() ) {
+			bool already_connected = false;
+			Device *dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
+			if ( dev ) {
+				NmeaPlugin *plg = dev->_link->getNmeaPlugin(XCVSYNC_P);
+				if ( plg ) {
+					already_connected = static_cast<XCVSyncMsg*>(plg)->syncStarted();
+				}
 			}
-		}
-		if ( ! already_connected ) {
-			// just sit, wait, show a little message
-			MBOX->newMessage(1, "Waiting for XCV Master");
-			ESP_LOGI(FNAME,"Client Mode: Wait for Master XCVario %p", dev);
+			if ( ! already_connected ) {
+				// just sit, wait, show a little message
+				MBOX->newMessage(1, "Waiting for XCV Master");
+				ESP_LOGI(FNAME,"Client Mode: Wait for Master XCVario %p", dev);
+			}
 		}
 
 		delete boot_screen;
-		sleep(1);
-		gflags.inSetup = false;
 		Display->clear();
+		gflags.inSetup = false;
 	}
 
 	// Init the vario screens

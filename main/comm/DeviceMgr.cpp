@@ -46,9 +46,10 @@ static TaskHandle_t SendTask = nullptr;
 // entries with zero termination, entirely as ro flash data
 static constexpr RoutingTarget flarm_routes_synch[] = { 
     {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {XCVARIOSECOND_DEV, CAN_BUS, 0}, 
-    {XCVARIOFIRST_DEV, CAN_BUS, 0}, {XCVARIOSECOND_DEV, WIFI_APSTA, 8884}, {XCVARIOFIRST_DEV, WIFI_APSTA, 8884}, {} };
+    {XCVARIOFIRST_DEV, CAN_BUS, 0}, {XCVARIOSECOND_DEV, WIFI_APSTA, 8884}, {XCVARIOFIRST_DEV, WIFI_APSTA, 8884}, 
+    {FLARM_HOST2_DEV, WIFI_APSTA, 8881}, {FLARM_HOST2_DEV, BT_SPP, 0}, {} };
 static constexpr RoutingTarget flarm_routes[] = { 
-    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
+    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {FLARM_HOST2_DEV, WIFI_APSTA, 8881}, {FLARM_HOST2_DEV, BT_SPP, 0}, {} };
 static constexpr RoutingTarget radio_routes[] = { 
     {RADIO_KRT2_DEV, S2_RS232, 0}, {RADIO_ATR833_DEV, S2_RS232, 0}, {XCVARIOFIRST_DEV, CAN_BUS, 0}, {} };
 static constexpr RoutingTarget navi_routes[] = { 
@@ -63,6 +64,7 @@ static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(RADIO_REMOTE_DEV, NO_PHY, 0), radio_routes },
     { RoutingTarget(NAVI_DEV, NO_PHY, 0), navi_routes },
     { RoutingTarget(FLARM_HOST_DEV, NO_PHY, 0), fhost_routes },
+    { RoutingTarget(FLARM_HOST2_DEV, NO_PHY, 0), fhost_routes },
     { RoutingTarget(XCVARIOFIRST_DEV, NO_PHY, 0), proxy_routes },
     { RoutingTarget(XCVARIOSECOND_DEV, NO_PHY, 0), proxy_routes }
 };
@@ -112,10 +114,12 @@ constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
                                     0, IS_REAL, &navi_devsetup}},
     {DeviceId::NAVI_DEV,   {"", {{BT_SPP}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1}, 
                                     0, IS_REAL, &navi_devsetup}},
-    {DeviceId::FLARM_HOST_DEV, {"Flarm Consumer", {{WIFI_APSTA, S2_RS232, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, MULTI_CONF, &flarm_host_setup}},
+    {DeviceId::FLARM_HOST_DEV, {"Flarm Consumer", {{WIFI_APSTA, S2_RS232, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, 0, &flarm_host_setup}},
     // {DeviceId::FLARM_HOST_DEV, {"", {{CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
     {DeviceId::FLARM_HOST_DEV, {"", {{S2_RS232}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
     {DeviceId::FLARM_HOST_DEV, {"", {{BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
+    {DeviceId::FLARM_HOST2_DEV, {"Flarm Download", {{WIFI_APSTA, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, 0, &flarm_host2_setup}},
+    {DeviceId::FLARM_HOST2_DEV, {"", {{BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host2_setup}},
     {DeviceId::RADIO_REMOTE_DEV, {"Radio remote", {{WIFI_APSTA}}, {{KRT2_REMOTE_P}, 1}, 8882, 0, &radio_host_setup}},
     {DeviceId::RADIO_KRT2_DEV, {"KRT 2", {{S2_RS232, CAN_BUS}}, {{KRT2_REMOTE_P}, 1}, 0, IS_REAL, &krt_devsetup}},
     {DeviceId::RADIO_ATR833_DEV, {"ATR833", {{S2_RS232, CAN_BUS}}, {{ATR833_REMOTE_P}, 1}, 0, IS_REAL, &atr_devsetup}}
@@ -340,7 +344,7 @@ DeviceManager* DeviceManager::Instance()
 
 // Do all it needs to prepare comm with device and route data
 // It returns the pointer to the device
-Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_port, int send_port, InterfaceId iid)
+Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_port, int send_port, InterfaceId iid, bool nvsave)
 {
     // On first device a send task needs to be created
     if ( ! SendTask ) {
@@ -439,7 +443,7 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
             Compass::createCompass(itf->getId());
         }
     }
-
+    
     EnumList pl = dev->_link->addProtocol(proto, did, send_port); // Add proto, if not yet there
     dev->_protos.insert(pl.begin(), pl.end());
 
@@ -451,6 +455,14 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
     }
     xSemaphoreGive(_devmap_mutex);
     refreshRouteCache();
+
+    if ( nvsave) {
+        const DeviceAttributes &da = getDevAttr(did, iid);
+        if ( da.nvsetup && dev ) {
+            // save it to nvs
+            da.nvsetup->set(dev->getNvsData());
+        }
+    }
 
     // ESP_LOGI(FNAME, "After add device %d.", did);
     // dumpMap();
@@ -506,7 +518,7 @@ int DeviceManager::getSendPort(DeviceId did, ProtocolType proto)
 
 // Remove device from map, delete device and all resources
 // returns true, when a reboot is needed
-bool DeviceManager::removeDevice(DeviceId did)
+bool DeviceManager::removeDevice(DeviceId did, bool nvsave)
 {
     xSemaphoreTake(_devmap_mutex, portMAX_DELAY);
     DevMap::iterator it = _device_map.find(did);
@@ -552,6 +564,14 @@ bool DeviceManager::removeDevice(DeviceId did)
             else if ( itf == I2Cext ) {
                 ESP_LOGI(FNAME, "stopping I2C");
                 delete I2Cext;
+            }
+        }
+
+        if ( nvsave ) {
+            const DeviceAttributes &da = getDevAttr(did);
+            if ( da.nvsetup ) {
+                // clear entry in nvs
+                da.nvsetup->set(DeviceNVS(), false, false);
             }
         }
     }
@@ -807,6 +827,44 @@ std::vector<const Device*> DeviceManager::allDevs() const
     }
     return ret;
 }
+
+void DeviceManager::EnforceIntfConfig(InterfaceId iid, DeviceId did)
+{
+    if ( iid == S1_RS232 || iid == S2_RS232 ) {
+        InterfaceCtrl *itf = (iid == S1_RS232) ? S1 : ((iid == S2_RS232) ? S2 : nullptr);
+        if ( ! itf ) { return; } // no interface, nothing to do
+        switch (did) {
+        case FLARM_DEV:
+            itf->ConfigureIntf(SM_FLARM); // load flarm serial default profile
+            break;
+        case NAVI_DEV: // todo respect flavors
+        case FLARM_HOST_DEV:
+        case RADIO_REMOTE_DEV:
+            itf->ConfigureIntf(SM_XCTNAV_S3); // load XCTouchNav serial default profile
+            break;
+        case RADIO_KRT2_DEV:
+        case RADIO_ATR833_DEV:
+            itf->ConfigureIntf(SM_RADIO); // load radio serial default profile
+            break;
+        default:
+            break;
+        }
+    }
+    else if ( iid == CAN_BUS ) {
+        // CAN bus, set 1000kbit
+        can_speed.set(CAN_SPEED_1MBIT); // 1000 kbit/s
+        if ( CAN ) {
+            CAN->ConfigureIntf(1);
+        }
+    }
+    else if ( iid == I2C ) {
+        // I2C interface
+    }
+    else {
+        ESP_LOGW(FNAME, "no interface config needed %d", iid);
+    }
+}
+
 
 //
 // A Device

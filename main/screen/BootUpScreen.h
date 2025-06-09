@@ -20,16 +20,21 @@ class BootUpScreen final : public Clock_I
 public:
     static constexpr int DIVIDER = 4;
 
-    BootUpScreen();
+    static BootUpScreen *create();
     ~BootUpScreen();
 
     // this will fill the logo completely
     void finish(int part);
+    static void draw();
 
     // Clock tick callback
     bool tick() override;
 
 private:
+    BootUpScreen();
+    static BootUpScreen *inst;
+    void animate();
+
     unsigned char *logo_bitmap = nullptr;
     int width;
     int height;

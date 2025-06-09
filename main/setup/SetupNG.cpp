@@ -8,6 +8,7 @@
 #include "setup/SetupNG.h"
 
 #include "setup/SetupMenuCommon.h"
+#include "screen/SetupRoot.h"
 #include "quaternion.h"
 #include "ESP32NVS.h"
 #include "ESPAudio.h"
@@ -155,6 +156,11 @@ void chg_display_orientation(){
 	imu_reference.setDefault();
 };
 
+static void ch_airborne_state(){
+	ESP_LOGI(FNAME, "airborne state changed");
+
+}
+
 
 SetupNG<float>          MC(  "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc, QUANT_VSPEED, LIMITS(0.0, 9.9, 0.1) );
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_QNH, LIMITS(900, 1100.0, 0.250) );
@@ -207,6 +213,7 @@ SetupNG<int>  			xcv_alive( "AL_XCV", ALIVE_NONE, false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			mags_alive( "AL_MAGS", ALIVE_NONE, false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			flarm_alive( "AL_FLARM", ALIVE_NONE, false, SYNC_NONE, VOLATILE );
 // SetupNG<int>  			xcv_alive( "AL_XCV", ALIVE_NONE, false, SYNC_NONE, VOLATILE );
+SetupNG<int>  			airborne("AIRBORNE", 0, false, SYNC_FROM_MASTER, VOLATILE, &ch_airborne_state);
 
 SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(20.0, 250.0, 1.0));
 SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(-20, 20, 1));
@@ -396,9 +403,8 @@ SetupNG<float>       	circle_wind_lowpass("CI_WINDLOW", 5, true, SYNC_NONE, PERS
 SetupNG<int> 			can_speed( "CANSPEED", CAN_SPEED_1MBIT, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(CAN_SPEED_250KBIT, CAN_SPEED_1MBIT, 1));
 SetupNG<float> 			master_xcvario( "MSXCV", 0, false, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1000, 9999, 1));
 SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
-SetupNG<int> 			menu_screens("MENU_SCR", 0, false, SYNC_NONE, VOLATILE);
-SetupNG<int> 			screen_gmeter("SCR_GMET", 0, false );
-SetupNG<int> 			screen_horizon("SCR_HORIZ", 0 );
+SetupNG<int> 			screen_gmeter("SCR_GMET", 0, false, SYNC_NONE, PERSISTENT, &SetupRoot::initScreens);
+SetupNG<int> 			screen_horizon("SCR_HORIZ", 0, true, SYNC_NONE, PERSISTENT, &SetupRoot::initScreens);
 SetupNG<int> 			screen_centeraid("SCR_CA", 0, false);
 SetupNG<bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
@@ -423,6 +429,7 @@ SetupNG<DeviceNVS>		magleg_devsetup("MAGLEG", DeviceNVS() );
 SetupNG<DeviceNVS>		magsens_devsetup("MAGSENS", DeviceNVS() );
 SetupNG<DeviceNVS>		navi_devsetup("NAVI", DeviceNVS() );
 SetupNG<DeviceNVS>		flarm_host_setup("NAVIFLARM", DeviceNVS() );
+SetupNG<DeviceNVS>		flarm_host2_setup("NAVIFLDOWN", DeviceNVS() );
 SetupNG<DeviceNVS>		radio_host_setup("NAVIRADIO", DeviceNVS() );
 SetupNG<DeviceNVS>		krt_devsetup("KRTRADIO", DeviceNVS() );
 SetupNG<DeviceNVS>		atr_devsetup("ATRIRADIO", DeviceNVS() );

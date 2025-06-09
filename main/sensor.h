@@ -17,6 +17,8 @@
 #include <hal/gpio_types.h>
 #include <esp_timer.h>
 
+#include <string>
+
 // Display 4 Wire SPI and Display CS
 #define RESET_Display  GPIO_NUM_5       // Reset pin for Display
 #define CS_Display     GPIO_NUM_13      // CS pin 13 is for Display
@@ -53,6 +55,7 @@ class ESPRotary;
 class AnalogInput;
 class PressureSensor;
 class SetupRoot;
+class WatchDog_C;
 
 AnalogInput* getBattery();
 
@@ -67,6 +70,9 @@ extern CenterAid *centeraid;
 extern AirspeedSensor *asSensor;
 extern PressureSensor *baroSensor;
 extern SetupRoot *Menu;
+extern WatchDog_C *uiMonitor;
+
+extern std::string logged_tests;
 
 extern SemaphoreHandle_t display_mutex;
 
@@ -105,6 +111,7 @@ class AdaptUGC;
 extern AdaptUGC *MYUCG;
 
 extern vector_ijk gravity_vector;
+extern float batteryVoltage;
 
 #define NEED_VOLTAGE_ADJUST (abs(factory_volt_adjust.get() - 0.00815) < 0.00001)
 

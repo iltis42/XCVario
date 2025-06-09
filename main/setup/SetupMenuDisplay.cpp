@@ -41,6 +41,10 @@ void SetupMenuDisplay::display(int mode)
 
 void SetupMenuDisplay::press()
 {
-	_parent->highlightTop();
 	exit();
+}
+
+void SetupMenuDisplay::longPress()
+{
+	press();
 }

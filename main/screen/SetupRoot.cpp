@@ -7,14 +7,22 @@
  ***********************************************************/
 
 #include "SetupRoot.h"
+
+#include "DrawDisplay.h"
+#include "UiEvents.h"
 #include "setup/SubMenuDevices.h"
 #include "IpsDisplay.h"
 
 #include "sensor.h"
 #include "logdef.h"
 
+// bit field of all configured screens
+// set to zero for boot-up
+static uint32_t all_screens;
 
-SetupRoot::SetupRoot(IpsDisplay *display) : SetupMenu("Setup Root", nullptr)
+SetupRoot::SetupRoot(IpsDisplay *display) :
+    SetupMenu("Setup Root", nullptr),
+    _ui_mon_wd(this)
 {
     _display = display;
     ESP_LOGI(FNAME,"Init root menu");
@@ -26,17 +34,22 @@ SetupRoot::~SetupRoot()
     detach();
 }
 
+void SetupRoot::barked()
+{
+    int exitMenu = ButtonEvent(ButtonEvent::ESCAPE).raw;
+    xQueueSend(uiEventQueue, &exitMenu, 0);
+}
+
 void SetupRoot::initScreens()
 {
-    int screens = 0;
+    all_screens = 0;
     if ( screen_gmeter.get() ) {
-        screens |= SCREEN_GMETER;
+        all_screens |= SCREEN_GMETER;
     }
     if ( screen_horizon.get() ) {
-        screens |= SCREEN_HORIZON;
+        all_screens |= SCREEN_HORIZON;
     }
-    screens |= SCREEN_VARIO; // always
-	menu_screens.set( screens );
+    all_screens |= SCREEN_VARIO; // always
 }
 
 void SetupRoot::begin(MenuEntry *setup)
@@ -54,6 +67,11 @@ void SetupRoot::begin(MenuEntry *setup)
         addEntry(setup);
     } else {
         addEntry(SetupMenu::createTopSetup());
+        if ( airborne.get() ) {
+            // exit setup after timeout w/o user activity
+            _ui_mon_wd.start(16000); // 16 seconds
+            uiMonitor = &_ui_mon_wd;
+        }
     }
 
     gflags.inSetup = true;
@@ -67,13 +85,17 @@ void SetupRoot::begin(MenuEntry *setup)
 void SetupRoot::exit(int levels)
 {
     ESP_LOGI(FNAME,"End Setup Menu");
+    if ( uiMonitor ) {
+        uiMonitor->stop();
+        uiMonitor = nullptr;
+    }
     free_connected_devices_menu();
 
     screens_init = INIT_DISPLAY_NULL;
     if (_restart) {
         reBoot();
     }
-    delete _childs.front();
+    delete _childs.front(); // hook to the entire setup tree
     _childs.clear();
     gflags.inSetup = false;
     _display->doMenu(false);
@@ -114,7 +136,10 @@ void SetupRoot::rot(int count)
 
 void SetupRoot::press()
 {
-    ESP_LOGI(FNAME,"root press active_srceen %d (0x%x)", active_screen, menu_screens.get());
+    ESP_LOGI(FNAME,"root press active_srceen %d (0x%x)", active_screen, (unsigned)all_screens);
+    if ( active_screen == NO_SCREEN ) {
+        active_screen = SCREEN_VARIO;
+    }
 
     // cycle through screens, incl. setup
     if (!gflags.inSetup)
@@ -122,7 +147,7 @@ void SetupRoot::press()
         while (active_screen < SCREEN_THERMAL_ASSISTANT)
         {
             active_screen <<= 1;
-            if (menu_screens.get() & active_screen)
+            if (all_screens & active_screen)
             {
                 ESP_LOGI(FNAME, "New active_screen: %x", active_screen);
                 break;
@@ -148,12 +173,3 @@ void SetupRoot::longPress()
     }
 }
 
-void SetupRoot::escape()
-{
-    if (gflags.inSetup) {
-		ESP_LOGI(FNAME,"escape now Setup Menu - really, need to unroll");
-		// _display->clear();
-		// _display->doMenu(false);
-		// gflags.inSetup = false;
-	}
-}

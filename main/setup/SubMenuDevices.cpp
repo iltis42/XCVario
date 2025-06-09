@@ -317,21 +317,35 @@ void connected_devices_menu_create_interfaceI2C(SetupMenu *top)
 //
 // Devices
 //
+static bool remove_dev(DeviceId did) // true if restart is needed
+{
+    bool ret = false;
+    InterfaceId iid = NO_PHY;
+    Device *rmdev = DEVMAN->getDevice(did);
+    if ( rmdev ) {
+        iid = rmdev->_itf->getId();
+    }
+    ESP_LOGI(FNAME, "remove %d", did);
+    ret = DEVMAN->removeDevice(did, true);
+    if ( did == NAVI_DEV ) {
+        // remove a flarm host on the same itf
+        Device *fhdev = DEVMAN->getDevice(FLARM_HOST_DEV);
+        if ( fhdev && fhdev->_itf->getId() == iid ) {
+            ESP_LOGI(FNAME,"Remove Flarm Host %d", FLARM_HOST_DEV);
+            // remove the flarm host
+            ret |= remove_dev(FLARM_HOST_DEV);
+        }
+    }
+    return ret;
+}
+
 static int remove_device(SetupMenuSelect *p)
 {
     if ( p->getSelect() == 1 ) {
         DeviceId did = (DeviceId)p->getParent()->getContId(); // dev id to remove
-        ESP_LOGI(FNAME, "remove %d", did);
-        if ( DEVMAN->removeDevice(did) ) {
+        if ( remove_dev(did) ) {
             // restart needed
             p->scheduleReboot();
-        }
-        // clear nvs
-        const DeviceAttributes &da = DeviceManager::getDevAttr(did);
-        if ( da.nvsetup ) {
-            // save it to nvs
-            da.nvsetup->set(DeviceNVS(), false, false);
-            da.nvsetup->commit();
         }
         p->getParent()->getParent()->setDirty();
     }
@@ -402,37 +416,41 @@ static int select_interface_action(SetupMenuSelect *p)
     }
     return 0;
 }
+static void create_dev(DeviceId did, InterfaceId iid)
+{
+    // get default protocols and port
+    const DeviceAttributes &da = DeviceManager::getDevAttr(did, iid);
+    Device *dev = nullptr;
+    for (int i=0; i<da.prcols.getExtra(); ++i) {
+        ProtocolType pid = da.prcols.proto(i);
+        if ( new_device == NAVI_DEV ) {
+            // this does noly work for one protocol long protocol list (!)
+            pid = (ProtocolType)nmea_protocol.get(); // navi flavor, override protocol table
+        }
+        if ( pid != NO_ONE ) {
+            ESP_LOGI(FNAME,"add protocol %d for device id %d", pid, new_device);
+            dev = DEVMAN->addDevice(new_device, pid, da.port, da.port, new_interface, true);
+        }
+    }
+}
 static int create_device_action(SetupMenuSelect *p)
 {
     if ( p->getSelect() == 1 ) {
-        // Confirmed; default protocols and port
-        const DeviceAttributes &da = DeviceManager::getDevAttr(new_device, new_interface);
-        Device *dev = nullptr;
-        for (int i=0; i<da.prcols.getExtra(); ++i) {
-            ProtocolType pid = da.prcols.proto(i);
-            if ( new_device == NAVI_DEV ) {
-                pid = (ProtocolType)nmea_protocol.get(); // navi flavor, override protocol table
-            }
-            if ( pid != NO_ONE ) {
-                ESP_LOGI(FNAME,"add protocol %d for device id %d", pid, new_device);
-                dev = DEVMAN->addDevice(new_device, pid, da.port, da.port, new_interface);
-            }
+        // Confirmed
+        if ( ! DEVMAN->isIntf(new_interface) ) { // check if interface is not yet created
+            // Enforce the proper interface configuration then
+            DeviceManager::EnforceIntfConfig(new_interface, new_device);
         }
-        if ( da.nvsetup && dev ) {
-            // save it to nvs
-            da.nvsetup->set(dev->getNvsData());
-            da.nvsetup->commit();
-        }
+        create_dev(new_device, new_interface);
         // make sure there is a flarm host for any navi 
         if ( new_device == NAVI_DEV ) {
             new_device = FLARM_HOST_DEV;
-            create_device_action(p); // recursive call to create the flarm host
+            create_dev(FLARM_HOST_DEV, new_interface);
         }
-    
+        p->getParent()->getParent()->setDirty();
     }
     p->setTerminateMenu();
     p->setSelect(0); // reset to cancel
-    p->getParent()->getParent()->setDirty();
     return 0;
 }
 static void connected_devices_menu_add_device(SetupMenu *top) // dynamic!

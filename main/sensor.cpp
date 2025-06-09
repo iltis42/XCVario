@@ -28,9 +28,11 @@
 #include "protocol/Clock.h"
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
-#include "setup/SetupRoot.h"
+#include "protocol/WatchDog.h"
+#include "screen/SetupRoot.h"
 #include "screen/BootUpScreen.h"
 #include "screen/MessageBox.h"
+#include "screen/DrawDisplay.h"
 
 #include "quaternion.h"
 #include "wmm/geomag.h"
@@ -118,11 +120,9 @@ PressureSensor *teSensor = nullptr;
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *Display = 0;
 CenterAid  *centeraid = 0;
-
-
 OTA *ota = 0;
-
 SetupRoot  *Menu = nullptr;
+WatchDog_C *uiMonitor = nullptr;
 
 // Gyro and acceleration sensor
 I2C_t& i2c = i2c1;
@@ -134,7 +134,10 @@ SerialLine *S1 = NULL;
 SerialLine *S2 = NULL;
 Clock *MY_CLOCK = nullptr;
 
+//boot log
+std::string logged_tests;
 
+// global variables
 float baroP=0; // barometric pressure
 static float teP=0;   // TE pressure
 static float temperature=15.0;
@@ -143,7 +146,7 @@ static unsigned long _millis = 0;
 unsigned long _gps_millis = 0;
 
 
-static float battery=0.0;
+float batteryVoltage = 0.;
 float dynamicP; // Pitot
 
 float slipAngle = 0.0;
@@ -157,7 +160,6 @@ uint8_t g_col_header_b=g_col_highlight;
 uint8_t g_col_header_light_r=161-g_col_background/4;
 uint8_t g_col_header_light_g=168-g_col_background/3;
 uint8_t g_col_header_light_b=g_col_highlight;
-uint16_t gear_warning_holdoff = 0;
 uint8_t gyro_flash_savings=0;
 
 // boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.
@@ -174,15 +176,16 @@ float as2f = 0;
 float s2f_delta = 0;
 float polar_sink = 0;
 
-float      stall_alarm_off_kmh=0;
-uint16_t   stall_alarm_off_holddown=0;
-
 int count=0;
-unsigned long int flarm_alarm_holdtime=0;
 
 float mpu_target_temp=45.0;
 
 AdaptUGC *egl = 0;
+
+const constexpr char passed_text[] = "PASSED\n";
+const constexpr char failed_text[] = "FAILED\n";
+
+const float glider_min_ias = 50.f; // todo replace with speed derived from glider type
 
 int IRAM_ATTR sign(int num) {
     return (num > 0) - (num < 0);
@@ -191,207 +194,6 @@ int IRAM_ATTR sign(int num) {
 AnalogInput* getBattery() { return &Battery;}
 
 float getTAS() { return tas; }
-
-void drawDisplay(void *arg)
-{
-	ESPRotary &knob = *static_cast<ESPRotary*>(arg);
-	QueueHandle_t buton_event_queue = knob.getQueue();
-
-	// esp_task_wdt_add(NULL); // incompatible with current setup implementation, e.g. all calib procedures would trigger the wd
-
-	int event = 0;
-	while (1) {
-		// handle button events in this context
-		if (xQueueReceive(buton_event_queue, &event, pdMS_TO_TICKS(20)) == pdTRUE) {
-			if (event == SHORT_PRESS) {
-				// ESP_LOGI(FNAME,"Button short press detected");
-				knob.sendPress();
-			} else if (event == LONG_PRESS) {
-				// ESP_LOGI(FNAME,"Button long press detected");
-				knob.sendLongPress();
-			} else if (event == BUTTON_RELEASED) {
-				// ESP_LOGI(FNAME, "Button released");
-				knob.sendRelease();
-			} else if (event == ESCAPE) {
-				// ESP_LOGI(FNAME, "Escape event");
-				knob.sendEscape();
-			} else if (event & ROTARY_EVTMASK) {
-				int step = reinterpret_cast<KnobEvent&>(event).RotaryEvent;
-				// ESP_LOGI(FNAME, "Rotation step %d", step);
-				knob.sendRot(step);
-			} else {
-				// ESP_LOGI(FNAME, "Unknown button event %x", event);
-			}
-		}
-		
-		// TickType_t dLastWakeTime = xTaskGetTickCount();
-		if( gflags.inSetup != true ) {
-			float t=OAT.get();
-			if( gflags.validTemperature == false )
-				t = DEVICE_DISCONNECTED_C;
-			float airspeed = 0;
-			if( airspeed_mode.get() == MODE_IAS )
-				airspeed = ias.get();
-			else if( airspeed_mode.get() == MODE_TAS )
-				airspeed = tas;
-			else if( airspeed_mode.get() == MODE_CAS )
-				airspeed = cas;
-			else
-				airspeed = ias.get();
-
-			// Stall Warning Screen
-			if( stall_warning.get() && gload_mode.get() != GLOAD_ALWAYS_ON ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
-				if( gflags.stall_warning_armed ){
-					float acceleration=IMU::getGliderAccelZ();
-					if( acceleration < 0.3 )
-						acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
-					float acc_stall= stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
-					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
-						if( !gflags.stall_warning_active ){
-							AUDIO->alarm( true, max_volume.get() );
-							Display->drawWarning( "! STALL !", true );
-							gflags.stall_warning_active = true;
-						}
-					}
-					else{
-						if( gflags.stall_warning_active ){
-							AUDIO->alarm( false );
-							Display->clear();
-							gflags.stall_warning_active = false;
-						}
-					}
-					if( ias.get() < stall_alarm_off_kmh ){
-						stall_alarm_off_holddown++;
-						if( stall_alarm_off_holddown > 1200 ){  // ~30 seconds holddown
-							gflags.stall_warning_armed = false;
-							stall_alarm_off_holddown=0;
-						}
-					}
-					else{
-						stall_alarm_off_holddown=0;
-					}
-				}
-				else{
-					if( ias.get() > stall_speed.get() ){
-						gflags.stall_warning_armed = true;
-						stall_alarm_off_holddown=0;
-					}
-				}
-			}
-			if( gear_warning.get() ){
-				if( !gear_warning_holdoff ){
-					int gw = 0;
-					if( gear_warning.get() == GW_EXTERNAL ){
-						gw = gflags.gear_warn_external;
-					}else{
-						gw = gpio_get_level( SetupMenu::getGearWarningIO() );
-						if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
-							gw = !gw;
-						}
-					}
-					if( gw ){
-						if( Rotary->readBootupStatus() ){   // Acknowledge Warning -> Warning OFF
-							gear_warning_holdoff = 25000;  // ~500 sec
-							AUDIO->alarm( false );
-							Display->clear();
-							gflags.gear_warning_active = false;
-						}
-						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
-							AUDIO->alarm( true, max_volume.get() );
-							Display->drawWarning( "! GEAR !", false );
-							gflags.gear_warning_active = true;
-						}
-					}
-					else{
-						if( gflags.gear_warning_active ){
-							AUDIO->alarm( false );
-							Display->clear();
-							gflags.gear_warning_active = false;
-						}
-					}
-				}
-				else{
-					gear_warning_holdoff--;
-				}
-			}
-
-			// Flarm Warning Screen
-			if( flarm_warning.get() && !gflags.stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get() ){ // 0 -> Disable
-				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
-				if( !gflags.flarmWarning ) {
-					gflags.flarmWarning = true;
-					delay(100);
-					Display->clear();
-				}
-				flarm_alarm_holdtime = millis()+flarm_alarm_time.get()*1000;
-			}
-			else{
-				if( gflags.flarmWarning && (millis() > flarm_alarm_holdtime) ){
-					gflags.flarmWarning = false;
-					Display->clear();
-					AUDIO->alarm( false );
-				}
-			}
-			if( gflags.flarmWarning )
-				Flarm::drawFlarmWarning();
-			// G-Load Display
-			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
-			if( ((IMU::getGliderAccelZ() > gload_pos_thresh.get() || IMU::getGliderAccelZ() < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
-					( gload_mode.get() == GLOAD_ALWAYS_ON ) || (Menu->getActiveScreen() == SCREEN_GMETER)  )
-			{
-				if( !gflags.gLoadDisplay ){
-					gflags.gLoadDisplay = true;
-				}
-			}
-			else{
-				if( gflags.gLoadDisplay ) {
-					gflags.gLoadDisplay = false;
-				}
-			}
-			if( gflags.gLoadDisplay ) {
-				Display->drawLoadDisplay( IMU::getGliderAccelZ() );
-			}
-			if( Menu->getActiveScreen() == SCREEN_HORIZON ) {
-				float roll =  IMU::getRollRad();
-				float pitch = IMU::getPitchRad();
-				Display->drawHorizon( pitch, roll, 0 );
-				gflags.horizon = true;
-			}
-			else{
-				gflags.horizon = false;
-			}
-			// G-Load Alarm when limits reached
-			if( gload_mode.get() != GLOAD_OFF  ){
-				if( IMU::getGliderAccelZ() > gload_pos_limit.get() || IMU::getGliderAccelZ() < gload_neg_limit.get()  ){
-					if( !gflags.gload_alarm ) {
-						AUDIO->alarm( true, gload_alarm_volume.get() );
-						gflags.gload_alarm = true;
-					}
-				}else
-				{
-					if( gflags.gload_alarm ) {
-						AUDIO->alarm( false );
-						gflags.gload_alarm = false;
-					}
-				}
-			}
-			// Vario Screen
-			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon )  ) {
-				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
-				Display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, battery, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
-			}
-			if( screen_centeraid.get() ){
-				if( centeraid ){
-					centeraid->tick();
-				}
-			}
-		}
-		// esp_task_wdt_reset();
-		if( uxTaskGetStackHighWaterMark( dpid ) < 512  ) {
-			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark( dpid ) );
-		}
-	}
-}
 
 
 static void grabMPU()
@@ -547,7 +349,7 @@ static int client_sync_dataIdx = 10000;
 void startClientSync()
 {
 	// Start the client sync in a moment
-	client_sync_dataIdx = -4;
+	client_sync_dataIdx = 0;
 }
 
 void readSensors(void *pvParameters){
@@ -696,9 +498,9 @@ void readSensors(void *pvParameters){
 		}
 
 		aTE = bmpVario.readAVGTE();
-		// doAudio(); fixme
 
 		if( (count % 2) == 0 ){
+			airborne.set(ias.get() > glider_min_ias);
 			toyFeed();
 		}
 
@@ -779,7 +581,7 @@ void readTemp(void *pvParameters)
 	esp_task_wdt_add(NULL);
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		battery = Battery.get();
+		batteryVoltage = Battery.get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
 		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
 			if( !t_devices ){
@@ -903,9 +705,7 @@ void system_startup(void *args){
 	// register_coredump();
 	Polars::extract(glider_type_index.get());
 
-	// menu_screens.set(0);
 	AverageVario::begin();
-	stall_alarm_off_kmh = stall_speed.get()/3;
 
 	Battery.begin();  // for battery voltage
 	xMutex=xSemaphoreCreateMutex();
@@ -941,11 +741,8 @@ void system_startup(void *args){
 	Flarm::setDisplay( MYUCG );
 	Display->begin();
 	Display->bootDisplay();
-	Menu = new SetupRoot(Display); // the root setup menu
-	Menu->initScreens();
+	Menu = new SetupRoot(Display); // the root setup menu, screens still disabled
 
-	// int valid;
-	std::string logged_tests("\n\n\n");
 	Version V;
 	std::string ver( " Ver.: " );
 	ver += V.version();
@@ -954,7 +751,13 @@ void system_startup(void *args){
 	std::string hwrev( hw );
 	ver += hwrev;
 	Display->writeText(1, ver.c_str() );
-	BootUpScreen *boot_screen = new BootUpScreen();
+	logged_tests.assign(ver);
+	logged_tests += "\n";
+
+	// Start UI task responsible to manage screens and display. Needed to habe the boot screen and message box working
+	xTaskCreate(&drawDisplay, "drawDisplay", 6144, Rotary, 4, &dpid); // increase stack by 1K
+
+	BootUpScreen *boot_screen = BootUpScreen::create();
 	MessageBox::createMessageBox();
 	if ( gflags.schedule_reboot ) {
 		MBOX->newMessage(3, "Detecting XCV hardware");
@@ -974,7 +777,8 @@ void system_startup(void *args){
 		ota = new OTA();
 		ota->doSoftwareUpdate( Display ); // fixme -> missing the drawDisplay to process button at this point in time
 	}
-	if( hardwareRevision.get() >= XCVARIO_21 ){
+	if( hardwareRevision.get() >= XCVARIO_21 )
+	{
 		gflags.haveMPU = true;
 		mpu_target_temp = mpu_temperature.get();
 		ESP_LOGI( FNAME,"MPU initialize");
@@ -1012,21 +816,20 @@ void system_startup(void *args){
 			delay( 10 );
 		}
 		accelG /= samples;
-		// float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
-		logged_tests += "MPU6050 AHRS test: PASSED\n";
+		float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
+		char ahrs[10];
+		sprintf(ahrs, "%.2f", accel);
+		logged_tests += "MPU6050 AHRS (" + std::string(ahrs) + "g): ";
+		if ( accel >0.8 && accel < 1.1 ) {
+			logged_tests += passed_text;
+		} else {
+			logged_tests += failed_text;
+		}
 		IMU::init();
 		if ( IMU::MPU6050Read() == ESP_OK) {
 			IMU::Process();
 		}
 		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-	}
-	else{
-		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );
-		if( hardwareRevision.get() >= XCVARIO_21 ) {
-			ESP_LOGI( FNAME,"hardwareRevision detected = 3, XCVario-21+");
-			MBOX->newMessage(1, "AHRS Sensor: NOT FOUND");
-			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
-		}
 	}
 
 	// Create serial interfaces
@@ -1041,11 +844,11 @@ void system_startup(void *args){
 		CANbus::createCAN();
 		logged_tests += "CAN Interface: ";
 		if( CAN->selfTest() ) {
-			logged_tests += "OK\n";
+			logged_tests += passed_text;
 		}
 		else {
 			MBOX->newMessage(1, "CAN bus: Fail");
-			logged_tests += "CAN Bus selftest: FAILED\n";
+			logged_tests += failed_text;
 			ESP_LOGE(FNAME,"Error: CAN Interface failed");
 		}
 	}
@@ -1086,6 +889,10 @@ void system_startup(void *args){
 		Cipher crypt;
 		gflags.ahrsKeyValid = crypt.checkKeyAHRS();
 		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
+		if ( ! gflags.ahrsKeyValid ) {
+			// make sure the AHRS screen is not set
+			screen_horizon.set(false);
+		}
 	}
 	boot_screen->finish(0);
 
@@ -1187,6 +994,7 @@ void system_startup(void *args){
 			}
 		}
 	}
+	logged_tests += "AS Sensor offset: ";
 	if( found ){
 		ESP_LOGI(FNAME,"AS Speed sensors self test PASSED, offset=%d", offset);
 		asSensor->doOffset();
@@ -1200,19 +1008,19 @@ void system_startup(void *args){
 		if( !offset_plausible && ( ias.get() < 50 ) ){
 			ESP_LOGE(FNAME,"Error: air speed presure sensor offset out of bounds, act value=%d", offset );
 			MBOX->newMessage(2, "AS Sensor: NEED ZERO");
-			logged_tests += "AS Sensor offset test: FAILED\n";
+			logged_tests += failed_text;
 			selftestPassed = false;
 		}
 		else {
 			ESP_LOGI(FNAME,"air speed offset test PASSED, readout value in bounds=%d", offset );
-			logged_tests += "AS Sensor offset test: PASSED\n";
+			logged_tests += passed_text;
 			boot_screen->finish(1);
 		}
 	}
 	else{
 		ESP_LOGE(FNAME,"Error with air speed pressure sensor, no working sensor found!");
 		MBOX->newMessage(2, "AS Sensor: NOT FOUND");
-		logged_tests += "AS Sensor: NOT FOUND\n";
+		logged_tests += "NOT FOUND\n";
 		selftestPassed = false;
 		asSensor = 0;
 	}
@@ -1234,16 +1042,17 @@ void system_startup(void *args){
 			}
 		}
 		ESP_LOGI(FNAME,"End T sensor test");
+		logged_tests += "Ext. Temp. Sensor: ";
 		if( temperature == DEVICE_DISCONNECTED_C ) {
 			ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
 			MBOX->newMessage(1, "Temp Sensor: NOT FOUND");
 			gflags.validTemperature = false;
-			logged_tests += "External Temperature Sensor: NOT FOUND\n";
+			logged_tests += "NOT FOUND\n";
 		}else
 		{
 			ESP_LOGI(FNAME,"Self test Temperatur Sensor PASSED; returned T=%2.2f", temperature );
 			gflags.validTemperature = true;
-			logged_tests += "External Temperature Sensor:PASSED\n";
+			logged_tests += passed_text;
 
 		}
 	}
@@ -1282,53 +1091,58 @@ void system_startup(void *args){
 	bool batest=true;
 	delay(200);
 
+	logged_tests += "Baro Sensor: ";
 	if( !baroSensor->selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
 		MBOX->newMessage(2, "Baro Sensor: NOT FOUND");
 		selftestPassed = false;
 		batest=false;
-		logged_tests += "Baro Sensor Test: NOT FOUND\n";
+		logged_tests += "NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"Baro Sensor test OK, T=%f P=%f", ba_t, ba_p);
-		logged_tests += "Baro Sensor Test: PASSED\n";
+		logged_tests += passed_text;
 	}
+	logged_tests += "TE Sensor: ";
 	if( !teSensor->selfTest(te_t, te_p) ) {
 		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
 		MBOX->newMessage(2, "TE Sensor: NOT FOUND");
 		selftestPassed = false;
 		tetest=false;
-		logged_tests += "TE Sensor Test: NOT FOUND\n";
+		logged_tests += "NOT FOUND\n";
 	}
 	else {
 		ESP_LOGI(FNAME,"TE Sensor test OK,   T=%f P=%f", te_t, te_p);
-		logged_tests += "TE Sensor Test: PASSED\n";
+		logged_tests += passed_text;
 	}
 	if( tetest && batest ) {
 		ESP_LOGI(FNAME,"Both absolute pressure sensor TESTs SUCCEEDED, now test deltas");
+		logged_tests += "TE/Baro Sens. T d. <4'C: ";
 		if( (abs(ba_t - te_t) >4.0)  && ( ias.get() < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
 			selftestPassed = false;
 			ESP_LOGE(FNAME,"Severe T delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
 			MBOX->newMessage(1, "TE/Baro Temp: Unequal");
-			logged_tests += "TE/Baro Sensor T diff. <4°C: FAILED\n";
+			logged_tests += failed_text;
 		}
 		else{
 			ESP_LOGI(FNAME,"Abs p sensors temp. delta test PASSED, delta: %f °C",  abs(ba_t - te_t));
-			logged_tests += "TE/Baro Sensor T diff. <2°C: PASSED\n";
+			logged_tests += passed_text;
 		}
 		float delta = 2.5; // in factory we test at normal temperature, so temperature change is ignored.
-		if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 )
+		if( abs(factory_volt_adjust.get() - 0.00815) < 0.00001 ) {
 			delta += 1.8; // plus 1.5 Pa per Kelvin, for 60K T range = 90 Pa or 0.9 hPa per Sensor, for both there is 2.5 plus 1.8 hPa to consider
+		}
+		logged_tests += "TE/Baro Sens. P d. <2hPa: ";
 		if( (abs(ba_p - te_p) >delta)  && ( ias.get() < 50 ) ) {
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Abs p sensors deviation delta > 2.5 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
 			MBOX->newMessage(1, "TE/Baro P: Unequal");
-			logged_tests += "TE/Baro Sensor P diff. <2hPa: FAILED\n";
+			logged_tests += failed_text;
 		}
 		else {
-			ESP_LOGI(FNAME,"Abs p sensor deta test PASSED, delta: %f hPa", abs(ba_p - te_p) );
+			ESP_LOGI(FNAME,"AbsP sensor deta test PASSED, D: %f hPa", abs(ba_p - te_p) );
+			logged_tests += passed_text;
 		}
-		logged_tests += "TE/Baro Sensor P diff. <2hPa: PASSED\n";
 		boot_screen->finish(2);
 	}
 	else {
@@ -1340,15 +1154,16 @@ void system_startup(void *args){
 	ESP_LOGI(FNAME,"Audio begin");
 	AUDIO->begin( DAC_CHAN_0 );
 	ESP_LOGI(FNAME,"Poti and Audio test");
+	logged_tests += "Digi. Audio Poti test: ";
 	if( !AUDIO->selfTest() ) {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
 		MBOX->newMessage(1, "Digital Poti: Failure");
 		selftestPassed = false;
-		logged_tests += "Digital Audio Poti test: FAILED\n";
+		logged_tests += failed_text;
 	}
 	else{
 		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
-		logged_tests += "Digital Audio Poti test: PASSED\n";
+		logged_tests += passed_text;
 	}
 	audio_volume.set(default_volume.get());
 
@@ -1390,38 +1205,40 @@ void system_startup(void *args){
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
 		MBOX->newMessage(1, "Bat Meter: Fail");
-		logged_tests += "Battery Voltage Sensor: FAILED\n";
+		logged_tests += failed_text;
 		selftestPassed = false;
 	}
 	else{
 		ESP_LOGI(FNAME,"Battery voltage metering test PASSED, act value=%f", bat );
-		logged_tests += "Battery Voltage Sensor: PASSED\n";
+		logged_tests += passed_text;
 	}
 	
 	if ( BTspp) {
+			logged_tests += "Bluetooth test: ";
 		if ( BTspp->selfTest() ) {
-			logged_tests += "Bluetooth test: PASSED\n";
+			logged_tests += passed_text;
 		}
 		else {
 			MBOX->newMessage(1, "Bluetooth: FAILED");
-			logged_tests += "Bluetooth test: FAILED\n";
+			logged_tests += failed_text;
 		}
 	}
 
 	// magnetic sensor / compass selftest
 	if( compass ) {
+		logged_tests += "Compass test: ";
 		compass->begin();
 		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
 		esp_err_t err = compass->selfTest();
 		if( err == ESP_OK )		{
 			// Activate working of magnetic sensor
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
-			logged_tests += "Compass test: OK\n";
+			logged_tests += passed_text;
 		}
 		else{
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
 			MBOX->newMessage(1, "Compass: FAILED");
-			logged_tests += "Compass test: FAILED\n";
+			logged_tests += failed_text;
 			selftestPassed = false;
 		}
 		compass->start();  // start task
@@ -1436,7 +1253,7 @@ void system_startup(void *args){
 	Speed2Fly.begin();
 	Version myVersion;
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
-	ESP_LOGI(FNAME,"%s", logged_tests.c_str());
+	ESP_LOGI(FNAME,"\n\n%s", logged_tests.c_str());
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
@@ -1503,26 +1320,30 @@ void system_startup(void *args){
 			Menu->begin(SetupMenu::createQNHMenu());
 		}
 	}
-	else if ( SetupCommon::isClient() ) {
-		bool already_connected = false;
-		Device *dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
-		if ( dev ) {
-			NmeaPlugin *plg = dev->_link->getNmeaPlugin(XCVSYNC_P);
-			if ( plg ) {
-				already_connected = static_cast<XCVSyncMsg*>(plg)->syncStarted();
+	else {
+		if ( SetupCommon::isClient() ) {
+			bool already_connected = false;
+			Device *dev = DEVMAN->getDevice(XCVARIOFIRST_DEV);
+			if ( dev ) {
+				NmeaPlugin *plg = dev->_link->getNmeaPlugin(XCVSYNC_P);
+				if ( plg ) {
+					already_connected = static_cast<XCVSyncMsg*>(plg)->syncStarted();
+				}
 			}
-		}
-		if ( ! already_connected ) {
-			// just sit, wait, show a little message
-			MBOX->newMessage(1, "Waiting for XCV Master");
-			ESP_LOGI(FNAME,"Client Mode: Wait for Master XCVario %p", dev);
+			if ( ! already_connected ) {
+				// just sit, wait, show a little message
+				MBOX->newMessage(1, "Waiting for XCV Master");
+				ESP_LOGI(FNAME,"Client Mode: Wait for Master XCVario %p", dev);
+			}
 		}
 
 		delete boot_screen;
-		sleep(1);
-		gflags.inSetup = false;
 		Display->clear();
+		gflags.inSetup = false;
 	}
+
+	// Init the vario screens
+	SetupRoot::initScreens();
 
 	if ( flap_enable.get() ) {
 		Flap::init(MYUCG);
@@ -1541,8 +1362,7 @@ void system_startup(void *args){
 	}
 
 	// enter normal operation
-	// empty the button queue before starting the task listening to it
-	Rotary->flushQueue();
+	
 
 	if( SetupCommon::isClient() ){
 		xTaskCreate(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid);
@@ -1550,8 +1370,7 @@ void system_startup(void *args){
 	else {
 		xTaskCreate(&readSensors, "readSensors", 5120, NULL, 12, &bpid);
 	}
-	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid);       // increase stack by 500 byte
-	xTaskCreate(&drawDisplay, "drawDisplay", 6144, Rotary, 4, &dpid); // increase stack by 1K
+	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid); // increase stack by 500 byte
 
 	AUDIO->startAudio();
 }
@@ -1605,6 +1424,10 @@ extern "C" void  app_main(void)
 	}
 	ESP_LOGI( FNAME,"Hardware revision %d", hardwareRevision.get());
 	MPU.clearpwm(); // Stop MPU heating
+
+	// Init ui and screen drawDisplay task recources
+	uiEventQueue = xQueueCreate(10, sizeof(int));
+
 	// Init of rotary
 	if( hardwareRevision.get() == XCVARIO_20 ){
 		Rotary = new ESPRotary( GPIO_NUM_4, GPIO_NUM_2, GPIO_NUM_0); // XCV-20 uses GPIO_2 for Rotary

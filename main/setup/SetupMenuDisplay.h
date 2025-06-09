@@ -38,7 +38,7 @@ public:
 	const char *value() const override { return nullptr; }
 	void rot( int count ) override {}
 	void press() override;
-	void longPress() override {};
+	void longPress() override;
 
 private:
 	// User's callback function

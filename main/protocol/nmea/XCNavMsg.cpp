@@ -10,7 +10,8 @@
 #include "protocol/nmea_util.h"
 #include "comm/Messages.h"
 #include "setup/SetupNG.h"
-#include "ESPRotary.h"
+#include "screen/UiEvents.h"
+#include "screen/DrawDisplay.h"
 #include "sensor.h"
 
 #include "logdef.h"
@@ -62,34 +63,34 @@ dl_action_t XCNavMsg::parseDollar_g(NmeaPlugin *plg)
     case 'r': // nonstandard CAI 302 extension for Rotary Movement, e.g. for XCNav remote stick to navigate
     {
         char func = *(s + word->at(0) + 1);
-        KnobEvent event(0);
+        UiEvent event;
         ESP_LOGI(FNAME, "Detected rotary message");
         if (func == 'p')
         {
             ESP_LOGI(FNAME, "Short Press");
-            event.ButtonEvent = SHORT_PRESS;
+            event.button = ButtonEvent(ButtonEvent::SHORT_PRESS);
         }
         else if (func == 'l')
         {
             ESP_LOGI(FNAME, "Long Press");
-            event.ButtonEvent = LONG_PRESS;
+            event.button = ButtonEvent(ButtonEvent::LONG_PRESS);
         }
         else if (func == 'u')
         {
             ESP_LOGI(FNAME, "Up");
-            event.RotaryEvent = 1;
+            event.rotary = RotaryEvent(1);
         }
         else if (func == 'd')
         {
             ESP_LOGI(FNAME, "Down");
-            event.RotaryEvent = -1;
+            event.rotary = RotaryEvent(-1);
         }
         else if (func == 'x')
         {
             ESP_LOGI(FNAME, "Escape");
-            event.ButtonEvent = ESCAPE;
+            event.button = ButtonEvent(ButtonEvent::ESCAPE);
         }
-        xQueueSend(Rotary->getQueue(), &event, 0);
+        xQueueSend(uiEventQueue, &event, 0);
         break;
     }
     case 'w': // nonstandard CAI 302 extension for gear warning enable/disable

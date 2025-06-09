@@ -28,11 +28,16 @@
 // - Clock timer
 // - screens it interfers with
 
-class Message;
+struct ScreenMsg {
+    int alert_level;
+    std::string text;
+    ScreenMsg(int a, const char *str) : alert_level(a), text(str) {}
+};
+
 
 class MessageBox final : public Clock_I
 {
-    using MessagePtr = std::unique_ptr<Message>;
+    using MessagePtr = std::unique_ptr<ScreenMsg>;
 
 public:
     static void createMessageBox();
@@ -40,7 +45,8 @@ public:
 
     // API
     void newMessage(int alert_level, const char* msg);
-    bool isVisible() const { return current != nullptr; }
+    bool draw();
+    // bool isVisible() const { return current != nullptr; }
 
     // Clock tick callback
     bool tick() override;

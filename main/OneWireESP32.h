@@ -1,11 +1,10 @@
 #pragma once
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/queue.h"
-#include "driver/rmt_tx.h"
-#include "driver/rmt_rx.h"
-#include "sdkconfig.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+#include <driver/rmt_types.h>
+
+#include <esp_attr.h>
 
 #if CONFIG_IDF_TARGET_ESP32 || CONFIG_IDF_TARGET_ESP32S2
 #define MAX_BLOCKS	64
@@ -25,7 +24,7 @@ class OneWire32 {
 		rmt_encoder_handle_t owcenc = 0;
 		rmt_encoder_handle_t owbenc = 0;
 		rmt_symbol_word_t owbuf[MAX_BLOCKS];
-		QueueHandle_t owqueue = 0;
+		QueueHandle_t owqueue = nullptr;
 		uint8_t drv = 0;
 	public:
 		OneWire32(uint8_t pin);

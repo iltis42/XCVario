@@ -105,42 +105,42 @@ void NmeaPrtcl::sendStdXCVario(float baro, float dp, float te, float temp, float
 
     msg->buffer = "$PXCV,";
     // msg->buffer += std::format("{:3.1f}", te); // commented because of an 150KB extra of lib code
-    char buffer[50];
-    std::sprintf(buffer, "%3.1f", te);
-    msg->buffer += buffer;
+    char str[50];
+    std::sprintf(str, "%3.1f", te);
+    msg->buffer += str;
     // msg->buffer += ',' + std::format("{:1.2f}", mc);
-    std::sprintf(buffer, ",%1.2f", mc);
-    msg->buffer += buffer;
+    std::sprintf(str, ",%1.2f", mc);
+    msg->buffer += str;
     msg->buffer += ',' + std::to_string(bugs);
     msg->buffer += ',';
     if (XCVarioMsg::getXcvProtocolVersion() <= 1)
     {
-        std::sprintf(buffer, "%1.3f", (aballast + 100.f) / 100.f);
-        msg->buffer += buffer;
+        std::sprintf(str, "%1.3f", (aballast + 100.f) / 100.f);
+        msg->buffer += str;
     }
     msg->buffer += ',' + std::to_string(!cruise);
-    std::sprintf(buffer, ",%2.1f", std::roundf(temp * 10.f) / 10.f);
-    msg->buffer += buffer;
-    std::sprintf(buffer, ",%4.1f", QNH.get());
-    msg->buffer += buffer;
-    std::sprintf(buffer, ",%4.1f", baro);
-    msg->buffer += buffer;
-    std::sprintf(buffer, ",%.1f", dp);
-    msg->buffer += buffer;
+    std::sprintf(str, ",%2.1f", std::roundf(temp * 10.f) / 10.f);
+    msg->buffer += str;
+    std::sprintf(str, ",%4.1f", QNH.get());
+    msg->buffer += str;
+    std::sprintf(str, ",%4.1f", baro);
+    msg->buffer += str;
+    std::sprintf(str, ",%.1f", dp);
+    msg->buffer += str;
 
     // optional IMU additions
     if (gflags.haveMPU && gflags.ahrsKeyValid)
     {
-        std::sprintf(buffer, ",%3.1f", IMU::getRoll());
-        msg->buffer += buffer;
-        std::sprintf(buffer, ",%3.1f", IMU::getXCSPitch());
-        msg->buffer += buffer;
-        std::sprintf(buffer, ",%1.2f", acc_x);
-        msg->buffer += buffer;
-        std::sprintf(buffer, ",%1.2f", acc_y);
-        msg->buffer += buffer;
-        std::sprintf(buffer, ",%1.2f", acc_z);
-        msg->buffer += buffer;
+        std::sprintf(str, ",%3.1f", IMU::getRoll());
+        msg->buffer += str;
+        std::sprintf(str, ",%3.1f", IMU::getXCSPitch());
+        msg->buffer += str;
+        std::sprintf(str, ",%1.2f", acc_x);
+        msg->buffer += str;
+        std::sprintf(str, ",%1.2f", acc_y);
+        msg->buffer += str;
+        std::sprintf(str, ",%1.2f", acc_z);
+        msg->buffer += str;
     }
     else
     {
@@ -166,6 +166,7 @@ void NmeaPrtcl::sendXcvRPYL(float roll, float pitch, float yaw, float acc_z)
             (int)std::roundf(pitch*10.f),        // Pitch            (deg)
             (int)std::roundf(yaw*10.f),        // Magnetic Heading (deg) ?? fixme what ??
             (int)std::roundf(acc_z*1000.f));
+    msg->buffer += str;
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
     DEV::Send(msg);
 }
@@ -180,6 +181,7 @@ void NmeaPrtcl::sendXcvAPENV1(float ias, float alt, float te)
     msg->buffer = "$APENV1,";
     char str[50];
     std::sprintf(str, "%d,%d,0,0,0,%d", (int)std::roundf(Units::kmh2knots(ias)),(int)std::roundf(Units::meters2feet(alt)),(int)std::roundf(Units::ms2fpm(te)));
+    msg->buffer += str;
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
     DEV::Send(msg);
 }
@@ -201,7 +203,7 @@ void NmeaPrtcl::sendXcvGeneric(float te, float alt, float tas)
     msg->buffer = "$PTAS1,";
     char str[50];
     sprintf(str, "%d,0,%d,%d", (int)std::roundf(Units::ms2knots(te)*10.f+200.), (int)std::roundf(Units::meters2feet(alt)+2000.f), (int)std::roundf(Units::kmh2knots(tas)) );
-
+    msg->buffer += str;
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
     DEV::Send(msg);
 }
@@ -289,6 +291,7 @@ void NmeaPrtcl::sendXCVNmeaHDM(float heading)
     char str[12];
     sprintf( str,"%3.1f,M", heading );
     ESP_LOGI(FNAME,"Magnetic Heading: %3.1f", heading );
+    msg->buffer += str;
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
     DEV::Send(msg);
 }
@@ -316,6 +319,7 @@ void NmeaPrtcl::sendXCVNmeaHDT( float heading )
     char str[12];
     sprintf( str,"%3.1f,T", heading );
     ESP_LOGI(FNAME,"True Heading: %3.1f", heading );
+    msg->buffer += str;
     msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
     DEV::Send(msg);
 }

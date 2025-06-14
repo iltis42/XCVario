@@ -20,6 +20,7 @@
 #include "protocol/nmea/BorgeltMsg.h"
 #include "protocol/nmea/CambridgeMsg.h"
 #include "protocol/nmea/MagSensMsg.h"
+#include "protocol/Anemoi.h"
 #include "protocol/FlarmBin.h"
 #include "protocol/KRT2Remote.h"
 #include "protocol/MagSensBin.h"
@@ -92,6 +93,10 @@ EnumList DataLink::addProtocol(ProtocolType ptyp, DeviceId did, int sendport)
     ret.insert(ptyp);
     switch (ptyp)
     {
+    case ANEMOI_P:
+        ESP_LOGI(FNAME, "New AnemoiBinary");
+        tmp = new Anemoi(sendport, _sm, *this);
+        break;
     case REGISTRATION_P:
         ESP_LOGI(FNAME, "New CANMasterReg");
         enforceNmea(did, sendport, ptyp);

@@ -702,7 +702,8 @@ void DeviceManager::reserectFromNvs()
         // check nvsetup exists - otherwise a reserection is not desired (auto setup)
         // check if store data has the valid tag
         // check on role compatibility
-        if ( entry.second.nvsetup && entry.second.nvsetup->get().isValid() 
+        // skip extra "details" entries in the dev asttributes table
+        if ( entry.second.nvsetup && *entry.second.name.data() != '\0' && entry.second.nvsetup->get().isValid() 
             && ( !entry.second.getRoleDep() || entry.second.getRoleDep() == xcv_role.get()) ) {
             // setup device
             DeviceNVS *nvs = static_cast<DeviceNVS*>(entry.second.nvsetup->getPtr());

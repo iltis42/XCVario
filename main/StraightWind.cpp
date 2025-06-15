@@ -178,27 +178,36 @@ bool StraightWind::calculateWind()
 	float deviation = compass->getDeviation( averageTH );
 
 	if( (wind_logging.get() != WLOG_DISABLE) && compass ){
-		char log[ProtocolItf::MAX_LEN];
-		sprintf( log, "$WIND;");
-		int pos = strlen(log);
 		if( wind_logging.get() & WLOG_WIND ){
-			sprintf( log+pos, "%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%.1f;%1.1f", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed,
-					                                                                                       (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, deviation, slipAngle );
+		        char log[ProtocolItf::MAX_LEN];
+		        sprintf( log, "$WIND;");
+		        int pos = strlen(log);
+			sprintf( log+pos, "%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%.1f;%1.1f", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, deviation, slipAngle );
+			pos=strlen(log);
+			sprintf( log+pos, "\n");
+			const NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
+			if ( prtcl ) {
+			prtcl->sendXCV(log);
+			}
+			ESP_LOGI( FNAME,"%s", log );
 		}
-		pos=strlen(log);
+
 		if( wind_logging.get() & WLOG_GYRO_MAG ){
-			sprintf( log+pos, ";%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f",
+		        char log2[ProtocolItf::MAX_LEN];
+		        sprintf( log2, "$IMU;");
+		        int pos = strlen(log2);
+			sprintf( log2+pos, ";%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f",
 					compass->rawX()/16384.0,compass->rawY()/16384.0,compass->rawZ()/16384.0,
 					IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
 					IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ()  );
+		        pos = strlen(log2);
+		        sprintf(log2+pos, "\n");
+		        const NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
+		        if ( prtcl ) {
+			   prtcl->sendXCV(log2);
+			}
+		        ESP_LOGI( FNAME,"%s", log2 );
 		}
-		pos = strlen(log);
-		sprintf( log+pos, "\n");
-		const NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
-		if ( prtcl ) {
-			prtcl->sendXCV(log);
-		}
-		ESP_LOGI( FNAME,"%s", log );
 	}
 
 	if( (CircleWind::getFlightMode() != straight) || lowAirspeed || !THok || !gpsStatus ){

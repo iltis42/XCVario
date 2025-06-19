@@ -211,8 +211,8 @@ void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
 		windcal->addEntry("Straight");
 		windcal->addEntry("Circling");
 		windcal->addEntry("Both");
-		windcal->setHelp(
-				"Enable Wind calculation for straight flight (needs compass), circling, or both - display wind in retro display style");
+		windcal->addEntry("Anemoi");
+		windcal->setHelp("Enable Wind calculation for straight flight (needs compass), circling, both or external source");
 		top->addEntry(windcal);
 
 		// Display option

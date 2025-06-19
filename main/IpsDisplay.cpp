@@ -2262,7 +2262,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Temperature Value
 	temp_status_t mputemp = MPU.getSiliconTempStatus();
 	if( (((int)(temp*10) != tempalt) || (mputemp != siliconTempStatusOld)) && !(tick%12)) {
-		drawTemperature( 3, 26, temp );
+		drawTemperature( 3, 28, temp );
 		tempalt=(int)(temp*10);
 		siliconTempStatusOld = mputemp;
 	}

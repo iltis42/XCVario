@@ -17,7 +17,7 @@ Last update: 2021-04-18
 
  ****************************************************************************/
 
-#include "StraightWind.h"
+#include "wind/StraightWind.h"
 #include "ShowStraightWind.h"
 #include "setup/SetupNG.h"
 #include "Units.h"
@@ -26,6 +26,8 @@ Last update: 2021-04-18
 
 #include "logdef.h"
 
+
+StraightWind *theWind = nullptr;
 
 ShowStraightWind::ShowStraightWind( const char* title ) :
 SetupMenuDisplay( title, nullptr )
@@ -52,35 +54,38 @@ void ShowStraightWind::display(int mode)
 	MYUCG->printf( "%s", buffer );
 	y += 25;
 
-	MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "Status: %s     ", theWind.getStatus() );
-	MYUCG->printf( "%s", buffer );
-	y += 25;
+	if ( theWind )
+	{
+		MYUCG->setPrintPos( 0, y );
+		sprintf( buffer, "Status: %s     ", theWind->getStatus() );
+		MYUCG->printf( "%s", buffer );
+		y += 25;
 
-	MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "GPS Status : %s", (theWind.getGpsStatus() == true ) ? "Good" : "Bad  "  );
-	MYUCG->printf( "%s", buffer );
-	y += 25;
+		MYUCG->setPrintPos( 0, y );
+		sprintf( buffer, "GPS Status : %s", (theWind->getGpsStatus() == true ) ? "Good" : "Bad  "  );
+		MYUCG->printf( "%s", buffer );
+		y += 25;
 
-	MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "AS C/F: %+3.3f %%/%3.3f %%  ", (theWind.getAsCorrection()-1.0)*100, (wind_as_calibration.get()-1.0)*100 );
-	MYUCG->printf( "%s", buffer );
-	y += 25;
+		MYUCG->setPrintPos( 0, y );
+		sprintf( buffer, "AS C/F: %+3.3f %%/%3.3f %%  ", (theWind->getAsCorrection()-1.0)*100, (wind_as_calibration.get()-1.0)*100 );
+		MYUCG->printf( "%s", buffer );
+		y += 25;
 
-	MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "Last Wind : %3.1f°/%2.1f   ", theWind.getAngle(), Units::Airspeed( theWind.getSpeed()) );
-	MYUCG->printf( "%s", buffer );
-	y += 25;
+		MYUCG->setPrintPos( 0, y );
+		sprintf( buffer, "Last Wind : %3.1f°/%2.1f   ", theWind->getAngle(), Units::Airspeed( theWind->getSpeed()) );
+		MYUCG->printf( "%s", buffer );
+		y += 25;
 
-	MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "MH/Dev: %3.2f/%+3.2f   ", theWind.getMH(), theWind.getDeviation() );
-	MYUCG->printf( "%s", buffer );
-	y += 25;
+		MYUCG->setPrintPos( 0, y );
+		sprintf( buffer, "MH/Dev: %3.2f/%+3.2f   ", theWind->getMH(), theWind->getDeviation() );
+		MYUCG->printf( "%s", buffer );
+		y += 25;
 
-	MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "Wind Age : %d sec   ", theWind.getAge() );
-	MYUCG->printf( "%s", buffer );
-	y += 25;
+		MYUCG->setPrintPos( 0, y );
+		sprintf( buffer, "Wind Age : %d sec   ", theWind->getAge() );
+		MYUCG->printf( "%s", buffer );
+		y += 25;
+	}
 
 
 	MYUCG->setPrintPos( 5, 310 );

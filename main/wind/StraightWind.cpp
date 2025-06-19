@@ -29,7 +29,6 @@
 #include "Units.h"
 #include "sensor.h"
 #include "math.h"
-#include "CircleWind.h"
 #include "sensor.h"
 #include "KalmanMPU6050.h"
 #include "vector.h"  // D2R, R2D

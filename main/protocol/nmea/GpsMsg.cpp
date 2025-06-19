@@ -8,8 +8,9 @@
 
 #include "GpsMsg.h"
 #include "Flarm.h"
+#include "wind/StraightWind.h"
+#include "wind/CircleWind.h"
 #include "sensor.h"
-
 #include "logdefnone.h"
 
 #include <cstring>
@@ -66,13 +67,13 @@ dl_action_t GpsMsg::parseGPRMC(NmeaPlugin *plg)
         if (Flarm::myGPS_OK == false)
         {
             Flarm::myGPS_OK = true;
-            if (wind_enable.get() & WA_STRAIGHT || wind_enable.get() & WA_CIRCLING)
+            if (wind_enable.get() & WA_BOTH)
             {
                 CircleWind::gpsStatusChange(true);
             }
             ESP_LOGI(FNAME, "GPRMC, GPS status changed to good, gps:%d", Flarm::myGPS_OK);
         }
-        theWind.calculateWind();
+        theWind->calculateWind();
         // ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
         CircleWind::newSample(Vector(Flarm::gndCourse, Units::knots2kmh(Flarm::gndSpeedKnots)));
         if (!Flarm::time_sync && (valid_time_scan && valid_date_scan))
@@ -94,7 +95,7 @@ dl_action_t GpsMsg::parseGPRMC(NmeaPlugin *plg)
         {
             Flarm::myGPS_OK = false;
             ESP_LOGI(FNAME, "GPRMC, GPS status changed to bad, gps:%d", Flarm::myGPS_OK);
-            if (wind_enable.get() & WA_STRAIGHT || wind_enable.get() & WA_CIRCLING)
+            if (wind_enable.get() & WA_BOTH)
             {
                 CircleWind::gpsStatusChange(false);
                 ESP_LOGW(FNAME, "GPRMC, GPS not OK.");

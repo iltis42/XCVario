@@ -19,7 +19,7 @@ Last update: 2021-04-18
 
 #include "ShowCirclingWind.h"
 
-#include "CircleWind.h"
+#include "wind/CircleWind.h"
 #include "setup/SetupNG.h"
 #include "Units.h"
 #include "sensor.h"

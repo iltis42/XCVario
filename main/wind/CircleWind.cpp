@@ -15,7 +15,7 @@
  ***********************************************************************/
 
 #include "CircleWind.h"
-#include "sensor.h"
+#include "wind/StraightWind.h"
 #include "setup/SetupNG.h"
 #include "logdefnone.h"
 
@@ -296,8 +296,10 @@ void CircleWind::newWind( float angle, float speed ){
 	lastWindDir = angle;
 	lastWindSpeed = speed;
 
-	if( deltaDir < max_circle_wind_delta_deg.get() && deltaSpeed < max_circle_wind_delta_speed.get()  ){
-		theWind.newCirclingWind( direction, windspeed );
+	if( deltaDir < max_circle_wind_delta_deg.get() && deltaSpeed < max_circle_wind_delta_speed.get() ){
+		if ( theWind ) {
+			theWind->newCirclingWind( direction, windspeed );
+		}
 	}else{
 		status = "Delta too big";
 	}

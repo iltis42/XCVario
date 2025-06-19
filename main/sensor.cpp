@@ -50,8 +50,8 @@
 #include "Units.h"
 #include "Flap.h"
 #include "SPL06-007.h"
-#include "StraightWind.h"
-#include "CircleWind.h"
+#include "wind/StraightWind.h"
+#include "wind/CircleWind.h"
 #include "comm/SerialLine.h"
 #include "comm/CanBus.h"
 #include "comm/DeviceMgr.h"
@@ -100,7 +100,6 @@ uint8_t t_devices = 0;
 uint64_t t_addr[1];
 
 AirspeedSensor *asSensor=0;
-StraightWind theWind;
 
 SemaphoreHandle_t xMutex=NULL;
 SemaphoreHandle_t spiMutex=NULL;
@@ -622,7 +621,7 @@ void readTemp(void *pvParameters)
 			if( (OAT.get() > -55.0) && (OAT.get() < 85.0) )
 				gflags.validTemperature = true;
 		}
-		theWind.tick();
+		if ( theWind ) { theWind->tick(); }
 		CircleWind::tick();
 		Flarm::progress();
 		esp_task_wdt_reset();
@@ -681,7 +680,6 @@ void register_coredump() {
 void system_startup(void *args){
 
 	bool selftestPassed=true;
-	theWind.begin();
 
 	MCP = new MCP3221();
 	MCP->setBus( &i2c );
@@ -1340,6 +1338,12 @@ void system_startup(void *args){
 		delete boot_screen;
 		Display->clear();
 		gflags.inSetup = false;
+	}
+
+	// Wind
+	if ( wind_enable.get() & WA_STRAIGHT ) {
+		theWind = new StraightWind();
+		theWind->begin();
 	}
 
 	// Init the vario screens

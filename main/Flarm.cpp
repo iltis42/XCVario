@@ -5,7 +5,7 @@
 #include "IpsDisplay.h"
 #include "quaternion.h"
 #include "sensor.h"
-#include "CircleWind.h"
+#include "wind/CircleWind.h"
 #include <cmath>
 #include <ctime>
 #include <sys/time.h>

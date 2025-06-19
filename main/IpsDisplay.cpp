@@ -16,7 +16,8 @@
 #include "Flap.h"
 #include "Flarm.h"
 #include "Compass.h"
-#include "CircleWind.h"
+#include "wind/StraightWind.h"
+#include "wind/CircleWind.h"
 #include "comm/WifiApSta.h"
 #include "comm/BTspp.h"
 #include "comm/CanBus.h"
@@ -1968,8 +1969,9 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _dirty, bool compass_dir
 		float wind=0;
 		int ageStraight, ageCircling;
 		char type = '/';
-		if( wind_enable.get() == WA_STRAIGHT ){  // check what kind of wind is available from calculator
-			wind_ok = theWind.getWind( &winddir, &wind, &ageStraight );
+		if( theWind ) {
+			// check what kind of wind is available from calculator
+			wind_ok = theWind->getWind( &winddir, &wind, &ageStraight );
 			type = '|';
 		}
 		else if( wind_enable.get() == WA_CIRCLING ){
@@ -1978,8 +1980,10 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _dirty, bool compass_dir
 		else if( wind_enable.get() == WA_BOTH ){  // dynamically change type depending on younger calculation
 			int wds, wdc;
 			float ws, wc;
-			bool oks, okc;
-			oks = theWind.getWind( &wds, &ws, &ageStraight );
+			bool oks=false, okc;
+			if ( theWind ) {
+				oks = theWind->getWind( &wds, &ws, &ageStraight );
+			}
 			okc = CircleWind::getWind( &wdc, &wc, &ageCircling);
 			if( oks && ageStraight <= ageCircling ){
 				wind = ws;

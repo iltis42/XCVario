@@ -17,7 +17,8 @@
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"
 #include "Switch.h"
-#include "CircleWind.h"
+#include "wind/StraightWind.h"
+#include "wind/CircleWind.h"
 #include "ESPAudio.h"
 #include "Flap.h"
 #include "OneWireESP32.h"

@@ -95,3 +95,6 @@ private:
 	float lastHeading;
 	float lastGroundCourse;
 };
+
+extern StraightWind *theWind;
+

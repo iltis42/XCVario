@@ -50,8 +50,7 @@
 #include "Units.h"
 #include "Flap.h"
 #include "SPL06-007.h"
-#include "wind/StraightWind.h"
-#include "wind/CircleWind.h"
+#include "wind/WindCalcTask.h"
 #include "comm/SerialLine.h"
 #include "comm/CanBus.h"
 #include "comm/DeviceMgr.h"
@@ -1338,11 +1337,8 @@ void system_startup(void *args){
 		gflags.inSetup = false;
 	}
 
-	// Wind
-	if ( wind_enable.get() & WA_STRAIGHT ) {
-		theWind = new StraightWind();
-		theWind->begin();
-	}
+	// Wind calculation
+	WindCalcTask::createWindResources();
 
 	// Init the vario screens
 	SetupRoot::initScreens();

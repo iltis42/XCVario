@@ -8,8 +8,7 @@
 
 #include "GpsMsg.h"
 #include "Flarm.h"
-#include "wind/StraightWind.h"
-#include "wind/CircleWind.h"
+#include "wind/WindCalcTask.h"
 #include "sensor.h"
 #include "logdefnone.h"
 
@@ -62,20 +61,14 @@ dl_action_t GpsMsg::parseGPRMC(NmeaPlugin *plg)
     // ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° warn:%c date:%s ", myGPS_OK, gndSpeedKnots, gndCourse, warn, date  );
     // ESP_LOGI(FNAME,"GP%s, GPS_OK:%d warn:%c T:%s D:%s", gprmc+3, myGPS_OK, warn, time, date  );
 
-    if (warn == 'A')
-    {
-        if (Flarm::myGPS_OK == false)
-        {
-            Flarm::myGPS_OK = true;
-            if (wind_enable.get() & WA_BOTH)
-            {
-                CircleWind::gpsStatusChange(true);
-            }
-            ESP_LOGI(FNAME, "GPRMC, GPS status changed to good, gps:%d", Flarm::myGPS_OK);
-        }
-        theWind->calculateWind();
+    Flarm::myGPS_OK = (warn == 'A');
+    if (BackgroundTaskQueue && Flarm::myGPS_OK) {
+
         // ESP_LOGI(FNAME,"Track: %3.2f, GPRMC: %s", gndCourse, gprmc );
-        CircleWind::newSample(Vector(Flarm::gndCourse, Units::knots2kmh(Flarm::gndSpeedKnots)));
+        circleWind->setNewSample(Vector(Flarm::gndCourse, Units::knots2kmh(Flarm::gndSpeedKnots)));
+
+        CalkTaskJob job(CalkTaskJob::CALK_TASK_EVENT_NEW_GPSPOSE);
+        xQueueSend(BackgroundTaskQueue, &job, 0);
         if (!Flarm::time_sync && (valid_time_scan && valid_date_scan))
         {
             ESP_LOGD(FNAME, "Start TimeSync");
@@ -87,19 +80,6 @@ dl_action_t GpsMsg::parseGPRMC(NmeaPlugin *plg)
             settimeofday(tv, tz);
             Flarm::time_sync = true;
             ESP_LOGD(FNAME, "Finish Time Sync");
-        }
-    }
-    else
-    {
-        if (Flarm::myGPS_OK == true)
-        {
-            Flarm::myGPS_OK = false;
-            ESP_LOGI(FNAME, "GPRMC, GPS status changed to bad, gps:%d", Flarm::myGPS_OK);
-            if (wind_enable.get() & WA_BOTH)
-            {
-                CircleWind::gpsStatusChange(false);
-                ESP_LOGW(FNAME, "GPRMC, GPS not OK.");
-            }
         }
     }
     // ESP_LOGI(FNAME,"parseGPRMC() GPS: %d, Speed: %3.1f knots, Track: %3.1f° ", myGPS_OK, gndSpeedKnots, gndCourse );
@@ -141,7 +121,11 @@ dl_action_t GpsMsg::parseGPGGA(NmeaPlugin *plg)
         if ((numSat != Flarm::_numSat) && (wind_enable.get() != WA_OFF))
         {
             Flarm::_numSat = numSat;
-            CircleWind::newConstellation(numSat);
+            if (BackgroundTaskQueue) {
+                CalkTaskJob job(CalkTaskJob::CALK_TASK_EVENT_NUMSAT);
+                job.setDetail(numSat);
+                xQueueSend(BackgroundTaskQueue, &job, 0);
+            }
         }
     }
     return DO_ROUTING;
@@ -152,5 +136,3 @@ const ParserEntry GpsMsg::_pt[] = {
     { Key("PGGA"), GpsMsg::parseGPGGA },
     {}
 };
-
-

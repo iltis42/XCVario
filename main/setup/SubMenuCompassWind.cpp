@@ -12,6 +12,7 @@
 #include "CompassMenu.h"
 #include "comm/DeviceMgr.h"
 #include "logdef.h"
+#include "wind/WindCalcTask.h"
 
 // compass menu handlers.
 static int compassDeviationAction(SetupMenuSelect *p) {
@@ -35,6 +36,11 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 		CompassMenu::sensorCalibrationAction(p);
 	}
 	p->setSelect(0);
+	return 0;
+}
+
+static int windSettingsAction(SetupMenuSelect *p) {
+	WindCalcTask::createWindResources();
 	return 0;
 }
 

@@ -37,7 +37,7 @@ bool Switch::_cruise_mode_xcv = false;
 bool Switch::cm_xcv_prev = false;
 bool Switch::initial = true;
 
-Average<GYRO_FILTER_SAMPLES, float, float> Switch::filter;
+Average<GYRO_FILTER_SAMPLES/4, float, float> Switch::filter;
 
 gpio_num_t Switch::_sw = GPIO_NUM_0;
 

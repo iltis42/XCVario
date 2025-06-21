@@ -108,6 +108,7 @@ public:
 	bool calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, t_float_axes bias, bitfield_compass b, bool print ), bool only_show );
 	 // Resets the whole compass calibration, also the saved configuration.
 	void resetCalibration();
+    bool isCalibrated() const;
 	bool calibrationIsRunning() {  return calibrationRunning; }
 	// Returns total number of read errors
 	int getReadError(){ return totalReadErrors; };

@@ -370,6 +370,10 @@ void Compass::resetCalibration()
 	compass_calibrated.set( 0 );
 	// commit() is implicitely done in set()
 }
+bool Compass::isCalibrated() const
+{
+    return compass_calibrated.get();
+}
 
 /**
  * Saves a done compass calibration.

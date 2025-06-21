@@ -36,22 +36,17 @@ XCVSyncMsg::~XCVSyncMsg()
     SetupCommon::setSyncProto(nullptr);
 }
 
-bool XCVSyncMsg::isSyncNeeded()
-{
-    bool tmp = _kick_sync;
-    _kick_sync = false; // only once
-    return tmp;
-}
 
 //
 // The sync transmitter routine
 //
 
-bool XCVSyncMsg::sendSyncRequest()
+bool XCVSyncMsg::sendInitSyncRequest()
 {
     // a XCV Scondary will send this message to the master to initialize the sync
     Message* msg = _nmeaRef.newMessage();
-    msg->buffer.assign("!xsSI,nit");
+    _kick_sync = false; // only once
+    msg->buffer.assign("!xsSI,nit\r\n");
     return DEV::Send(msg);
 }
 
@@ -105,8 +100,8 @@ dl_action_t XCVSyncMsg::parseExcl_xsX(NmeaPlugin *plg)
         }
 
         // Once
-        if ( static_cast<XCVSyncMsg*>(plg)->isSyncNeeded() ) {
-            static_cast<XCVSyncMsg*>(plg)->sendSyncRequest();
+        if ( static_cast<XCVSyncMsg*>(plg)->isSyncInitPending() ) {
+            static_cast<XCVSyncMsg*>(plg)->sendInitSyncRequest();
         }
     }
     else {

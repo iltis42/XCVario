@@ -18,13 +18,13 @@ public:
     const ParserEntry* getPT() const override { return _pt; }
 
     bool isMaster() const { return _is_master; }
-    bool isSyncNeeded();
+    bool isSyncInitPending() const { return _kick_sync; }
     bool syncStarted() const { return !_kick_sync; }
 
 public:
     // only needed from SetupNG
     bool sendItem(const char *key, char type, void *value, int len);
-    bool sendSyncRequest();
+    bool sendInitSyncRequest();
 
 private:
     bool _is_master;
@@ -35,4 +35,3 @@ private:
     static dl_action_t parseExcl_xsSyncInit(NmeaPlugin *plg);
     static const ParserEntry _pt[];
 };
-

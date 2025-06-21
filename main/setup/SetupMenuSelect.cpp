@@ -138,9 +138,9 @@ const char *SetupMenuSelect::value() const
 	return "";
 }
 
-bool SetupMenuSelect::existsEntry( std::string ent ){
+bool SetupMenuSelect::existsEntry(const char* ent){
 	for( std::vector<ITEM_t>::iterator iter = _values.begin(); iter != _values.end(); ++iter ) {
-		if( std::string(iter->first) == ent ) {
+		if( strcmp(iter->first, ent) == 0 ) {
 			return true;
 		}
 	}
@@ -209,7 +209,7 @@ void SetupMenuSelect::mkConfirm()
 
 void SetupMenuSelect::updateEntry(const char *ent, int num)
 {
-	if (_select >=0  && _select < _values.size()) {
+	if (num >=0  && num < _values.size()) {
 		_values.at(num).first = ent;
 	}
 	ESP_LOGI(FNAME, "Out of bounds");

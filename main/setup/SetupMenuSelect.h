@@ -31,7 +31,7 @@ public:
 	void setTerminateMenu() { bits._end_menu = true; }
 
 
-	bool existsEntry( std::string ent );
+	bool existsEntry(const char* ent);
     void addEntry(const char* ent, int val);
     void addEntry(const char* ent);
 	void addEntryList( const char ent[][4], int size );
@@ -55,4 +55,3 @@ private:
 	SetupNG<int> *_nvs;
 	bool _show_inline;
 };
-

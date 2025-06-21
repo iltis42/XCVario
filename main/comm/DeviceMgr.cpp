@@ -265,11 +265,11 @@ void TransmitTask(void *arg)
         TickType_t timeout = (pls_retry==0) ? portMAX_DELAY : pdMS_TO_TICKS(pls_retry);
         bool new_msg = xQueueReceive(queue, &msg, timeout) == pdTRUE;
 
-        if (msg == nullptr) {
-            break;
-        } // termination signal
-
         if ( new_msg ) {
+            if (msg == nullptr) {
+                break;
+            } // termination signal
+
             // always check against the later fifo first, not to garble msg sequence
             bool wait = false;
             if( !later.empty() ) {

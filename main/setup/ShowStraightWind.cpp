@@ -27,7 +27,7 @@ Last update: 2021-04-18
 #include "logdef.h"
 
 
-StraightWind *theWind = nullptr;
+StraightWind *straightWind = nullptr;
 
 ShowStraightWind::ShowStraightWind( const char* title ) :
 SetupMenuDisplay( title, nullptr )
@@ -46,49 +46,33 @@ void ShowStraightWind::display(int mode)
 	MYUCG->setFont( ucg_font_ncenR14_hr );
 	menuPrintLn(_title.c_str(), 0, 5);
 
-	uint16_t y = 70;
 	char buffer[32];
+	int i = 1;
 
-	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "Straight Wind enabled: %s", (wind_enable.get() & 1) ? "Yes" : "No  "  );
-	MYUCG->printf( "%s", buffer );
-	y += 25;
+	menuPrintLn(buffer, i++);
 
-	if ( theWind )
+	if ( straightWind )
 	{
-		MYUCG->setPrintPos( 0, y );
-		sprintf( buffer, "Status: %s     ", theWind->getStatus() );
-		MYUCG->printf( "%s", buffer );
-		y += 25;
+		sprintf( buffer, "Status: %s     ", straightWind->getStatus() );
+		menuPrintLn(buffer, i++);
 
-		MYUCG->setPrintPos( 0, y );
-		sprintf( buffer, "GPS Status : %s", (theWind->getGpsStatus() == true ) ? "Good" : "Bad  "  );
-		MYUCG->printf( "%s", buffer );
-		y += 25;
+		sprintf( buffer, "GPS Status : %s", (straightWind->getGpsStatus() == true ) ? "Good" : "Bad  "  );
+		menuPrintLn(buffer, i++);
 
-		MYUCG->setPrintPos( 0, y );
-		sprintf( buffer, "AS C/F: %+3.3f %%/%3.3f %%  ", (theWind->getAsCorrection()-1.0)*100, (wind_as_calibration.get()-1.0)*100 );
-		MYUCG->printf( "%s", buffer );
-		y += 25;
+		sprintf( buffer, "AS C/F: %+3.3f %%/%3.3f %%  ", (straightWind->getAsCorrection()-1.0)*100, (wind_as_calibration.get()-1.0)*100 );
+		menuPrintLn(buffer, i++);
 
-		MYUCG->setPrintPos( 0, y );
-		sprintf( buffer, "Last Wind : %3.1f°/%2.1f   ", theWind->getAngle(), Units::Airspeed( theWind->getSpeed()) );
-		MYUCG->printf( "%s", buffer );
-		y += 25;
+		sprintf( buffer, "Last Wind : %3.1f°/%2.1f   ", straightWind->getAngle(), Units::Airspeed( straightWind->getSpeed()) );
+		menuPrintLn(buffer, i++);
 
-		MYUCG->setPrintPos( 0, y );
-		sprintf( buffer, "MH/Dev: %3.2f/%+3.2f   ", theWind->getMH(), theWind->getDeviation() );
-		MYUCG->printf( "%s", buffer );
-		y += 25;
+		sprintf( buffer, "MH/Dev: %3.2f/%+3.2f   ", straightWind->getMH(), straightWind->getDeviation() );
+		menuPrintLn(buffer, i++);
 
-		MYUCG->setPrintPos( 0, y );
-		sprintf( buffer, "Wind Age : %d sec   ", theWind->getAge() );
-		MYUCG->printf( "%s", buffer );
-		y += 25;
+		sprintf( buffer, "Wind Age : %d sec   ", straightWind->getAge() );
+		menuPrintLn(buffer, i++);
 	}
 
 
-	MYUCG->setPrintPos( 5, 310 );
-	MYUCG->printf( "Press button to exit" );
-
+	menuPrintLn("Press button to exit", i+1, 5);
 }

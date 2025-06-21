@@ -181,10 +181,6 @@ static void options_menu_create_compasswind_straightwind(SetupMenu *top) {
 }
 
 void options_menu_create_compasswind_circlingwind(SetupMenu *top) {
-	// Show Circling Wind Status
-	ShowCirclingWind *scw = new ShowCirclingWind("Circling Wind Status");
-	top->addEntry(scw);
-
 	SetupMenuValFloat *cirwd = new SetupMenuValFloat("Max Delta", "°", nullptr, false, &max_circle_wind_diff);
 	top->addEntry(cirwd);
 	cirwd->setHelp(
@@ -207,6 +203,10 @@ void options_menu_create_compasswind_circlingwind(SetupMenu *top) {
 	cirwdd->setPrecision(1);
 	cirwdd->setHelp(
 			"Maximum wind direction delta from last measurement accepted for circling wind calculation");
+
+	// Show Circling Wind Status
+	ShowCirclingWind *scw = new ShowCirclingWind("Circling Wind Status");
+	top->addEntry(scw);
 }
 
 void options_menu_create_compasswind(SetupMenu *top) { // dynamic!

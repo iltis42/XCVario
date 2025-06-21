@@ -1,16 +1,10 @@
 /***********************************************************************
  **
- ************************************************************************
- **
  **   Copyright (c):  2002       by André Somers,
  **	                  2002-2006  Eckhard Völlm
  **                   2006-      by Axel Pauli
  **                   2021-      Eckhard Völlm
  **
- **
- **
- **
- **   $Id$
  **
  ***********************************************************************/
 
@@ -27,108 +21,92 @@
  * \date 2002-2021
  */
 
-#ifndef CIRCLEWIND_H
-#define CIRCLEWIND_H
+#pragma once
 
-typedef enum e_circling { undefined, straight, circlingL, circlingR } t_circling;
-
+typedef enum e_circling {
+  undefined,
+  straight,
+  circlingL,
+  circlingR
+} t_circling;
 
 #include "vector.h"
 #include <cmath>
 #include <list>
 
-
-
-// #include "calculator.h"
-// #include "gpsnmea.h"
-
-
-class CircleWind
-{
-
-private:
-
+class CircleWind {
 public:
-
   CircleWind();
+  ~CircleWind();
+  void tick();
 
-  virtual ~CircleWind();
-  static void tick();
+  // Call for wind measurement result. The result is included in wind,
+  // the jitter of the measurement (1-5; 1 is bad, 5 is excellent) in jitter.
+  void getWind(Vector &wind, int &qual) const {
+    wind = result;
+    qual = jitter;
+  };
 
-  /**
-   * Call for wind measurement result. The result is included in wind,
-   * the jitter of the measurement (1-5; 1 is bad, 5 is excellent) in jitter.
-   */
-  static inline void getWind( Vector &wind, int &qual ) { wind = result; qual=jitter; };
+  // Called if the flight mode changes
+  void newFlightMode(t_circling newMode);
+  t_circling getFlightMode() const { return flightMode; };
 
-  /**
-   * Called if the flight mode changes
-   */
-  static void newFlightMode( t_circling newMode );
-  static inline t_circling getFlightMode() { return flightMode; };
+  // Calculate flightmode from heading diff if circling is left or right
+  void calcFlightMode(float diff, float speed);
 
-  /*
-   * Calculate flightmode from heading diff if circling is left or right
-   */
-  static void calcFlightMode( float diff, float speed );
+  // Called if a new sample is available in the sample list.
+  void setNewSample(Vector flarm_vector) { flarmVec = flarm_vector; };
+  void newSample();
 
-  /**
-   * Called if a new sample is available in the sample list.
-   */
-  static void newSample( Vector vector );
+  void restartCycle(bool clean);
 
-  static void restartCycle( bool clean );
+  // Called if a new satellite constellation has been detected.
+  void newConstellation(int numSat);
 
-  /**
-   * Called if a new satellite constellation has been detected.
-   */
-  static void newConstellation( int numSat );
+  // Called, if the GPS status has changed.
+  void setGpsStatus(bool newStatus);
 
-  /**
-   * Called, if the GPS status has changed.
-   */
-  static void gpsStatusChange( bool newStatus );
+  void newWind(float angle, float speed);
 
-  static void newWind( float angle, float speed );
+  bool getWind(int *dir, float *speed, int *age) const;
 
-  static bool getWind( int *dir, float *speed, int * age );
-
-  static float getNumCircles() 	 {  return circleCount+(circleDegrees/360.0); }
-  static int getSatCnt()     	 {  return satCnt; }
-  static bool getGpsStatus()     {  return gpsStatus; }
-  static float  getAngle() 		 { return result.getAngleDeg(); }
-  static float  getSpeed() 		 { return result.getSpeed(); }
-  static int  getAge() 			 { return _age; }
+  float getNumCircles() const { return circleCount + (circleDegrees / 360.0); }
+  int getSatCnt() const { return satCnt; }
+  bool getGpsStatus() const { return gpsStatus; }
+  float getAngle() { return result.getAngleDeg(); }
+  float getSpeed() { return result.getSpeed(); }
+  int getAge() const { return _age; }
   static void resetAge();
-  static int  getQuality() 		 { return rint( 100.0 - jitter ); } // 0..100 %
-  static const char * getStatus()      { return status; }
-  static const char *getFlightModeStr();
+  int getQuality() const { return rint(100.0 - jitter); } // 0..100 %
+  const char *getStatus() const { return status; }
+  const char *getFlightModeStr() const;
 
 private:
-
-  static void _calcWind();
-  static int circleCount; // we are counting the number of circles, the first onces are probably not very round
-  static bool circleLeft; // true=left, false=right
-  static int circleDegrees; // Degrees of current flown circle
-  static int lastHeading; // Last processed heading
-  static int satCnt;
-  static int minSatCnt;
-  static t_circling circlingMode;
-  static int  gpsStatus;
-  static Vector minVector;
-  static Vector maxVector;
-  static Vector result;
-  static float jitter;
-  static t_circling flightMode;
+  void _calcWind();
+  int circleCount = 0; // we are counting the number of circles, the first onces are
+                   // probably not very round
+  bool circleLeft = false; // true=left, false=right
+  int circleDegrees = 0; // Degrees of current flown circle
+  int lastHeading = -1;   // Last processed heading
+  int satCnt = 0;
+  static constexpr int minSatCnt = 5;
+  t_circling circlingMode = undefined;
+  int gpsStatus = false;
+  Vector minVector;
+  Vector maxVector;
+  Vector result;
+  float jitter = 0;
+  t_circling flightMode = undefined;
   static int _age;
-  static const char *status;
-  static float headingDiff;
-  static std::list<Vector> windVectors;
-  static uint8_t turn_left;
-  static uint8_t turn_right;
-  static uint8_t fly_straight;
-  static float lastWindDir;
-  static float lastWindSpeed;
+  const char *status;
+  float headingDiff = 0.;
+  std::list<Vector> windVectors;
+  uint8_t turn_left;
+  uint8_t turn_right;
+  uint8_t fly_straight;
+  float lastWindDir;
+  float lastWindSpeed;
+  Vector flarmVec;
 };
 
-#endif
+extern CircleWind *circleWind;

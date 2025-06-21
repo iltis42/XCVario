@@ -40,31 +40,33 @@
 #include <algorithm>
 #include <cmath>
 
+int StraightWind::_age = 10000;
+
 
 StraightWind::StraightWind() :
-averageTas(0),
-averageTH( 0.0 ),
-averageTC( 0.0 ),
-averageGS(0.0),
-windDir( -1.0 ),
-windSpeed( -1.0 ),
-lowAirspeed( false ),
-circlingWindDir( -1.0 ),
-circlingWindDirReverse( -1.0 ),
-circlingWindSpeed( -1.0 ),
-circlingWindAge( 0 ),
-airspeedCorrection( 1.0 ),
-_tick(0),
-gpsStatus(false),
-deviation_cur(0),
-magneticHeading(0),
-status( "Initial" ),
-jitter(0),
-newWindSpeed(0),
-newWindDir(0),
-slipAverage(0),
-lastHeading(0),
-lastGroundCourse(0)
+	averageTas(0),
+	averageTH( 0.0 ),
+	averageTC( 0.0 ),
+	averageGS(0.0),
+	windDir( -1.0 ),
+	windSpeed( -1.0 ),
+	lowAirspeed( false ),
+	circlingWindDir( -1.0 ),
+	circlingWindDirReverse( -1.0 ),
+	circlingWindSpeed( -1.0 ),
+	circlingWindAge( 0 ),
+	airspeedCorrection( 1.0 ),
+	_tick(0),
+	gpsStatus(false),
+	deviation_cur(0),
+	magneticHeading(0),
+	status( "Initial" ),
+	jitter(0),
+	newWindSpeed(0),
+	newWindDir(0),
+	slipAverage(0),
+	lastHeading(0),
+	lastGroundCourse(0)
 {
 }
 
@@ -72,8 +74,6 @@ void StraightWind::begin(){
 	if( compass_dev_auto.get() )
 		airspeedCorrection = wind_as_calibration.get();
 }
-
-int StraightWind::_age = 10000;
 
 void StraightWind::tick(){
 	_age++;
@@ -98,21 +98,15 @@ bool StraightWind::getWind( int* direction, float* speed, int *age )
 bool StraightWind::calculateWind()
 {
 	// ESP_LOGI(FNAME,"Straight wind, calculateWind()");
-	if( (wind_enable.get() & WA_STRAIGHT) && (SetupCommon::isClient() || gflags.inSetup) ){
-		ESP_LOGI(FNAME,"No windcalc on client, or setup active");
-		return false;
-	}
-
 	if( Flarm::gpsStatus() == false ) {
 		// GPS status not valid
-		if( wind_enable.get() & WA_STRAIGHT ){
-			ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
-		}
+		ESP_LOGI(FNAME,"Restart Cycle: GPS Status invalid");
 		status="Bad GPS";
 		gpsStatus = false;
-	}else{
+	} else {
 		gpsStatus = true;
 	}
+
 	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleStraightWind::getFlightMode() );
 	// Check if straight wind requirements are fulfilled fixme
 	if( ! theCompass || ! theCompass->isCalibrated() ) {
@@ -121,8 +115,7 @@ bool StraightWind::calculateWind()
 		}
 		else if( ! theCompass->isCalibrated() ) {
 			status="Compass not calibrated";
-		if( !( wind_enable.get() & WA_STRAIGHT) )
-			status="Straight Wind not enabled";
+		}
 		return false;
 	}
 

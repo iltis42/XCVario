@@ -211,7 +211,7 @@ static void grabMPU()
 		// ESP_LOGI(FNAME,"Gyro:\t%4f\t%4f\t%4f", gyroDPS.a, gyroDPS.b, gyroDPS.c);
 		// vector_ijk accl = IMU::getGliderAccel();
 		// if (compass != nullptr) {
-		// 	ESP_LOGI(FNAME,"Accl:\t%4f\t%4f\t%4f\tL%.2f Gyro:\t%4f\t%4f\t%4f Mag:\t%4f\t%4f\t%4f", accl.a, accl.b, accl.c, accl.get_norm(), 
+		// 	ESP_LOGI(FNAME,"Accl:\t%4f\t%4f\t%4f\tL%.2f Gyro:\t%4f\t%4f\t%4f Mag:\t%4f\t%4f\t%4f", accl.a, accl.b, accl.c, accl.get_norm(),
 		// 		gyroDPS.a, gyroDPS.b, gyroDPS.c,
 		// 		compass->rawX(), compass->rawY(), compass->rawZ());
 		// }
@@ -352,7 +352,7 @@ void startClientSync()
 }
 
 void readSensors(void *pvParameters){
-	
+
 	float tasraw = 0;
 	esp_task_wdt_add(NULL);
 
@@ -398,9 +398,9 @@ void readSensors(void *pvParameters){
 				delta += 1000;
 			sprintf( log+pos, "%d.%03d,%ld,%.3f,%.3f,%.3f,%.2f,%.4f,%.4f,%.4f,%.4f,%.4f,%.4f", (int)(tv.tv_sec%(60*60*24)), (int)(tv.tv_usec / 1000), delta, bp, tp, dynamicP, T, IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
 					IMU::getGliderNogateGyroX(), IMU::getGliderNogateGyroY(), IMU::getGliderNogateGyroZ() );
-			if( compass ){
+			if( theCompass ){
 				pos=strlen(log);
-				sprintf( log+pos,",%.4f,%.4f,%.4f", compass->rawX(), compass->rawY(), compass->rawZ());
+				sprintf( log+pos,",%.4f,%.4f,%.4f", theCompass->rawX(), theCompass->rawY(), theCompass->rawZ());
 			}
 			pos=strlen(log);
 			sprintf( log+pos, "\n");
@@ -444,7 +444,7 @@ void readSensors(void *pvParameters){
 			airspeed_max.set( ias.get() );
 		}
 		// ESP_LOGI("FNAME","P: %f  IAS:%f IASF: %d", dynamicP, iasraw, ias );
-		if( !compass || !(compass->externalData()) ){
+		if( !theCompass || !(theCompass->externalData()) ){
 			tas += (tasraw-tas)*0.25;       // low pass filter
 		}
 		// ESP_LOGI(FNAME,"IAS=%f, T=%f, TAS=%f baroP=%f", ias, T, tas, baroP );
@@ -503,13 +503,13 @@ void readSensors(void *pvParameters){
 			toyFeed();
 		}
 
-		if( compass ){
+		if( theCompass ){
 			// ESP_LOGI(FNAME,"Compass, have sensor=%d  hdm=%d", compass->haveSensor(),  compass_nmea_hdt.get());
-			if( ! compass->calibrationIsRunning() ) {
+			if( ! theCompass->calibrationIsRunning() ) {
 				// Trigger heading reading and low pass filtering. That job must be
 				// done periodically.
 				bool ok;
-				float heading = compass->getGyroHeading( &ok );
+				float heading = theCompass->getGyroHeading( &ok );
 				NmeaPrtcl *prtcl = static_cast<NmeaPrtcl*>(DEVMAN->getProtocol(NAVI_DEV, XCVARIO_P)); // Todo preliminary solution ..
 				if(ok){
 					if( (int)heading != (int)mag_hdm.get() && !(count%10) ){
@@ -525,7 +525,7 @@ void readSensors(void *pvParameters){
 					if( mag_hdm.get() != -1 )
 						mag_hdm.set( -1 );
 				}
-				float theading = compass->filteredTrueHeading( &ok );
+				float theading = theCompass->filteredTrueHeading( &ok );
 				if(ok){
 					if( (int)theading != (int)mag_hdt.get() && !(count%10) ){
 						mag_hdt.set( theading );
@@ -615,14 +615,12 @@ void readTemp(void *pvParameters)
 			}
 			// ESP_LOGV(FNAME,"T=%f", temperature );
 			Flarm::tick();
-			if( compass )
-				compass->ageIncr();
+			if( theCompass )
+				theCompass->ageIncr();
 		}else{
 			if( (OAT.get() > -55.0) && (OAT.get() < 85.0) )
 				gflags.validTemperature = true;
 		}
-		if ( theWind ) { theWind->tick(); }
-		CircleWind::tick();
 		Flarm::progress();
 		esp_task_wdt_reset();
 
@@ -1210,7 +1208,7 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Battery voltage metering test PASSED, act value=%f", bat );
 		logged_tests += passed_text;
 	}
-	
+
 	if ( BTspp) {
 			logged_tests += "Bluetooth test: ";
 		if ( BTspp->selfTest() ) {
@@ -1223,11 +1221,11 @@ void system_startup(void *args){
 	}
 
 	// magnetic sensor / compass selftest
-	if( compass ) {
+	if( theCompass ) {
 		logged_tests += "Compass test: ";
-		compass->begin();
+		theCompass->begin();
 		ESP_LOGI( FNAME, "Magnetic sensor enabled: initialize");
-		esp_err_t err = compass->selfTest();
+		esp_err_t err = theCompass->selfTest();
 		if( err == ESP_OK )		{
 			// Activate working of magnetic sensor
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: OKAY");
@@ -1239,7 +1237,7 @@ void system_startup(void *args){
 			logged_tests += failed_text;
 			selftestPassed = false;
 		}
-		compass->start();  // start task
+		theCompass->start();  // start task
 	}
 
 	// hardware components now got all detected
@@ -1366,7 +1364,7 @@ void system_startup(void *args){
 	}
 
 	// enter normal operation
-	
+
 
 	if( SetupCommon::isClient() ){
 		xTaskCreate(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid);

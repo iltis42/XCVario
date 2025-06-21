@@ -33,7 +33,7 @@ DisplayDeviations::DisplayDeviations( const char * title ) :
 
 void DisplayDeviations::display( int mode )
 {
-  if( !compass )
+  if( !theCompass )
   {
 	  clear();
 	  MYUCG->setFont( ucg_font_ncenR14_hr );
@@ -59,14 +59,14 @@ void DisplayDeviations::display( int mode )
       x += 50;
       MYUCG->setColor( COLOR_WHITE );
       MYUCG->setPrintPos( x, y );
-      MYUCG->printf( "Deviation %3.1f°",  compass->getDeviation(i*45) );
+      MYUCG->printf( "Deviation %3.1f°",  theCompass->getDeviation(i*45) );
     }
 
   // draw graph
   const int Y=245;
   float max=0;
    for( int x=0; x<360; x++ ){
-  	  float dev=compass->getDeviation((float)(x));
+  	  float dev=theCompass->getDeviation((float)(x));
   	  if( abs(dev) > max ){
   		  max = abs(dev);
   	  }
@@ -86,7 +86,7 @@ void DisplayDeviations::display( int mode )
 
   float avg=0;
   for( int x=0; x<360; x++ ){
-	  float dev=compass->getDeviation((float)(x));
+	  float dev=theCompass->getDeviation((float)(x));
  	  MYUCG->drawPixel( 20+(x*200./360.), Y-(int)(dev*50/max +0.5) );
  	  avg +=dev;
   }

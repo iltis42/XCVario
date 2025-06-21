@@ -972,7 +972,7 @@ void IpsDisplay::drawCable(int16_t x, int16_t y)
 
 	int connectedXCV = xcv_alive.get();
 	int connectedMag = mags_alive.get();
-	
+
 	(connectedXCV == ALIVE_OK)? ucg->setColor(COLOR_LBLUE) : ucg->setColor(COLOR_MGREY);
 	// lower horizontal line
 	if (connectedMag) {
@@ -1866,7 +1866,7 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 		ucg->undoClipRange();
 		xSemaphoreGive(display_mutex);
 	}
-	if( compass ){
+	if( theCompass ){
 		heading = static_cast<int>(rintf(mag_hdt.get()));
 		ucg->setFont(ucg_font_fub20_hr, true);
 		ucg->setPrintPos(70,310);

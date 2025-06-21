@@ -165,4 +165,4 @@ private:
 	t_magn_axes magRaw;
 };
 
-extern Compass *compass;
+extern Compass *theCompass;

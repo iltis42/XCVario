@@ -115,11 +115,11 @@ bool StraightWind::calculateWind()
 	}
 	// ESP_LOGI(FNAME,"calculateWind flightMode: %d", CircleStraightWind::getFlightMode() );
 	// Check if straight wind requirements are fulfilled fixme
-	if( ! compass || compass_calibrated.get() == false || !(wind_enable.get() & WA_STRAIGHT)) {
-		// ESP_LOGI(FNAME,"Compass issues: CAL:%d WIND_ENA:%d, abort", compass_calibrated.get(), wind_enable.get() );
-		if( ! compass )
+	if( ! theCompass || ! theCompass->isCalibrated() ) {
+		if( ! theCompass ) {
 			status="Compass not available";
-		else if( !compass_calibrated.get() )
+		}
+		else if( ! theCompass->isCalibrated() ) {
 			status="Compass not calibrated";
 		if( !( wind_enable.get() & WA_STRAIGHT) )
 			status="Straight Wind not enabled";
@@ -152,8 +152,9 @@ bool StraightWind::calculateWind()
 	}
 	// Get current true heading from compass.
 	bool THok = false;
-	if( compass )
-		averageTH = compass->filteredTrueHeading( &THok, false ); // no deviation considered here (we add ourselfs as for reverse calculation we need also the pure heading)
+	if( theCompass ) {
+		averageTH = theCompass->filteredTrueHeading( &THok, false ); // no deviation considered here (we add ourselfs as for reverse calculation we need also the pure heading)
+	}
 	if( THok == false ) {
 		// No valid heading available
 		status="No Compass";
@@ -174,14 +175,14 @@ bool StraightWind::calculateWind()
 	// WCA in radians
 	magneticHeading = averageTH;
 
-	float deviation = compass->getDeviation( averageTH );
+	float deviation = theCompass->getDeviation( averageTH );
 
-	if( (wind_logging.get() != WLOG_DISABLE) && compass ){
+	if( (wind_logging.get() != WLOG_DISABLE) && theCompass ){
 		if( wind_logging.get() & WLOG_WIND ){
 		        char log[ProtocolItf::MAX_LEN];
 		        sprintf( log, "$WIND;");
 		        int pos = strlen(log);
-			sprintf( log+pos, "%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%.1f;%1.1f", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, CircleWind::getFlightMode(), gpsStatus, deviation, slipAngle );
+			sprintf( log+pos, "%d;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%.1f;%d;%d;%.1f;%1.1f", _tick, averageTC, cgs, averageTH, ctas, newWindDir, newWindSpeed, windDir, windSpeed, circlingWindDir, circlingWindSpeed, (airspeedCorrection-1)*100, circleWind->getFlightMode(), gpsStatus, deviation, slipAngle );
 			pos=strlen(log);
 			sprintf( log+pos, "\n");
 			const NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
@@ -192,24 +193,24 @@ bool StraightWind::calculateWind()
 		}
 
 		if( wind_logging.get() & WLOG_GYRO_MAG ){
-		        char log2[ProtocolItf::MAX_LEN];
-		        sprintf( log2, "$IMU;");
-		        int pos = strlen(log2);
+			char log2[ProtocolItf::MAX_LEN];
+			sprintf( log2, "$IMU;");
+			int pos = strlen(log2);
 			sprintf( log2+pos, ";%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f;%.3f",
-					compass->rawX()/16384.0,compass->rawY()/16384.0,compass->rawZ()/16384.0,
+					theCompass->rawX()/16384.0,theCompass->rawY()/16384.0,theCompass->rawZ()/16384.0,
 					IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(),
 					IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ()  );
-		        pos = strlen(log2);
-		        sprintf(log2+pos, "\n");
-		        const NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
-		        if ( prtcl ) {
-			   prtcl->sendXCV(log2);
+			pos = strlen(log2);
+			sprintf(log2+pos, "\n");
+			const NmeaPrtcl *prtcl = DEVMAN->getNMEA(NAVI_DEV); // Todo preliminary solution ..
+			if ( prtcl ) {
+				prtcl->sendXCV(log2);
 			}
-		        ESP_LOGI( FNAME,"%s", log2 );
+			ESP_LOGI( FNAME,"%s", log2 );
 		}
 	}
 
-	if( (CircleWind::getFlightMode() != straight) || lowAirspeed || !THok || !gpsStatus ){
+	if( (circleWind->getFlightMode() != straight) || lowAirspeed || !THok || !gpsStatus ){
 		// ESP_LOGI(FNAME,"In Circling, stop ");
 		return false;
 	}
@@ -297,8 +298,8 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 				airspeedCorrection = 0.99;
 			if( abs( wind_as_calibration.get() - airspeedCorrection )*100 > 0.5 )
 					wind_as_calibration.set( airspeedCorrection );
-			if( compass )
-				devOK = compass->newDeviation( th, heading );
+			if( theCompass )
+				devOK = theCompass->newDeviation( th, heading );
 			else{
 				status = "No Compass";
 				return;

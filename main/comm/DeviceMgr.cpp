@@ -44,19 +44,19 @@ static TaskHandle_t SendTask = nullptr;
 // A routing table that contains the static connected devices relation.
 //
 // entries with zero termination, entirely as ro flash data
-static constexpr RoutingTarget flarm_routes_synch[] = { 
-    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {XCVARIOSECOND_DEV, CAN_BUS, 0}, 
-    {XCVARIOFIRST_DEV, CAN_BUS, 0}, {XCVARIOSECOND_DEV, WIFI_APSTA, 8884}, {XCVARIOFIRST_DEV, WIFI_APSTA, 8884}, 
+static constexpr RoutingTarget flarm_routes_synch[] = {
+    {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {XCVARIOSECOND_DEV, CAN_BUS, 0},
+    {XCVARIOFIRST_DEV, CAN_BUS, 0}, {XCVARIOSECOND_DEV, WIFI_APSTA, 8884}, {XCVARIOFIRST_DEV, WIFI_APSTA, 8884},
     {FLARM_HOST2_DEV, WIFI_APSTA, 8881}, {FLARM_HOST2_DEV, BT_SPP, 0}, {} };
-static constexpr RoutingTarget flarm_routes[] = { 
+static constexpr RoutingTarget flarm_routes[] = {
     {FLARM_HOST_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {FLARM_HOST2_DEV, WIFI_APSTA, 8881}, {FLARM_HOST2_DEV, BT_SPP, 0}, {} };
-static constexpr RoutingTarget radio_routes[] = { 
+static constexpr RoutingTarget radio_routes[] = {
     {RADIO_KRT2_DEV, S2_RS232, 0}, {RADIO_ATR833_DEV, S2_RS232, 0}, {XCVARIOFIRST_DEV, CAN_BUS, 0}, {} };
-static constexpr RoutingTarget navi_routes[] = { 
+static constexpr RoutingTarget navi_routes[] = {
     {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, CAN_BUS, 0}, {RADIO_KRT2_DEV, S2_RS232, 0}, {} };
-static constexpr RoutingTarget fhost_routes[] = { 
+static constexpr RoutingTarget fhost_routes[] = {
     {FLARM_DEV, S1_RS232, 0}, {FLARM_DEV, CAN_BUS, 0}, {} };
-static constexpr RoutingTarget proxy_routes[] = { 
+static constexpr RoutingTarget proxy_routes[] = {
     {NAVI_DEV, S2_RS232, 0}, {FLARM_HOST_DEV, WIFI_APSTA, 8881}, {FLARM_HOST_DEV, BT_SPP, 0}, {} };
 static constexpr std::pair<RoutingTarget, const RoutingTarget*> Routes[] = {
     { RoutingTarget(FLARM_DEV, S1_RS232, 0), flarm_routes_synch },
@@ -90,7 +90,7 @@ static const RoutingTarget* findRoute(const RoutingTarget& source) {
 //   + later entries with same dev id speicialize and override the first default
 //   + a list of protocol, first N are the by default configured ones
 //   + an interface profile enum, if needed
-// - 
+// -
 constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
     {DeviceId::ANEMOI_DEV, {"Anemoi", {{S1_RS232, S2_RS232}}, {{ANEMOI_P}, 1}, 0, IS_REAL, &anemoi_devsetup}},
     {DeviceId::ANEMOI_DEV, {"", {{S2_RS232}}, {{ANEMOI_P}, 1}, 0, IS_REAL, &anemoi_devsetup}},
@@ -108,12 +108,12 @@ constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
     {DeviceId::MAGLEG_DEV, {"", {{CAN_BUS}}, {{MAGSENSBIN_P}, 1}, MagSensBin::LEGACY_MAGSTREAM_ID, IS_REAL, &magleg_devsetup}},
     {DeviceId::MAGLEG_DEV, {"", {{I2C}}, {{MAGSENSBIN_P}, 0}, 0, IS_REAL, &magleg_devsetup}},
     {DeviceId::MAGSENS_DEV, {"MagSens rev1", {{CAN_BUS}}, {{MAGSENS_P}, 1}, 0, IS_REAL, nullptr}}, // auto start
-    {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_APSTA, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}}, 
-                                    {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1}, 
+    {DeviceId::NAVI_DEV,   {"Navi", {{WIFI_APSTA, S1_RS232, S2_RS232, BT_SPP, BT_LE, CAN_BUS}},
+                                    {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1},
                                     8880, IS_REAL, &navi_devsetup}},
-    {DeviceId::NAVI_DEV,   {"", {{S2_RS232}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1}, 
+    {DeviceId::NAVI_DEV,   {"", {{S2_RS232}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1},
                                     0, IS_REAL, &navi_devsetup}},
-    {DeviceId::NAVI_DEV,   {"", {{BT_SPP}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1}, 
+    {DeviceId::NAVI_DEV,   {"", {{BT_SPP}}, {{XCVARIO_P, CAMBRIDGE_P, OPENVARIO_P, BORGELT_P, KRT2_REMOTE_P, ATR833_REMOTE_P}, 1},
                                     0, IS_REAL, &navi_devsetup}},
     {DeviceId::FLARM_HOST_DEV, {"Flarm Consumer", {{WIFI_APSTA, S2_RS232, BT_SPP}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 8881, 0, &flarm_host_setup}},
     // {DeviceId::FLARM_HOST_DEV, {"", {{CAN_BUS}}, {{FLARMHOST_P, FLARMBIN_P}, 2}, 0, 0, &flarm_host_setup}},
@@ -252,7 +252,7 @@ static int tt_snd(Message *msg)
 }
 
 // generic transmitter grabbing messages from a queue
-void TransmitTask(void *arg)
+static void transmit_task(void *arg)
 {
     QueueHandle_t queue = (QueueHandle_t)arg;
     Message *msg;
@@ -301,7 +301,7 @@ void TransmitTask(void *arg)
             }
         }
 
-        // Always have to go through the later list until the first msg gets rejected 
+        // Always have to go through the later list until the first msg gets rejected
         // to know the proper tim-out to wait again
         while ( !later.empty() ) {
             msg = later.front();
@@ -349,11 +349,11 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
 {
     // On first device a send task needs to be created
     if ( ! SendTask ) {
-        xTaskCreate(TransmitTask, "genTx", 3000, ItfSendQueue, 21, &SendTask);
+        xTaskCreate(transmit_task, "genTx", 3000, ItfSendQueue, 21, &SendTask);
     }
     InterfaceCtrl *itf = &dummy_itf;
     if ( iid == CAN_BUS ) {
-        // CAN is special and not on all HW versions. 
+        // CAN is special and not on all HW versions.
         // Do not try to create it
         if ( CAN && CAN->getTestOk() ) {
             if ( ! CAN->isInitialized() ) {
@@ -418,7 +418,7 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
         itf = I2Cext;
     }
     // else // NO_PHY is just the hint to take the same interface
-    
+
     bool is_new = false;
     Device *dev = getDevice(did);
     if (dev && itf == &dummy_itf) { // that means NO_PHY -> "take the same" was requeset
@@ -444,7 +444,7 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
             Compass::createCompass(itf->getId());
         }
     }
-    
+
     EnumList pl = dev->_link->addProtocol(proto, did, send_port); // Add proto, if not yet there
     dev->_protos.insert(pl.begin(), pl.end());
 
@@ -580,7 +580,7 @@ bool DeviceManager::removeDevice(DeviceId did, bool nvsave)
 
     ESP_LOGI(FNAME, "After remove device %d.", did);
     dumpMap();
-    
+
     return ret;
 }
 
@@ -703,7 +703,7 @@ void DeviceManager::reserectFromNvs()
         // check if store data has the valid tag
         // check on role compatibility
         // skip extra "details" entries in the dev asttributes table
-        if ( entry.second.nvsetup && *entry.second.name.data() != '\0' && entry.second.nvsetup->get().isValid() 
+        if ( entry.second.nvsetup && *entry.second.name.data() != '\0' && entry.second.nvsetup->get().isValid()
             && ( !entry.second.getRoleDep() || entry.second.getRoleDep() == xcv_role.get()) ) {
             // setup device
             DeviceNVS *nvs = static_cast<DeviceNVS*>(entry.second.nvsetup->getPtr());
@@ -938,7 +938,7 @@ DeviceNVS Device::getNvsData() const
         ESP_LOGI(FNAME, "NvsData t%x bsp%d pid%d", (unsigned)entry.target.raw, entry.bin_sp, entry.setup.get(0));
     }
     NmeaPrtcl *nm = static_cast<NmeaPrtcl*>(_link->getNmea());
-    
+
     if ( nm ) {
         entry.nmea_sp = nm->getSendPort();
         // entry.setup.set(1, nm->getProtocolId());
@@ -1007,4 +1007,3 @@ bool Send(Message* msg)
 }
 
 } // namespace
-

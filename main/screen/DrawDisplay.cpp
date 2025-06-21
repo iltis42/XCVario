@@ -77,7 +77,7 @@ void drawDisplay(void *arg)
                 if ( detail == ScreenEvent::MSG_BOX ) {
                     if ( MBOX->draw() ) { // time triggered mbox update
                         // mbox finish, time to refresh the bottom line of the screen
-                        // todo
+                        // fixme
                     }
                 }
                 else if ( detail == ScreenEvent::BOOT_SCREEN ) {
@@ -90,7 +90,7 @@ void drawDisplay(void *arg)
                 // ESP_LOGI(FNAME, "Unknown event %x", event);
             }
             if (uiMonitor) {
-                uiMonitor->pet();
+                uiMonitor->pet(); // knob ui interaction happened
             }
         }
 

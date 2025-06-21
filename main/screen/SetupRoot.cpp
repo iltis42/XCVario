@@ -34,6 +34,7 @@ SetupRoot::~SetupRoot()
     detach();
 }
 
+// time-out on ui interaction while airborne
 void SetupRoot::barked()
 {
     int exitMenu = ButtonEvent(ButtonEvent::ESCAPE).raw;
@@ -172,4 +173,3 @@ void SetupRoot::longPress()
         begin();
     }
 }
-

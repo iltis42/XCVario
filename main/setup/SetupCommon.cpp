@@ -13,7 +13,7 @@
 #include "sensor.h"
 #include "comm/DeviceMgr.h"
 #include "comm/CanBus.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -139,13 +139,13 @@ bool SetupCommon::commit() {
 
 bool SetupCommon::sync(){
 	if( syncProto &&
-		( (!syncProto->isMaster() && flags._sync == SYNC_FROM_CLIENT) 
-			|| (syncProto->isMaster() && flags._sync == SYNC_FROM_MASTER) 
+		( (!syncProto->isMaster() && flags._sync == SYNC_FROM_CLIENT)
+			|| (syncProto->isMaster() && flags._sync == SYNC_FROM_MASTER)
 			|| flags._sync == SYNC_BIDIR ) ) {
 		// ESP_LOGI( FNAME,"Now sync %s", _key.data());
 		syncProto->sendItem(_key.data(), typeName(), getPtr(), getSize() );
 		return true;
-	
+
 	}
 	return false;
 }
@@ -323,7 +323,7 @@ const char * SetupCommon::getFixedID() {
 
 bool SetupCommon::isMaster()
 {
-	return syncProto && syncProto->isMaster();
+	return xcv_role.get() == MASTER_ROLE;
 }
 
 bool SetupCommon::haveWLAN(){
@@ -348,4 +348,3 @@ bool SetupCommon::isWired()
 int SetupCommon::numEntries() {
 	return instances.size();
 }
-

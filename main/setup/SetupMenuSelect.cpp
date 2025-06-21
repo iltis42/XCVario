@@ -8,13 +8,10 @@
 #include "setup/SetupMenuSelect.h"
 #include "setup/SetupMenu.h"
 
-#include "sensor.h"
-#include "Units.h"
-#include "ESPAudio.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 
-SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuSelect *p), 
+SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuSelect *p),
 									SetupNG<int> *anvs, bool ext_handler, bool end_menu ) :
 	MenuEntry(),
 	_action(action),
@@ -129,7 +126,7 @@ void SetupMenuSelect::longPress(){
 	press();
 }
 
-const char *SetupMenuSelect::value() const 
+const char *SetupMenuSelect::value() const
 {
 	if ( _select < 0 ) {
 		// lazy initialization

@@ -91,7 +91,7 @@ typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RE
 typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN, DISPLAY_NINETY } e_display_orientation_t;
 typedef enum e_gear_warning_io { GW_OFF, GW_FLAP_SENSOR, GW_S2_RS232_RX, GW_FLAP_SENSOR_INV, GW_S2_RS232_RX_INV, GW_EXTERNAL }  e_gear_warning_io_t;
 typedef enum e_data_mon_mode { MON_MOD_ASCII, MON_MOD_BINARY } e_data_mon_mode_t;
-typedef enum e_hardware_rev { 	
+typedef enum e_hardware_rev {
 	HW_UNKNOWN=0,
 	HW_LONG_VARIO=1,
 	XCVARIO_20=2,  // 1 x RS232
@@ -144,7 +144,7 @@ class SetupNG: public SetupCommon
 {
 public:
 	SetupNG( const char *akey, T adefault, bool reset=true, e_sync_t sync=SYNC_NONE, e_volatility vol=PERSISTENT,
-			void (* action)()=0, e_quantity_t quant = QUANT_NONE, const limits_t *l = nullptr) :
+			void (* action)()=nullptr, e_quantity_t quant = QUANT_NONE, const limits_t *l = nullptr) :
 		SetupCommon(akey),
 		_default(adefault),
 		_limt(l)
@@ -198,7 +198,7 @@ public:
 				str = std::to_string(_value.x) + '/' +std::to_string(_value.y) + '/' +std::to_string(_value.z);
 			}
 			else if constexpr (std::is_same_v<T, DeviceNVS>) {
-				str = std::to_string(_value.target.raw) + '/' +std::to_string(_value.setup.data) + 
+				str = std::to_string(_value.target.raw) + '/' +std::to_string(_value.setup.data) +
 					'/' +std::to_string(_value.bin_sp) + '/' +std::to_string(_value.nmea_sp);
 			}
 		}

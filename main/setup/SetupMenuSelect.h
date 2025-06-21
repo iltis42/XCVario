@@ -10,13 +10,16 @@
 #include "setup/MenuEntry.h"
 #include "setup/SetupNG.h"
 
+#include <vector>
+#include <utility>
+
 class SetupMenuSelect : public MenuEntry
 {
 	using ITEM_t = std::pair<const char *, int>;
 
 public:
 	SetupMenuSelect() = delete;
-	explicit SetupMenuSelect( const char* title, e_restart_mode_t restart=RST_NONE, int (*action)(SetupMenuSelect *p) = nullptr, 
+	explicit SetupMenuSelect( const char* title, e_restart_mode_t restart=RST_NONE, int (*action)(SetupMenuSelect *p) = nullptr,
 		SetupNG<int> *anvs=nullptr, bool ext_handler=false, bool end_menu=false );
 	virtual ~SetupMenuSelect() = default;
 	void enter() override;

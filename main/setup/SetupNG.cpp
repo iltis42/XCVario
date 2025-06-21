@@ -109,12 +109,14 @@ void modifyPolar() {
 }
 
 void resetSWindAge() {
-	if( swind_dir.get() != 0 && swind_speed.get() != 0 )  // do not reset age at initial sync
+	if( swind_dir.get() != 0 && swind_speed.get() != 0 ) { // do not reset age at initial sync
 		StraightWind::resetAge();
+	}
 }
 void resetCWindAge() {
-	if( cwind_dir.get() != 0 && cwind_speed.get() != 0 )
+	if( cwind_dir.get() != 0 && cwind_speed.get() != 0 ) {
 		CircleWind::resetAge();
+	}
 }
 
 void change_volume() {
@@ -365,7 +367,7 @@ SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );
 SetupNG<float> 			wind_filter_lowpass("SWINDAVER", 60, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(5, 120, 1));
 SetupNG<float> 			wind_straight_course_tolerance("WINDSTOL", 7.5, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(2.0, 30.0, 0.1));
 SetupNG<float> 			wind_straight_speed_tolerance("WINDSSTOL", 15, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1.0, 30.0, 1));
-SetupNG<int> 			wind_display( "WIND_DIS", WD_NONE );
+SetupNG<int> 			wind_display( "WIND_DIS", WD_NONE, true, SYNC_FROM_MASTER );
 SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
 SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.0, 180.0, 1.0));
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0, true, SYNC_BIDIR );  // considering netto vario and g load for S2F or not

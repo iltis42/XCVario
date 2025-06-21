@@ -143,7 +143,7 @@ void SerialLine::ConfigureIntf(int profile)
 				cfg.polarity = newcfg->polarity;
 				applyLineInverse();
 			}
-			if ( cfg.tx_ena != newcfg->tx_ena 
+			if ( cfg.tx_ena != newcfg->tx_ena
 				|| cfg.pin_swp != newcfg->pin_swp ) {
 				cfg.tx_ena = newcfg->tx_ena;
 				cfg.pin_swp = newcfg->pin_swp;
@@ -153,7 +153,7 @@ void SerialLine::ConfigureIntf(int profile)
 	}
 }
 
-// returns 0: sucess; or retry wait time in msec 
+// returns 0: sucess; or retry wait time in msec
 int SerialLine::Send(const char *msg, int &len, int port)
 {
 	int count = uart_write_bytes(uart_nr, msg, len);
@@ -216,7 +216,7 @@ void SerialLine::applyLineInverse()
 		gpio_pulldown_dis(rx_gpio);
 		gpio_pullup_en(tx_gpio);
 		gpio_pullup_en(rx_gpio);
-			
+
 	}
 	else {
 		uart_set_line_inverse(uart_nr, 0);
@@ -286,10 +286,10 @@ void SerialLine::start()
 		if ( ! _iotask ) {
 			char tmp[] = "S1rx";
 			tmp[1] = '0'+uart_nr;
-			xTaskCreate((TaskFunction_t)uartTask, tmp, 8000, this, 22, (tskTaskControlBlock**)&_iotask);
+			xTaskCreate((TaskFunction_t)uartTask, tmp, 4000, this, 22, (tskTaskControlBlock**)&_iotask);
 		}
 		uart_intr_config_t intr_config = {
-			.intr_enable_mask = UART_RXFIFO_TOUT_INT_ENA | UART_RXFIFO_OVF_INT_ENA | UART_AT_CMD_CHAR_DET_INT_ENA | UART_RXFIFO_FULL_INT_ENA 
+			.intr_enable_mask = UART_RXFIFO_TOUT_INT_ENA | UART_RXFIFO_OVF_INT_ENA | UART_AT_CMD_CHAR_DET_INT_ENA | UART_RXFIFO_FULL_INT_ENA
 								| UART_TXFIFO_EMPTY_INT_ENA,
 								// | UART_TXFIFO_EMPTY_INT_ENA | UART_TX_BRK_IDLE_DONE_INT_ENA | UART_TX_BRK_DONE_INT_ENA | UART_TX_DONE_INT_ENA,
 			.rx_timeout_thresh = 9,
@@ -316,4 +316,3 @@ void SerialLine::stop()
 		uart_driver_delete(uart_nr);
 	}
 }
-

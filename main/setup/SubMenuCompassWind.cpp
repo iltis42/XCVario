@@ -1,6 +1,7 @@
 
 #include "SubMenuCompassWind.h"
 
+#include "comm/Devices.h"
 #include "setup/SetupMenu.h"
 #include "setup/SetupMenuSelect.h"
 
@@ -13,6 +14,8 @@
 #include "comm/DeviceMgr.h"
 #include "logdef.h"
 #include "wind/WindCalcTask.h"
+
+#include <string_view>
 
 // compass menu handlers.
 static int compassDeviationAction(SetupMenuSelect *p) {
@@ -212,12 +215,11 @@ void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
 		top->addEntry(compassMenu);
 
 		// Wind speed observation window
-		SetupMenuSelect *windcal = new SetupMenuSelect("Wind Calculation", RST_NONE, nullptr, &wind_enable);
-		windcal->addEntry("Disable");
-		windcal->addEntry("Straight");
-		windcal->addEntry("Circling");
-		windcal->addEntry("Both");
-		windcal->addEntry("Anemoi");
+		SetupMenuSelect *windcal = new SetupMenuSelect("Wind Calculation", RST_NONE, windSettingsAction, &wind_enable);
+		windcal->addEntry("Disable", WA_OFF);
+		windcal->addEntry("Straight", WA_STRAIGHT);
+		windcal->addEntry("Circling", WA_CIRCLING);
+		windcal->addEntry("Both", WA_BOTH);
 		windcal->setHelp("Enable Wind calculation for straight flight (needs compass), circling, both or external source");
 		top->addEntry(windcal);
 
@@ -250,10 +252,10 @@ void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
 
 		SetupMenuSelect *windlog = new SetupMenuSelect("Wind Logging", RST_NONE, nullptr, &wind_logging);
 		windlog->addEntry("Disable");
-		windlog->addEntry("Enable WIND");
-		windlog->addEntry("Enable GYRO/MAG");
-		windlog->addEntry("Enable Both");
-		windlog->setHelp("Enable Wind logging NMEA output, e.g. to WIFI port");
+		windlog->addEntry("Wind");
+		windlog->addEntry("GYRO/MAG");
+		windlog->addEntry("Both");
+		windlog->setHelp("Enable Wind logging NMEA output, to Navi port");
 		top->addEntry(windlog);
 	}
 	if ( DEVMAN->getDevice(MAGSENS_DEV) != nullptr ||
@@ -263,4 +265,17 @@ void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
 	else {
 		top->getEntry(0)->lock();
 	}
+    std::string_view anemoi_name = DeviceManager::getDevName(ANEMOI_DEV);
+    SetupMenuSelect *windcal = static_cast<SetupMenuSelect*>(top->getEntry(1));
+	if ( DEVMAN->getDevice(ANEMOI_DEV) != nullptr ) {
+        if ( ! windcal->existsEntry(anemoi_name.data()) ) {
+            windcal->addEntry(anemoi_name.data(), WA_EXT_ANEMOI);
+        }
+    }
+    else {
+        if ( windcal->existsEntry(anemoi_name.data()) ) {
+            windcal->delEntry(anemoi_name.data());
+        }
+    }
+
 }

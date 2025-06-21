@@ -1969,22 +1969,24 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _dirty, bool compass_dir
 		float wind=0;
 		int ageStraight, ageCircling;
 		char type = '/';
-		if( theWind ) {
+		if( straightWind ) {
 			// check what kind of wind is available from calculator
-			wind_ok = theWind->getWind( &winddir, &wind, &ageStraight );
+			wind_ok = straightWind->getWind( &winddir, &wind, &ageStraight );
 			type = '|';
 		}
-		else if( wind_enable.get() == WA_CIRCLING ){
-			wind_ok = CircleWind::getWind( &winddir, &wind, &ageCircling );
+		else if( circleWind ){
+			wind_ok = circleWind->getWind( &winddir, &wind, &ageCircling );
 		}
 		else if( wind_enable.get() == WA_BOTH ){  // dynamically change type depending on younger calculation
 			int wds, wdc;
 			float ws, wc;
-			bool oks=false, okc;
-			if ( theWind ) {
-				oks = theWind->getWind( &wds, &ws, &ageStraight );
+			bool oks=false, okc=false;
+			if ( straightWind ) {
+				oks = straightWind->getWind( &wds, &ws, &ageStraight );
 			}
-			okc = CircleWind::getWind( &wdc, &wc, &ageCircling);
+			if ( circleWind ) {
+				okc = circleWind->getWind( &wdc, &wc, &ageCircling);
+			}
 			if( oks && ageStraight <= ageCircling ){
 				wind = ws;
 				winddir = wds;

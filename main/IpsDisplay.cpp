@@ -8,6 +8,7 @@
 
 #include "IpsDisplay.h"
 
+#include "math/GaugeTrig.h"
 #include "comm/DeviceMgr.h"
 #include "BLESender.h"
 #include "OneWireESP32.h"
@@ -144,8 +145,8 @@ int S2FST = 45;
 
 
 int ASLEN = 0;
-static int AMIDY = DISPLAY_H/2;
-static int AMIDX = (DISPLAY_W/2 + 30);
+static int AMIDY;
+static int AMIDX;
 
 static int16_t INNER_RIGHT_ALIGN = 170;
 static int16_t LOAD_MPG_POS = 0;
@@ -196,9 +197,9 @@ float IpsDisplay::old_polar_sink = 0;
 temp_status_t IpsDisplay::siliconTempStatusOld = MPU_T_UNKNOWN;
 
 const int16_t SINCOS_OVER_110 = 256; // need to be a power of 2
-const float sincosScale = SINCOS_OVER_110/M_PI_2*90./110.;
-static float precalc_sin[SINCOS_OVER_110];
-static float precalc_cos[SINCOS_OVER_110];
+constexpr int16_t SINCOS_OVER_90 = 180;
+constexpr float sincosScale = 180.f/M_PI*2.f; // rad -> deg/2 a 0.5deg resolution discrete scale
+constexpr float sincosScaleOld = SINCOS_OVER_110/M_PI_2*90./110.;
 static int16_t old_vario_bar_val = 0;
 static int16_t old_sink_bar_val = 0;
 static int16_t alt_quant = 1;
@@ -228,7 +229,7 @@ const static ucg_color_t needlecolor[3] = { {COLOR_WHITE}, {COLOR_ORANGE}, {COLO
 static float _scale_k = M_PI_2 / 5.;
 static float logGaugeIdx(const float val)
 {
-	return log2f(std::abs(val)+1.f) * _scale_k * (std::signbit(val)?-1.:1.);
+	return fast_log2f(std::abs(val)+1.f) * _scale_k * (std::signbit(val)?-1.:1.);
 }
 static float linGaugeIdx(const float val)
 {
@@ -236,66 +237,51 @@ static float linGaugeIdx(const float val)
 }
 static float (*_gauge)(float) = &linGaugeIdx;
 
-// get sin/cos position from gauge index in rad
-static int precal_scaled_idx(const float val) { return (int)(abs(val)*sincosScale)&(SINCOS_OVER_110-1); }
-static int precal_idx(const int ival) { return abs(ival)&(SINCOS_OVER_110-1); }
+// get sin/cos position from gauge index in radian
 
+// with gauge centered mapping
+static int gaugeSinCentered(const float val, const int len)
+{
+	return AMIDY - fast_sin_rad(val) * len;
+}
+static int gaugeCosCentered(const float val, const int len)
+{
+	return AMIDX - fast_cos_rad(val) * len;
+}
+// based on discrete integral values with 0.5deg resolution
+static int gaugeSinCenteredDeg2(const int val, const int len)
+{
+	return AMIDY - fast_sin_deg(static_cast<float>(val)*0.5f) * len;
+}
+static int gaugeCosCenteredDeg2(const int val, const int len)
+{
+	return AMIDX - fast_cos_deg(static_cast<float>(val)*0.5f) * len;
+}
 static int gaugeSin(const float val, const int len)
 {
-	return AMIDY - precalc_sin[precal_scaled_idx(val)] * len * (std::signbit(val)?-1:1);
+	return fast_sin_rad(val) * len;
 }
 static int gaugeCos(const float val, const int len)
 {
-	return AMIDX - precalc_cos[precal_scaled_idx(val)] * len;
+	return fast_cos_rad(val) * len;
 }
-static int gaugeSin(const int val, const int len)
+static int gaugeSinDeg2(const int val, const int len)
 {
-	return AMIDY - precalc_sin[precal_idx(val)] * len * (std::signbit(val)?-1:1);
+	return fast_sin_deg(static_cast<float>(val)*0.5f) * len;
 }
-static int gaugeCos(const int val, const int len)
+static int gaugeCosDeg2(const int val, const int len)
 {
-	return AMIDX - precalc_cos[precal_idx(val)] * len;
+	return fast_cos_deg(static_cast<float>(val)*0.5f) * len;
 }
-static int sinIncr(const int val, const int len)
-{
-	return precalc_sin[precal_idx(val)] * len * (std::signbit(val)?-1:1);
-}
-static int cosIncr(const int val, const int len)
-{
-	return precalc_cos[precal_idx(val)] * len;
-}
-// Or just simply the plain trigenometric function rad(-110) < idx < rad(110)
-static float mySin(const float val)
-{
-	return precalc_sin[precal_scaled_idx(val)] * (std::signbit(val)?-1:1);
-}
-static float myCos(const float val)
-{
-	return precalc_cos[precal_scaled_idx(val)];
-}
-static float mySin(const int ival)
-{
-	return precalc_sin[precal_idx(ival)] * (std::signbit(ival)?-1:1);
-}
-static float myCos(const int ival)
-{
-	return precalc_cos[precal_idx(ival)];
-}
+
 static void initGauge(const float max, const bool log)
 {
 	if ( log ) {
-		_scale_k = M_PI_2 / log2f(max+1.);
+		_scale_k = M_PI_2 / fast_log2f(max+1.);
 		_gauge = &logGaugeIdx;
 	} else {
 		_scale_k = M_PI_2 / max;
 		_gauge = &linGaugeIdx;
-	}
-	static bool initialized = false;
-	if ( initialized ) return;
-
-	for ( int i=0; i<SINCOS_OVER_110; i++ ) {
-		precalc_sin[i] = sin(i/sincosScale);
-		precalc_cos[i] = cos(i/sincosScale);
 	}
 
 	// center the gauge
@@ -308,8 +294,8 @@ static void initGauge(const float max, const bool log)
 	if ( display_orientation.get() == DISPLAY_NINETY ) {
 		AMIDX = DISPLAY_W/2 - 43;
 		LOAD_MNG_POS = DISPLAY_H*0.53;
+		_scale_k *= 1.4; // scale cover -0.7pi .. 0.7pi
 	}
-	initialized = true;
 }
 // inverse to xxGaugeIdx. Get the value for an indicator position
 static float gaugeValueFromIdx(const float rad)
@@ -322,19 +308,10 @@ static float gaugeValueFromIdx(const float rad)
 }
 
 
-PolarIndicator::PolarIndicator() :
-					base(106),
-					tip(132),
-					h_width(8)
+PolarIndicator::PolarIndicator()
 {
 	color = needlecolor[1];
-	base_val_offset = (int)(atan(static_cast<float>(h_width)/base)*sincosScale);
-	prev.x_0 = gaugeCos(prev_needle_pos+base_val_offset, base); // top shoulder
-	prev.y_0 = gaugeSin(prev_needle_pos+base_val_offset, base);
-	prev.x_1 = gaugeCos(prev_needle_pos-base_val_offset, base); // lower shoulder
-	prev.y_1 = gaugeSin(prev_needle_pos-base_val_offset, base);
-	prev.x_2 = gaugeCos(prev_needle_pos, tip); // tip
-	prev.y_2 = gaugeSin(prev_needle_pos, tip);
+	setGeometry(106, 132, 8);
 }
 
 void PolarIndicator::setGeometry(int16_t base_p, int16_t tip_p, int16_t half_width_p)
@@ -343,12 +320,12 @@ void PolarIndicator::setGeometry(int16_t base_p, int16_t tip_p, int16_t half_wid
 	tip = tip_p;
 	h_width = half_width_p;
 	base_val_offset = (int)(atan(static_cast<float>(h_width)/base)*sincosScale);
-	prev.x_0 = gaugeCos(prev_needle_pos+base_val_offset, base); // top shoulder
-	prev.y_0 = gaugeSin(prev_needle_pos+base_val_offset, base);
-	prev.x_1 = gaugeCos(prev_needle_pos-base_val_offset, base); // lower shoulder
-	prev.y_1 = gaugeSin(prev_needle_pos-base_val_offset, base);
-	prev.x_2 = gaugeCos(prev_needle_pos, tip); // tip
-	prev.y_2 = gaugeSin(prev_needle_pos, tip);
+	prev.x_0 = gaugeCosCenteredDeg2(prev_needle_pos+base_val_offset, base); // top shoulder
+	prev.y_0 = gaugeSinCenteredDeg2(prev_needle_pos+base_val_offset, base);
+	prev.x_1 = gaugeCosCenteredDeg2(prev_needle_pos-base_val_offset, base); // lower shoulder
+	prev.y_1 = gaugeSinCenteredDeg2(prev_needle_pos-base_val_offset, base);
+	prev.x_2 = gaugeCosCenteredDeg2(prev_needle_pos, tip); // tip
+	prev.y_2 = gaugeSinCenteredDeg2(prev_needle_pos, tip);
 }
 
 
@@ -637,8 +614,8 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 	if( avc_old != avclimb ){
 		ucg->setColor( COLOR_BLACK );
 		a = (_gauge)(avc_old);
-		int x=gaugeCos(a, pos);
-		int y=gaugeSin(a, pos);
+		int x=gaugeCosCentered(a, pos);
+		int y=gaugeSinCentered(a, pos);
 		ucg->drawTetragon( x+size, y, x,y+ylsize, x-size,y, x,y-yusize );
 		// refresh scale around old AVG icon
 		drawScale( _range, -_range, DISPLAY_H/2-16, 0, avc_old*10.f );
@@ -672,8 +649,8 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 	if( avclimb > _range ) // clip values off weeds
 		avclimb = _range;
 	a = (_gauge)(avclimb);
-	int x=gaugeCos(a, pos);
-	int y=gaugeSin(a, pos);
+	int x=gaugeCosCentered(a, pos);
+	int y=gaugeSinCentered(a, pos);
 	ESP_LOGD(FNAME,"drawAvg: x=%d  y=%d", x,y );
 	ucg->drawTetragon( x+size,y, x, y+ylsize, x-size,y, x,y-yusize );
 	avc_old=avclimb;
@@ -1152,8 +1129,8 @@ void IpsDisplay::drawOneScaleLine( float a, int16_t l1, int16_t l2, int16_t w, u
 {
 	if( _menu ) return;
 
-	float si=sin(a);
-	float co=cos(a);
+	float si=fast_sin_rad(a);
+	float co=fast_cos_rad(a);
 	int16_t w0 = w/2;
 	w = w - w0; // total width := w + w0
 	int16_t xn_0 = AMIDX-l1*co+w0*si;
@@ -1199,19 +1176,19 @@ bool PolarIndicator::drawPolarIndicator( float a, bool dirty_p )
     	compass_dirty |= prev_needle > M_PI_2*35./90. && prev_needle < M_PI_2*75./90.;
     }
 
-	n.x_0 = gaugeCos(val+base_val_offset, base); // top shoulder
-	n.y_0 = gaugeSin(val+base_val_offset, base);
-	n.x_1 = gaugeCos(val-base_val_offset, base); // lower shoulder
-	n.y_1 = gaugeSin(val-base_val_offset, base);
-	n.x_2 = gaugeCos(val, tip); // tip
-	n.y_2 = gaugeSin(val, tip);
+	n.x_0 = gaugeCosCenteredDeg2(val+base_val_offset, base); // top shoulder
+	n.y_0 = gaugeSinCenteredDeg2(val+base_val_offset, base);
+	n.x_1 = gaugeCosCenteredDeg2(val-base_val_offset, base); // lower shoulder
+	n.y_1 = gaugeSinCenteredDeg2(val-base_val_offset, base);
+	n.x_2 = gaugeCosCenteredDeg2(val, tip); // tip
+	n.y_2 = gaugeSinCenteredDeg2(val, tip);
 	// ESP_LOGI(FNAME,"IpsDisplay::drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d", n.x_0, n.y_0, n.x_1 ,n.y_1, n.x_2, n.y_2 );
 
 	if ( std::abs(val-prev_needle_pos) < 9./90.*sincosScale  ) { // 6deg:=atan(7/70)
 
 		// Clear just a smal triangle
-		int16_t x_2 = gaugeCos(prev_needle_pos, base+7);
-		int16_t y_2 = gaugeSin(prev_needle_pos, base+7);
+		int16_t x_2 = gaugeCosCenteredDeg2(prev_needle_pos, base+7);
+		int16_t y_2 = gaugeSinCenteredDeg2(prev_needle_pos, base+7);
 		if( change ){
 			IpsDisplay::ucg->setColor( COLOR_BLACK );
 			IpsDisplay::ucg->drawTriangle(prev.x_0,prev.y_0, prev.x_1,prev.y_1, x_2,y_2);
@@ -1277,14 +1254,14 @@ void IpsDisplay::drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t
 	for ( int i = old_a_level + ((old_a_level==0 || old_a_level*inc>0) ? inc : 0);
 			i != level+((i*inc < 0)?0:inc); i+=inc ) {
 		if ( i != 0 ) {
-			int x = gaugeCos(i, l1);
-			int y = gaugeSin(i, l1);
-			int xe = x - cosIncr(i, 5);
-			int ye = y - sinIncr(i, 5);
+			int x = gaugeCosCenteredDeg2(i, l1);
+			int y = gaugeSinCenteredDeg2(i, l1);
+			int xe = x - gaugeCosDeg2(i, 5);
+			int ye = y - gaugeSinDeg2(i, 5);
 			// ESP_LOGI(FNAME,"drawLine x1:%d y1:%d x2:%d y2:%d", x,y,xe,ye );
 			ucg->drawLine(x, y, xe, ye);
-			int d = std::signbit(i)?-1:1;
-			ucg->drawLine(x, y+d, xe, ye+d);
+			// int d = std::signbit(i)?-1:1;
+			// ucg->drawLine(x, y+d, xe, ye+d);
 		}
 		else ucg->setColor(c.color[0], c.color[1], c.color[2]);
 	}
@@ -1390,8 +1367,8 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 		to_side -= incr/(M_PI_2*80);
 	}
 	// ESP_LOGI( FNAME,"drawOneLabel val:%.2f label:%d  toside:%.2f inc:%.2f", val, labl, to_side, incr );
-	int x=gaugeCos(val+to_side, pos);
-	int y=gaugeSin(val+to_side, pos) +6;
+	int x=gaugeCosCentered(val+to_side, pos);
+	int y=gaugeSinCentered(val+to_side, pos) +6;
 
 	ucg->setColor(COLOR_LBBLUE);
 	ucg->setPrintPos(x,y);
@@ -2293,7 +2270,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Cruise mode or circling
 	if( ((int)s2fmode != s2fmode_prev) && !ulmode ){
-		drawS2FMode( 190, 18, s2fmode );
+		drawS2FMode( DISPLAY_W-50, 18, s2fmode );
 		s2fmode_prev = (int)s2fmode;
 	}
 	// Medium Climb Indicator

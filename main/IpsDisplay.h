@@ -44,8 +44,6 @@ public:
 	static void drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t color );
 	static void initDisplay();
 	static void clear();   // erase whole display
-	void doMenu( bool menu=true ) { _menu = menu; };
-	static bool inMenu() { return _menu; }
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
 	static float getHeading();
@@ -67,7 +65,6 @@ private:
 	static float _range_clip;
 	static int _pixpmd;
 
-	static bool _menu;
 	enum ips_display _dtype;
 	static int tick;
 	static ucg_color_t colors[];

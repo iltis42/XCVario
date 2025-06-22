@@ -76,7 +76,6 @@ void SetupRoot::begin(MenuEntry *setup)
     }
 
     gflags.inSetup = true;
-    _display->doMenu(true);
 
     _childs.front()->enter();
 
@@ -99,7 +98,6 @@ void SetupRoot::exit(int levels)
     delete _childs.front(); // hook to the entire setup tree
     _childs.clear();
     gflags.inSetup = false;
-    _display->doMenu(false);
 }
 
 void SetupRoot::rot(int count)

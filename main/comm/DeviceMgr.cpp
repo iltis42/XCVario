@@ -439,7 +439,7 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
         dl->incrDeviceCount();
         dev->_itf = itf;
 
-        // some devices we need to create some gears to process the data stream
+        // for some devices we need to create some gears to process the data stream
         if ( did == MAGLEG_DEV ) {
             Compass::createCompass(itf->getId());
         }

@@ -12,7 +12,7 @@
 #include "sensor.h"
 #include "setup/SetupNG.h"
 #include "Version.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <string>
 
@@ -78,12 +78,12 @@ dl_action_t MagSensMsg::streamData(NmeaPlugin *plg)
     }
     ESP_LOGI(FNAME,"PMMD stream data %s", sm->_frame.c_str());
     if ( sm->_frame.at(6) == 'r' ) {
-        if ( MagSensBin::Can_Mag ) {
-            t_magn_axes tmp;
-            tmp.x = atoi(sm->_frame.c_str() + word->at(1));
-            tmp.y = atoi(sm->_frame.c_str() + word->at(2)); 
-            tmp.z = atoi(sm->_frame.c_str() + word->at(3));
-            MagSensBin::Can_Mag->fromCAN(&tmp);
+        t_magn_axes tmp;
+        tmp.x = atoi(sm->_frame.c_str() + word->at(1));
+        tmp.y = atoi(sm->_frame.c_str() + word->at(2));
+        tmp.z = atoi(sm->_frame.c_str() + word->at(3));
+        if ( theCompass ) {
+            theCompass->getSink()->fromExternal(&tmp);
         }
     }
     else if ( sm->_frame.at(6) == 'c' ) {
@@ -105,7 +105,7 @@ const ParserEntry MagSensMsg::_pt[] = {
 };
 
 
-// Transmitter 
+// Transmitter
 bool NmeaPrtcl::sendHello()
 {
     Message* msg = newMessage();
@@ -143,7 +143,7 @@ bool NmeaPrtcl::killStream()
         }
     }
     while ( --try_times > 0 );
-    
+
     return true;
 }
 bool NmeaPrtcl::prepareUpdate(int len, int pack)
@@ -180,4 +180,3 @@ int NmeaPrtcl::waitConfirmation()
 
     return Conf_Pack_Nr;
 }
-

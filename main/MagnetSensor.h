@@ -23,6 +23,12 @@ typedef struct magn_axes {
 	int16_t z;
 }t_magn_axes;
 
+class CompassSink_I
+{
+public:
+    virtual ~CompassSink_I() = default;
+    virtual void fromExternal(const t_magn_axes *magaxes) = 0;
+};
 
 // Class Template
 class MagnetSensor
@@ -43,4 +49,3 @@ public:
 protected:
 	bool calibrated = false;
 };
-

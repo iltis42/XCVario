@@ -66,7 +66,10 @@ Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, co
 {
 	ESP_LOGI(FNAME,"Compass() I2C addr=%02x", addr );
 	if( i2cBus == 0 ){
-		mysensor = new QMCMagCAN();
+		QMCMagCAN *tmp = new QMCMagCAN();
+		mysensor = tmp;
+		_MagsensSink = tmp;
+		// _MagsensSink = mysensor;
 	}
 	else{
 		mysensor = new QMC5883L( addr, odr, range, osr, i2cBus );  // tbd. base class and QMC5883CAN class

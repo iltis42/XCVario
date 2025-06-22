@@ -1,3 +1,11 @@
+/***********************************************************
+ ***   THIS DOCUMENT CONTAINS PROPRIETARY INFORMATION.   ***
+ ***    IT IS THE EXCLUSIVE CONFIDENTIAL PROPERTY OF     ***
+ ***     Rohs Engineering Design AND ITS AFFILIATES.     ***
+ ***                                                     ***
+ ***       Copyright (C) Rohs Engineering Design         ***
+ ***********************************************************/
+
 #pragma once
 
 #include "vector_3d.h"
@@ -26,7 +34,7 @@ public:
     Quaternion(const Quaternion &) = default;
     Quaternion& operator=(const Quaternion&) = default;
     bool operator==(const Quaternion r) { return a==r.a && b==r.b && c==r.c && d==r.d; };
-    
+
     // API
     float getAngle() const;
     float getAngleAndAxis(vector_ijk& axis) const;

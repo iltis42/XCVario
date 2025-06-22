@@ -34,7 +34,7 @@
 #include "screen/MessageBox.h"
 #include "screen/DrawDisplay.h"
 
-#include "quaternion.h"
+#include "math/Quaternion.h"
 #include "wmm/geomag.h"
 #include "OTA.h"
 #include "Switch.h"

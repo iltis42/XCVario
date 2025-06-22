@@ -1,5 +1,14 @@
-#include "quaternion.h"
-#include <logdef.h>
+/***********************************************************
+ ***   THIS DOCUMENT CONTAINS PROPRIETARY INFORMATION.   ***
+ ***    IT IS THE EXCLUSIVE CONFIDENTIAL PROPERTY OF     ***
+ ***     Rohs Engineering Design AND ITS AFFILIATES.     ***
+ ***                                                     ***
+ ***       Copyright (C) Rohs Engineering Design         ***
+ ***********************************************************/
+
+#include "math/Quaternion.h"
+#include "logdefnone.h"
+
 #include <esp_timer.h>
 
 
@@ -229,7 +238,7 @@ Quaternion Quaternion::AlignVectors(const vector_ijk &start, const vector_ijk &d
 	float s = sqrt( (1.f+cosTheta)*2.f );
 
 	return Quaternion(
-		s * 0.5f, 
+		s * 0.5f,
 		rotationAxis.a / s,
 		rotationAxis.b / s,
 		rotationAxis.c / s
@@ -335,7 +344,7 @@ Quaternion Quaternion::fromGyro(const vector_ijk& omega, float dtime)
 float Compass_atan2( float y, float x )
 {
     float result = rad2deg(atan2(y, x));
-    
+
     // As left turn means plus, euler angles come with 0° for north, -90° for east, -+180 degree for south and for 90° west
     // compass rose goes vice versa, so east is 90° means we need to invert
     if ( std::signbit(y) ) {
@@ -343,7 +352,7 @@ float Compass_atan2( float y, float x )
     }
 
     return result;
-} 
+}
 
 #ifdef Quaternionen_Test
 

@@ -3,7 +3,7 @@
 #include "Colors.h"
 #include "ESPAudio.h"
 #include "IpsDisplay.h"
-#include "quaternion.h"
+#include "math/Quaternion.h"
 #include "sensor.h"
 #include "wind/CircleWind.h"
 #include <cmath>

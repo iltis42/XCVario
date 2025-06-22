@@ -2,7 +2,7 @@
 #include <MPU.hpp>
 #include <mpu/math.hpp>
 #include "sensor.h"
-#include "quaternion.h"
+#include "math/Quaternion.h"
 #include "vector.h"
 #include "logdef.h"
 

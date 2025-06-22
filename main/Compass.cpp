@@ -20,7 +20,7 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 #include "KalmanMPU6050.h"
 #include "QMCMagCAN.h"
 #include "QMC5883L.h"
-#include "quaternion.h"
+#include "math/Quaternion.h"
 #include "sensor.h"
 #include "comm/DeviceMgr.h"
 #include "comm/I2CWrapper.h"

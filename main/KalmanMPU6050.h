@@ -21,7 +21,7 @@
 
 #include "vector_3d.h"
 #include "setup/SetupMenuSelect.h"
-#include "quaternion.h"
+#include "math/Quaternion.h"
 
 class Quaternion;
 
@@ -80,21 +80,21 @@ public:
 
   /**
    * Gets the accelerometer X reading, as per last read() call.
-   * 
+   *
    * @returns The accelerometer X reading in glider reference
    */
   static inline float getGliderAccelX()  { return accel.a; };
 
   /**
    * Gets the accelerometer Y reading, as per last read() call.
-   * 
+   *
    * @returns The accelerometer Y reading
    */
   static inline float getGliderAccelY()   { return accel.b; };
 
   /**
    * Gets the accelerometer Z reading, as per last read() call.
-   * 
+   *
    * @returns The accelerometer Z reading
    */
   static inline float getGliderAccelZ()  { return accel.c; };
@@ -110,7 +110,7 @@ public:
 
   /**
    * Gets the gyroscope X reading, as per last read() call.
-   * 
+   *
    * @returns The gyroscope X reading in glider reference.
    */
   static inline float getGliderGyroX()   { return gyro.a; };
@@ -118,7 +118,7 @@ public:
 
   /**
    * Gets the gyroscope Y reading, as per last read() call.
-   * 
+   *
    * @returns The gyroscope Y reading.
    */
   static inline float getGliderGyroY()   { return gyro.b; };
@@ -126,7 +126,7 @@ public:
 
   /**
    * Gets the gyroscope Z reading, as per last read() call.
-   * 
+   *
    * @returns The gyroscope Z reading.
    */
   static inline float getGliderGyroZ()   { return gyro.c; };
@@ -140,7 +140,7 @@ public:
   /**
    * Gets the roll (X rotation) in degress from the Kalman Filter.
    * As per last read() call.
-   * 
+   *
    * @returns The x rotation (roll) in degrees
    */
   static inline float getRoll() { return float(RAD_TO_DEG) * filterRoll_rad; };
@@ -148,7 +148,7 @@ public:
 
   /**
    * Gets the pitch (Y rotation) in degrees from the Kalman Filter.\
-   * 
+   *
    * @returns The y rotation (pitch) in degrees
    */
   static inline float getPitch()  { return float(RAD_TO_DEG) * filterPitch_rad; }
@@ -158,7 +158,7 @@ public:
   // hence only Pitch and Roll is used for XCSoar
   static inline float getXCSPitch()  { return -float(RAD_TO_DEG) * filterPitch_rad;  }
   static inline double getYaw()  { return filterYaw;  }
-  
+
   static inline double getGyroRate()  {	return abs(gyro.a)+abs(gyro.b)+abs(gyro.c); }
 
   // Reference calibration

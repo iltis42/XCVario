@@ -12,7 +12,7 @@
 #include "Compass.h"
 #include "setup/SetupCommon.h"
 #include "ESP32NVS.h"
-#include "quaternion.h"
+#include "math/Quaternion.h"
 // #include "logdef.h" // do not include this in a header file
 
 #include <MPU.hpp>

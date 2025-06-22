@@ -9,7 +9,7 @@
 
 #include "setup/SetupMenuCommon.h"
 #include "screen/SetupRoot.h"
-#include "quaternion.h"
+#include "math/Quaternion.h"
 #include "ESP32NVS.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"

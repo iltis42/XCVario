@@ -2070,7 +2070,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// S2F Command triangle
-	if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30) )  && !ulmode )  {
+	if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30)) && !ulmode ) {
+		// static float s=0; // check the bar code
+		// s2fd = sin(s) * 42.;
+		// s+=0.04;
 		drawS2FBar(AMIDX, AMIDY,(int)s2fd);
 	}
 
@@ -2087,14 +2090,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( !(tick%12) )
 	{
 		drawConnection(DISPLAY_W-25, FLOGO );
-	}
-
-	// S2F Command triangle
-	if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30)) && !ulmode ) {
-		// static float s=0; // check the bar code
-		// s2fd = sin(s) * 42.;
-		// s+=0.04;
-		drawS2FBar(AMIDX, AMIDY,(int)s2fd);
 	}
 
 	bool needle_prio = (drawing_prio.get() == DP_NEEDLE);

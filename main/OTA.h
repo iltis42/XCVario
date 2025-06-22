@@ -6,15 +6,18 @@
  */
 #pragma once
 
-class OTA
+#include "setup/SetupMenuDisplay.h"
+
+class OTA: public SetupMenuDisplay
 {
 public:
-	OTA() = default;
+	OTA() : SetupMenuDisplay("") {}
 	~OTA() = default;
-	void doSoftwareUpdate( IpsDisplay *p );
+	void display( int ) override;
+	void press() override { _abort = true; }
+	void longPress() override {}
 
 private:
-	int  tick = 0;
+	int tick = 0;
+	bool _abort = false;
 };
-
-

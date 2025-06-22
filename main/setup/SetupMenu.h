@@ -39,7 +39,7 @@ public:
 	void setDirty() { dirty = true; }
 	int getContId() const { return content_id; }
 	void setBuzzword(const char *bz) { buzzword = bz; }
-	
+
 	// the submenu structure
 	MenuEntry* addEntry(MenuEntry* item);
 	void       delEntry(MenuEntry* item);
@@ -70,4 +70,3 @@ protected:
 	int content_id;
 	const char *buzzword = nullptr;
 };
-

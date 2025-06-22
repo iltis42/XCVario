@@ -25,6 +25,7 @@
 #include "glider/Polars.h"
 #include "Flarm.h"
 #include "setup/SetupMenuValFloat.h"
+#include "setup/SetupMenuDisplay.h"
 #include "protocol/Clock.h"
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
@@ -118,7 +119,6 @@ PressureSensor *teSensor = nullptr;
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *Display = 0;
 CenterAid  *centeraid = 0;
-OTA *ota = 0;
 SetupRoot  *Menu = nullptr;
 WatchDog_C *uiMonitor = nullptr;
 
@@ -769,8 +769,8 @@ void system_startup(void *args){
 			DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBin::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
 		}
 		delete boot_screen; // screen now belongs to OTA
-		ota = new OTA();
-		ota->doSoftwareUpdate( Display ); // fixme -> missing the drawDisplay to process button at this point in time
+		Menu->begin(new OTA());
+		return;
 	}
 	if( hardwareRevision.get() >= XCVARIO_21 )
 	{

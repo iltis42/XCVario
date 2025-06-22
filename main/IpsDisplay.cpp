@@ -2214,7 +2214,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		average_climbf = acl;
 	}
 	if ( bottom_dirty ) {
-		drawScale( _range, -_range, DISPLAY_H/2-20, -_range+2);
+		// ESP_LOGI(FNAME,"redraw sale around %f", -_range+1);
+		drawScale( _range, -_range, DISPLAY_H/2-20, 0);
 		bottom_dirty = false;
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );

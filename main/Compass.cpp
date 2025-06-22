@@ -38,8 +38,9 @@ Compass *Compass::createCompass(InterfaceId iid)
 {
 	if (theCompass) {
 		ESP_LOGI(FNAME, "re-creating compass");
-		delete theCompass;
+		Compass *tmp = theCompass;
 		theCompass = nullptr;
+		delete tmp;
 	}
 	if (iid == CAN_BUS) {
 		ESP_LOGI( FNAME, "Magnetic sensor type CAN");

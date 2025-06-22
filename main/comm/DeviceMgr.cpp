@@ -440,7 +440,7 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
         dev->_itf = itf;
 
         // for some devices we need to create some gears to process the data stream
-        if ( did == MAGLEG_DEV ) {
+        if ( did == MAGLEG_DEV || did == MAGSENS_DEV ) {
             Compass::createCompass(itf->getId());
         }
     }
@@ -457,7 +457,7 @@ Device* DeviceManager::addDevice(DeviceId did, ProtocolType proto, int listen_po
     xSemaphoreGive(_devmap_mutex);
     refreshRouteCache();
 
-    if ( nvsave) {
+    if ( nvsave && (is_new || !pl.empty()) ) {
         const DeviceAttributes &da = getDevAttr(did, iid);
         if ( da.nvsetup && dev ) {
             // save it to nvs

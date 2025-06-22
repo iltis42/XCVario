@@ -14,7 +14,7 @@
 #include "QMCMagCAN.h"
 
 #include "vector.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 
@@ -59,7 +59,7 @@ bool QMCMagCAN::readRaw( t_magn_axes &mag )
 		mag.y = can.y;
 		mag.z = can.z;
 		// if ( age == 0 ) {
-		// 	ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", mag.x, mag.y, mag.z, can.x, can.y, can.z );
+		// ESP_LOGI( FNAME, "Mag Average: X:%d Y:%d Z:%d  Raw: X:%d Y:%d Z:%d", mag.x, mag.y, mag.z, can.x, can.y, can.z );
 		// }
 		return true;
 	}

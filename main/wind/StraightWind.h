@@ -24,9 +24,7 @@ public:
 
 	void tick();
 
-	/**
-	 * Get time in ms since 1.1.1970
-	 */
+	// Get time in ms since 1.1.1970
 	static uint64_t getMsTime()
 	{
 		struct timeval tv;
@@ -34,19 +32,14 @@ public:
 		return ( tv.tv_sec * 1000 ) + ( tv.tv_usec / 1000 );
 	}
 
-	/**
-	 * Measurement cycle for wind calculation in straight flight. Should be
-	 * triggered periodically, maybe once per second.
-	 *
-	 * Returns true, if a new wind was calculated.
-	 */
+	// Measurement cycle for wind calculation in straight flight. Should be
+	// triggered periodically, maybe once per second.
+	// Returns true, if a new wind was calculated.
 	bool calculateWind();
 
-	/**
-	 * Return the last calculated wind. If return result is true, the wind data
-	 * are valid otherwise false.
-	 */
-	bool getWind( int* direction, float* speed, int *age );
+	// Return the last calculated wind. If return result is true, the wind data
+	// are valid otherwise false.
+	static bool getWind( int* direction, float* speed, int *age );
 
 	void setWind( float direction, float speed ){
 		windDir = direction;

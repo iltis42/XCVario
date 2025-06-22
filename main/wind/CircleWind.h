@@ -68,7 +68,7 @@ public:
 
   void newWind(float angle, float speed);
 
-  bool getWind(int *dir, float *speed, int *age) const;
+  static bool getWind(int *dir, float *speed, int *age);
 
   float getNumCircles() const { return circleCount + (circleDegrees / 360.0); }
   int getSatCnt() const { return satCnt; }

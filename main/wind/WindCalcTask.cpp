@@ -11,7 +11,7 @@
 #include "StraightWind.h"
 #include "setup/SetupCommon.h"
 #include "setup/SetupNG.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>

@@ -1204,7 +1204,7 @@ void IpsDisplay::drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t
 		ucg->setColor(COLOR_BLACK);
 	}
 	else {
-		ucg->setColor(c.color[0], c.color[1], c.color[2]); // green-up, red-down
+		ucg->setColor(c.color[0], c.color[1], c.color[2]); // green-up, blueish-down
 	}
 	// ESP_LOGI(FNAME,"bow lev %d", level);
 
@@ -1218,8 +1218,8 @@ void IpsDisplay::drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t
 			int ye = y - gaugeSinDeg2(i, 5);
 			// ESP_LOGI(FNAME,"drawLine x1:%d y1:%d x2:%d y2:%d", x,y,xe,ye );
 			ucg->drawLine(x, y, xe, ye);
-			// int d = std::signbit(i)?-1:1;
-			// ucg->drawLine(x, y+d, xe, ye+d);
+			int d = std::signbit(i)?-1:1;
+			ucg->drawLine(x, y+d, xe, ye+d);
 		}
 		else ucg->setColor(c.color[0], c.color[1], c.color[2]);
 	}
@@ -1322,8 +1322,8 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 		to_side -= incr/(M_PI_2*80);
 	}
 	// ESP_LOGI( FNAME,"drawOneLabel val:%.2f label:%d  toside:%.2f inc:%.2f", val, labl, to_side, incr );
-	int x=gaugeCosCentered(val+to_side, pos);
-	int y=gaugeSinCentered(val+to_side, pos) +6;
+	int x=gaugeCosCentered(val+to_side, pos+(2*incr));
+	int y=gaugeSinCentered(val+to_side, pos+(2*incr)) +6;
 
 	ucg->setColor(COLOR_LBBLUE);
 	ucg->setPrintPos(x,y);
@@ -1340,8 +1340,8 @@ static int wx0,wy0,wx1,wy1,wx3,wy3 = 0;  // initialize by zero
 void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	const int X=75;
 	const int Y=215;
-	float si=sin(D2R(a));
-	float co=cos(D2R(a));
+	float si=fast_sin_deg(a);
+	float co=fast_cos_deg(a);
 	const int b=9; // width of the arrow
 	int s=speed*0.6;
 	int s2=s;
@@ -1902,8 +1902,8 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _dirty, bool compass_dir
 			wind_ok = circleWind->getWind( &winddir, &wind, &ageCircling );
 		}
 		else if( wind_enable.get() == WA_BOTH ){  // dynamically change type depending on younger calculation
-			int wds, wdc;
-			float ws, wc;
+			int wds=0, wdc;
+			float ws=0, wc;
 			bool oks=false, okc=false;
 			if ( straightWind ) {
 				oks = straightWind->getWind( &wds, &ws, &ageStraight );
@@ -1924,7 +1924,7 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _dirty, bool compass_dir
 				type = '/';
 				wind_ok = true;
 			}
-			// ESP_LOGI(FNAME, "SWIND dir=%d, SSPEED=%f ageC=%d ageS=%d okc:=%d oks=%d ok:=%d", wds, ws, ageCircling, ageStraight, okc, oks, ok  );
+			ESP_LOGI(FNAME, "SWIND dir=%d, SSPEED=%f ageC=%d ageS=%d okc:=%d oks=%d ok:=%d", wds, ws, ageCircling, ageStraight, okc, oks, wind_ok  );
 		}
 		else if( wind_enable.get() == WA_EXT_ANEMOI ) {
 			wind = extwind_inst_speed.get();
@@ -2077,7 +2077,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// average Climb
 	if( ((int)(ate*10) != _ate) || !(tick%10) ) {
-		drawAvgVario( AMIDX + 38, AMIDY, ate );
+		drawAvgVario( AMIDX+36, AMIDY, ate );
 		_ate = (int)(ate*10);
 	}
 
@@ -2135,9 +2135,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Compass  (NEEDLE overlap)
 	if( !(tick%2) ){
 		if( bg_prio )
-			drawCompass(INNER_RIGHT_ALIGN, 105, wind_dirty, compass_dirty );
+			drawCompass(INNER_RIGHT_ALIGN, 116, wind_dirty, compass_dirty );
 		else{
-			if( drawCompass(INNER_RIGHT_ALIGN, 105, wind_dirty && !(tick%10), compass_dirty && !(tick%10) ) ){
+			if( drawCompass(INNER_RIGHT_ALIGN, 116, wind_dirty && !(tick%10), compass_dirty && !(tick%10) ) ){
 				indicator->drawPolarIndicatorAndBow(needle_pos, true);
 			}
 		}

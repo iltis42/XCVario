@@ -188,7 +188,7 @@ const char * CircleWind::getFlightModeStr() const
 		return "undefined";
 }
 
-bool CircleWind::getWind( int *dir, float *speed, int * age ) const
+bool CircleWind::getWind( int *dir, float *speed, int * age )
 {
 	*dir=rint(cwind_dir.get());
 	*speed=cwind_speed.get();

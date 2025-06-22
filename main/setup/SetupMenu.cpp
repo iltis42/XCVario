@@ -1177,11 +1177,9 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 	}
 	if ( DEVMAN->getDevice(FLARM_DEV) != nullptr ) {
 		opt->getEntry(7)->unlock();
-		opt->getEntry(8)->unlock();
 	}
 	else {
 		opt->getEntry(7)->lock();
-		opt->getEntry(8)->lock(); // no FLARM, no wind
 	}
 }
 

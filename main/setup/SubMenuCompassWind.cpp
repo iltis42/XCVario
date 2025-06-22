@@ -258,13 +258,18 @@ void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
 		windlog->setHelp("Enable Wind logging NMEA output, to Navi port");
 		top->addEntry(windlog);
 	}
+	// compass menu only accessible with a connected compass
+	SetupMenu *cmenu = static_cast<SetupMenu*>(top->getEntry(0));
 	if ( DEVMAN->getDevice(MAGSENS_DEV) != nullptr ||
 			DEVMAN->getDevice(MAGLEG_DEV) != nullptr ) {
-		top->getEntry(0)->unlock();
+		cmenu->unlock();
+		cmenu->setBuzzword();
 	}
 	else {
-		top->getEntry(0)->lock();
+		cmenu->lock();
+		cmenu->setBuzzword("n/a");
 	}
+	// anemoi option only available with a connected anemoi
     std::string_view anemoi_name = DeviceManager::getDevName(ANEMOI_DEV);
     SetupMenuSelect *windcal = static_cast<SetupMenuSelect*>(top->getEntry(1));
 	if ( DEVMAN->getDevice(ANEMOI_DEV) != nullptr ) {

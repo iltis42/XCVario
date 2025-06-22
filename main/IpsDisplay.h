@@ -49,6 +49,7 @@ public:
 	static float getHeading();
 	static bool drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty );
 	static void drawWindArrow( float dir, float speed, int type );
+	static void setBottomDirty();
 
 	static inline AdaptUGC *getDisplay() { return ucg; };
 	static AdaptUGC *ucg;

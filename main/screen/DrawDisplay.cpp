@@ -41,7 +41,7 @@ void drawDisplay(void *arg)
 
     stall_alarm_off_kmh = stall_speed.get()/3;
 
-    xQueueReset(uiEventQueue); // fixme maybe
+    xQueueReset(uiEventQueue);
 
     // esp_task_wdt_add(NULL); // incompatible with current setup implementation, e.g. all calib procedures would trigger the wd
 
@@ -77,7 +77,7 @@ void drawDisplay(void *arg)
                 if ( detail == ScreenEvent::MSG_BOX ) {
                     if ( MBOX->draw() ) { // time triggered mbox update
                         // mbox finish, time to refresh the bottom line of the screen
-                        // fixme
+                        Display->setBottomDirty();
                     }
                 }
                 else if ( detail == ScreenEvent::BOOT_SCREEN ) {

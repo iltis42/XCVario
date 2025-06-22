@@ -207,6 +207,7 @@ static bool wind_dirty = false;
 static bool compass_dirty = false;
 static bool alt_dirty = false;
 static bool speed_dirty = false;
+static bool bottom_dirty = false;
 
 static float prev_needle = 0;
 
@@ -363,13 +364,19 @@ void IpsDisplay::drawArrowBox( int x, int y, bool arightside ){
 		ucg->drawTriangle( x,y-(fh/2)-3,   x,y+(fh/2)+3,   x-fh/2,y );
 }
 
-void IpsDisplay::drawLegend( bool onlyLines ) {
+void IpsDisplay::drawLegend( bool onlyLines )
+{
+	ucg->setColor(COLOR_WHITE);
+	ucg->drawVLine( DISPLAY_LEFT+5,      VARBARGAP , DISPLAY_H-(VARBARGAP*2) );
+	ucg->drawHLine( DISPLAY_LEFT+5, VARBARGAP , bw+1 );
+	ucg->drawVLine( DISPLAY_LEFT+5+bw+1, VARBARGAP, DISPLAY_H-(VARBARGAP*2) );
+	ucg->drawHLine( DISPLAY_LEFT+5, DISPLAY_H-(VARBARGAP)-1, bw+1 );
+
 	int hc=0;
 	if( onlyLines == false ){
 		ucg->setFont(ucg_font_9x15B_mf, true);
 		hc = ucg->getFontAscent()/2;
 	}
-	ucg->setColor(COLOR_WHITE);
 	for( int i=_divisons; i >=-_divisons; i-- )
 	{
 		float legend = ((float)i*_range)/_divisons;  // only print the integers
@@ -465,13 +472,8 @@ void IpsDisplay::initDisplay() {
 		ucg->print("AV Vario");
 		ucg->setColor(COLOR_WHITE );
 
-		// print TE scale
+		// draw TE scale
 		drawLegend();
-
-		ucg->drawVLine( DISPLAY_LEFT+5,      VARBARGAP , DISPLAY_H-(VARBARGAP*2) );
-		ucg->drawHLine( DISPLAY_LEFT+5, VARBARGAP , bw+1 );
-		ucg->drawVLine( DISPLAY_LEFT+5+bw+1, VARBARGAP, DISPLAY_H-(VARBARGAP*2) );
-		ucg->drawHLine( DISPLAY_LEFT+5, DISPLAY_H-(VARBARGAP)-1, bw+1 );
 
 		// S2F Text
 		ucg->setFont(ucg_font_fub11_tr);
@@ -502,6 +504,7 @@ void IpsDisplay::initDisplay() {
 			FLAP->setBarPosition( WKSYMST+2, YS2F-fh );
 			FLAP->setSymbolPosition( WKSYMST+2, YS2F-fh-25 );
 		}
+		bottom_dirty = false;
 	}
 
 	// Fancy altimeter
@@ -601,7 +604,7 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 		int y=gaugeSinCentered(a, pos);
 		ucg->drawTetragon( x+size, y, x,y+ylsize, x-size,y, x,y-yusize );
 		// refresh scale around old AVG icon
-		drawScale( _range, -_range, DISPLAY_H/2-16, 0, avc_old*10.f );
+		drawScale( _range, -_range, DISPLAY_H/2-20, 0, avc_old*10.f );
 	}
 	if( delta > (mean_climb_major_change.get())/core_climb_history.get() ){
 		ucg->setColor( COLOR_GREEN );
@@ -1384,12 +1387,17 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 	wy3 = yn_3;
 }
 
+void IpsDisplay::setBottomDirty()
+{
+	bottom_dirty = true;
+}
+
 void IpsDisplay::initRetroDisplay( bool ulmode ){
 	bootDisplay();
 	ucg->setFontPosBottom();
 	redrawValues();
 	initGauge(_range, log_scale.get());
-	drawScale( _range, -_range, DISPLAY_H/2-16, 0);
+	drawScale( _range, -_range, DISPLAY_H/2-20, 0);
 	indicator->setGeometry(DISPLAY_H/2-24-26, DISPLAY_H/2-24, 8);
 
 	// Unit's
@@ -1406,7 +1414,6 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 		FLAP->setBarPosition( WKSYMST-4, WKBARMID);
 		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(flap_neg_max.get()))-18 );
 	}
-
 }
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
@@ -1708,6 +1715,7 @@ void IpsDisplay::initLoadDisplay(){
 	old_gmax = 100;
 	old_gmin = -100;
 	old_ias_max = -1;
+	bottom_dirty = false;
 	ESP_LOGI(FNAME,"initLoadDisplay end");
 }
 
@@ -1851,6 +1859,10 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 
 	if( !(tick%10)){
 		drawLoadDisplayTexts();
+	}
+	if ( bottom_dirty ) {
+		initLoadDisplay();
+		bottom_dirty = false;
 	}
 }
 
@@ -2201,6 +2213,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawAvg( acl, acl-average_climbf );
 		average_climbf = acl;
 	}
+	if ( bottom_dirty ) {
+		drawScale( _range, -_range, DISPLAY_H/2-20, -_range+2);
+		bottom_dirty = false;
+	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 }
 
@@ -2476,4 +2492,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 	ucg->setColor(  COLOR_WHITE  );
 	ucg->drawHLine( DISPLAY_LEFT+6, dmid, bw );
+
+	if ( bottom_dirty ) {
+		drawLegend();
+		bottom_dirty = false;
+	}
 }

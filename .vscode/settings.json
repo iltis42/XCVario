@@ -87,7 +87,8 @@
         "graphicscontext": "cpp",
         "state": "cpp",
         "timer": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "math": "cpp"
     },
     "idf.espIdfPath": "/home/hjr/opt/esp-idf_5/",
     "idf.toolsPath": "/home/hjr/.espressif",

@@ -88,7 +88,16 @@
         "state": "cpp",
         "timer": "cpp",
         "*.inc": "cpp",
-        "math": "cpp"
+        "math": "cpp",
+        "hash_map": "cpp",
+        "forward_list": "cpp",
+        "unordered_set": "cpp",
+        "any": "cpp",
+        "mixinvector": "cpp",
+        "polytope": "cpp",
+        "vertexarraystate": "cpp",
+        "buffered_value": "cpp",
+        "fast_back_stack": "cpp"
     },
     "idf.espIdfPath": "/home/hjr/opt/esp-idf_5/",
     "idf.toolsPath": "/home/hjr/.espressif",

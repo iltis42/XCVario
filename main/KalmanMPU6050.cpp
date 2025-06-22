@@ -2,7 +2,7 @@
 #include <MPU.hpp>
 #include <mpu/math.hpp>
 #include "sensor.h"
-#include "quaternion.h"
+#include "math/Quaternion.h"
 #include "vector.h"
 #include "logdef.h"
 
@@ -168,7 +168,7 @@ void IMU::update_fused_vector(vector_ijk& fused, float gyro_trust, vector_ijk& p
     // ESP_LOGI(FNAME,"fusedn %.4f,%.4f,%.4f", fused.a, fused.b, fused.c);
 }
 
-// Only call when successfully called MPU6050Read() beforehand 
+// Only call when successfully called MPU6050Read() beforehand
 void IMU::Process()
 {
 	float dt=0;
@@ -249,18 +249,18 @@ void IMU::Process()
 		euler_rad.setPitch(-limit);
 
 	float curh = 0;
-	if( compass ){
+	if( theCompass ){
 		bool ok;
 		gravity_vector = att_vector;
 		gravity_vector.normalize();
-		curh = compass->cur_heading( &ok );
+		curh = theCompass->cur_heading( &ok );
 		if( ok ){
 			float gyroYaw = getGyroYawDelta();
 			// tuned to plus 7% what gave the best timing swing in response, 2% for compass is far enough
 			// gyro and compass are time displaced, gyro comes immediate, compass a second later
 			fused_yaw +=  Vector::angleDiffDeg( curh ,fused_yaw )*0.02 + gyroYaw;
 			filterYaw=Vector::normalizeDeg( fused_yaw );
-			compass->setGyroHeading( filterYaw );
+			theCompass->setGyroHeading( filterYaw );
 			//ESP_LOGI( FNAME,"cur magn head %.2f gyro yaw: %.4f fused: %.1f Gyro(%.3f/%.3f/%.3f)", curh, gyroYaw, gh, gyroX, gyroY, gyroZ  );
 		}else
 		{
@@ -299,7 +299,7 @@ esp_err_t IMU::MPU6050Read()
 
 	// Check on irrational changes
 	if ( (tmpvec-prev_accel).get_norm2() > 25 ) {
-		vector_ijk d(tmpvec-prev_accel); 
+		vector_ijk d(tmpvec-prev_accel);
 		ESP_LOGE(FNAME, "accelaration change > 5 g in 0.2 S:  X:%+.2f Y:%+.2f Z:%+.2f", d.a, d.b, d.c );
 		err |= ESP_FAIL;
 	}
@@ -319,7 +319,7 @@ esp_err_t IMU::MPU6050Read()
 
 	// Check on irrational changes
 	if ( (tmpvec-prev_gyro).get_norm2() > 30000 ) {
-		vector_ijk d(tmpvec-prev_gyro); 
+		vector_ijk d(tmpvec-prev_gyro);
 		ESP_LOGE(FNAME, "gyro angle >300 deg/s in 0.2 S: X:%+.2f Y:%+.2f Z:%+.2f", d.a, d.b, d.c );
 		err |= ESP_FAIL;
 	}
@@ -397,7 +397,7 @@ class IMU_Ref
 };
 
 // Callback for the two vector samples needed for the reference calibration
-// Returns progress in case of success 
+// Returns progress in case of success
 // 0 := not yet started
 // 1 := right wing completed
 // 2 := left wing completed
@@ -446,7 +446,7 @@ int IMU::getAccelSamplesAndCalib(int side, float &wing_angle  )
 			// Check on wing angle is at least 4 degree
 			wing_angle = Quaternion::AlignVectors(vector_ijk(bob_right_wing.a, bob_right_wing.b, bob_right_wing.c),
 														vector_ijk(bob_left_wing.a, bob_left_wing.b, bob_left_wing.c)).getAngle();
-			ESP_LOGI(FNAME, "Wing Angle: %f degree.", rad2deg(wing_angle/2.));	
+			ESP_LOGI(FNAME, "Wing Angle: %f degree.", rad2deg(wing_angle/2.));
 			if ( wing_angle < deg2rad(8) ) {
 				progress = 0; // resert the progress
 				return -1;
@@ -502,7 +502,7 @@ int IMU::getAccelSamplesAndCalib(int side, float &wing_angle  )
 // Setup the rotation for the "upright", "topdown" and "ninety" vario mounting positions
 void IMU::defaultImuReference()
 {
-	// Revert from calibrated IMU to default mapping, which fits 
+	// Revert from calibrated IMU to default mapping, which fits
 	// roughly to an upright or top down installation.
 	Quaternion accelDefaultRef = Quaternion(deg2rad(90.0f), vector_ijk(0,1,0)).get_conjugate();
 
@@ -584,5 +584,3 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 	}
 
 }
-
-

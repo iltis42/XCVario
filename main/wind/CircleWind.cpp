@@ -15,7 +15,7 @@
  ***********************************************************************/
 
 #include "CircleWind.h"
-#include "sensor.h"
+#include "wind/StraightWind.h"
 #include "setup/SetupNG.h"
 #include "logdefnone.h"
 
@@ -57,54 +57,34 @@
 
 #define MINTURNANGDIFF 4
 
+CircleWind *circleWind = nullptr;
+
+int CircleWind::_age = 9000;
+
 CircleWind::CircleWind()
 {
 	// Initialization
+    status = "idle";
 	minVector.setSpeedKmh( 370.0 );
 	maxVector.setSpeedKmh( 0.0 );
 }
-
-int CircleWind::circleCount = 0; 		// we are counting the number of circles, the first onces are probably not very round
-bool CircleWind::circleLeft = false; 	// true=left, false=right
-int CircleWind::circleDegrees = 0; 		// Degrees of current flown circle
-int CircleWind::lastHeading = -1; 		// Last processed heading
-int CircleWind::satCnt = 0;
-int CircleWind::minSatCnt = 5;
-t_circling CircleWind::circlingMode = undefined;
-int  CircleWind::gpsStatus = false;
-Vector CircleWind::minVector;
-Vector CircleWind::maxVector;
-Vector CircleWind::result;
-float CircleWind::jitter = 0;
-float CircleWind::headingDiff = 0;
-int CircleWind::_age = 9000;
-const char * CircleWind::status = "idle";
-t_circling CircleWind::flightMode = undefined;
-std::list<Vector> CircleWind::windVectors;
-uint8_t CircleWind::turn_left=0;
-uint8_t CircleWind::turn_right=0;
-uint8_t CircleWind::fly_straight=0;
-float CircleWind::lastWindDir=0;
-float CircleWind::lastWindSpeed=0;
 
 CircleWind::~CircleWind()
 {}
 
 /** Called if a new sample is available in the sample list. */
-void CircleWind::newSample( Vector curVec )
+void CircleWind::newSample()
 {
 	// circle detection
 	if( lastHeading != -1 )
 	{
-		headingDiff += ( Vector::angleDiffDeg( curVec.getAngleDeg(), lastHeading ) - headingDiff) * 0.3;  // filter a bit jittering headings
-		calcFlightMode( headingDiff, curVec.getSpeed() );
+		headingDiff += ( Vector::angleDiffDeg( flarmVec.getAngleDeg(), lastHeading ) - headingDiff) * 0.3;  // filter a bit jittering headings
+		calcFlightMode( headingDiff, flarmVec.getSpeed() );
 		if( flightMode == circlingL || flightMode == circlingR )
 			circleDegrees += abs(headingDiff);
 	}
-	if( SetupCommon::isClient() )
-		return;
 
-	lastHeading = curVec.getAngleDeg();
+	lastHeading = flarmVec.getAngleDeg();
 	if( flightMode != circlingL && flightMode != circlingR ){
 		// ESP_LOGI(FNAME,"FlightMode not circling %d", flightMode );
 		status = "Not Circling";
@@ -112,19 +92,19 @@ void CircleWind::newSample( Vector curVec )
 		return;
 	}
 	status = "Sampling";
-	// ESP_LOGI(FNAME,"GPS Sample, dir:%3.2f° speed:%3.2f", curVec.getAngleDeg(), curVec.getSpeed() );
+	// ESP_LOGI(FNAME,"GPS Sample, dir:%3.2f° speed:%3.2f", flarmVec.getAngleDeg(), flarmVec.getSpeed() );
 
-	if( curVec.getSpeed() < minVector.getSpeed() )
+	if( flarmVec.getSpeed() < minVector.getSpeed() )
 	{
 		// New minimum speed detected
-		minVector = curVec;
+		minVector = flarmVec;
 		// ESP_LOGI(FNAME,"new minimum detected:  %3.2f°/%3.2f kmh", minVector.getAngleDeg(), minVector.getSpeed() );
 	}
 
-	if( curVec.getSpeed() > maxVector.getSpeed() )
+	if( flarmVec.getSpeed() > maxVector.getSpeed() )
 	{
 		// New maximum speed detected
-		maxVector = curVec;
+		maxVector = flarmVec;
 		// ESP_LOGI(FNAME,"new maximum detected: %3.2f°/%3.2f kmh",  maxVector.getAngleDeg(), maxVector.getSpeed() );
 	}
 
@@ -185,8 +165,6 @@ void CircleWind::calcFlightMode( float headingDiff, float speed ){
 /** Called if the flight mode changes */
 void CircleWind::newFlightMode( t_circling newFlightMode )
 {
-	if( SetupCommon::isClient() )
-		return;
 	// Reset the circle counter for each flight mode change. The important thing
 	// to measure is the number of turns in a thermal per turn direction.
 	ESP_LOGI(FNAME,"newFlightMode %d", newFlightMode );
@@ -198,7 +176,8 @@ void CircleWind::newFlightMode( t_circling newFlightMode )
 	}
 }
 
-const char * CircleWind::getFlightModeStr(){
+const char * CircleWind::getFlightModeStr() const
+{
 	if( flightMode == straight )
 		return "straight";
 	else if( flightMode == circlingL )
@@ -227,9 +206,6 @@ void CircleWind::resetAge(){
 
 void CircleWind::_calcWind()
 {
-	if( SetupCommon::isClient() )
-		return;
-
 	// Invert maxVector angle
 	maxVector.setAngle( maxVector.getAngleDeg() + 180 );
 
@@ -296,8 +272,10 @@ void CircleWind::newWind( float angle, float speed ){
 	lastWindDir = angle;
 	lastWindSpeed = speed;
 
-	if( deltaDir < max_circle_wind_delta_deg.get() && deltaSpeed < max_circle_wind_delta_speed.get()  ){
-		theWind.newCirclingWind( direction, windspeed );
+	if( deltaDir < max_circle_wind_delta_deg.get() && deltaSpeed < max_circle_wind_delta_speed.get() ){
+		if ( straightWind ) {
+			straightWind->newCirclingWind( direction, windspeed );
+		}
 	}else{
 		status = "Delta too big";
 	}
@@ -311,8 +289,9 @@ void CircleWind::tick(){
 
 void CircleWind::restartCycle( bool clean ){
 	// ESP_LOGI(FNAME,"restartCycle( clean=%d)", clean  );
-	if( clean )
-		circleCount   = 0;
+	if( clean ) {
+		circleCount = 0;
+	}
 	circleDegrees = 0;
 	lastHeading   = -1;
 	minVector.setSpeedKmh( 370.0 );
@@ -321,8 +300,6 @@ void CircleWind::restartCycle( bool clean ){
 
 void CircleWind::newConstellation( int numSat )
 {
-	if( SetupCommon::isClient()  )
-		return;
 	ESP_LOGI(FNAME,"newConstellation num sat:%d", numSat );
 	satCnt = numSat;
 
@@ -335,11 +312,9 @@ void CircleWind::newConstellation( int numSat )
 	}
 }
 
-void CircleWind::gpsStatusChange( bool newStatus )
+void CircleWind::setGpsStatus( bool newStatus )
 {
-	if( SetupCommon::isClient() )
-		return;
-	if( gpsStatus != newStatus  )
+	if( gpsStatus != newStatus && newStatus )
 	{
 		ESP_LOGI(FNAME,"gpsStatusChange status:%d", newStatus );
 		// we are not active because we had no GPS fix but that has been

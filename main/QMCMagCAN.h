@@ -28,9 +28,7 @@ Last update: 2021-03-28
 
 #include "vector_3d.h"
 
-class MagSensBin;
-
-class QMCMagCAN: public MagnetSensor
+class QMCMagCAN: public MagnetSensor, public CompassSink_I
 {
 public:
 	/*
@@ -40,7 +38,7 @@ public:
     chip is 0x0D.
 	 */
 	QMCMagCAN();
-	~QMCMagCAN();
+	~QMCMagCAN() = default;
 
 	// Returns true, if the self test has been passed successfully, otherwise
 	bool haveSensor() {  return initialized; }
@@ -60,7 +58,7 @@ public:
 	// bool readBiased( vector_ijk &mag );
 
 	// If device is connected via CAN, just get X,Y,Z data from there
-    void fromCAN(const t_magn_axes *magaxes);
+    void fromExternal(const t_magn_axes *magaxes) override;
 
 	int curX() override { return (int)can.x; }
 	int curY() override { return (int)can.y; }

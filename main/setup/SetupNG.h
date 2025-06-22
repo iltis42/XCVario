@@ -12,7 +12,7 @@
 #include "Compass.h"
 #include "setup/SetupCommon.h"
 #include "ESP32NVS.h"
-#include "quaternion.h"
+#include "math/Quaternion.h"
 // #include "logdef.h" // do not include this in a header file
 
 #include <MPU.hpp>
@@ -66,7 +66,7 @@ typedef enum e_vario_mode { VARIO_BRUTTO, VARIO_NETTO, CRUISE_NETTO } e_vario_mo
 typedef enum e_airspeed_sensor_type { PS_ABPMRR, PS_TE4525, PS_MP3V5004, PS_MCPH21, PS_NONE } e_airspeed_sensor_type_t;
 typedef enum e_netto_mode { NETTO_NORMAL, NETTO_RELATIVE } e_netto_mode_t;
 typedef enum e_gload_mode { GLOAD_OFF=0, GLOAD_DYNAMIC=1, GLOAD_ALWAYS_ON=2 } e_gload_mode_t;
-typedef enum e_windanalyser_mode { WA_OFF=0, WA_STRAIGHT=1, WA_CIRCLING=2, WA_BOTH=3 } e_windanalyser_mode_t;
+typedef enum { WA_OFF=0, WA_STRAIGHT=1, WA_CIRCLING=2, WA_BOTH=3, WA_EXT_ANEMOI=4 } e_windanalyser_mode_t; // do nto change (bitmask)
 typedef enum e_battery_display { BAT_PERCENTAGE, BAT_VOLTAGE, BAT_VOLTAGE_BIG } e_battery_display_t;
 typedef enum e_wind_display { WD_NONE, WD_DIGITS, WD_ARROW, WD_BOTH, WD_COMPASS } e_wind_display_t;
 typedef enum e_wind_reference { WR_NORTH, WR_HEADING, WR_GPS_COURSE } e_wind_reference_t;
@@ -91,7 +91,7 @@ typedef enum e_vario_needle_color { VN_COLOR_WHITE, VN_COLOR_ORANGE, VN_COLOR_RE
 typedef enum e_display_orientation { DISPLAY_NORMAL, DISPLAY_TOPDOWN, DISPLAY_NINETY } e_display_orientation_t;
 typedef enum e_gear_warning_io { GW_OFF, GW_FLAP_SENSOR, GW_S2_RS232_RX, GW_FLAP_SENSOR_INV, GW_S2_RS232_RX_INV, GW_EXTERNAL }  e_gear_warning_io_t;
 typedef enum e_data_mon_mode { MON_MOD_ASCII, MON_MOD_BINARY } e_data_mon_mode_t;
-typedef enum e_hardware_rev { 	
+typedef enum e_hardware_rev {
 	HW_UNKNOWN=0,
 	HW_LONG_VARIO=1,
 	XCVARIO_20=2,  // 1 x RS232
@@ -144,7 +144,7 @@ class SetupNG: public SetupCommon
 {
 public:
 	SetupNG( const char *akey, T adefault, bool reset=true, e_sync_t sync=SYNC_NONE, e_volatility vol=PERSISTENT,
-			void (* action)()=0, e_quantity_t quant = QUANT_NONE, const limits_t *l = nullptr) :
+			void (* action)()=nullptr, e_quantity_t quant = QUANT_NONE, const limits_t *l = nullptr) :
 		SetupCommon(akey),
 		_default(adefault),
 		_limt(l)
@@ -198,7 +198,7 @@ public:
 				str = std::to_string(_value.x) + '/' +std::to_string(_value.y) + '/' +std::to_string(_value.z);
 			}
 			else if constexpr (std::is_same_v<T, DeviceNVS>) {
-				str = std::to_string(_value.target.raw) + '/' +std::to_string(_value.setup.data) + 
+				str = std::to_string(_value.target.raw) + '/' +std::to_string(_value.setup.data) +
 					'/' +std::to_string(_value.bin_sp) + '/' +std::to_string(_value.nmea_sp);
 			}
 		}
@@ -362,6 +362,11 @@ extern SetupNG<float>  		swind_speed;
 extern SetupNG<float>  		swind_sideslip_lim;
 extern SetupNG<float>  		cwind_dir;   // cirling wind direction
 extern SetupNG<float>  		cwind_speed;
+extern SetupNG<float>  		extwind_sptc_dir; // synoptic and
+extern SetupNG<float>  		extwind_sptc_speed;
+extern SetupNG<float>  		extwind_inst_dir; // instant external wind
+extern SetupNG<float>  		extwind_inst_speed;
+extern SetupNG<int>  		extwind_status;
 extern SetupNG<float>  		mag_hdm;
 extern SetupNG<float>  		mag_hdt;
 extern SetupNG<float>  		average_climb;

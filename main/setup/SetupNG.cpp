@@ -9,7 +9,7 @@
 
 #include "setup/SetupMenuCommon.h"
 #include "screen/SetupRoot.h"
-#include "quaternion.h"
+#include "math/Quaternion.h"
 #include "ESP32NVS.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"
@@ -17,7 +17,8 @@
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"
 #include "Switch.h"
-#include "CircleWind.h"
+#include "wind/StraightWind.h"
+#include "wind/CircleWind.h"
 #include "ESPAudio.h"
 #include "Flap.h"
 #include "OneWireESP32.h"
@@ -108,12 +109,14 @@ void modifyPolar() {
 }
 
 void resetSWindAge() {
-	if( swind_dir.get() != 0 && swind_speed.get() != 0 )  // do not reset age at initial sync
+	if( swind_dir.get() != 0 && swind_speed.get() != 0 ) { // do not reset age at initial sync
 		StraightWind::resetAge();
+	}
 }
 void resetCWindAge() {
-	if( cwind_dir.get() != 0 && cwind_speed.get() != 0 )
+	if( cwind_dir.get() != 0 && cwind_speed.get() != 0 ) {
 		CircleWind::resetAge();
+	}
 }
 
 void change_volume() {
@@ -201,6 +204,11 @@ SetupNG<float>  		swind_speed( "SWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, re
 SetupNG<float>  		swind_sideslip_lim( "SWSL", 2.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 45.0, 0.1));
 SetupNG<float>  		cwind_dir( "CWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetCWindAge );
 SetupNG<float>  		cwind_speed( "CWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetCWindAge );
+SetupNG<float>  		extwind_sptc_dir( "EWDD", 0.0, false, SYNC_BIDIR, VOLATILE ); // synoptic and
+SetupNG<float>  		extwind_sptc_speed( "EWDS", 0.0, false, SYNC_BIDIR, VOLATILE );
+SetupNG<float>  		extwind_inst_dir( "EIWDD", 0.0, false, SYNC_BIDIR, VOLATILE ); // instant external wind
+SetupNG<float>  		extwind_inst_speed( "EIWDS", 0.0, false, SYNC_BIDIR, VOLATILE );
+SetupNG<int>  			extwind_status( "EWST", -1, false, SYNC_BIDIR, VOLATILE );
 SetupNG<float>  		mag_hdm( "HDM", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		mag_hdt( "HDT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		average_climb( "AVCL", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
@@ -359,7 +367,7 @@ SetupNG<float> 			wind_as_calibration("WIND_AS_CAL", 1.0 );
 SetupNG<float> 			wind_filter_lowpass("SWINDAVER", 60, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(5, 120, 1));
 SetupNG<float> 			wind_straight_course_tolerance("WINDSTOL", 7.5, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(2.0, 30.0, 0.1));
 SetupNG<float> 			wind_straight_speed_tolerance("WINDSSTOL", 15, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1.0, 30.0, 1));
-SetupNG<int> 			wind_display( "WIND_DIS", WD_NONE );
+SetupNG<int> 			wind_display( "WIND_DIS", WD_NONE, true, SYNC_FROM_MASTER );
 SetupNG<int> 			wind_reference( "WIND_REF", WR_HEADING );
 SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.0, 180.0, 1.0));
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0, true, SYNC_BIDIR );  // considering netto vario and g load for S2F or not

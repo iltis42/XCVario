@@ -7,7 +7,6 @@
 #include "IpsDisplay.h"
 #include "Compass.h" // 3-Axis Magnetic Sensor
 #include "S2F.h"
-#include "StraightWind.h"
 #include "AdaptUGC.h"
 #include "CenterAid.h"
 #include "vector_3d.h"
@@ -64,7 +63,6 @@ extern BMPVario bmpVario;
 extern CANbus* CAN;
 extern SerialLine *S1,*S2;
 extern Clock *MY_CLOCK;
-extern StraightWind theWind;
 extern SemaphoreHandle_t xMutex;
 extern CenterAid *centeraid;
 extern AirspeedSensor *asSensor;

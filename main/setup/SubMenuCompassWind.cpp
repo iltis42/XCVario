@@ -1,6 +1,7 @@
 
 #include "SubMenuCompassWind.h"
 
+#include "comm/Devices.h"
 #include "setup/SetupMenu.h"
 #include "setup/SetupMenuSelect.h"
 
@@ -12,6 +13,9 @@
 #include "CompassMenu.h"
 #include "comm/DeviceMgr.h"
 #include "logdef.h"
+#include "wind/WindCalcTask.h"
+
+#include <string_view>
 
 // compass menu handlers.
 static int compassDeviationAction(SetupMenuSelect *p) {
@@ -35,6 +39,11 @@ static int compassSensorCalibrateAction(SetupMenuSelect *p) {
 		CompassMenu::sensorCalibrationAction(p);
 	}
 	p->setSelect(0);
+	return 0;
+}
+
+static int windSettingsAction(SetupMenuSelect *p) {
+	WindCalcTask::createWindResources();
 	return 0;
 }
 
@@ -172,10 +181,6 @@ static void options_menu_create_compasswind_straightwind(SetupMenu *top) {
 }
 
 void options_menu_create_compasswind_circlingwind(SetupMenu *top) {
-	// Show Circling Wind Status
-	ShowCirclingWind *scw = new ShowCirclingWind("Circling Wind Status");
-	top->addEntry(scw);
-
 	SetupMenuValFloat *cirwd = new SetupMenuValFloat("Max Delta", "°", nullptr, false, &max_circle_wind_diff);
 	top->addEntry(cirwd);
 	cirwd->setHelp(
@@ -198,6 +203,10 @@ void options_menu_create_compasswind_circlingwind(SetupMenu *top) {
 	cirwdd->setPrecision(1);
 	cirwdd->setHelp(
 			"Maximum wind direction delta from last measurement accepted for circling wind calculation");
+
+	// Show Circling Wind Status
+	ShowCirclingWind *scw = new ShowCirclingWind("Circling Wind Status");
+	top->addEntry(scw);
 }
 
 void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
@@ -206,13 +215,12 @@ void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
 		top->addEntry(compassMenu);
 
 		// Wind speed observation window
-		SetupMenuSelect *windcal = new SetupMenuSelect("Wind Calculation", RST_NONE, nullptr, &wind_enable);
-		windcal->addEntry("Disable");
-		windcal->addEntry("Straight");
-		windcal->addEntry("Circling");
-		windcal->addEntry("Both");
-		windcal->setHelp(
-				"Enable Wind calculation for straight flight (needs compass), circling, or both - display wind in retro display style");
+		SetupMenuSelect *windcal = new SetupMenuSelect("Wind Calculation", RST_NONE, windSettingsAction, &wind_enable);
+		windcal->addEntry("Disable", WA_OFF);
+		windcal->addEntry("Straight", WA_STRAIGHT);
+		windcal->addEntry("Circling", WA_CIRCLING);
+		windcal->addEntry("Both", WA_BOTH);
+		windcal->setHelp("Enable Wind calculation for straight flight (needs compass), circling, both or external source");
 		top->addEntry(windcal);
 
 		// Display option
@@ -244,10 +252,10 @@ void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
 
 		SetupMenuSelect *windlog = new SetupMenuSelect("Wind Logging", RST_NONE, nullptr, &wind_logging);
 		windlog->addEntry("Disable");
-		windlog->addEntry("Enable WIND");
-		windlog->addEntry("Enable GYRO/MAG");
-		windlog->addEntry("Enable Both");
-		windlog->setHelp("Enable Wind logging NMEA output, e.g. to WIFI port");
+		windlog->addEntry("Wind");
+		windlog->addEntry("GYRO/MAG");
+		windlog->addEntry("Both");
+		windlog->setHelp("Enable Wind logging NMEA output, to Navi port");
 		top->addEntry(windlog);
 	}
 	if ( DEVMAN->getDevice(MAGSENS_DEV) != nullptr ||
@@ -257,4 +265,17 @@ void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
 	else {
 		top->getEntry(0)->lock();
 	}
+    std::string_view anemoi_name = DeviceManager::getDevName(ANEMOI_DEV);
+    SetupMenuSelect *windcal = static_cast<SetupMenuSelect*>(top->getEntry(1));
+	if ( DEVMAN->getDevice(ANEMOI_DEV) != nullptr ) {
+        if ( ! windcal->existsEntry(anemoi_name.data()) ) {
+            windcal->addEntry(anemoi_name.data(), WA_EXT_ANEMOI);
+        }
+    }
+    else {
+        if ( windcal->existsEntry(anemoi_name.data()) ) {
+            windcal->delEntry(anemoi_name.data());
+        }
+    }
+
 }

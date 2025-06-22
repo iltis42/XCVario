@@ -8,7 +8,7 @@
 #include "types.h"
 #include "IpsDisplay.h"
 #include "Colors.h"
-#include "CircleWind.h"
+#include "wind/CircleWind.h"
 
 #define CA_NUM_DIRS 24  // every 15°
 #define CA_STEP (360/CA_NUM_DIRS) // 15

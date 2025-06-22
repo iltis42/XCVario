@@ -8,15 +8,13 @@
 
 #include "MagSensBin.h"
 
-#include "QMCMagCAN.h"
+#include "Compass.h"
 #include "Clock.h"
 #include "protocol/AliveMonitor.h"
 
 #include "logdef.h"
 
 // The legacy MagSens binary protocol.
-
-QMCMagCAN* MagSensBin::Can_Mag = nullptr;
 
 MagSensBin::MagSensBin(int mp, ProtocolState &sm, DataLink &dl)
     : ProtocolItf(DeviceId::MAGSENS_DEV, mp, sm, dl)
@@ -38,8 +36,10 @@ dl_control_t MagSensBin::nextBytes(const char *cptr, int count)
     // ESP_LOGI(FNAME, "Got data");
 
     // Just check on 6 bytes telegram length
-    if ( count == 6 && Can_Mag ) {
-        Can_Mag->fromCAN((t_magn_axes*)(cptr));
+    if ( count == 6 ) {
+        if ( theCompass ) {
+            theCompass->getSink()->fromExternal((t_magn_axes*)(cptr));
+        }
 
         if ( _connected > 0 ) {
             _last_sample_time = Clock::getMillis();

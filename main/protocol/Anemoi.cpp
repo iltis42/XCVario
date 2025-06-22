@@ -19,7 +19,7 @@ dl_control_t Anemoi::nextBytes(const char* c, int len)
     case START_TOKEN:
         if ( *c == '$' ) { //0x24
             _sm._state = HEADER;
-            _sm.reset();
+            anemoiCRC(_sm._crc, *c);
         }
         ESP_LOGD(FNAME, "ANEMOI START_TOKEN");
         break;
@@ -28,6 +28,7 @@ dl_control_t Anemoi::nextBytes(const char* c, int len)
         if ( ptr != nullptr ) {
             expected_len = ANEMOI_LEN[int(ptr-ANEMOI_IDS)];
             _sm._state = PAYLOAD;
+            anemoiCRC(_sm._crc, *c);
             ESP_LOGD(FNAME, "ANEMOI HEADER %c/%d", *c, expected_len);
         }
         else {
@@ -35,6 +36,7 @@ dl_control_t Anemoi::nextBytes(const char* c, int len)
         }
         break;
     case PAYLOAD:
+        anemoiCRC(_sm._crc, *c);
         if ( pos >= expected_len ) {
             // only start token plus payload
             _sm._state = COMPLETE;
@@ -42,6 +44,7 @@ dl_control_t Anemoi::nextBytes(const char* c, int len)
         ESP_LOGD(FNAME, "ANEMOI PAYLOAD");
         break;
     case STOP_TOKEN: // fixme
+        anemoiCRC(_sm._crc, *c);
         if( *c == 0x0a ) {
             ESP_LOGD(FNAME, "ANEMOI STOP_TOKEN %x", *c);
         }
@@ -54,7 +57,7 @@ dl_control_t Anemoi::nextBytes(const char* c, int len)
     {
         _sm._state = START_TOKEN;
         ESP_LOGD(FNAME, "ANEMOI COMPLETE %x", _sm._crc);
-        if ( _sm._crc == 0 ) {
+        // if ( _sm._crc == 0 ) {
             // Only process status and wind
             // ESP_LOGI(FNAME, "Port S2 anemoi %c", _framebuffer[1]);
             switch (_sm._frame.at(1)) {
@@ -67,7 +70,7 @@ dl_control_t Anemoi::nextBytes(const char* c, int len)
                 parseWind();
                 break;
             }
-        }
+        // }
     }
 
     return NOACTION; // no routing wanted
@@ -96,7 +99,7 @@ dl_control_t Anemoi::nextBytes(const char* c, int len)
  */
 void Anemoi::parseStatus()
 {
-    // extwind_status.set(_framebuffer[3]);
+    // extwind_status.set(_sm._frame[3]);
     // ESP_LOGI(FNAME,"Anemoi %d.%d DisplayOrient: %d, Status: %x", *(status+4)>>4, *(status+4)&0xF, *(status+2), *(status+3));
 }
 
@@ -118,10 +121,10 @@ void Anemoi::parseStatus()
  */
 void Anemoi::parseWind()
 {
-    // extwind_inst_dir.set((_framebuffer[2]<<8) + _framebuffer[3]);
-    // extwind_inst_speed.set(_framebuffer[4]);
-    // extwind_sptc_dir.set((_framebuffer[5]<<8) + _framebuffer[6]);
-    // extwind_sptc_speed.set(_framebuffer[7]);
+    extwind_inst_dir.set((_sm._frame[2]<<8) + _sm._frame[3]);
+    extwind_inst_speed.set(_sm._frame[4]);
+    extwind_sptc_dir.set((_sm._frame[5]<<8) + _sm._frame[6]);
+    extwind_sptc_speed.set(_sm._frame[7]);
     // ESP_LOGI(FNAME,"WDir %.1f, Wvel %.1f", extwind_inst_dir.get(), extwind_inst_speed.get());
 }
 

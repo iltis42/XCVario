@@ -18,7 +18,7 @@ Last update: 2021-12-30
  **************************************************************************/
 
 #include "CompassMenu.h"
- 
+
 #include "setup/SetupMenu.h"
 #include "sensor.h"  // we need spiMutex
 #include "vector.h"
@@ -60,7 +60,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 {
 	ESP_LOGI( FNAME, "Compass deviation setup for direction '%s'",	p->value() );
 
-	if( !compass || !(compass->haveSensor()) )
+	if( !theCompass || !(theCompass->haveSensor()) )
 	{
 		p->clear();
 		MYUCG->setFont( ucg_font_ncenR14_hr );
@@ -86,7 +86,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	while( !Rotary->readSwitch() )
 	{
 		bool ok = true;
-		heading += Vector::angleDiffDeg( compass->rawHeading( &ok ), last_heading )*0.05;
+		heading += Vector::angleDiffDeg( theCompass->rawHeading( &ok ), last_heading )*0.05;
 		heading = Vector::normalizeDeg( heading );
 		last_heading = heading;
 		if( ok == false )
@@ -109,7 +109,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	}
 
 	// Save and update deviation value
-	compass->newDeviation( heading, direction, true );
+	theCompass->newDeviation( heading, direction, true );
 	MYUCG->setPrintPos( 1, 270 );
 	MYUCG->setFont( ucg_font_ncenR14_hr );
 	MYUCG->printf( "Saved" );
@@ -153,8 +153,8 @@ int CompassMenu::resetDeviationAction( SetupMenuSelect *p )
 	p->clear();
 	MYUCG->setFont( ucg_font_ncenR14_hr );
 	MYUCG->setPrintPos( 1, 300 );
-	if( compass ){
-		compass->resetDeviation();
+	if( theCompass ){
+		theCompass->resetDeviation();
 		MYUCG->printf( "Saved        " );
 	}
 	else
@@ -178,11 +178,11 @@ float tesla_cal=0;
 
 bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
 {
-	if( compass == 0 ){
+	if( theCompass == 0 ){
 		ESP_LOGI( FNAME, "showSensorRawData(): no compass" );
 		return false;
 	}
-	t_magn_axes raw = compass->getRawAxes();
+	t_magn_axes raw = theCompass->getRawAxes();
 	// ESP_LOGI( FNAME, "showSensorRawData() %d %d %d", raw.x, raw.y, raw.z );
 	MYUCG->setColor( COLOR_WHITE );
 	MYUCG->setPrintPos( 1, 60 );
@@ -192,7 +192,7 @@ bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
 	MYUCG->setPrintPos( 1, 120 );
 	MYUCG->printf( "Z = %d  ", raw.z );
 	MYUCG->setPrintPos( 1, 150 );
-	float t = sqrt( compass->curX()*compass->curX() + compass->curY()*compass->curY() + compass->curZ()*compass->curZ() )/150.0;
+	float t = sqrt( theCompass->curX()*theCompass->curX() + theCompass->curY()*theCompass->curY() + theCompass->curZ()*theCompass->curZ() )/150.0;
 	if( abs(t-tesla) > 5 )
 		tesla += (t-tesla)*0.2;
 	else if ( abs(t-tesla) > 1 )
@@ -202,7 +202,7 @@ bool CompassMenu::showSensorRawData(SetupMenuSelect *p)
 	MYUCG->printf( "Raw magn H= %.1f uT", tesla );
 	if( compass_calibrated.get() ){
 		MYUCG->setPrintPos( 1, 180 );
-		float t= sqrt( compass->calX()*compass->calX() + compass->calY()*compass->calY() + compass->calZ()*compass->calZ() )/150.0;
+		float t= sqrt( theCompass->calX()*theCompass->calX() + theCompass->calY()*theCompass->calY() + theCompass->calZ()*theCompass->calZ() )/150.0;
 		if( abs(t-tesla_cal) > 5 )
 			tesla_cal += (t-tesla_cal)*0.2;
 		else if ( abs(t-tesla_cal) > 1 )
@@ -235,7 +235,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 		ESP_LOGI( FNAME, "Cancel Button pressed" );
 		return 0;
 	}
-	if( !compass ){
+	if( !theCompass ){
 		p->clear();
 		MYUCG->setFont( ucg_font_ncenR14_hr, true );
 		MYUCG->setPrintPos( 1, 30 );
@@ -250,7 +250,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 
 	p->clear();
 	if( only_show ){
-		compass->calibrate( calibrationReport, true );
+		theCompass->calibrate( calibrationReport, true );
 		while( !Rotary->readSwitch() )
 			delay( 100 );
 	}else{
@@ -263,7 +263,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 		MYUCG->printf( "all numbers are green" );
 		MYUCG->setPrintPos( 1, 270 );
 		MYUCG->printf( "Press button to finish" );
-		compass->calibrate( calibrationReport, false);
+		theCompass->calibrate( calibrationReport, false);
 		MYUCG->setPrintPos( 1, 250 );
 		delay( 1000 );
 		p->clear();

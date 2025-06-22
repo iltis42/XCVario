@@ -8,13 +8,10 @@
 #include "setup/SetupMenuSelect.h"
 #include "setup/SetupMenu.h"
 
-#include "sensor.h"
-#include "Units.h"
-#include "ESPAudio.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 
-SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuSelect *p), 
+SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuSelect *p),
 									SetupNG<int> *anvs, bool ext_handler, bool end_menu ) :
 	MenuEntry(),
 	_action(action),
@@ -129,7 +126,7 @@ void SetupMenuSelect::longPress(){
 	press();
 }
 
-const char *SetupMenuSelect::value() const 
+const char *SetupMenuSelect::value() const
 {
 	if ( _select < 0 ) {
 		// lazy initialization
@@ -141,9 +138,9 @@ const char *SetupMenuSelect::value() const
 	return "";
 }
 
-bool SetupMenuSelect::existsEntry( std::string ent ){
+bool SetupMenuSelect::existsEntry(const char* ent){
 	for( std::vector<ITEM_t>::iterator iter = _values.begin(); iter != _values.end(); ++iter ) {
-		if( std::string(iter->first) == ent ) {
+		if( strcmp(iter->first, ent) == 0 ) {
 			return true;
 		}
 	}
@@ -212,7 +209,7 @@ void SetupMenuSelect::mkConfirm()
 
 void SetupMenuSelect::updateEntry(const char *ent, int num)
 {
-	if (_select >=0  && _select < _values.size()) {
+	if (num >=0  && num < _values.size()) {
 		_values.at(num).first = ent;
 	}
 	ESP_LOGI(FNAME, "Out of bounds");

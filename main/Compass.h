@@ -26,6 +26,8 @@ Last update: 2021-03-07
 
 class MagnetSensor;
 
+class CompassSink_I;
+
 typedef struct float_axes {
 	float x;
 	float y;
@@ -108,10 +110,12 @@ public:
 	bool calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, t_float_axes bias, bitfield_compass b, bool print ), bool only_show );
 	 // Resets the whole compass calibration, also the saved configuration.
 	void resetCalibration();
+    bool isCalibrated() const;
 	bool calibrationIsRunning() {  return calibrationRunning; }
 	// Returns total number of read errors
 	int getReadError(){ return totalReadErrors; };
 	void calcCalibration();
+	CompassSink_I* getSink() const { return _MagsensSink; }
 
 private:
 	// Calculates tilt compensated heading in degrees of 0...359. The ok flag is set to true if fine, else false
@@ -163,6 +167,8 @@ private:
 	float fz;
 	float _heading;
 	t_magn_axes magRaw;
+
+	CompassSink_I *_MagsensSink = nullptr;
 };
 
-extern Compass *compass;
+extern Compass *theCompass;

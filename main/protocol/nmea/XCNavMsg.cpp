@@ -14,7 +14,7 @@
 #include "screen/DrawDisplay.h"
 #include "sensor.h"
 
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <string>
 #include <cstdlib>
@@ -120,4 +120,3 @@ const ParserEntry XCNavMsg::_pt[] = {
     {Key("g"), XCNavMsg::parseDollar_g},
     {}
 };
-

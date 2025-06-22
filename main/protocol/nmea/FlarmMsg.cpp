@@ -102,8 +102,8 @@ dl_action_t FlarmMsg::parsePFLAE(NmeaPlugin *plg)
     const std::vector<int> *word = &sm->_word_start;
 
     if ( word->size() == 3
-        && sm->_frame.at(word->at(0)) == 'A' 
-        && sm->_frame.at(word->at(1)) == '0' 
+        && sm->_frame.at(word->at(0)) == 'A'
+        && sm->_frame.at(word->at(1)) == '0'
         && sm->_frame.at(word->at(2)) == '0' )
     {
         ESP_LOGI(FNAME, "got PFLAE");
@@ -201,8 +201,8 @@ dl_action_t FlarmMsg::parseExcl_xc(NmeaPlugin *plg)
     const std::vector<int> *word = &sm->_word_start;
 
     // ESP_LOGI(FNAME,"Compass heading detected=%3.1f TAS: %3.1f NMEA:%s", heading, TAS, str );
-    if( compass ) {
-        compass->setHeading( atof(s + word->at(0)) );
+    if( theCompass ) {
+        theCompass->setHeading( atof(s + word->at(0)) );
     }
     tas = atof(s + word->at(1));
 
@@ -217,5 +217,3 @@ const ParserEntry FlarmMsg::_pt[] = {
     { Key("xc"), FlarmMsg::parseExcl_xc },
     {}
 };
-
-

@@ -27,7 +27,7 @@ public:
 	static void setCruiseSpeed( float s ) { _cruise_speed_kmh = s; };
 private:
 	static gpio_num_t _sw;
-	static Average<GYRO_FILTER_SAMPLES, float, float> filter;
+	static Average<GYRO_FILTER_SAMPLES/4, float, float> filter;
 	static bool _cruise_mode_sw;
 	static bool _cruise_mode_xcv;
 	static bool _cruise_mode_speed;
@@ -43,4 +43,3 @@ private:
 	static bool cruise_mode_final;
 	static bool initial;
 };
-

@@ -20,7 +20,7 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 #include "KalmanMPU6050.h"
 #include "QMCMagCAN.h"
 #include "QMC5883L.h"
-#include "quaternion.h"
+#include "math/Quaternion.h"
 #include "sensor.h"
 #include "comm/DeviceMgr.h"
 #include "comm/I2CWrapper.h"
@@ -32,18 +32,18 @@ Author: Axel Pauli, deviation and refactoring by Eckhard Völlm Dec 2021
 #include <cassert>
 #include <cmath>
 
-Compass *compass = nullptr;
+Compass *theCompass = nullptr;
 
 Compass *Compass::createCompass(InterfaceId iid)
 {
-	if (compass) {
+	if (theCompass) {
 		ESP_LOGI(FNAME, "re-creating compass");
-		delete compass;
-		compass = nullptr;
+		delete theCompass;
+		theCompass = nullptr;
 	}
 	if (iid == CAN_BUS) {
 		ESP_LOGI( FNAME, "Magnetic sensor type CAN");
-		compass = new Compass( 0 );  // I2C addr 0 -> instantiate without I2C bus and local sensor
+		theCompass = new Compass( 0 );  // I2C addr 0 -> instantiate without I2C bus and local sensor
 	}
 	else if (iid == I2C) {
 		ESP_LOGI( FNAME, "Magnetic sensor type I2C");
@@ -52,9 +52,9 @@ Compass *Compass::createCompass(InterfaceId iid)
 			// Wrapper should exist
 			i2cBus = I2Cext->getI2C();
 		}
-		compass = new Compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512, i2cBus );
-	} 
-    return compass;
+		theCompass = new Compass( 0x0D, ODR_50Hz, RANGE_2GAUSS, OSR_512, i2cBus );
+	}
+    return theCompass;
 }
 
 
@@ -66,7 +66,10 @@ Compass::Compass( const uint8_t addr, const uint8_t odr, const uint8_t range, co
 {
 	ESP_LOGI(FNAME,"Compass() I2C addr=%02x", addr );
 	if( i2cBus == 0 ){
-		mysensor = new QMCMagCAN();
+		QMCMagCAN *tmp = new QMCMagCAN();
+		mysensor = tmp;
+		_MagsensSink = tmp;
+		// _MagsensSink = mysensor;
 	}
 	else{
 		mysensor = new QMC5883L( addr, odr, range, osr, i2cBus );  // tbd. base class and QMC5883CAN class
@@ -144,11 +147,11 @@ float Compass::getGyroHeading( bool *ok, bool addDecl ){
  */
 bool Compass::tick()
 {
-	if( !compass->calibrationIsRunning() ){
-		compass->progress();
+	if( !theCompass->calibrationIsRunning() ){
+		theCompass->progress();
 	}
 	else {
-		compass->calcCalibration();
+		theCompass->calcCalibration();
 	}
 	return false;
 }
@@ -370,6 +373,10 @@ void Compass::resetCalibration()
 	compass_calibrated.set( 0 );
 	// commit() is implicitely done in set()
 }
+bool Compass::isCalibrated() const
+{
+    return compass_calibrated.get();
+}
 
 /**
  * Saves a done compass calibration.
@@ -507,4 +514,3 @@ float Compass::heading( bool *ok )
 	*ok = true;
 	return _heading;
 }
-

@@ -44,13 +44,12 @@ public:
 	static void drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t color );
 	static void initDisplay();
 	static void clear();   // erase whole display
-	void doMenu( bool menu=true ) { _menu = menu; };
-	static bool inMenu() { return _menu; }
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
 	static float getHeading();
 	static bool drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty );
 	static void drawWindArrow( float dir, float speed, int type );
+	static void setBottomDirty();
 
 	static inline AdaptUGC *getDisplay() { return ucg; };
 	static AdaptUGC *ucg;
@@ -67,7 +66,6 @@ private:
 	static float _range_clip;
 	static int _pixpmd;
 
-	static bool _menu;
 	enum ips_display _dtype;
 	static int tick;
 	static ucg_color_t colors[];
@@ -142,11 +140,10 @@ private:
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
-	static bool drawAltitude( float altitude, int16_t x, int16_t y, bool dirty, bool inc_unit=true );
+	static bool drawAltitude( float altitude, int16_t x, int16_t y, bool dirty, bool inc_unit=false );
 	static void drawSmallSpeed(float v_kmh, int16_t x, int16_t y);
 	static bool drawSpeed(float speed, int16_t x, int16_t y, bool dirty, bool inc_unit=false);
 	static void drawLegend( bool onlyLines=false );
 	static void drawAvgVario( int16_t x, int16_t y, float ate, bool large=false );
 	static void drawNetto( int16_t x, int16_t y, bool netto );
 };
-

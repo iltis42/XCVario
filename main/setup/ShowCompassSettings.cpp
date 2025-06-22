@@ -34,7 +34,7 @@ SetupMenuDisplay( title, nullptr )
 
 void ShowCompassSettings::display(int mode)
 {
-	if( !compass )
+	if( !theCompass )
 	{
 		clear();
 		MYUCG->setFont( ucg_font_ncenR14_hr );
@@ -56,7 +56,7 @@ void ShowCompassSettings::display(int mode)
 
 	MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "Sensor enabled: %s",
-			(compass) ? "Yes" : "No" );
+			(theCompass) ? "Yes" : "No" );
 	MYUCG->print( buffer );
 	y += 25;
 
@@ -77,7 +77,7 @@ void ShowCompassSettings::display(int mode)
 	MYUCG->setPrintPos( 0, y );
 	MYUCG->print( soText );
 	MYUCG->setPrintPos( sotw, y );
-	MYUCG->print( (compass->overflowFlag() == false) ? "No" : "Yes" );
+	MYUCG->print( (theCompass->overflowFlag() == false) ? "No" : "Yes" );
 	y += 25;
 
 	MYUCG->setPrintPos( 0, y );
@@ -117,7 +117,7 @@ void ShowCompassSettings::display(int mode)
 
 		// Ca. after a second make an update of the overflow flag display.
 		MYUCG->setPrintPos( sotw, y1 );
-		MYUCG->print( (compass->overflowFlag() == false) ? "No  " : "Yes" );
+		MYUCG->print( (theCompass->overflowFlag() == false) ? "No  " : "Yes" );
 	}
 
 	press();

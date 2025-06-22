@@ -19,7 +19,7 @@ Last update: 2021-04-18
 
 #include "ShowCirclingWind.h"
 
-#include "CircleWind.h"
+#include "wind/CircleWind.h"
 #include "setup/SetupNG.h"
 #include "Units.h"
 #include "sensor.h"
@@ -44,68 +44,40 @@ void ShowCirclingWind::display(int mode)
 	MYUCG->setFont( ucg_font_ncenR14_hr  );
 	menuPrintLn(_title.c_str(), 0);
 
-	// uint16_t y = 55;
 	char buffer[32];
+	int i = 1;
 
-	// MYUCG->setPrintPos( 0, y );
 	sprintf( buffer, "Circling Wind enabled: %s", (wind_enable.get() & 2) ? "Yes" : "No  "  );
-	// MYUCG->printf( "%s", buffer );
-	menuPrintLn(buffer, 1);
-	// y += 25;
+	menuPrintLn(buffer, i++);
 
-	// MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "GPS Status : %s", (CircleWind::getGpsStatus() == true ) ? "Good" : "Bad  "  );
-	menuPrintLn(buffer, 2);
-	// MYUCG->printf( "%s", buffer );
-	// y += 25;
+	if ( circleWind )
+	{
+		sprintf( buffer, "GPS Status : %s", (circleWind->getGpsStatus() == true ) ? "Good" : "Bad  "  );
+		menuPrintLn(buffer, i++);
 
-	int i = 3;
-	if( CircleWind::getGpsStatus() ){
-		// MYUCG->setPrintPos( 0, y );
-		sprintf( buffer, "GPS Satellites : %d  ", CircleWind::getSatCnt() );
-		// MYUCG->printf( "%s", buffer );
-		// y += 25;
+		if( circleWind->getGpsStatus() ){
+			sprintf( buffer, "GPS Satellites : %d  ", circleWind->getSatCnt() );
+			menuPrintLn(buffer, i++);
+		}
+
+		sprintf( buffer, "Number of Circles : %2.2f  ", circleWind->getNumCircles() );
+		menuPrintLn(buffer, i++);
+
+		sprintf( buffer, "Last Wind : %3.1f°/%2.1f  ", circleWind->getAngle(), Units::Airspeed( circleWind->getSpeed()) );
+		menuPrintLn(buffer, i++);
+
+		sprintf( buffer, "Wind Age : %d sec   ", circleWind->getAge() );
+		menuPrintLn(buffer, i++);
+
+		sprintf( buffer, "Quality : %d %%  ", circleWind->getQuality() );
+		menuPrintLn(buffer, i++);
+
+		sprintf( buffer, "Status : %s    ", circleWind->getStatus() );
+		menuPrintLn(buffer, i++);
+
+		sprintf( buffer, "Flight Mode : %s    ", circleWind->getFlightModeStr() );
 		menuPrintLn(buffer, i++);
 	}
-
-	// MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "Number of Circles : %2.2f  ", CircleWind::getNumCircles() );
-	// MYUCG->printf( "%s", buffer );
-	// y += 25;
-	menuPrintLn(buffer, i++);
-
-	// MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "Last Wind : %3.1f°/%2.1f  ", CircleWind::getAngle(), Units::Airspeed( CircleWind::getSpeed()) );
-	// MYUCG->printf( "%s", buffer );
-	// y += 25;
-	menuPrintLn(buffer, i++);
-
-	// MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "Wind Age : %d sec   ", CircleWind::getAge() );
-	// MYUCG->printf( "%s", buffer );
-	// y += 25;
-	menuPrintLn(buffer, i++);
-
-	// MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "Quality : %d %%  ", CircleWind::getQuality() );
-	// MYUCG->printf( "%s", buffer );
-	// y += 25;
-	menuPrintLn(buffer, i++);
-
-	// MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "Status : %s    ", CircleWind::getStatus() );
-	// MYUCG->printf( "%s", buffer );
-	// y += 25;
-	menuPrintLn(buffer, i++);
-
-	// MYUCG->setPrintPos( 0, y );
-	sprintf( buffer, "Flight Mode : %s    ", CircleWind::getFlightModeStr() );
-	// MYUCG->printf( "%s", buffer );
-	// y += 25;
-	menuPrintLn(buffer, i++);
-
-	// MYUCG->setPrintPos( 5, 290 );
-	// MYUCG->printf( "Press button to exit" );
 	menuPrintLn("Press button to exit", i+1, 5);
 
 }

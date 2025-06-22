@@ -108,7 +108,7 @@ void CenterAid::drawCenterAid(){
 		int d = (i+idir) % CA_NUM_DIRS;
 		// ESP_LOGI(FNAME,"dir:%d TE:%d", d, thermals[d] );
 		if( d < CA_NUM_DIRS && d >= 0 ){
-			bool red = d != maxIndex ? false : true;  
+			bool red = d != maxIndex ? false : true;
 			drawThermal( thermals[d], i, red );
 		}else{
 			ESP_LOGE(FNAME,"index out of range: %d", d );
@@ -205,7 +205,7 @@ void CenterAid::tick(){
 	if( !(_tick%5) ) { // every 100 mS
 		// ESP_LOGI(FNAME,"CenterAid tick %d fm: %d", _tick, flightmode );
 		float new_heading = -1.0;
-		if( compass ) { // this is the best source for a heading, use this when avail
+		if( theCompass ) { // this is the best source for a heading, use this when avail
 			new_heading = mag_hdt.get();
 		}
 		// // ESP_LOGI(FNAME,"MH %f", new_heading );
@@ -242,4 +242,3 @@ void CenterAid::tick(){
 		ageThermal(); // 0.2 s per thermal = 4.8 seconds all 24 thermals aged by 0.1 m/s
 	}
 }
-

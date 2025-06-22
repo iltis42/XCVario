@@ -1658,4 +1658,3 @@ SetupMenuValFloat* SetupMenu::createVoltmeterAdjustMenu() {
 	met_adj->setNeverInline();
 	return met_adj;
 }
-

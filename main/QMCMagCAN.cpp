@@ -13,7 +13,6 @@
 
 #include "QMCMagCAN.h"
 
-#include "protocol/MagSensBin.h"
 #include "vector.h"
 #include "logdef.h"
 
@@ -28,12 +27,6 @@
 QMCMagCAN::QMCMagCAN()
 {
 	ESP_LOGI( FNAME, "QMCMagCAN()");
-	MagSensBin::setMagSink(this);
-}
-
-QMCMagCAN::~QMCMagCAN()
-{
-	MagSensBin::removeMagSink();
 }
 
 // check if messages arrive
@@ -51,7 +44,7 @@ esp_err_t QMCMagCAN::selfTest()
 	return ESP_FAIL;
 }
 
-void QMCMagCAN::fromCAN( const t_magn_axes *magaxes )
+void QMCMagCAN::fromExternal( const t_magn_axes *magaxes )
 {
 	// fixme, use a queue
 	can = *magaxes;

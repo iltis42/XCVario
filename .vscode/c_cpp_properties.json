@@ -1,0 +1,13 @@
+{
+  "configurations": [
+    {
+      "name": "Linux",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "${IDF_PATH}/components/**",
+        "${workspaceFolder}/build/config"
+      ]
+    }
+  ],
+  "version": 4
+}

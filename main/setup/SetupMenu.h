@@ -38,7 +38,7 @@ public:
 	void setDynContent() { dyn_content = true; }
 	void setDirty() { dirty = true; }
 	int getContId() const { return content_id; }
-	void setBuzzword(const char *bz) { buzzword = bz; }
+	void setBuzzword(const char *bz=nullptr) { buzzword = bz; }
 
 	// the submenu structure
 	MenuEntry* addEntry(MenuEntry* item);

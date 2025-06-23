@@ -1175,11 +1175,14 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 		SetupMenu *gload = new SetupMenu("G-Load Display", options_menu_create_gload);
 		opt->addEntry(gload);
 	}
+	SetupMenu *flarm = static_cast<SetupMenu*>(opt->getEntry(7));
 	if ( DEVMAN->getDevice(FLARM_DEV) != nullptr ) {
-		opt->getEntry(7)->unlock();
+		flarm->unlock();
+		flarm->setBuzzword();
 	}
 	else {
-		opt->getEntry(7)->lock();
+		flarm->lock();
+		flarm->setBuzzword("n/a");
 	}
 }
 

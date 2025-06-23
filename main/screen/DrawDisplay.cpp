@@ -255,8 +255,8 @@ void drawDisplay(void *arg)
 				Display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, batteryVoltage, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 			}
 			if( screen_centeraid.get() ){
-				if( centeraid ){
-					centeraid->tick();
+				if( theCenteraid ){
+					theCenteraid->tick();
 				}
 			}
 		}

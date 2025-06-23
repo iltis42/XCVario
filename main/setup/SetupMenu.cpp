@@ -128,6 +128,18 @@ int audio_setup_f(SetupMenuValFloat *p) {
 	return 0;
 }
 
+int centeraid_action(SetupMenuSelect *p)
+{
+    if ( p->getSelect() ) {
+        // create the center aid
+        CenterAid::create();
+    }
+    else {
+        CenterAid::remove();
+    }
+    return 0;
+}
+
 int speedcal_change(SetupMenuValFloat *p) {
 	if (asSensor)
 		asSensor->changeConfig();
@@ -760,8 +772,8 @@ void vario_menu_create(SetupMenu *vae) {
 	ncolor->addEntry("Red");
 	vae->addEntry(ncolor);
 
-	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_ON_EXIT, nullptr, &screen_centeraid);
-	scrcaid->setHelp("Enable/disable display of centering aid (reboots)");
+	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_NONE, centeraid_action, &screen_centeraid);
+	scrcaid->setHelp("Enable/disable display of centering aid");
 	scrcaid->mkEnable();
 	vae->addEntry(scrcaid);
 

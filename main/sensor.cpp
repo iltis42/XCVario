@@ -118,7 +118,6 @@ PressureSensor *teSensor = nullptr;
 
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *Display = 0;
-CenterAid  *centeraid = 0;
 SetupRoot  *Menu = nullptr;
 WatchDog_C *uiMonitor = nullptr;
 
@@ -1356,7 +1355,7 @@ void system_startup(void *args){
 		}
 	}
 	if( screen_centeraid.get() ){
-		centeraid = new CenterAid( MYUCG );
+		CenterAid::create();
 	}
 
 	// enter normal operation

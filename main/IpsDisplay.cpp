@@ -2144,8 +2144,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Center Aid around grafic wind
-	if( centeraid && !(tick % 4)   ){
-		centeraid->drawCenterAid();
+	if( theCenteraid && !(tick % 4)   ){
+		theCenteraid->drawCenterAid();
 	}
 
 	// Vario Needle in Front mode drawn as last

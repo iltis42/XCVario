@@ -64,7 +64,7 @@ extern CANbus* CAN;
 extern SerialLine *S1,*S2;
 extern Clock *MY_CLOCK;
 extern SemaphoreHandle_t xMutex;
-extern CenterAid *centeraid;
+extern CenterAid *theCenteraid;
 extern AirspeedSensor *asSensor;
 extern PressureSensor *baroSensor;
 extern SetupRoot *Menu;

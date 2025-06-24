@@ -173,6 +173,16 @@ BootUpScreen *BootUpScreen::create()
     return inst;
 }
 
+void BootUpScreen::terminate()
+{
+    xSemaphoreTake(display_mutex,portMAX_DELAY);
+    if ( inst ) {
+        delete inst;
+        inst = nullptr;
+    }
+    xSemaphoreGive(display_mutex);
+}
+
 BootUpScreen::~BootUpScreen()
 {
     Clock::stop(this);
@@ -183,7 +193,7 @@ BootUpScreen::~BootUpScreen()
 // otherwise skip a part
 void BootUpScreen::finish(int part)
 {
-    if ( fini_part < part-1 ) { 
+    if ( fini_part < part-1 ) {
         yline = LOGO_HEIGHT*(DIVIDER-part)/4;
     }
     yline_to = std::max(0, LOGO_HEIGHT*(DIVIDER-part-1)/2);
@@ -192,14 +202,15 @@ void BootUpScreen::finish(int part)
 
 void BootUpScreen::draw()
 {
+    xSemaphoreTake(display_mutex,portMAX_DELAY);
     if ( inst ) {
         inst->animate();
     }
+    xSemaphoreGive(display_mutex);
 }
 
 void BootUpScreen::animate()
 {
-	xSemaphoreTake(display_mutex,portMAX_DELAY);
     MYUCG->setColor(COLOR_WHITE);
     if ( ! fini_part ) {
         for (int i = 0; i < MAX_PIXELS_PER_FRAME; ) {
@@ -218,7 +229,7 @@ void BootUpScreen::animate()
             for (int xi = 0; xi < LOGO_WIDTH; xi+=8) {
                 int byte = logo_bitmap[y*LOGO_WIDTH/8 + xi/8];
                 if ( byte == 0 ) { continue; }
-    
+
                 int bit = 0x80;
                 int bitcount = 0;
                 while (bitcount < 8) { // && xi+bitcount < LOGO_WIDTH (for all LOGO_WIDTH%8 != 0)
@@ -232,7 +243,6 @@ void BootUpScreen::animate()
             yline--;
         }
     }
-    xSemaphoreGive(display_mutex);
 }
 
 

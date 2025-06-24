@@ -1273,7 +1273,7 @@ void system_startup(void *args){
 
 		// remove logo immidiately
 		sleep(1);
-		delete boot_screen;
+		BootUpScreen::terminate();
 
 		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias.get() );
 		// QNH autosetup
@@ -1334,7 +1334,7 @@ void system_startup(void *args){
 			}
 		}
 
-		delete boot_screen;
+		BootUpScreen::terminate();
 		Display->clear();
 		gflags.inSetup = false;
 	}

@@ -18,3 +18,5 @@ float fast_atan(float x);
 float fast_atan2(float y, float x);
 float fast_tan_deg(float deg);
 float fast_tan_rad(float rad);
+
+int count_digits(unsigned int n);

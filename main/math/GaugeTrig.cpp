@@ -184,3 +184,17 @@ float fast_tan_deg(float deg)
 float fast_tan_rad(float rad) {
     return fast_tan_deg(rad * (180.0f / M_PI));
 }
+
+int count_digits(unsigned int n) {
+    if (n < 10)        return 1;
+    else if (n < 100)  return 2;
+    else if (n < 1000) return 3;
+    else if (n < 10000) return 4;
+    else if (n < 100000) return 5;
+    else if (n < 1000000) return 6;
+    else if (n < 10000000) return 7;
+    else if (n < 100000000) return 8;
+    else if (n < 1000000000) return 9;
+    else return 10; // max for 32-bit unsigned
+}
+

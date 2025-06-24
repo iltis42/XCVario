@@ -195,10 +195,7 @@ float IpsDisplay::old_polar_sink = 0;
 
 temp_status_t IpsDisplay::siliconTempStatusOld = MPU_T_UNKNOWN;
 
-const int16_t SINCOS_OVER_110 = 256; // need to be a power of 2
-constexpr int16_t SINCOS_OVER_90 = 180;
 constexpr float sincosScale = 180.f/M_PI*2.f; // rad -> deg/2 a 0.5deg resolution discrete scale
-constexpr float sincosScaleOld = SINCOS_OVER_110/M_PI_2*90./110.;
 static int16_t old_vario_bar_val = 0;
 static int16_t old_sink_bar_val = 0;
 static int16_t alt_quant = 1;

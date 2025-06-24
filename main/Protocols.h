@@ -22,6 +22,7 @@ public:
 	virtual ~Protocols( );
 	void sendNmeaHDM( float heading );
 	void sendNmeaHDT( float heading );
+	void sendNmeaMWV( float angle, float speed );
 	void sendItem( const char *key, char type, void *value, int len, bool ack=false );
 	void sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 			float mc, int bugs, float ballast, bool cruise, float alt,

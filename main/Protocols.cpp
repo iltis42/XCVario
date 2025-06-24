@@ -86,6 +86,33 @@ void Protocols::sendNmeaHDT( float heading ) {
 	Router::sendXCV(str);
 }
 
+
+/*
+    WIND angle and speed - True
+
+     $--MWV,x.x,a,x.x,a,a,a,*hh
+
+     Field Number:
+      1) wind angle
+      2) (R)elative or (T)rue
+      3) wind speed
+      4) K/M/N
+      5) Status A=valid
+      8) Checksum
+
+ */
+
+void Protocols::sendNmeaMWV( float angle, float speed ) {
+	char str[32];
+	sprintf( str,"$WIMWV,%3.1f,T,%3.1f,K,A", angle, speed  );
+	ESP_LOGI(FNAME,"WIND: %3.1f°/%3.1f km/h", angle, speed );
+
+	int cs = calcNMEACheckSum(&str[1]);
+	int i = strlen(str);
+	sprintf( &str[i], "*%02X\r\n", cs );
+	Router::sendXCV(str);
+}
+
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
 	if( Flarm::bincom )  // do not sent to client in case
 		return;

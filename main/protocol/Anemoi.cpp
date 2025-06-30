@@ -1,10 +1,10 @@
 #include "Anemoi.h"
 #include "setup/SetupNG.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 // Anemoi protocol message id's and their message length
 static const char *ANEMOI_IDS = "ADMSWadw";
-static const int ANEMOI_LEN[] = {9, 14, 5, 5, 10, 9, 14, 10};
+static const int ANEMOI_LEN[] = {11, 13, 5, 5, 10, 11, 13, 10};
 
 static uint8_t crc8ccitt(const void * data, size_t size);
 static void anemoiCRC(int &crc, const char c);
@@ -14,6 +14,7 @@ dl_control_t Anemoi::nextBytes(const char* c, int len)
     char *ptr;
     int pos = _sm._frame.size();
     _sm.push(*c);
+    // ESP_LOGD(FNAME, "%d: %x", pos, (unsigned)*c);
 
     switch(_sm._state) {
     case START_TOKEN:
@@ -39,14 +40,24 @@ dl_control_t Anemoi::nextBytes(const char* c, int len)
         anemoiCRC(_sm._crc, *c);
         if ( pos >= expected_len ) {
             // only start token plus payload
-            _sm._state = COMPLETE;
+            _sm._state = STOP_TOKEN;
         }
-        ESP_LOGD(FNAME, "ANEMOI PAYLOAD");
+        // ESP_LOGI(FNAME, "ANEMOI PAYLOAD");
         break;
-    case STOP_TOKEN: // fixme
+    case STOP_TOKEN:
         anemoiCRC(_sm._crc, *c);
         if( *c == 0x0a ) {
-            ESP_LOGD(FNAME, "ANEMOI STOP_TOKEN %x", *c);
+            ESP_LOGD(FNAME, "ANEMOI STOP_TOKEN %x", *c);;
+            _sm._state = CHECK_CRC1;
+            break;
+        }
+        _sm._state = START_TOKEN;
+        break;
+    case CHECK_CRC1:
+        ESP_LOGD(FNAME, "anemoi crc %x<>%x", (unsigned)*c, (unsigned)_sm._crc);
+        if ( *c != _sm._crc ) {
+            _sm._state = START_TOKEN;
+            break;
         }
         _sm._state = COMPLETE;
         break;
@@ -56,21 +67,19 @@ dl_control_t Anemoi::nextBytes(const char* c, int len)
     if ( _sm._state == COMPLETE )
     {
         _sm._state = START_TOKEN;
-        ESP_LOGD(FNAME, "ANEMOI COMPLETE %x", _sm._crc);
-        // if ( _sm._crc == 0 ) {
-            // Only process status and wind
-            // ESP_LOGI(FNAME, "Port S2 anemoi %c", _framebuffer[1]);
-            switch (_sm._frame.at(1)) {
-            case 'S':
-                parseStatus();
-                break;
-            case 'W':
-            case 'w':
-            default:
-                parseWind();
-                break;
-            }
-        // }
+        ESP_LOGD(FNAME, "ANEMOI COMPLETE %c", _sm._frame.at(1));
+        // Only process status and wind
+        switch (_sm._frame.at(1)) {
+        case 'S':
+            parseStatus();
+            break;
+        case 'W':
+        case 'w':
+            parseWind();
+            break;
+        default:
+            break;
+        }
     }
 
     return NOACTION; // no routing wanted
@@ -116,16 +125,17 @@ void Anemoi::parseStatus()
         B5Wind magnitude (avg)
         B6Heading, MSB
         B7Heading, LSB
+        B8 Live wind uncertainty indicator (0 = Very high certainty … 255 = Very low certainty)
 
     e.g.: $W ... 0x0a .
  */
 void Anemoi::parseWind()
 {
-    extwind_inst_dir.set((_sm._frame[2]<<8) + _sm._frame[3]);
+    extwind_inst_dir.set(((_sm._frame[2]<<8) | _sm._frame[3]));
     extwind_inst_speed.set(_sm._frame[4]);
-    extwind_sptc_dir.set((_sm._frame[5]<<8) + _sm._frame[6]);
+    extwind_sptc_dir.set(((_sm._frame[5]<<8) | _sm._frame[6]));
     extwind_sptc_speed.set(_sm._frame[7]);
-    // ESP_LOGI(FNAME,"WDir %.1f, Wvel %.1f", extwind_inst_dir.get(), extwind_inst_speed.get());
+    ESP_LOGI(FNAME,"WDir %.1f, Wval %.1f", extwind_inst_dir.get(), extwind_inst_speed.get());
 }
 
 

@@ -1645,20 +1645,20 @@ bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool i
 	ucg->setFont(ucg_font_fub25_hn, true);
 
 	char s[32];
-	if( airspeed_mode.get() != MODE_SLIP )
-		sprintf(s,"  %3d",  airspeed );
-	else
-		sprintf(s,"  %.1f", -slipAngle );  // Slip Angle
+	// if( airspeed_mode.get() != MODE_SLIP )
+	sprintf(s,"  %3d",  airspeed );
+	// else
+	// 	sprintf(s,"  %.1f", -slipAngle );  // Slip Angle
 	ucg->setPrintPos(x-ucg->getStrWidth(s), y);
 	ucg->print(s);
 	if ( inc_unit ) {
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
 		ucg->setPrintPos(x+5,y-3);
-		if( airspeed_mode.get() != MODE_SLIP )
-			ucg->print(Units::AirspeedUnitStr() );
-		else
-			ucg->print("deg");
+		// if( airspeed_mode.get() != MODE_SLIP )
+		ucg->print(Units::AirspeedUnitStr() );
+		// else
+		// 	ucg->print("deg");
 		ucg->setPrintPos(x+5,y-17);
 		ucg->print(Units::AirspeedModeStr());
 	}

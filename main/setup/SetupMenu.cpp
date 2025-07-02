@@ -230,6 +230,20 @@ int update_rentrys(SetupMenuSelect *p) {
 	return 0;
 }
 
+static const char *velocity_mode[3] = {"IAS", "TAS", "CAS"};
+static int update_velocity_buzz(SetupMenuSelect *p) {
+	SetupMenu *velocity = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(3));
+	velocity->setBuzzword(velocity_mode[airspeed_mode.get()]);
+	return 0;
+}
+
+static const char *alti_mode[2] = {"QNH", "QFE"};
+static int update_alti_buzz(SetupMenuSelect *p) {
+	SetupMenu *alti = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(4));
+	alti->setBuzzword(alti_mode[alt_display_mode.get()]);
+	return 0;
+}
+
 static void setAHRSBuzz(SetupMenu *p)
 {
 	static char ahrs_buzzword_buf[5];
@@ -970,6 +984,67 @@ void options_menu_create_units(SetupMenu *top) {
 	top->addEntry(dst);
 }
 
+static void system_menu_create_airspeed(SetupMenu *top) {
+	SetupMenuSelect *amode = new SetupMenuSelect("Airspeed Mode", RST_NONE, update_velocity_buzz, &airspeed_mode);
+	amode->setHelp("Select mode of Airspeed indicator to display IAS (Indicated AirSpeed), TAS (True AirSpeed) or CAS (calibrated airspeed)", 180);
+	amode->addEntry(velocity_mode[0]);
+	amode->addEntry(velocity_mode[1]);
+	amode->addEntry(velocity_mode[2]);
+	// amode->addEntry("Slip Angle");
+	top->addEntry(amode);
+
+	SetupMenuValFloat *spc = new SetupMenuValFloat("AS Calibration", "%", speedcal_change, false, &speedcal);
+	spc->setHelp("Calibration of airspeed sensor (AS). Normally not needed, unless pressure the probe has a systematic error");
+	top->addEntry(spc);
+
+	SetupMenuSelect *auze = new SetupMenuSelect("Set AS Zero", RST_IMMEDIATE, nullptr, &autozero);
+	top->addEntry(auze);
+	auze->setHelp("Recalculate zero point for airspeed sensor on next power on");
+	auze->addEntry("Cancel");
+	auze->addEntry("Start");
+
+	SetupMenuSelect *stawaen = new SetupMenuSelect("Stall Warning", RST_NONE, nullptr, &stall_warning);
+	stawaen->setHelp("Enable alarm sound when speed goes below configured stall speed (until 30% less)");
+	stawaen->mkEnable();
+	top->addEntry(stawaen);
+
+	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", nullptr, true, &stall_speed);
+	top->addEntry(staspe);
+}
+
+static void options_menu_create_altimeter(SetupMenu *top) {
+	SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode", RST_NONE, update_alti_buzz, &alt_display_mode);
+	top->addEntry(altDisplayMode);
+	altDisplayMode->setHelp("Select altitude display mode");
+	altDisplayMode->addEntry(alti_mode[0]);
+	altDisplayMode->addEntry(alti_mode[1]);
+
+	SetupMenuSelect *atrans = new SetupMenuSelect("Auto Transition", RST_NONE, nullptr, &fl_auto_transition);
+	top->addEntry(atrans);
+	atrans->setHelp("Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
+	atrans->mkEnable();
+
+	SetupMenuValFloat *tral = new SetupMenuValFloat("Transition Altitude", "FL", nullptr, false, &transition_alt);
+	tral->setHelp("Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)", 100);
+	top->addEntry(tral);
+
+	SetupMenuSelect *als = new SetupMenuSelect("Atl. Source", RST_NONE, nullptr, &alt_select);
+	top->addEntry(als);
+	als->setHelp("Select source for barometric altitude, either TE sensor or Baro sensor (recommended) or an external source e.g. FLARM (if avail)");
+	als->addEntry("TE Sensor");
+	als->addEntry("Baro Sensor");
+	als->addEntry("External");
+
+	SetupMenuSelect *alq = new SetupMenuSelect("Alt. Quantization", RST_NONE, nullptr, &alt_quantization);
+	alq->setHelp("Set altimeter mode with discrete steps and rolling last digits");
+	alq->addEntry("Disable");
+	alq->addEntry("2");
+	alq->addEntry("5");
+	alq->addEntry("10");
+	alq->addEntry("20");
+	top->addEntry(alq);
+}
+
 void options_menu_create_flarm(SetupMenu *top) {
 	SetupMenuSelect *flarml = new SetupMenuSelect("Alarm Level", RST_NONE, nullptr, &flarm_warning);
 	flarml->setHelp(
@@ -1072,32 +1147,15 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 		opt->addEntry(un);
 		un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
 
-		SetupMenuSelect *amode = new SetupMenuSelect("Airspeed Mode", RST_NONE, nullptr, &airspeed_mode);
-		opt->addEntry(amode);
-		amode->setHelp(
-				"Select mode of Airspeed indicator to display IAS (Indicated AirSpeed), TAS (True AirSpeed) or CAS (calibrated airspeed)",
-				180);
-		amode->addEntry("IAS");
-		amode->addEntry("TAS");
-		amode->addEntry("CAS");
-		amode->addEntry("Slip Angle");
+		// Airspeed
+		SetupMenu *velocity = new SetupMenu("Airspeed", system_menu_create_airspeed);
+		velocity->setBuzzword(velocity_mode[airspeed_mode.get()]);
+		opt->addEntry(velocity);
 
-		SetupMenuSelect *atl = new SetupMenuSelect("Auto Transition", RST_NONE, nullptr, &fl_auto_transition);
-		opt->addEntry(atl);
-		atl->setHelp("Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
-		atl->mkEnable();
-
-		SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode", RST_NONE, nullptr, &alt_display_mode);
-		opt->addEntry(altDisplayMode);
-		altDisplayMode->setHelp("Select altitude display mode");
-		altDisplayMode->addEntry("QNH");
-		altDisplayMode->addEntry("QFE");
-
-		SetupMenuValFloat *tral = new SetupMenuValFloat("Transition Altitude", "FL", nullptr, false, &transition_alt);
-		tral->setHelp(
-				"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)",
-				100);
-		opt->addEntry(tral);
+		// Altimeter
+		SetupMenu *alti = new SetupMenu("Altimeter", options_menu_create_altimeter);
+		alti->setBuzzword(alti_mode[alt_display_mode.get()]);
+		opt->addEntry(alti);
 
 		SetupMenu *flarm = new SetupMenu("FLARM", options_menu_create_flarm);
 		opt->addEntry(flarm);
@@ -1111,7 +1169,7 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 		SetupMenu *gload = new SetupMenu("G-Load Display", options_menu_create_gload);
 		opt->addEntry(gload);
 	}
-	SetupMenu *flarm = static_cast<SetupMenu*>(opt->getEntry(7));
+	SetupMenu *flarm = static_cast<SetupMenu*>(opt->getEntry(5));
 	if ( DEVMAN->getDevice(FLARM_DEV) != nullptr ) {
 		flarm->unlock();
 		flarm->setBuzzword();
@@ -1404,52 +1462,6 @@ void system_menu_create_hardware(SetupMenu *top) {
 	top->addEntry(met_adj);
 }
 
-void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
-	SetupMenuSelect *stawaen = new SetupMenuSelect("Stall Warning", RST_NONE, nullptr, &stall_warning);
-	stawaen->setHelp(
-			"Enable alarm sound when speed goes below configured stall speed (until 30% less)");
-	stawaen->mkEnable();
-	top->addEntry(stawaen);
-
-	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", nullptr, true, &stall_speed);
-	top->addEntry(staspe);
-}
-
-void system_menu_create_altimeter_airspeed(SetupMenu *top) {
-	SetupMenuSelect *als = new SetupMenuSelect("Altimeter Source", RST_NONE, nullptr, &alt_select);
-	top->addEntry(als);
-	als->setHelp(
-			"Select source for barometric altitude, either TE sensor or Baro sensor (recommended) or an external source e.g. FLARM (if avail)");
-	als->addEntry("TE Sensor");
-	als->addEntry("Baro Sensor");
-	als->addEntry("External");
-
-	SetupMenuValFloat *spc = new SetupMenuValFloat("AS Calibration", "%", speedcal_change, false, &speedcal);
-	spc->setHelp(
-			"Calibration of airspeed sensor (AS). Normally not needed, unless pressure probes have systematic error");
-	top->addEntry(spc);
-
-	SetupMenuSelect *auze = new SetupMenuSelect("AutoZero AS Sensor", RST_IMMEDIATE, nullptr, &autozero);
-	top->addEntry(auze);
-	auze->setHelp(
-			"Recalculate zero point for airspeed sensor on next power on");
-	auze->addEntry("Cancel");
-	auze->addEntry("Start");
-
-	SetupMenuSelect *alq = new SetupMenuSelect("Alt. Quantization", RST_NONE, nullptr, &alt_quantization);
-	alq->setHelp(
-			"Set altimeter mode with discrete steps and rolling last digits");
-	alq->addEntry("Disable");
-	alq->addEntry("2");
-	alq->addEntry("5");
-	alq->addEntry("10");
-	alq->addEntry("20");
-	top->addEntry(alq);
-
-	SetupMenu *stallwa = new SetupMenu("Stall Warning", system_menu_create_altimeter_airspeed_stallwa);
-	top->addEntry(stallwa);
-}
-
 void system_menu_create(SetupMenu *sye) {
 	SetupMenu *soft = new SetupMenu("Software", system_menu_create_software);
 	sye->addEntry(soft);
@@ -1468,10 +1480,6 @@ void system_menu_create(SetupMenu *sye) {
 	SetupMenu *hardware = new SetupMenu("Hardware Setup", system_menu_create_hardware);
 	hardware->setHelp("Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc", 240);
 	sye->addEntry(hardware);
-
-	// Altimeter, IAS
-	SetupMenu *aia = new SetupMenu("Altimeter, Airspeed", system_menu_create_altimeter_airspeed);
-	sye->addEntry(aia);
 
 	// Audio
 	SetupMenu *ad = new SetupMenu("Audio", audio_menu_create);

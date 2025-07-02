@@ -414,6 +414,8 @@ SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
 SetupNG<int> 			screen_gmeter("SCR_GMET", 0, false, SYNC_NONE, PERSISTENT, &SetupRoot::initScreens);
 SetupNG<int> 			screen_horizon("SCR_HORIZ", 0, true, SYNC_NONE, PERSISTENT, &SetupRoot::initScreens);
 SetupNG<int> 			screen_centeraid("SCR_CA", 0, false);
+SetupNG<int> 			screen_gauge_top("SCR_GT", GAUGE_NONE, false);
+SetupNG<int> 			screen_gauge_bottom("SCR_GB", GAUGE_NONE, false);
 SetupNG<bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
 SetupNG<t_tenchar_id>	custom_wireless_id("WLID", t_tenchar_id("") );

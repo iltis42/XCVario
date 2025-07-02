@@ -1451,7 +1451,7 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val, bool large )
 			int fh = ucg->getFontAscent();   // height of blanking box
 			ucg->drawBox( x_start, y-fh/2, new_x_start-x_start, fh );  // draw blanking box
 		}
-		ucg->setColor( COLOR_WHITE );
+			ucg->setColor( COLOR_WHITE );
 		ucg->setPrintPos(new_x_start, y + 8);
 		ucg->print(s);
 		last_avg = ival;
@@ -2110,7 +2110,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		indicator->drawPolarIndicatorAndBow(needle_pos, false);
 	}
 	// Airspeed (NEEDLE overlap)
-	if( !(tick%6) ) {
+	if( screen_gauge_top.get() == GAUGE_SPEED && !(tick%6) ) {
 		if( bg_prio ){
 			drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty );
 		}else {
@@ -2119,24 +2119,24 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			}
 		}
 	}
-	// Altitude (NEEDLE overlap)
-	if( !(tick%2) ) {
+	// Altitude
+	if( screen_gauge_bottom.get() == GAUGE_ALT && !(tick%4) ) {
 		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
 		// static float alt = 0, rad = 0.0; int min_aq = std::max(alt_quant, (int16_t)1);
 		// altitude = alt + sin(rad) * (5*min_aq+2); rad += 0.003*min_aq;
 		if( bg_prio ){
-			drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, alt_dirty );
+		drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, alt_dirty );
 		}else{  // needle prio
 			if( drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, (alt_dirty && !(tick%10)) ) ){
 				indicator->drawPolarIndicatorAndBow(needle_pos, true);
 			}
-		}
 	}
+		}
 	// Compass  (NEEDLE overlap)
 	if( !(tick%2) ){
 		if( bg_prio )
 			drawCompass(INNER_RIGHT_ALIGN, 116, wind_dirty, compass_dirty );
-		else{
+		else {
 			if( drawCompass(INNER_RIGHT_ALIGN, 116, wind_dirty && !(tick%10), compass_dirty && !(tick%10) ) ){
 				indicator->drawPolarIndicatorAndBow(needle_pos, true);
 			}
@@ -2151,7 +2151,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Vario Needle in Front mode drawn as last
 	if( !(tick%2) && needle_prio ){
 		indicator->drawPolarIndicatorAndBow(needle_pos, false);
-	}
+		}
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
 	if( ps_display.get() && !(tick%3) ){
 		if( int( polar_sink*100.) != int( old_polar_sink*100. ) ){

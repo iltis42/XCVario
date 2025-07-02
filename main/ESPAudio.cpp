@@ -449,7 +449,7 @@ void Audio::calcS2Fmode( bool recalc ){
 			speaker_volume = vario_mode_volume;
 		if ( speaker_volume != audio_volume.get() ) {  // due to audio_split_vol
 			ESP_LOGI(FNAME, "... changing volume %f -> %f",
-			     audio_volume.get(), speaker_volume );
+			audio_volume.get(), speaker_volume );
 			audio_volume.set( speaker_volume );  // this too needs _stf_mode
 			// this is to keep the current volume shown (or implied) in the menus
 			// in step with the actual speaker volume, in case volume is changed
@@ -863,6 +863,7 @@ bool Audio::tick()
 	polar_sink = Speed2Fly.sink( ias.get() );
 	float netto = te_vario.get() - polar_sink;
 	as2f = Speed2Fly.speed( netto, !Switch::getCruiseState() );
+	s2f_ideal.set(static_cast<int>(std::round(as2f)));
 	s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10)); // low pass damping moved to the correct place
 	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
 	if( vario_mode.get() == VARIO_NETTO || (Switch::getCruiseState() &&  (vario_mode.get() == CRUISE_NETTO)) ){

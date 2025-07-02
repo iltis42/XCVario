@@ -316,7 +316,8 @@ extern SetupNG<float>		empty_weight;
 extern SetupNG<float>		crew_weight;
 extern SetupNG<float>		gross_weight;
 
-extern SetupNG<float>  		s2f_speed;
+extern SetupNG<int>  		s2f_ideal;
+extern SetupNG<float>  		s2f_threshold;
 
 extern SetupNG<int>  		audio_variable_frequency;
 extern SetupNG<int>  		s2f_switch_mode;

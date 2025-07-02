@@ -28,7 +28,7 @@ bool Switch::_cruise_mode_flap = false;
 bool Switch::_cruise_mode_gyro = false;
 bool Switch::_closed = false;
 int Switch::_holddown = 0;
-float Switch::_cruise_speed_kmh = 100;
+float Switch::_cruise_threshold_kmh = 100;
 int Switch::_tick = 0;
 bool Switch::cm_switch_prev = false;
 bool Switch::cm_auto_prev = false;
@@ -141,7 +141,7 @@ bool Switch::cruiseMode() {
 }
 
 void Switch::begin( gpio_num_t sw ){
-	_cruise_speed_kmh =  s2f_speed.get();
+	_cruise_threshold_kmh =  s2f_threshold.get();
 	_sw = sw;
 	gpio_set_direction(_sw, GPIO_MODE_INPUT);
 	gpio_set_pull_mode(_sw, GPIO_PULLDOWN_ONLY);
@@ -170,9 +170,9 @@ void Switch::setCruiseModeXCV(){
 void Switch::tick() {
 	_tick++;
 	if( s2f_switch_mode.get() == AM_AUTOSPEED  && !(_tick%10) ){ // its enough to check this every 10 tick
-		// ESP_LOGI(FNAME,"mode: %d ias: %3.1f hyst: %3.1f cuise: %.1f", _cruise_mode_speed, ias.get(), s2f_hysteresis.get(), _cruise_speed_kmh );
+		// ESP_LOGI(FNAME,"mode: %d ias: %3.1f hyst: %3.1f cuise: %.1f", _cruise_mode_speed, ias.get(), s2f_hysteresis.get(), _cruise_threshold_kmh );
 		if( _cruise_mode_speed ){
-			if ( ias.get() < (_cruise_speed_kmh - s2f_hysteresis.get()) ){
+			if ( ias.get() < (_cruise_threshold_kmh - s2f_hysteresis.get()) ){
 				if( _cruise_mode_speed != false  ){
 					_cruise_mode_speed = false;
 					// ESP_LOGI(FNAME,"set cruise mode false");
@@ -180,7 +180,7 @@ void Switch::tick() {
 			}
 		}
 		else{ // vario mode
-			if ( ias.get() > (_cruise_speed_kmh + s2f_hysteresis.get()) ){
+			if ( ias.get() > (_cruise_threshold_kmh + s2f_hysteresis.get()) ){
 				if( _cruise_mode_speed != true ){
 					_cruise_mode_speed = true;
 					// ESP_LOGI(FNAME,"set cruise mode true");

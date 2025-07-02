@@ -64,7 +64,7 @@ static void audio_menu_create_mute(SetupMenu *top);
 static void options_menu_create(SetupMenu *top);
 static void options_menu_create_units(SetupMenu *top);
 static void options_menu_create_flarm(SetupMenu *top);
-static void options_menu_create_gload(SetupMenu *top);
+static void screens_menu_create_gload(SetupMenu *top);
 
 static void system_menu_create(SetupMenu *top);
 static void system_menu_create_software(SetupMenu *top);
@@ -667,7 +667,7 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	s2fsw->addEntry("Switch Invert");
 	s2fsw->addEntry("Disable");
 
-	SetupMenuValFloat *autospeed = new SetupMenuValFloat("S2F AutoSpeed", "", update_s2f_speed, false, &s2f_speed);
+	SetupMenuValFloat *autospeed = new SetupMenuValFloat("S2F AutoSpeed", "", update_s2f_speed, false, &s2f_threshold);
 	top->addEntry(autospeed);
 	autospeed->setHelp(
 			"Transition speed if using AutoSpeed to switch Vario <-> Cruise (S2F) mode");
@@ -753,22 +753,6 @@ void vario_menu_create(SetupMenu *vae) {
 	nemod->addEntry("Normal");
 	nemod->addEntry("Relative");
 	vae->addEntry(nemod);
-
-	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, nullptr, &ps_display);
-	sink->setHelp("Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
-	sink->mkEnable();
-	vae->addEntry(sink);
-
-	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, nullptr, &needle_color);
-	ncolor->addEntry("White");
-	ncolor->addEntry("Orange");
-	ncolor->addEntry("Red");
-	vae->addEntry(ncolor);
-
-	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_NONE, centeraid_action, &screen_centeraid);
-	scrcaid->setHelp("Enable/disable display of centering aid");
-	scrcaid->mkEnable();
-	vae->addEntry(scrcaid);
 
 	SetupMenu *vdamp = new SetupMenu("Vario Damping", vario_menu_create_damping);
 	vae->addEntry(vdamp);
@@ -1071,7 +1055,7 @@ void options_menu_create_flarm(SetupMenu *top) {
 	top->addEntry(flarms);
 }
 
-void options_menu_create_gload(SetupMenu *top) {
+void screens_menu_create_gload(SetupMenu *top) {
 	SetupMenuSelect *glmod = new SetupMenuSelect("Activation Mode", RST_NONE, nullptr, &gload_mode);
 	glmod->setHelp(
 			"Switch off G-Force screen, or activate by threshold G-Force 'Dynamic', or static by 'Always-On'");
@@ -1132,6 +1116,61 @@ void options_menu_create_gload(SetupMenu *top) {
 	top->addEntry(gloadalvo);
 }
 
+static void screens_menu_create_vario(SetupMenu *top) {
+
+	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, nullptr, &ps_display);
+	sink->setHelp("Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
+	sink->mkEnable();
+	top->addEntry(sink);
+
+	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, nullptr, &needle_color);
+	ncolor->addEntry("White");
+	ncolor->addEntry("Orange");
+	ncolor->addEntry("Red");
+	top->addEntry(ncolor);
+
+	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Assistent", RST_NONE, centeraid_action, &screen_centeraid);
+	scrcaid->setHelp("Enable/disable display of the thermal assistent");
+	scrcaid->mkEnable();
+	top->addEntry(scrcaid);
+
+	SetupMenuSelect *tgauge = new SetupMenuSelect("Upper Gauge", RST_NONE, nullptr, &screen_gauge_top);
+	tgauge->addEntry("Disable");
+	tgauge->addEntry("Airspeed", GAUGE_SPEED);
+	tgauge->addEntry("Speed2Fly", GAUGE_S2F);
+	tgauge->addEntry("Heading", GAUGE_HEADING);
+	tgauge->addEntry("Slip Angle", GAUGE_SLIP);
+	top->addEntry(tgauge);
+
+	SetupMenuSelect *bgauge = new SetupMenuSelect("Lower Gauge", RST_NONE, nullptr, &screen_gauge_bottom);
+	bgauge->addEntry("Disable");
+	bgauge->addEntry("Altimeter", GAUGE_ALT);
+	bgauge->addEntry("Life Wind", GAUGE_NONE);
+	top->addEntry(bgauge);
+}
+
+static void options_menu_create_screens(SetupMenu *top) { // dynamic!
+	if ( top->getNrChilds() == 0 ) {
+		SetupMenu *gload = new SetupMenu("G-Load Screen", screens_menu_create_gload);
+		top->addEntry(gload);
+
+		SetupMenu *vario = new SetupMenu("Vario Screen", screens_menu_create_vario);
+		top->addEntry(vario);
+
+		SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens, &screen_gmeter);
+		scrgmet->mkEnable();
+		top->addEntry(scrgmet);
+	}
+	if ( top->getNrChilds() == 4 ) {
+		top->delEntry(top->getEntry(3));
+	}
+	if (gflags.ahrsKeyValid) {
+		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens, &screen_horizon);
+		horizon->mkEnable();
+		top->addEntry(horizon);
+	}
+}
+
 void options_menu_create(SetupMenu *opt) { // dynamic!
 	if ( opt->getNrChilds() == 0 ) {
 		if (student_mode.get() == 0) {
@@ -1166,8 +1205,9 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 		opt->addEntry(compassWindMenu);
 		compassWindMenu->setHelp("Setup Compass and Wind", 280);
 
-		SetupMenu *gload = new SetupMenu("G-Load Display", options_menu_create_gload);
-		opt->addEntry(gload);
+		SetupMenu *screens = new SetupMenu("Screens & Gauges", options_menu_create_screens);
+		screens->setDynContent();
+		opt->addEntry(screens);
 	}
 	SetupMenu *flarm = static_cast<SetupMenu*>(opt->getEntry(5));
 	if ( DEVMAN->getDevice(FLARM_DEV) != nullptr ) {
@@ -1274,24 +1314,7 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 
 }
 
-void system_menu_create_hardware_rotary_screens(SetupMenu *top)
-{
-	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens, &screen_gmeter);
-	scrgmet->mkEnable();
-	top->addEntry(scrgmet);
-
-	if (gflags.ahrsKeyValid) {
-		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens, &screen_horizon);
-		horizon->mkEnable();
-		top->addEntry(horizon);
-	}
-}
-
 void system_menu_create_hardware_rotary(SetupMenu *top) {
-	SetupMenu *screens = new SetupMenu("Screens", system_menu_create_hardware_rotary_screens);
-	top->addEntry(screens);
-	screens->setHelp("Select screens to be activated one after the other by short press");
-
 	SetupMenuSelect *rotype;
 	rotype = new SetupMenuSelect("Direction", RST_NONE, set_rotary_direction, &rotary_dir);
 	top->addEntry(rotype);

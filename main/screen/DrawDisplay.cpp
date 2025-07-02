@@ -252,7 +252,7 @@ void drawDisplay(void *arg)
 			// Vario Screen
 			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
-				Display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, batteryVoltage, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
+				Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), t, batteryVoltage, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
 			}
 			if( screen_centeraid.get() ){
 				if( theCenteraid ){

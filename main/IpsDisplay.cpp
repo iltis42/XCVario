@@ -1405,16 +1405,17 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	ucg->setPrintPos(2,50);
 	ucg->setColor(COLOR_HEADER);
 	ucg->print( Units::VarioUnit() );
-	drawConnection(DISPLAY_W-25, FLOGO );
-	drawSpeed(0., INNER_RIGHT_ALIGN, 75, true, true );
-	drawAltitude( altitude.get(), INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, true, true );
-	if( !ulmode )
-		drawMC( MC.get(), true );
+	if ( screen_gauge_top.get() == GAUGE_SPEED ) {
+		drawTopGauge(0, INNER_RIGHT_ALIGN, 75, true, true );
+	}
+	if ( screen_gauge_bottom.get() == GAUGE_ALT ) {
+		drawAltitude( altitude.get(), INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, true, true );
+	}
 	if ( FLAP ) {
 		FLAP->setBarPosition( WKSYMST-4, WKBARMID);
 		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(flap_neg_max.get()))-18 );
 	}
-}
+	}
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
 	ESP_LOGI(FNAME,"drawWarning");
@@ -1629,40 +1630,51 @@ void IpsDisplay::drawSmallSpeed(float v, int16_t x, int16_t y)
 
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // set dirty, when obscured from vario needle
-// right-aligned to value, unit optional behind
-// leant to display as well slip angle
-// TBD: Make this place a general field capable to display other values as well
-//      For now this is hijacked for slip angle tests
-bool IpsDisplay::drawSpeed(float v_kmh, int16_t x, int16_t y, bool dirty, bool inc_unit)
+// right-aligned to value
+bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool dirty, bool inc_unit)
 {
-	int airspeed = Units::AirspeedRounded(v_kmh);
+	switch ( screen_gauge_top.get() ) {
+	case GAUGE_S2F:
+		val = s2f_ideal.get();
+		break;
+	case GAUGE_SLIP:
+		val = static_cast<int>(std::round(slipAngle*-10.f));
+		break;
+	case GAUGE_HEADING:
+		val = static_cast<int>(std::round(getHeading()));
+		break;
+	default:
+		break;
+	}
 
-	dirty = dirty || as_prev != airspeed;
+	dirty = dirty || as_prev != val;
 	if ( ! dirty ) return false;
-	// ESP_LOGI(FNAME,"draw airspeed %f %d", v_kmh, as_prev );
+	ESP_LOGI(FNAME,"draw val %d %d", val, as_prev );
 
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub25_hn, true);
 
 	char s[32];
-	// if( airspeed_mode.get() != MODE_SLIP )
-	sprintf(s,"  %3d",  airspeed );
-	// else
-	// 	sprintf(s,"  %.1f", -slipAngle );  // Slip Angle
+	if ( screen_gauge_top.get() != GAUGE_SLIP ) {
+		sprintf(s,"  %3d", val);
+	}
+	else {
+		sprintf(s,"  %2d.%01d", val/10, std::abs(val)%10 );  // Slip Angle
+	}
 	ucg->setPrintPos(x-ucg->getStrWidth(s), y);
 	ucg->print(s);
 	if ( inc_unit ) {
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
 		ucg->setPrintPos(x+5,y-3);
-		// if( airspeed_mode.get() != MODE_SLIP )
+		if( screen_gauge_top.get() != GAUGE_SLIP )
 		ucg->print(Units::AirspeedUnitStr() );
-		// else
-		// 	ucg->print("deg");
+		else
+			ucg->print("deg");
 		ucg->setPrintPos(x+5,y-17);
 		ucg->print(Units::AirspeedModeStr());
 	}
-	as_prev = airspeed;
+	as_prev = val;
 	speed_dirty = false;
 	return true;
 }
@@ -2110,17 +2122,17 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		indicator->drawPolarIndicatorAndBow(needle_pos, false);
 	}
 	// Airspeed (NEEDLE overlap)
-	if( screen_gauge_top.get() == GAUGE_SPEED && !(tick%6) ) {
+	if( screen_gauge_top.get() && !(tick%6) ) {
 		if( bg_prio ){
-			drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty );
+			drawTopGauge( airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty );
 		}else {
-			if( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_dirty && !(tick%10)) ) ){
+			if( drawTopGauge( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_dirty && !(tick%10)) ) ){
 				indicator->drawPolarIndicatorAndBow(needle_pos, false);
 			}
 		}
 	}
 	// Altitude
-	if( screen_gauge_bottom.get() == GAUGE_ALT && !(tick%4) ) {
+	if( screen_gauge_bottom.get() && !(tick%4) ) {
 		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
 		// static float alt = 0, rad = 0.0; int min_aq = std::max(alt_quant, (int16_t)1);
 		// altitude = alt + sin(rad) * (5*min_aq+2); rad += 0.003*min_aq;
@@ -2179,7 +2191,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Temperature Value
 	temp_status_t mputemp = MPU.getSiliconTempStatus();
 	if( (((int)(temp*10) != tempalt) || (mputemp != siliconTempStatusOld)) && !(tick%12)) {
-		drawTemperature( 3, 28, temp );
+		drawTemperature( 4, 30, temp );
 		tempalt=(int)(temp*10);
 		siliconTempStatusOld = mputemp;
 	}
@@ -2275,7 +2287,6 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	float polar_sink = Units::Vario( polar_sink_ms );
 	float s2f = Units::Airspeed( s2f_ms );
 	float s2fd = Units::Airspeed( s2fd_ms );
-	int airspeed =  Units::AirspeedRounded( airspeed_kmh );
 	int unit = alt_unit.get();
 	if( gflags.standard_setting == true ){
 		unit = ALT_UNIT_FL;
@@ -2435,36 +2446,36 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		pyalt = py;
 	}
 	// AS
-	if( as_prev != airspeed && !(tick%2)) {
+	if( as_prev != airspeed_kmh && !(tick%2)) {
 		// draw new
 		ucg->setColor(  COLOR_WHITE  );
 		// print speed values bar
 		ucg->setFont(ucg_font_fub11_hn, true);
 		ucg->setClipRange( FIELD_START, dmid-(MAXS2FTRI), ASLEN, (MAXS2FTRI*2) );
-		for( int speed = airspeed-MAXS2FTRI-(fh)-20; speed<airspeed+MAXS2FTRI+(fh); speed++ )
+		for( int speed = airspeed_kmh-MAXS2FTRI-(fh)-20; speed<airspeed_kmh+MAXS2FTRI+(fh); speed++ )
 		{
 			if( ((speed%20) == 0 && (speed >= 0)) || speed == -20 ) {
 				// blank old values
 				ucg->setColor( COLOR_BLACK );
-				ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed)-(fh/2)-9, ASLEN-6, fh+15 );
+				ucg->drawBox( FIELD_START+6,dmid+(speed-airspeed_kmh)-(fh/2)-9, ASLEN-6, fh+15 );
 				int col = 0;
 				if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
-					col = abs(((speed-airspeed)*2));
+					col = abs(((speed-airspeed_kmh)*2));
 				}
 				else {
-					col = abs(255 - abs(((speed-airspeed)*2)));
+					col = abs(255 - abs(((speed-airspeed_kmh)*2)));
 				}
 				if( speed >= 0 ){
 					ucg->setColor(  col,col,col  );
-					ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed)+(fh/2));
+					ucg->setPrintPos(FIELD_START+8,dmid+(speed-airspeed_kmh)+(fh/2));
 					ucg->printf("%3d ""- ", speed);
 				}
 			}
 		}
 		ucg->undoClipRange();
 		// AS cleartext
-		drawSmallSpeed(airspeed, FIELD_START+35, YS2F-fh+3);
-		as_prev = airspeed;
+		drawSmallSpeed(airspeed_kmh, FIELD_START+35, YS2F-fh+3);
+		as_prev = airspeed_kmh;
 	}
 	// S2F command trend triangle
 	if( ((int)s2fd != s2fdalt) || (s2falt != (int)(s2f+0.5)) || !(tick%21) ) {

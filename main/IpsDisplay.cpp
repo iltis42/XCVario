@@ -1405,11 +1405,11 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	ucg->setPrintPos(2,50);
 	ucg->setColor(COLOR_HEADER);
 	ucg->print( Units::VarioUnit() );
-	if ( screen_gauge_top.get() == GAUGE_SPEED ) {
+	if ( screen_gauge_top.get() ) {
 		drawTopGauge(0, INNER_RIGHT_ALIGN, 75, true, true );
 	}
-	if ( screen_gauge_bottom.get() == GAUGE_ALT ) {
-		drawAltitude( altitude.get(), INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, true, true );
+	if ( screen_gauge_bottom.get() ) {
+	drawAltitude( altitude.get(), INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, true, true );
 	}
 	if ( FLAP ) {
 		FLAP->setBarPosition( WKSYMST-4, WKBARMID);
@@ -1628,6 +1628,26 @@ void IpsDisplay::drawSmallSpeed(float v, int16_t x, int16_t y)
 	ucg->print(s);
 }
 
+static const char* AirspeedModeStr()
+{
+	if (airspeed_mode.get() == MODE_IAS)
+	{
+		return "IAS";
+	}
+	else if (airspeed_mode.get() == MODE_TAS)
+	{
+		return "TAS";
+	}
+	else if (airspeed_mode.get() == MODE_CAS)
+	{
+		return "CAS";
+	}
+	else
+	{
+		return "-";
+	}
+}
+
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // set dirty, when obscured from vario needle
 // right-aligned to value
@@ -1667,12 +1687,26 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool dirty, bool in
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
 		ucg->setPrintPos(x+5,y-3);
-		if( screen_gauge_top.get() != GAUGE_SLIP )
-		ucg->print(Units::AirspeedUnitStr() );
-		else
+		if( screen_gauge_top.get() == GAUGE_SPEED ||screen_gauge_top.get() == GAUGE_S2F ) {
+			ucg->print(Units::AirspeedUnitStr() );
+			ucg->setPrintPos(x+5,y-17);
+			if ( screen_gauge_top.get() == GAUGE_SPEED ) { 
+				ucg->print(Units::AirspeedModeStr());
+			}
+			else {
+				ucg->print("S2F");
+			}
+		}
+		else {
 			ucg->print("deg");
 		ucg->setPrintPos(x+5,y-17);
-		ucg->print(Units::AirspeedModeStr());
+			if ( screen_gauge_top.get() == GAUGE_SLIP ) { 
+				ucg->print("SLIP");
+			}
+			else {
+				ucg->print("HDG");
+			}
+		}
 	}
 	as_prev = val;
 	speed_dirty = false;
@@ -2127,8 +2161,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			drawTopGauge( airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty );
 		}else {
 			if( drawTopGauge( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_dirty && !(tick%10)) ) ){
-				indicator->drawPolarIndicatorAndBow(needle_pos, false);
-			}
+		indicator->drawPolarIndicatorAndBow(needle_pos, false);
+	}
 		}
 	}
 	// Altitude
@@ -2158,12 +2192,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Center Aid around grafic wind
 	if( theCenteraid && !(tick % 4)   ){
 		theCenteraid->drawCenterAid();
-	}
+		}
 
 	// Vario Needle in Front mode drawn as last
 	if( !(tick%2) && needle_prio ){
 		indicator->drawPolarIndicatorAndBow(needle_pos, false);
-		}
+	}
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
 	if( ps_display.get() && !(tick%3) ){
 		if( int( polar_sink*100.) != int( old_polar_sink*100. ) ){

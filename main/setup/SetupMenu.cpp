@@ -209,7 +209,7 @@ int do_display_test(SetupMenuSelect *p) {
 
 int update_s2f_speed(SetupMenuValFloat *p) {
 	ESP_LOGI(FNAME,"sf2_speed: %.1f conv: %.1f", s2f_threshold.get(), Units::Airspeed2Kmh( s2f_threshold.get() ) );
-	Switch::setCruiseThreshold(s2f_threshold.get());
+	S2FSWITCH->setCruiseThreshold(s2f_threshold.get());
 	return 0;
 }
 

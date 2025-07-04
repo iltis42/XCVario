@@ -4,47 +4,84 @@
  *  Created on: Feb 24, 2019
  *      Author: iltis
  *
- *      Example:
- *      sw = Switch();
- *      sw.begin( GPIO_NUM_1 );
- *      if( sw.state() )
- *         ESP_LOGI(FNAME,"Open");
- *
  */
 
-#include "driver/gpio.h"
 #include "Switch.h"
-#include <logdef.h>
+#include "protocol/Clock.h"
 #include "setup/SetupNG.h"
 #include "sensor.h"
 #include "Flap.h"
 #include "KalmanMPU6050.h"
 #include "average.h"
 #include "vector.h"
+#include "logdef.h"
 
-bool Switch::_cruise_mode_sw = false;
-bool Switch::_cruise_mode_speed = false;
-bool Switch::_cruise_mode_flap = false;
-bool Switch::_cruise_mode_gyro = false;
-bool Switch::_closed = false;
-int Switch::_holddown = 0;
-float Switch::_cruise_threshold_kmh = 100;
-int Switch::_tick = 0;
-bool Switch::cm_switch_prev = false;
-bool Switch::cm_auto_prev = false;
-bool Switch::cruise_mode_final = false;
-bool Switch::_cruise_mode_xcv = false;
-bool Switch::cm_xcv_prev = false;
-bool Switch::initial = true;
 
-Average<GYRO_FILTER_SAMPLES/4, float, float> Switch::filter;
 
-gpio_num_t Switch::_sw = GPIO_NUM_0;
+Switch *S2FSWITCH = nullptr;
 
-Switch::Switch() {
+// clock tick timer (task context)
+bool IRAM_ATTR Switch::tick()
+{
+	// called every 10msec
+	if ( ! _pullup_on ) {
+		gpio_set_pull_mode(_sw, GPIO_PULLUP_ONLY);
+		_pullup_on = true;
+		return false;
+	}
+
+	// int gotEvent;
+	bool buttonRead = gpio_get_level(_sw) == _active_level; // button active
+	gpio_set_pull_mode(_sw, GPIO_FLOATING);
+	_pullup_on = false;
+
+	debounceCount = (buttonRead == lastButtonRead) ? (debounceCount+1) : 0;
+	lastButtonRead = buttonRead;
+
+	if ( debounceCount < 2 || (buttonRead == state) ) {
+		return false;
+	}
+
+	// A valid edge detected
+	state = buttonRead;
+	ESP_LOGI(FNAME, "cruise_mode state: %d", state );
+	if ( s2f_switch_type.get() == S2F_HW_SWITCH ) {
+		if (state) { // Button active
+			// gotEvent = ButtonEvent(ButtonEvent::SHORT_PRESS).raw;
+			// xQueueSend(uiEventQueue, &gotEvent, 0);
+			_cruise_mode_sw = true;
+		}
+		else {
+			_cruise_mode_sw = false;
+		}
+	}
+	else if (state) {
+		// toggle
+		_cruise_mode_sw = ! _cruise_mode_sw;
+
+	}
+	cruise_mode_final = _cruise_mode_sw;
+
+	return false;
 }
 
+Switch::Switch(gpio_num_t sw) :
+	Clock_I(1),
+	_sw(sw)
+{
+	_cruise_threshold_kmh =  s2f_threshold.get();
+	_active_level = (s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED) ? 0 : 1;
+
+	// prepare switch gpio
+	gpio_set_direction(_sw, GPIO_MODE_INPUT);
+	if ( s2f_switch_type.get() != S2F_SWITCH_DISABLE ) {
+		Clock::start(this);
+	}
+}
+
+
 Switch::~Switch() {
+	Clock::stop(this);
 }
 
 bool Switch::cruiseMode() {
@@ -140,12 +177,6 @@ bool Switch::cruiseMode() {
 	return cruise_mode_final;
 }
 
-void Switch::begin( gpio_num_t sw ){
-	_cruise_threshold_kmh =  s2f_threshold.get();
-	_sw = sw;
-	gpio_set_direction(_sw, GPIO_MODE_INPUT);
-	gpio_set_pull_mode(_sw, GPIO_PULLDOWN_ONLY);
-}
 
 bool Switch::isClosed() {
 	gpio_set_pull_mode(_sw, GPIO_PULLUP_ONLY);
@@ -167,7 +198,7 @@ void Switch::setCruiseModeXCV(){
 }
 
 
-void Switch::tick() {
+void Switch::ticktack() {
 	_tick++;
 	if( s2f_switch_mode.get() == AM_AUTOSPEED  && !(_tick%10) ){ // its enough to check this every 10 tick
 		// ESP_LOGI(FNAME,"mode: %d ias: %3.1f hyst: %3.1f cuise: %.1f", _cruise_mode_speed, ias.get(), s2f_hysteresis.get(), _cruise_threshold_kmh );

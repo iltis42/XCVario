@@ -263,7 +263,7 @@ static void toyFeed()
 		}
 		switch( nmea_protocol.get() ) {
 		case BORGELT_P:
-			ToyNmeaPrtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), gflags.validTemperature );
+			ToyNmeaPrtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), S2FSWITCH->getCruiseState(), gflags.validTemperature );
 			ToyNmeaPrtcl->sendXcvGeneric(te_vario.get(), altSTD, tas);
 			break;
 		case OPENVARIO_P:
@@ -273,7 +273,7 @@ static void toyFeed()
 			ToyNmeaPrtcl->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
 			break;
 		case XCVARIO_P:
-			ToyNmeaPrtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
+			ToyNmeaPrtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), S2FSWITCH->getCruiseState(), altitude.get(), gflags.validTemperature,
 				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 			break;
 		default:

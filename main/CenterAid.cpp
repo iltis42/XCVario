@@ -16,12 +16,29 @@
 #include "sensor.h"
 #include "logdef.h"
 
-static const int X=75;
-static const int Y=215;
 
+CenterAid  *theCenteraid = 0;
 
-CenterAid::CenterAid( AdaptUGC *display ) {
-	ucg = display;
+CenterAid *CenterAid::create()
+{
+    if ( ! theCenteraid ) {
+        // create the singleton
+        theCenteraid = new CenterAid();
+    }
+    return theCenteraid;
+}
+void CenterAid::remove()
+{
+    if ( theCenteraid ) {
+        // remove the singleton
+        CenterAid *tmp = theCenteraid;
+        theCenteraid = nullptr;
+        delete tmp;
+    }
+}
+
+CenterAid::CenterAid() {
+	ucg = MYUCG;
 	_tick = 0;
 	for( int i=0; i<CA_NUM_DIRS; i++ ){
 		thermals[i] = 0;
@@ -39,6 +56,7 @@ CenterAid::CenterAid( AdaptUGC *display ) {
 	scale = 1.0;
 	gps_heading = 0.0;
 	last_rts = 0.0;
+    _radius = CA_STEP*2;
 }
 
 void CenterAid::drawThermal( int tn, int idir, bool draw_red ){
@@ -47,8 +65,8 @@ void CenterAid::drawThermal( int tn, int idir, bool draw_red ){
 		ESP_LOGE(FNAME,"index out of range: %d", agedir );
 		return;
 	}
-	short int cy = Y-cos(D2R(idir*CA_STEP))*CA_STEP*2;
-	short int cx = X+sin(D2R(idir*CA_STEP))*CA_STEP*2;
+	short int cy = CENTER_Y-cos(D2R(idir*CA_STEP))*_radius;
+	short int cx = CENTER_X+sin(D2R(idir*CA_STEP))*_radius;
 	int td = drawn_thermals[idir];
 
 	if( td && (tn <  td) ){
@@ -117,8 +135,15 @@ void CenterAid::drawCenterAid(){
 	if( wind_display.get() != WD_ARROW && wind_display.get() != WD_BOTH ){
 		// ESP_LOGI(FNAME,"draw Airplane");
 		ucg->setColor( COLOR_WHITE );
-		Flarm::drawAirplane( X, Y, false, true );
+		Flarm::drawAirplane( CENTER_X, CENTER_Y, false, true );
 	}
+}
+
+void CenterAid::setGeometry(int x, int y, int r)
+{
+    CENTER_X = x;
+    CENTER_Y = y;
+    _radius = r;
 }
 
 // add one thermal and draw thermal

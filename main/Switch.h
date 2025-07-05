@@ -24,7 +24,7 @@ public:
 	static bool getCruiseState(){ return cruise_mode_final; };
 	static void setCruiseModeXCV();
 	static void tick();   // call al least every 100 mS
-	static void setCruiseSpeed( float s ) { _cruise_speed_kmh = s; };
+	static void setCruiseThreshold( float s ) { _cruise_threshold_kmh = s; };
 private:
 	static gpio_num_t _sw;
 	static Average<GYRO_FILTER_SAMPLES/4, float, float> filter;
@@ -35,7 +35,7 @@ private:
 	static bool _cruise_mode_gyro;
 	static bool _closed;
 	static int _holddown;
-	static float _cruise_speed_kmh;
+	static float _cruise_threshold_kmh;
 	static int _tick;
 	static bool cm_switch_prev;
 	static bool cm_auto_prev;

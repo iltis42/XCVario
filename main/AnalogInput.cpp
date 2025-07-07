@@ -48,6 +48,11 @@ AnalogInput::AnalogInput( float multiplier, adc_atten_t attenuation, adc_channel
 
 }
 
+AnalogInput::~AnalogInput()
+{
+	Clock::stop(this);
+}
+
 void AnalogInput::begin()
 {
 	ESP_LOGI(FNAME,"begin() unit: %d ch:%d cal:%d att: %d", _unit, _adc_ch, _cal, _attenuation  );

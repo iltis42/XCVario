@@ -135,10 +135,11 @@ void change_max_volume() {
 
 void flap_act() {
     if (flap_enable.get()) {
-        Flap::init(MYUCG);
+        FLAP = Flap::theFlap(MYUCG);
     }
     else if ( FLAP ) {
         delete FLAP;
+		FLAP = nullptr;
     }
 }
 

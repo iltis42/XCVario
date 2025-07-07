@@ -1343,7 +1343,7 @@ void system_startup(void *args){
 	SetupRoot::initScreens();
 
 	if ( flap_enable.get() ) {
-		Flap::init(MYUCG);
+		FLAP = Flap::theFlap(MYUCG);
 	}
 	if( hardwareRevision.get() != XCVARIO_20 ){
 		gpio_pullup_en( GPIO_NUM_34 );

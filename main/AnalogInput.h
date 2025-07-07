@@ -17,7 +17,7 @@
 class AnalogInput final : public Clock_I {
 public:
 	explicit AnalogInput( float multiplier, adc_atten_t attenuation, adc_channel_t ch, adc_unit_t unit=ADC_UNIT_1, bool calibration=true );
-	virtual ~AnalogInput() = default;
+	virtual ~AnalogInput();
 
 	void begin();
 	float get( bool nofilter=false, int loops=64 );

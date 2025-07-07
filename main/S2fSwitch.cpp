@@ -1,12 +1,12 @@
-/*
- * Switch.cpp
- *
- *  Created on: Feb 24, 2019
- *      Author: iltis
- *
- */
+/***********************************************************
+ ***   THIS DOCUMENT CONTAINS PROPRIETARY INFORMATION.   ***
+ ***    IT IS THE EXCLUSIVE CONFIDENTIAL PROPERTY OF     ***
+ ***     Rohs Engineering Design AND ITS AFFILIATES.     ***
+ ***                                                     ***
+ ***       Copyright (C) Rohs Engineering Design         ***
+ ***********************************************************/
 
-#include "Switch.h"
+#include "S2fSwitch.h"
 #include "protocol/Clock.h"
 #include "setup/SetupNG.h"
 #include "screen/UiEvents.h"
@@ -25,20 +25,22 @@ static bool Omega();
 static bool VarioFix();
 static bool S2fFix();
 
-Switch *S2FSWITCH = nullptr;
+S2fSwitch *S2FSWITCH = nullptr;
 
 // clock tick timer (task context)
-bool IRAM_ATTR Switch::tick()
+bool IRAM_ATTR S2fSwitch::tick()
 {
 	// called every 10msec
 	bool buttonRead = gpio_get_level(_sw) == _active_level; // button active
 
-	_debounceCount = (buttonRead == _lastButtonRead) ? (_debounceCount+1) : 0;
+	_debounce = (buttonRead == _lastButtonRead) ? (_debounce+1) : 0;
 	_lastButtonRead = buttonRead;
 
-	if ( _debounceCount < 2 || (buttonRead == _state) ) {
+	if ( _debounce < _dcount || (buttonRead == _state) ) {
+		if (!_state && _dcount>4) _dcount--;
 		return false;
 	}
+	_dcount = 40;
 
 	// A valid edge detected
 	_state = buttonRead;
@@ -63,7 +65,7 @@ bool IRAM_ATTR Switch::tick()
 	return false;
 }
 
-Switch::Switch(gpio_num_t sw) :
+S2fSwitch::S2fSwitch(gpio_num_t sw) :
 	Clock_I(1),
 	_sw(sw)
 {
@@ -75,15 +77,15 @@ Switch::Switch(gpio_num_t sw) :
 }
 
 
-Switch::~Switch() {
+S2fSwitch::~S2fSwitch() {
 	Clock::stop(this);
 }
 
-void Switch::updateSwitchSetup()
+void S2fSwitch::updateSwitchSetup()
 {
 	// setup the switch
 	if ( (s2f_switch_type.get() != S2F_SWITCH_DISABLE) ) {
-		_active_level = (s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED) ? 0 : 1;
+		_active_level = (s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED) ? 1 : 0;
 		gpio_set_pull_mode(_sw, GPIO_PULLUP_ONLY);
 		Clock::start(this);
 	}
@@ -160,7 +162,7 @@ bool S2fFix() {
 }
 
 // call once a second
-void Switch::checkCruiseMode()
+void S2fSwitch::checkCruiseMode()
 {
 	if ( auto_plug ) {
 		bool cm = (*auto_plug)();

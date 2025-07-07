@@ -10,7 +10,7 @@
 #include <algorithm>
 #include <driver/uart.h>
 #include <logdef.h>
-#include "Switch.h"
+#include "S2fSwitch.h"
 #include "sensor.h"
 #include "Flarm.h"
 // #include <BLEDevice.h>

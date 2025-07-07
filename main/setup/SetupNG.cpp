@@ -16,7 +16,7 @@
 #include "glider/Polars.h"
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"
-#include "Switch.h"
+#include "S2fSwitch.h"
 #include "wind/StraightWind.h"
 #include "wind/CircleWind.h"
 #include "ESPAudio.h"

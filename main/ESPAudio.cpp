@@ -9,7 +9,7 @@
 
 #include "mcp4018.h"
 #include "cat5171.h"
-#include "Switch.h"
+#include "S2fSwitch.h"
 #include "I2Cbus.hpp"
 #include "sensor.h"
 #include "setup/SetupNG.h"
@@ -137,7 +137,7 @@ void Audio::begin( dac_channel_t ch  )
 {
 	ESP_LOGI(FNAME,"begin");
 	if ( ! S2FSWITCH ) {
-		S2FSWITCH = new Switch( GPIO_NUM_12 );
+		S2FSWITCH = new S2fSwitch( GPIO_NUM_12 );
 	}
 	setup();
 	_ch = ch;
@@ -519,7 +519,6 @@ void Audio::dactask()
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
-		// Switch::tick();    // we hook switch sceduling here to save extra task
 		// Chopping or dual tone modulation
 		if( millis() > next_scedule ){
 			if ( _te > 0 ){

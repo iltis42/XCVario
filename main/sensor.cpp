@@ -38,7 +38,7 @@
 #include "math/Quaternion.h"
 #include "wmm/geomag.h"
 #include "OTA.h"
-#include "Switch.h"
+#include "S2fSwitch.h"
 #include "AverageVario.h"
 
 #include "MPU.hpp"        // main file, provides the class itself

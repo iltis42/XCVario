@@ -19,7 +19,7 @@
 #include "glider/Polars.h"
 #include "Cipher.h"
 #include "Units.h"
-#include "Switch.h"
+#include "S2fSwitch.h"
 #include "Flap.h"
 #include "setup/SetupMenuSelect.h"
 #include "setup/SetupMenuValFloat.h"

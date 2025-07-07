@@ -21,6 +21,7 @@ enum UiEventType {
     EVT_BUTTON = 0x0100, // button event
     EVT_ROTARY = 0x0200, // rotary event
     EVT_SCREEN = 0x0400, // screen change event
+    EVT_MODE   = 0x0800, // any mode change event
 };
 
 // The button press events are
@@ -57,6 +58,17 @@ struct ScreenEvent
     constexpr ScreenEvent(const uint8_t v) : raw((0xff & v) | EVT_SCREEN) {}
 };
 
+// The mode events are
+struct ModeEvent
+{
+    enum { MODE_S2F = 1,
+           MODE_VARIO = 2, 
+           MODE_SV_TOGGLE = 3};
+
+    uint32_t raw;
+    ModeEvent() = delete;
+    constexpr ModeEvent(const uint8_t v) : raw((0xff & v) | EVT_MODE) {}
+};
 
 // Button and Rotary are often handled the same way
 
@@ -71,6 +83,7 @@ union UiEvent {
     bool isRotaryEvent() const { return (code & EVT_ROTARY) != 0; } // true if rotary event
     bool isKnobEvent() const { return (code & (EVT_BUTTON&EVT_ROTARY)) != 0; } // true if button  or rotary event
     bool isScreenEvent() const { return (code & EVT_SCREEN) != 0; } // true if screen event
+    bool isModeEvent() const { return (code & EVT_MODE) != 0; } // true if mode event
     // bool isFlarmEvent() const { return (code & EVT_FLARM) != 0; } // true if flarm event
     // bool isMboxEvent() const { return (code & EVT_MBOX) != 0; } // true if message box event
     UiEvent() : code(0) {};

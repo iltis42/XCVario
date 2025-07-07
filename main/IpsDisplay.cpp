@@ -1658,7 +1658,7 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool dirty, bool in
 		val = s2f_ideal.get();
 		break;
 	case GAUGE_SLIP:
-		val = static_cast<int>(std::round(slipAngle*-10.f));
+		val = static_cast<int>(std::round(slipAngle*-10.f)); // todo better home for the variable
 		break;
 	case GAUGE_HEADING:
 		val = static_cast<int>(std::round(getHeading()));
@@ -1669,7 +1669,7 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool dirty, bool in
 
 	dirty = dirty || as_prev != val;
 	if ( ! dirty ) return false;
-	ESP_LOGI(FNAME,"draw val %d %d", val, as_prev );
+	// ESP_LOGI(FNAME,"draw val %d %d", val, as_prev );
 
 	ucg->setColor( COLOR_WHITE );
 	ucg->setFont(ucg_font_fub25_hn, true);

@@ -23,7 +23,7 @@ private:
     Flap(AdaptUGC *theUcg);
 public:
     ~Flap();
-	static Flap* init(AdaptUGC *ucg);
+	static Flap* theFlap(AdaptUGC *ucg);
 	void  progress();
 	// inline float getLever() { return lever; }
 	// inline void setLever( float l ) { lever = l; }
@@ -88,4 +88,4 @@ private:
 	unsigned int _millis;
 };
 
-#define FLAP Flap::FLAP()
+extern Flap* FLAP;

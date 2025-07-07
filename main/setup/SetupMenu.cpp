@@ -8,6 +8,7 @@
 #include "setup/SetupMenu.h"
 #include "setup/SubMenuDevices.h"
 #include "setup/SubMenuCompassWind.h"
+#include "setup/SubMenuGlider.h"
 #include "setup/ShowBootMsg.h"
 #include "screen/SetupRoot.h"
 #include "IpsDisplay.h"
@@ -18,7 +19,7 @@
 #include "glider/Polars.h"
 #include "Cipher.h"
 #include "Units.h"
-#include "Switch.h"
+#include "S2fSwitch.h"
 #include "Flap.h"
 #include "setup/SetupMenuSelect.h"
 #include "setup/SetupMenuValFloat.h"
@@ -41,9 +42,7 @@
 #include <inttypes.h>
 #include <iterator>
 #include <algorithm>
-// #include <cstring>
 #include <string>
-#include "SetupMenu.h"
 
 static void setup_create_root(SetupMenu *top);
 
@@ -62,13 +61,10 @@ static void audio_menu_create_deadbands(SetupMenu *top);
 static void audio_menu_create_equalizer(SetupMenu *top);
 static void audio_menu_create_mute(SetupMenu *top);
 
-static void glider_menu_create(SetupMenu *top);
-static void glider_menu_create_polarpoints(SetupMenu *top);
-
 static void options_menu_create(SetupMenu *top);
 static void options_menu_create_units(SetupMenu *top);
 static void options_menu_create_flarm(SetupMenu *top);
-static void options_menu_create_gload(SetupMenu *top);
+static void screens_menu_create_gload(SetupMenu *top);
 
 static void system_menu_create(SetupMenu *top);
 static void system_menu_create_software(SetupMenu *top);
@@ -126,6 +122,18 @@ int audio_setup_s(SetupMenuSelect *p) {
 int audio_setup_f(SetupMenuValFloat *p) {
 	AUDIO->setup();
 	return 0;
+}
+
+int centeraid_action(SetupMenuSelect *p)
+{
+    if ( p->getSelect() ) {
+        // create the center aid
+        CenterAid::create();
+    }
+    else {
+        CenterAid::remove();
+    }
+    return 0;
 }
 
 int speedcal_change(SetupMenuValFloat *p) {
@@ -199,12 +207,6 @@ int do_display_test(SetupMenuSelect *p) {
 	return 0;
 }
 
-int update_s2f_speed(SetupMenuValFloat *p) {
-	ESP_LOGI(FNAME,"sf2_speed: %.1f conv: %.1f", s2f_speed.get(), Units::Airspeed2Kmh( s2f_speed.get() ) );
-	Switch::setCruiseSpeed(s2f_speed.get());
-	return 0;
-}
-
 static char rentry0[32];
 static char rentry1[32];
 static char rentry2[32];
@@ -219,6 +221,20 @@ int update_rentry(SetupMenuValFloat *p) {
 
 int update_rentrys(SetupMenuSelect *p) {
 	update_rentry(0);
+	return 0;
+}
+
+static const char *velocity_mode[3] = {"IAS", "TAS", "CAS"};
+static int update_velocity_buzz(SetupMenuSelect *p) {
+	SetupMenu *velocity = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(3));
+	velocity->setBuzzword(velocity_mode[airspeed_mode.get()]);
+	return 0;
+}
+
+static const char *alti_mode[2] = {"QNH", "QFE"};
+static int update_alti_buzz(SetupMenuSelect *p) {
+	SetupMenu *alti = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(4));
+	alti->setBuzzword(alti_mode[alt_display_mode.get()]);
 	return 0;
 }
 
@@ -322,23 +338,6 @@ int factv_adj(SetupMenuValFloat *p) {
 	float bat = getBattery()->get(true);
 	MYUCG->setPrintPos(1, 100);
 	MYUCG->printf("%0.2f Volt", bat);
-	return 0;
-}
-
-int polar_select(SetupMenuSelect *p) {
-	ESP_LOGI(FNAME,"glider-index %d", p->getValue());
-	glider_type_index.set(p->getValue());
-	p->getParent()->setBuzzword(p->value());
-	return 0;
-}
-
-static int start_weight_adj(SetupMenuValFloat *p) {
-	float wingload = (ballast_kg.get() + crew_weight.get() + empty_weight.get()) / polar_wingarea.get();
-	ESP_LOGI(FNAME,"wingload:%.1f empty: %.1f cw:%.1f water:%.1f", wingload, empty_weight.get(), crew_weight.get(), ballast_kg.get() );
-	MYUCG->setFont(ucg_font_fub25_hr, true);
-	MYUCG->setPrintPos(1, 110);
-	MYUCG->printf("%0.2f kg/m2  ", wingload);
-	MYUCG->setFont(ucg_font_ncenR14_hr);
 	return 0;
 }
 
@@ -598,6 +597,19 @@ int varioAvChange(SetupMenuValFloat *p) {
 	return 0;
 }
 
+static int s2fModeChange(SetupMenuSelect *p) {
+	if ( S2FSWITCH ) {
+		S2FSWITCH->updateSwitchSetup();
+	}
+	return 0;
+}
+static int s2fModeChangeF(SetupMenuValFloat *p) {
+	if ( S2FSWITCH ) {
+		S2FSWITCH->updateSwitchSetup();
+	}
+	return 0;
+}
+
 void vario_menu_create_damping(SetupMenu *top) {
 	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", vario_setup, false, &vario_delay);
 	vda->setHelp("Response time, time constant of Vario low pass filter");
@@ -636,54 +648,51 @@ void vario_menu_create_s2f(SetupMenu *top) {
 
 	SetupMenuSelect *blck = new SetupMenuSelect("Blockspeed", RST_NONE, nullptr, &s2f_blockspeed);
 	blck->setHelp(
-			"With Blockspeed enabled, vertical movement of airmass or G-load is not considered for speed to fly (S2F) calculation");
+			"With Blockspeed enabled, vertical movement of airmass or G-load is not considered for speed to fly calculation");
 	blck->mkEnable();
 	top->addEntry(blck);
 
-	SetupMenuSelect *s2fmod = new SetupMenuSelect("S2F Mode", RST_NONE, nullptr, &s2f_switch_mode);
-	s2fmod->setHelp(
-			"Select data source for switching between S2F and Vario modes",
-			230);
-	s2fmod->addEntry("Vario fix");
-	s2fmod->addEntry("Cruise fix");
-	s2fmod->addEntry("Switch");
-	s2fmod->addEntry("AutoSpeed");
-	s2fmod->addEntry("External");
-	s2fmod->addEntry("Flap");
-	s2fmod->addEntry("AHRS-Gyro");
+	SetupMenuSelect *s2fmod = new SetupMenuSelect("S2F Mode", RST_NONE, s2fModeChange, &s2f_switch_mode);
+	s2fmod->setHelp("Select data source for switching between S2F and Vario modes", 230);
+	s2fmod->addEntry("Switch", AM_SWITCH);
+	s2fmod->addEntry("AutoSpeed", AM_AUTOSPEED);
+	if ( flap_enable.get() ) {
+		s2fmod->addEntry("AutoFlap", AM_FLAP); // not dynamic, exit setup to change
+	}
+	s2fmod->addEntry("AutoTurn", AM_AHRS);
+	s2fmod->addEntry("Vario fix", AM_VARIO);
+	s2fmod->addEntry("Cruise fix", AM_S2F);
+	s2fmod->addEntry("Master/Second", AM_EXTERNAL);
 	top->addEntry(s2fmod);
 
-	SetupMenuSelect *s2fsw = new SetupMenuSelect("S2F Switch", RST_NONE, nullptr, &s2f_switch_type);
+	SetupMenuSelect *s2fsw = new SetupMenuSelect("S2F Switch", RST_NONE, s2fModeChange, &s2f_switch_type);
 	top->addEntry(s2fsw);
-	s2fsw->setHelp(
-			"Select S2F switch type: normal switch, push button (toggling S2F mode on each press), or disabled");
-	s2fsw->addEntry("Switch");
-	s2fsw->addEntry("Push Button");
-	s2fsw->addEntry("Switch Invert");
-	s2fsw->addEntry("Disable");
+	s2fsw->setHelp("Select S2F switch type: normal switch, push button (toggling S2F mode on each press), or disabled");
+	s2fsw->addEntry("Disable", S2F_SWITCH_DISABLE );
+	s2fsw->addEntry("Switch", S2F_HW_SWITCH);
+	s2fsw->addEntry("Switch Invert", S2F_HW_SWITCH_INVERTED);
+	s2fsw->addEntry("Push Button", S2F_HW_PUSH_BUTTON);
 
-	SetupMenuValFloat *autospeed = new SetupMenuValFloat("S2F AutoSpeed", "", update_s2f_speed, false, &s2f_speed);
+	SetupMenuValFloat *autospeed = new SetupMenuValFloat("AutoSpeed Thresh.", "", nullptr, false, &s2f_threshold);
 	top->addEntry(autospeed);
-	autospeed->setHelp(
-			"Transition speed if using AutoSpeed to switch Vario <-> Cruise (S2F) mode");
+	autospeed->setHelp("Transition speed for the AutoSpeed S2F switch");
 
-	SetupMenuValFloat *s2f_flap = new SetupMenuValFloat("S2F Flap Pos", "", nullptr, false, &s2f_flap_pos);
-	top->addEntry(s2f_flap);
-	s2f_flap->setHelp(
-			"Precise flap position used for switching Vario <-> Cruise (S2F)");
+	if ( flap_enable.get() ) {
+		SetupMenuValFloat *s2f_flap = new SetupMenuValFloat("AutoFlap Position", "<", nullptr, false, &s2f_flap_pos);
+		top->addEntry(s2f_flap);
+		s2f_flap->setHelp("Precise flap position for the AutoFlap S2F switch");
+	}
 
-	SetupMenuValFloat *s2f_gyro = new SetupMenuValFloat("S2F AHRS Deg", "°", 0, false, &s2f_gyro_deg);
+	SetupMenuValFloat *s2f_gyro = new SetupMenuValFloat("AutoTurn Rate", "°/s", nullptr, false, &s2f_gyro_deg);
 	top->addEntry(s2f_gyro);
-	s2f_gyro->setHelp(
-			"Attitude change in degrees per second to switch Vario <-> Cruise (S2F) mode");
+	s2f_gyro->setHelp("Turnrate for the AutoTurnrate switch");
 
-	SetupMenuValFloat *s2fhy = new SetupMenuValFloat("Hysteresis", "", 0, false, &s2f_hysteresis);
-	s2fhy->setHelp("Hysteresis (+- this value) for Autospeed S2F transition");
-	top->addEntry(s2fhy);
+	SetupMenuValFloat *s2flag = new SetupMenuValFloat("Switch Lag", "sec", s2fModeChangeF, false, &s2f_auto_lag);
+	s2flag->setHelp("Lag to delay the auto switch event (2-20sec)");
+	top->addEntry(s2flag);
 
 	SetupMenuSelect *s2fnc = new SetupMenuSelect("Arrow Color", RST_NONE, nullptr, &s2f_arrow_color);
-	s2fnc->setHelp(
-			"Select color of the S2F arrow when painted in Up/Down position");
+	s2fnc->setHelp("Select color of the S2F arrow when painted in Up/Down position");
 	s2fnc->addEntry("White/White");
 	s2fnc->addEntry("Blue/Blue");
 	s2fnc->addEntry("Green/Red");
@@ -748,22 +757,6 @@ void vario_menu_create(SetupMenu *vae) {
 	nemod->addEntry("Normal");
 	nemod->addEntry("Relative");
 	vae->addEntry(nemod);
-
-	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, nullptr, &ps_display);
-	sink->setHelp("Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
-	sink->mkEnable();
-	vae->addEntry(sink);
-
-	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, nullptr, &needle_color);
-	ncolor->addEntry("White");
-	ncolor->addEntry("Orange");
-	ncolor->addEntry("Red");
-	vae->addEntry(ncolor);
-
-	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Aid", RST_ON_EXIT, nullptr, &screen_centeraid);
-	scrcaid->setHelp("Enable/disable display of centering aid (reboots)");
-	scrcaid->mkEnable();
-	vae->addEntry(scrcaid);
 
 	SetupMenu *vdamp = new SetupMenu("Vario Damping", vario_menu_create_damping);
 	vae->addEntry(vdamp);
@@ -948,61 +941,6 @@ void audio_menu_create(SetupMenu *audio) {
 	audio->addEntry(afac);
 }
 
-void glider_menu_create_polarpoints(SetupMenu *top) {
-	SetupMenuValFloat *wil = new SetupMenuValFloat("Ref Wingload", "kg/m2", nullptr, false, &polar_wingload);
-	wil->setHelp(
-			"Wingloading that corresponds to the 3 value pairs for speed/sink of polar");
-	top->addEntry(wil);
-	SetupMenuValFloat *pov1 = new SetupMenuValFloat("Speed 1", "km/h", nullptr, false, &polar_speed1);
-	pov1->setHelp("Speed 1, near minimum sink from polar e.g. 80 km/h");
-	top->addEntry(pov1);
-	SetupMenuValFloat *pos1 = new SetupMenuValFloat("Sink  1", "m/s", nullptr, false, &polar_sink1);
-	top->addEntry(pos1);
-	SetupMenuValFloat *pov2 = new SetupMenuValFloat("Speed 2", "km/h", nullptr, false, &polar_speed2);
-	pov2->setHelp("Speed 2 for a moderate cruise from polar e.g. 120 km/h");
-	top->addEntry(pov2);
-	SetupMenuValFloat *pos2 = new SetupMenuValFloat("Sink  2", "m/s", nullptr, false, &polar_sink2);
-	top->addEntry(pos2);
-	SetupMenuValFloat *pov3 = new SetupMenuValFloat("Speed 3", "km/h", nullptr, false, &polar_speed3);
-	pov3->setHelp("Speed 3 for a fast cruise from polar e.g. 170 km/h");
-	top->addEntry(pov3);
-	SetupMenuValFloat *pos3 = new SetupMenuValFloat("Sink  3", "m/s", nullptr, false, &polar_sink3);
-	top->addEntry(pos3);
-}
-
-void glider_menu_create(SetupMenu *poe) {
-	SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type_index);
-	poe->addEntry(glt);
-	ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
-	for (int x = 0; x < Polars::numPolars(); x++) {
-		ESP_LOGI(FNAME, "P: %s - %d", Polars::getPolarName(x), Polars::getPolarIndex(x));
-		glt->addEntry(Polars::getPolarName(x), Polars::getPolarIndex(x));
-	}
-	poe->setHelp("Weight and polar setup for best match with performance of glider");
-	glt->setSelect(Polars::getGliderEnumPos()); // Cannot set select from nvs variable value containing the magix index
-	ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
-
-	SetupMenu *pa = new SetupMenu("Polar Points", glider_menu_create_polarpoints);
-	pa->setHelp("Adjust the polar at 3 points, in the commonly used metric system",230);
-	poe->addEntry(pa);
-
-	SetupMenuValFloat *maxbal = new SetupMenuValFloat("Max Ballast", "liters", nullptr, false, &polar_max_ballast);
-	poe->addEntry(maxbal);
-
-	SetupMenuValFloat *wingarea = new SetupMenuValFloat("Wing Area", "m2", nullptr, false, &polar_wingarea);
-	poe->addEntry(wingarea);
-
-	SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", start_weight_adj, false, &empty_weight);
-	fixball->setPrecision(0);
-	fixball->setHelp("Net rigged weight of the glider, according to the weight and balance plan");
-	fixball->setNeverInline();
-	poe->addEntry(fixball);
-
-	SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", nullptr, false, &v_max);
-	vmax->setHelp("Configure maximum speed for corresponding aircraft type");
-	poe->addEntry(vmax);
-}
-
 void options_menu_create_units(SetupMenu *top) {
 	SetupMenuSelect *alu = new SetupMenuSelect("Altimeter", RST_NONE, nullptr, &alt_unit);
 	alu->addEntry("Meter (m)");
@@ -1034,6 +972,67 @@ void options_menu_create_units(SetupMenu *top) {
 	top->addEntry(dst);
 }
 
+static void system_menu_create_airspeed(SetupMenu *top) {
+	SetupMenuSelect *amode = new SetupMenuSelect("Airspeed Mode", RST_NONE, update_velocity_buzz, &airspeed_mode);
+	amode->setHelp("Select mode of Airspeed indicator to display IAS (Indicated AirSpeed), TAS (True AirSpeed) or CAS (calibrated airspeed)", 180);
+	amode->addEntry(velocity_mode[0]);
+	amode->addEntry(velocity_mode[1]);
+	amode->addEntry(velocity_mode[2]);
+	// amode->addEntry("Slip Angle");
+	top->addEntry(amode);
+
+	SetupMenuValFloat *spc = new SetupMenuValFloat("AS Calibration", "%", speedcal_change, false, &speedcal);
+	spc->setHelp("Calibration of airspeed sensor (AS). Normally not needed, unless pressure the probe has a systematic error");
+	top->addEntry(spc);
+
+	SetupMenuSelect *auze = new SetupMenuSelect("Set AS Zero", RST_IMMEDIATE, nullptr, &autozero);
+	top->addEntry(auze);
+	auze->setHelp("Recalculate zero point for airspeed sensor on next power on");
+	auze->addEntry("Cancel");
+	auze->addEntry("Start");
+
+	SetupMenuSelect *stawaen = new SetupMenuSelect("Stall Warning", RST_NONE, nullptr, &stall_warning);
+	stawaen->setHelp("Enable alarm sound when speed goes below configured stall speed (until 30% less)");
+	stawaen->mkEnable();
+	top->addEntry(stawaen);
+
+	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", nullptr, true, &stall_speed);
+	top->addEntry(staspe);
+}
+
+static void options_menu_create_altimeter(SetupMenu *top) {
+	SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode", RST_NONE, update_alti_buzz, &alt_display_mode);
+	top->addEntry(altDisplayMode);
+	altDisplayMode->setHelp("Select altitude display mode");
+	altDisplayMode->addEntry(alti_mode[0]);
+	altDisplayMode->addEntry(alti_mode[1]);
+
+	SetupMenuSelect *atrans = new SetupMenuSelect("Auto Transition", RST_NONE, nullptr, &fl_auto_transition);
+	top->addEntry(atrans);
+	atrans->setHelp("Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
+	atrans->mkEnable();
+
+	SetupMenuValFloat *tral = new SetupMenuValFloat("Transition Altitude", "FL", nullptr, false, &transition_alt);
+	tral->setHelp("Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)", 100);
+	top->addEntry(tral);
+
+	SetupMenuSelect *als = new SetupMenuSelect("Atl. Source", RST_NONE, nullptr, &alt_select);
+	top->addEntry(als);
+	als->setHelp("Select source for barometric altitude, either TE sensor or Baro sensor (recommended) or an external source e.g. FLARM (if avail)");
+	als->addEntry("TE Sensor");
+	als->addEntry("Baro Sensor");
+	als->addEntry("External");
+
+	SetupMenuSelect *alq = new SetupMenuSelect("Alt. Quantization", RST_NONE, nullptr, &alt_quantization);
+	alq->setHelp("Set altimeter mode with discrete steps and rolling last digits");
+	alq->addEntry("Disable");
+	alq->addEntry("2");
+	alq->addEntry("5");
+	alq->addEntry("10");
+	alq->addEntry("20");
+	top->addEntry(alq);
+}
+
 void options_menu_create_flarm(SetupMenu *top) {
 	SetupMenuSelect *flarml = new SetupMenuSelect("Alarm Level", RST_NONE, nullptr, &flarm_warning);
 	flarml->setHelp(
@@ -1060,7 +1059,7 @@ void options_menu_create_flarm(SetupMenu *top) {
 	top->addEntry(flarms);
 }
 
-void options_menu_create_gload(SetupMenu *top) {
+void screens_menu_create_gload(SetupMenu *top) {
 	SetupMenuSelect *glmod = new SetupMenuSelect("Activation Mode", RST_NONE, nullptr, &gload_mode);
 	glmod->setHelp(
 			"Switch off G-Force screen, or activate by threshold G-Force 'Dynamic', or static by 'Always-On'");
@@ -1121,6 +1120,61 @@ void options_menu_create_gload(SetupMenu *top) {
 	top->addEntry(gloadalvo);
 }
 
+static void screens_menu_create_vario(SetupMenu *top) {
+
+	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, nullptr, &ps_display);
+	sink->setHelp("Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
+	sink->mkEnable();
+	top->addEntry(sink);
+
+	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, nullptr, &needle_color);
+	ncolor->addEntry("White");
+	ncolor->addEntry("Orange");
+	ncolor->addEntry("Red");
+	top->addEntry(ncolor);
+
+	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Assistent", RST_NONE, centeraid_action, &screen_centeraid);
+	scrcaid->setHelp("Enable/disable display of the thermal assistent");
+	scrcaid->mkEnable();
+	top->addEntry(scrcaid);
+
+	SetupMenuSelect *tgauge = new SetupMenuSelect("Upper Gauge", RST_NONE, nullptr, &screen_gauge_top);
+	tgauge->addEntry("Disable");
+	tgauge->addEntry("Airspeed", GAUGE_SPEED);
+	tgauge->addEntry("Speed2Fly", GAUGE_S2F);
+	tgauge->addEntry("Heading", GAUGE_HEADING);
+	tgauge->addEntry("Slip Angle", GAUGE_SLIP);
+	top->addEntry(tgauge);
+
+	SetupMenuSelect *bgauge = new SetupMenuSelect("Lower Gauge", RST_NONE, nullptr, &screen_gauge_bottom);
+	bgauge->addEntry("Disable");
+	bgauge->addEntry("Altimeter", GAUGE_ALT);
+	bgauge->addEntry("Life Wind", GAUGE_NONE);
+	top->addEntry(bgauge);
+}
+
+static void options_menu_create_screens(SetupMenu *top) { // dynamic!
+	if ( top->getNrChilds() == 0 ) {
+		SetupMenu *gload = new SetupMenu("G-Load Screen", screens_menu_create_gload);
+		top->addEntry(gload);
+
+		SetupMenu *vario = new SetupMenu("Vario Screen", screens_menu_create_vario);
+		top->addEntry(vario);
+
+		SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens, &screen_gmeter);
+		scrgmet->mkEnable();
+		top->addEntry(scrgmet);
+	}
+	if ( top->getNrChilds() == 4 ) {
+		top->delEntry(top->getEntry(3));
+	}
+	if (gflags.ahrsKeyValid) {
+		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens, &screen_horizon);
+		horizon->mkEnable();
+		top->addEntry(horizon);
+	}
+}
+
 void options_menu_create(SetupMenu *opt) { // dynamic!
 	if ( opt->getNrChilds() == 0 ) {
 		if (student_mode.get() == 0) {
@@ -1136,32 +1190,15 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 		opt->addEntry(un);
 		un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
 
-		SetupMenuSelect *amode = new SetupMenuSelect("Airspeed Mode", RST_NONE, nullptr, &airspeed_mode);
-		opt->addEntry(amode);
-		amode->setHelp(
-				"Select mode of Airspeed indicator to display IAS (Indicated AirSpeed), TAS (True AirSpeed) or CAS (calibrated airspeed)",
-				180);
-		amode->addEntry("IAS");
-		amode->addEntry("TAS");
-		amode->addEntry("CAS");
-		amode->addEntry("Slip Angle");
+		// Airspeed
+		SetupMenu *velocity = new SetupMenu("Airspeed", system_menu_create_airspeed);
+		velocity->setBuzzword(velocity_mode[airspeed_mode.get()]);
+		opt->addEntry(velocity);
 
-		SetupMenuSelect *atl = new SetupMenuSelect("Auto Transition", RST_NONE, nullptr, &fl_auto_transition);
-		opt->addEntry(atl);
-		atl->setHelp("Option to enable automatic altitude transition to QNH Standard (1013.25) above 'Transition Altitude'");
-		atl->mkEnable();
-
-		SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode", RST_NONE, nullptr, &alt_display_mode);
-		opt->addEntry(altDisplayMode);
-		altDisplayMode->setHelp("Select altitude display mode");
-		altDisplayMode->addEntry("QNH");
-		altDisplayMode->addEntry("QFE");
-
-		SetupMenuValFloat *tral = new SetupMenuValFloat("Transition Altitude", "FL", nullptr, false, &transition_alt);
-		tral->setHelp(
-				"Transition altitude (or transition height, when using QFE) is the altitude/height above which standard pressure (QNE) is set (1013.2 mb/hPa)",
-				100);
-		opt->addEntry(tral);
+		// Altimeter
+		SetupMenu *alti = new SetupMenu("Altimeter", options_menu_create_altimeter);
+		alti->setBuzzword(alti_mode[alt_display_mode.get()]);
+		opt->addEntry(alti);
 
 		SetupMenu *flarm = new SetupMenu("FLARM", options_menu_create_flarm);
 		opt->addEntry(flarm);
@@ -1172,10 +1209,11 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 		opt->addEntry(compassWindMenu);
 		compassWindMenu->setHelp("Setup Compass and Wind", 280);
 
-		SetupMenu *gload = new SetupMenu("G-Load Display", options_menu_create_gload);
-		opt->addEntry(gload);
+		SetupMenu *screens = new SetupMenu("Screens & Gauges", options_menu_create_screens);
+		screens->setDynContent();
+		opt->addEntry(screens);
 	}
-	SetupMenu *flarm = static_cast<SetupMenu*>(opt->getEntry(7));
+	SetupMenu *flarm = static_cast<SetupMenu*>(opt->getEntry(5));
 	if ( DEVMAN->getDevice(FLARM_DEV) != nullptr ) {
 		flarm->unlock();
 		flarm->setBuzzword();
@@ -1280,24 +1318,7 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 
 }
 
-void system_menu_create_hardware_rotary_screens(SetupMenu *top)
-{
-	SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens, &screen_gmeter);
-	scrgmet->mkEnable();
-	top->addEntry(scrgmet);
-
-	if (gflags.ahrsKeyValid) {
-		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens, &screen_horizon);
-		horizon->mkEnable();
-		top->addEntry(horizon);
-	}
-}
-
 void system_menu_create_hardware_rotary(SetupMenu *top) {
-	SetupMenu *screens = new SetupMenu("Screens", system_menu_create_hardware_rotary_screens);
-	top->addEntry(screens);
-	screens->setHelp("Select screens to be activated one after the other by short press");
-
 	SetupMenuSelect *rotype;
 	rotype = new SetupMenuSelect("Direction", RST_NONE, set_rotary_direction, &rotary_dir);
 	top->addEntry(rotype);
@@ -1468,52 +1489,6 @@ void system_menu_create_hardware(SetupMenu *top) {
 	top->addEntry(met_adj);
 }
 
-void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top) {
-	SetupMenuSelect *stawaen = new SetupMenuSelect("Stall Warning", RST_NONE, nullptr, &stall_warning);
-	stawaen->setHelp(
-			"Enable alarm sound when speed goes below configured stall speed (until 30% less)");
-	stawaen->mkEnable();
-	top->addEntry(stawaen);
-
-	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", nullptr, true, &stall_speed);
-	top->addEntry(staspe);
-}
-
-void system_menu_create_altimeter_airspeed(SetupMenu *top) {
-	SetupMenuSelect *als = new SetupMenuSelect("Altimeter Source", RST_NONE, nullptr, &alt_select);
-	top->addEntry(als);
-	als->setHelp(
-			"Select source for barometric altitude, either TE sensor or Baro sensor (recommended) or an external source e.g. FLARM (if avail)");
-	als->addEntry("TE Sensor");
-	als->addEntry("Baro Sensor");
-	als->addEntry("External");
-
-	SetupMenuValFloat *spc = new SetupMenuValFloat("AS Calibration", "%", speedcal_change, false, &speedcal);
-	spc->setHelp(
-			"Calibration of airspeed sensor (AS). Normally not needed, unless pressure probes have systematic error");
-	top->addEntry(spc);
-
-	SetupMenuSelect *auze = new SetupMenuSelect("AutoZero AS Sensor", RST_IMMEDIATE, nullptr, &autozero);
-	top->addEntry(auze);
-	auze->setHelp(
-			"Recalculate zero point for airspeed sensor on next power on");
-	auze->addEntry("Cancel");
-	auze->addEntry("Start");
-
-	SetupMenuSelect *alq = new SetupMenuSelect("Alt. Quantization", RST_NONE, nullptr, &alt_quantization);
-	alq->setHelp(
-			"Set altimeter mode with discrete steps and rolling last digits");
-	alq->addEntry("Disable");
-	alq->addEntry("2");
-	alq->addEntry("5");
-	alq->addEntry("10");
-	alq->addEntry("20");
-	top->addEntry(alq);
-
-	SetupMenu *stallwa = new SetupMenu("Stall Warning", system_menu_create_altimeter_airspeed_stallwa);
-	top->addEntry(stallwa);
-}
-
 void system_menu_create(SetupMenu *sye) {
 	SetupMenu *soft = new SetupMenu("Software", system_menu_create_software);
 	sye->addEntry(soft);
@@ -1532,10 +1507,6 @@ void system_menu_create(SetupMenu *sye) {
 	SetupMenu *hardware = new SetupMenu("Hardware Setup", system_menu_create_hardware);
 	hardware->setHelp("Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc", 240);
 	sye->addEntry(hardware);
-
-	// Altimeter, IAS
-	SetupMenu *aia = new SetupMenu("Altimeter, Airspeed", system_menu_create_altimeter_airspeed);
-	sye->addEntry(aia);
 
 	// Audio
 	SetupMenu *ad = new SetupMenu("Audio", audio_menu_create);

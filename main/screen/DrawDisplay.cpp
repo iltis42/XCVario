@@ -13,13 +13,16 @@
 #include "MessageBox.h"
 #include "BootUpScreen.h"
 
+#include "setup/SetupMenuValFloat.h"
+#include "setup/SetupMenuDisplay.h"
+#include "setup/SetupMenu.h"
 #include "setup/SetupNG.h"
 #include "ESPRotary.h"
 #include "OneWireESP32.h"
 #include "KalmanMPU6050.h"
 #include "ESPAudio.h"
 #include "Flarm.h"
-#include "Switch.h"
+#include "S2fSwitch.h"
 #include "sensor.h"
 #include "protocol/WatchDog.h"
 #include "logdef.h"
@@ -85,6 +88,20 @@ void drawDisplay(void *arg)
                 }
                 // else if ( detail == ScreenEvent::FLARM_ALARM ) {
                 // }
+            }
+            else if (UiEvent(event).isModeEvent()) {
+                if ( detail == ModeEvent::MODE_SV_TOGGLE ) {
+                    cruise_mode.set(!cruise_mode.get());
+                }
+                else if ( detail == ModeEvent::MODE_VARIO || detail == ModeEvent::MODE_S2F ) {
+                    cruise_mode.set(detail == ModeEvent::MODE_VARIO);
+                }
+                else if ( detail == ModeEvent::MODE_QNHADJ) {
+                    Menu->begin(SetupMenu::createQNHMenu());
+                }
+                else if ( detail == ModeEvent::MODE_VOLTADJ) {
+                    Menu->begin(SetupMenu::createVoltmeterAdjustMenu());
+                }
             }
             else {
                 // ESP_LOGI(FNAME, "Unknown event %x", event);
@@ -252,11 +269,11 @@ void drawDisplay(void *arg)
 			// Vario Screen
 			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
-				Display->drawDisplay( airspeed, te_vario.get(), aTE, polar_sink, altitude.get(), t, batteryVoltage, s2f_delta, as2f, average_climb.get(), Switch::getCruiseState(), gflags.standard_setting, flap_pos.get() );
+				Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), t, batteryVoltage, s2f_delta, as2f, average_climb.get(), cruise_mode.get(), gflags.standard_setting, flap_pos.get() );
 			}
 			if( screen_centeraid.get() ){
-				if( centeraid ){
-					centeraid->tick();
+				if( theCenteraid ){
+					theCenteraid->tick();
 				}
 			}
 		}

@@ -4,6 +4,7 @@
  *  Created on: Jan 23, 2022
  *      Author: gittest3
  */
+#pragma once
 
 #include "types.h"
 #include "IpsDisplay.h"
@@ -17,16 +18,18 @@
 #define PEAK_STORAGE 120
 #define DRAW_SCALE (PEAK_STORAGE/MAX_DISK_RAD)
 
-#pragma once
 
 class CenterAid {
 public:
-	CenterAid( AdaptUGC *display );
+    static CenterAid *create();
+    static void remove();
 	void drawThermal( int th, int idir, bool draw_red=false );
 	void tick();
 	void drawCenterAid();
+    void setGeometry(int x, int y, int r);
 
 private:
+	CenterAid();
 	void ageThermal();
 	void addThermal( int teval );
 	bool maxClimb();
@@ -49,5 +52,9 @@ private:
 	uint64_t last_rts;
 	float peak_value;
 	float scale;
+    int CENTER_X=75;
+    int CENTER_Y=215;
+    int _radius;
 };
 
+extern CenterAid  *theCenteraid;

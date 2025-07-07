@@ -9,7 +9,7 @@
 
 #include "mcp4018.h"
 #include "cat5171.h"
-#include "Switch.h"
+#include "S2fSwitch.h"
 #include "I2Cbus.hpp"
 #include "sensor.h"
 #include "setup/SetupNG.h"
@@ -136,7 +136,9 @@ static const std::vector<double> VOL3{ 1.3, 1.2, 0.9, 0.20,  1.2,  2.1,  1.8,  1
 void Audio::begin( dac_channel_t ch  )
 {
 	ESP_LOGI(FNAME,"begin");
-	Switch::begin( GPIO_NUM_12 );
+	if ( ! S2FSWITCH ) {
+		S2FSWITCH = new S2fSwitch( GPIO_NUM_12 );
+	}
 	setup();
 	_ch = ch;
 	unmute();
@@ -434,7 +436,7 @@ void Audio::startAudio(){
 void Audio::calcS2Fmode( bool recalc ){
 	if( _alarm_mode )
 		return;
-	bool mode = Switch::getCruiseState();
+	bool mode = cruise_mode.get();
 	if( mode != _s2f_mode ){
 		ESP_LOGI(FNAME, "S2Fmode changed to %d", mode );
 		_s2f_mode = mode;             // do this first, as...
@@ -449,7 +451,7 @@ void Audio::calcS2Fmode( bool recalc ){
 			speaker_volume = vario_mode_volume;
 		if ( speaker_volume != audio_volume.get() ) {  // due to audio_split_vol
 			ESP_LOGI(FNAME, "... changing volume %f -> %f",
-			     audio_volume.get(), speaker_volume );
+			audio_volume.get(), speaker_volume );
 			audio_volume.set( speaker_volume );  // this too needs _stf_mode
 			// this is to keep the current volume shown (or implied) in the menus
 			// in step with the actual speaker volume, in case volume is changed
@@ -517,7 +519,6 @@ void Audio::dactask()
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
-		Switch::tick();    // we hook switch sceduling here to save extra task
 		// Chopping or dual tone modulation
 		if( millis() > next_scedule ){
 			if ( _te > 0 ){
@@ -862,10 +863,11 @@ bool Audio::tick()
 {
 	polar_sink = Speed2Fly.sink( ias.get() );
 	float netto = te_vario.get() - polar_sink;
-	as2f = Speed2Fly.speed( netto, !Switch::getCruiseState() );
+	as2f = Speed2Fly.speed( netto, !cruise_mode.get() );
+	s2f_ideal.set(static_cast<int>(std::round(as2f)));
 	s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10)); // low pass damping moved to the correct place
 	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
-	if( vario_mode.get() == VARIO_NETTO || (Switch::getCruiseState() &&  (vario_mode.get() == CRUISE_NETTO)) ){
+	if( vario_mode.get() == VARIO_NETTO || (cruise_mode.get() &&  (vario_mode.get() == CRUISE_NETTO)) ){
 		if( netto_mode.get() == NETTO_RELATIVE ) {
 			setValues( te_vario.get() - polar_sink + Speed2Fly.circlingSink( ias.get() ), s2f_delta );
 		}

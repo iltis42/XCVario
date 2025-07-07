@@ -52,12 +52,11 @@ bool IRAM_ATTR ESPRotary::tick()
 	else { // Button released
 		if( holdCount < 0 ) {
 			gotEvent = ButtonEvent(ButtonEvent::BUTTON_RELEASED).raw;
-			xQueueSend(uiEventQueue, &gotEvent, 0);
 		}
 		else {
 			gotEvent = ButtonEvent(ButtonEvent::SHORT_PRESS).raw;
-			xQueueSend(uiEventQueue, &gotEvent, 0);
 		}
+		xQueueSend(uiEventQueue, &gotEvent, 0);
 		holdCount = 0; // stop counting
 	}
 

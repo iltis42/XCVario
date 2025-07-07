@@ -192,13 +192,13 @@ const char* Units::AirspeedModeStr()
 	{
 		return "CAS";
 	}
-	else if (airspeed_mode.get() == MODE_SLIP)
-	{
-		return "SLIP";
-	}
+	// else if (airspeed_mode.get() == MODE_SLIP)
+	// {
+	// 	return "SLIP";
+	// }
 	else
 	{
-		return "nan";
+		return "-";
 	}
 }
 

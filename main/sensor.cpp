@@ -15,7 +15,6 @@
 #include "BLESender.h"
 #include "setup/SetupNG.h"
 #include "ESPAudio.h"
-#include "setup/SetupMenu.h"
 #include "ESPRotary.h"
 #include "AnalogInput.h"
 #include "Atmosphere.h"
@@ -24,8 +23,6 @@
 #include "Version.h"
 #include "glider/Polars.h"
 #include "Flarm.h"
-#include "setup/SetupMenuValFloat.h"
-#include "setup/SetupMenuDisplay.h"
 #include "protocol/Clock.h"
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
@@ -34,11 +31,12 @@
 #include "screen/BootUpScreen.h"
 #include "screen/MessageBox.h"
 #include "screen/DrawDisplay.h"
+#include "screen/UiEvents.h"
 
 #include "math/Quaternion.h"
 #include "wmm/geomag.h"
 #include "OTA.h"
-#include "Switch.h"
+#include "S2fSwitch.h"
 #include "AverageVario.h"
 
 #include "MPU.hpp"        // main file, provides the class itself
@@ -118,7 +116,6 @@ PressureSensor *teSensor = nullptr;
 
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
 IpsDisplay *Display = 0;
-CenterAid  *centeraid = 0;
 SetupRoot  *Menu = nullptr;
 WatchDog_C *uiMonitor = nullptr;
 
@@ -264,7 +261,7 @@ static void toyFeed()
 		}
 		switch( nmea_protocol.get() ) {
 		case BORGELT_P:
-			ToyNmeaPrtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), gflags.validTemperature );
+			ToyNmeaPrtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), gflags.validTemperature );
 			ToyNmeaPrtcl->sendXcvGeneric(te_vario.get(), altSTD, tas);
 			break;
 		case OPENVARIO_P:
@@ -274,7 +271,7 @@ static void toyFeed()
 			ToyNmeaPrtcl->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
 			break;
 		case XCVARIO_P:
-			ToyNmeaPrtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), Switch::getCruiseState(), altitude.get(), gflags.validTemperature,
+			ToyNmeaPrtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), gflags.validTemperature,
 				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 			break;
 		default:
@@ -416,12 +413,17 @@ void readSensors(void *pvParameters){
 		if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%10) ){  // a bit more fine granular updates than 0.1 m/s as of sound
 					te_vario.set( te );  // max 10x per second
 		}
-		if( !(count%10) ){  // every second read temperature of baro sensor
-					bool ok=false;
-					float xt = baroSensor->readTemperature(ok);
-					if( ok ){
-						xcvTemp = xt;
-					}
+		if( !(count%10) ) { // every second read temperature of baro sensor
+			bool ok=false;
+			float xt = baroSensor->readTemperature(ok);
+			if( ok ){
+				xcvTemp = xt;
+			}
+
+			// Check auto s2f mode filter every second
+			if (S2FSWITCH) {
+				S2FSWITCH->checkCruiseMode();
+			}
 		}
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		if( baroP != 0 )
@@ -1307,13 +1309,13 @@ void system_startup(void *args){
 			QNH.set( qnh_best );
 		}
 		Display->clear();
+
+		int modeEvent = ModeEvent(ModeEvent::MODE_QNHADJ).raw;
 		if ( NEED_VOLTAGE_ADJUST ) {
 			ESP_LOGI(FNAME,"Do Factory Voltmeter adj");
-			Menu->begin(SetupMenu::createVoltmeterAdjustMenu());
+			modeEvent = ModeEvent(ModeEvent::MODE_VOLTADJ).raw;
 		}
-		else {
-			Menu->begin(SetupMenu::createQNHMenu());
-		}
+		xQueueSend(uiEventQueue, &modeEvent, 0);
 	}
 	else {
 		if ( SetupCommon::isClient() ) {
@@ -1344,7 +1346,7 @@ void system_startup(void *args){
 	SetupRoot::initScreens();
 
 	if ( flap_enable.get() ) {
-		Flap::init(MYUCG);
+		FLAP = Flap::theFlap(MYUCG);
 	}
 	if( hardwareRevision.get() != XCVARIO_20 ){
 		gpio_pullup_en( GPIO_NUM_34 );
@@ -1356,7 +1358,7 @@ void system_startup(void *args){
 		}
 	}
 	if( screen_centeraid.get() ){
-		centeraid = new CenterAid( MYUCG );
+		CenterAid::create();
 	}
 
 	// enter normal operation

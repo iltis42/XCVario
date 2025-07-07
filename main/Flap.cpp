@@ -12,6 +12,7 @@
 #include "logdef.h"
 
 Flap* Flap::_instance = nullptr;
+Flap* FLAP = nullptr;
 
 #define NUMPOS  (int)( flap_pos_max.get() +1 - flap_neg_max.get() )
 #define MINPOS  flap_neg_max.get()
@@ -514,7 +515,12 @@ void Flap::configureADC( int port ){
 
 Flap::Flap(AdaptUGC *theUcg) :
 			ucg(theUcg)
-{}
+{
+	configureADC( flap_sensor.get() );
+	initSpeeds();
+	initLabels();
+	initSensPos();
+}
 
 Flap::~Flap()
 {
@@ -524,16 +530,11 @@ Flap::~Flap()
 	}
 	_instance = nullptr;
 }
-Flap*  Flap::init(AdaptUGC *ucg)
+Flap*  Flap::theFlap(AdaptUGC *ucg)
 {
 	if ( ! _instance ) {
 		_instance = new Flap(ucg);
 	}
-	_instance->configureADC( flap_sensor.get() );
-	_instance->initSpeeds();
-	_instance->initLabels();
-	_instance->initSensPos();
-
 	return _instance;
 }
 

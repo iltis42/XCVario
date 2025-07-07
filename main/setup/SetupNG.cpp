@@ -16,7 +16,7 @@
 #include "glider/Polars.h"
 #include "mpu/types.hpp"  // MPU data types and definitions
 #include "sensor.h"
-#include "Switch.h"
+#include "S2fSwitch.h"
 #include "wind/StraightWind.h"
 #include "wind/CircleWind.h"
 #include "ESPAudio.h"
@@ -135,10 +135,11 @@ void change_max_volume() {
 
 void flap_act() {
     if (flap_enable.get()) {
-        Flap::init(MYUCG);
+        FLAP = Flap::theFlap(MYUCG);
     }
     else if ( FLAP ) {
         delete FLAP;
+		FLAP = nullptr;
     }
 }
 
@@ -197,7 +198,7 @@ SetupNG<float>			crew_weight( "CREW_WGT", 80, true, SYNC_BIDIR, PERSISTENT, chan
 SetupNG<float>			gross_weight( "CREW_WGT", 350, true, SYNC_NONE, VOLATILE ); // derived from above
 SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, modifyPolar, QUANT_NONE, LIMITS(0.0, 50, 1));
 
-SetupNG<int>  			cruise_mode( "CRUISE", 0, false, SYNC_BIDIR, VOLATILE );
+SetupNG<int>  			cruise_mode( "CRUISE", AUDIO_VARIO, false, SYNC_BIDIR, VOLATILE );
 SetupNG<float>  		OAT( "OAT", DEVICE_DISCONNECTED_C, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
 SetupNG<float>  		swind_dir( "SWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
 SetupNG<float>  		swind_speed( "SWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
@@ -223,16 +224,17 @@ SetupNG<int>  			flarm_alive( "AL_FLARM", ALIVE_NONE, false, SYNC_NONE, VOLATILE
 // SetupNG<int>  			xcv_alive( "AL_XCV", ALIVE_NONE, false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			airborne("AIRBORNE", 0, false, SYNC_FROM_MASTER, VOLATILE, &ch_airborne_state);
 
-SetupNG<float>  		s2f_speed( "S2F_SPEED", 100.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(20.0, 250.0, 1.0));
-SetupNG<float>  		s2f_hysteresis( "S2F_HYST", 5.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(-20, 20, 1));
-SetupNG<float>  		s2f_flap_pos( "S2F_FLAP", 1, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-3, 3, 0.1));
+SetupNG<int>  			s2f_ideal( "S2F_IDEAL", 100.0, false, SYNC_FROM_MASTER, VOLATILE);
+SetupNG<int>  			s2f_switch_mode( "AUDIO_MODE" ,  AM_AUTOSPEED, false, SYNC_BIDIR, PERSISTENT );
+SetupNG<float>  		s2f_threshold( "S2F_SPEED", 100.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(20.0, 250.0, 1.0));
+SetupNG<float>  		s2f_flap_pos( "S2F_FLAP", 1, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-3, 3, 0.1));
 static const limits_t percentage_limits = {0, 100, 1.0};
-SetupNG<float>  		s2f_gyro_deg( "S2F_GYRO", 12, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
+SetupNG<float>  		s2f_gyro_deg( "S2F_GYRO", 12, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
+SetupNG<float>  		s2f_auto_lag( "S2F_HYST", 1, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(2, 20, 1));
 
 SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume, QUANT_NONE, &percentage_limits);
 SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0 );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
-SetupNG<int>  			s2f_switch_mode( "AUDIO_MODE" ,  3 );
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
 SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
 SetupNG<int>  			amplifier_shutdown( "AMP_DIS", AMP_STAY_ON );
@@ -259,8 +261,8 @@ SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5, true, SYNC_FROM_MASTER
 SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1, 300, 1));
 SetupNG<float>  		mean_climb_major_change( "MEAN_CLMC", 0.5, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.1, 5.0, 0.1));
 SetupNG<float>  		elevation( "ELEVATION", NOTSET_ELEVATION, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_ALT, LIMITS(NOTSET_ELEVATION, 3000, 1));
-SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
-SetupNG<float>  		max_volume( "MAXI_VOL", 60.0, true, SYNC_NONE, PERSISTENT, change_max_volume, QUANT_NONE, &percentage_limits);
+SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
+SetupNG<float>  		max_volume( "MAXI_VOL", 60.0, true, SYNC_FROM_MASTER, PERSISTENT, change_max_volume, QUANT_NONE, &percentage_limits);
 SetupNG<float>  		frequency_response( "FREQ_RES", 30.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-70.0, 70.0, 1.0));
 SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(.0, 25.0, 1));
 SetupNG<float>  		s2f_deadband_neg( "DB_S2F_NEG", -10.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(-25.0, .0, 1));
@@ -414,6 +416,8 @@ SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
 SetupNG<int> 			screen_gmeter("SCR_GMET", 0, false, SYNC_NONE, PERSISTENT, &SetupRoot::initScreens);
 SetupNG<int> 			screen_horizon("SCR_HORIZ", 0, true, SYNC_NONE, PERSISTENT, &SetupRoot::initScreens);
 SetupNG<int> 			screen_centeraid("SCR_CA", 0, false);
+SetupNG<int> 			screen_gauge_top("SCR_GT", GAUGE_NONE, false);
+SetupNG<int> 			screen_gauge_bottom("SCR_GB", GAUGE_NONE, false);
 SetupNG<bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
 SetupNG<t_tenchar_id>	custom_wireless_id("WLID", t_tenchar_id("") );

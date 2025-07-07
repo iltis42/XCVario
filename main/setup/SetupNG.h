@@ -47,7 +47,7 @@ class Quaternion;
 typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P } xcv_display_t;
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum ext_device_protocol  { DEV_DISABLE, DEV_FLARM, DEV_KRT2_RADIO, DEV_BECKER_RADIO, DEV_GNSS_UBX, DEV_ANEMOI } ext_device_proto_t;
-typedef enum airspeed_mode  { MODE_IAS, MODE_TAS, MODE_CAS, MODE_SLIP } airspeed_mode_t;
+typedef enum airspeed_mode  { MODE_IAS, MODE_TAS, MODE_CAS } airspeed_mode_t;
 typedef enum altitude_display_mode  { MODE_QNH, MODE_QFE } altitude_display_mode_t;
 typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO, DISPLAY_UL } display_style_t;
 typedef enum e_display_variant { DISPLAY_WHITE_ON_BLACK, DISPLAY_BLACK_ON_WHITE } display_variant_t;
@@ -80,7 +80,7 @@ typedef enum e_vario_unit { VARIO_UNIT_MS, VARIO_UNIT_FPM, VARIO_UNIT_KNOTS } e_
 typedef enum e_qnh_unit { QNH_HPA, QNH_INHG } e_qnh_unit_t;
 typedef enum e_compasss_sensor_type { CS_DISABLE=0, CS_I2C=1, CS_CAN=3 } e_compasss_sensor_type_t;
 typedef enum e_alt_quantisation { ALT_QUANT_DISABLE, ALT_QUANT_2, ALT_QUANT_5, ALT_QUANT_10, ALT_QUANT_20 } e_alt_quantisation_t;
-
+enum gauge_definition_t { GAUGE_NONE, GAUGE_SPEED, GAUGE_ALT, GAUGE_SLIP, GAUGE_S2F, GAUGE_HEADING };
 typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client. BIDIR means sync at commit from both sides
 typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
 typedef enum e_volatility { VOLATILE, PERSISTENT, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
@@ -316,10 +316,14 @@ extern SetupNG<float>		empty_weight;
 extern SetupNG<float>		crew_weight;
 extern SetupNG<float>		gross_weight;
 
-extern SetupNG<float>  		s2f_speed;
+extern SetupNG<int>  		s2f_ideal;
+extern SetupNG<int>  		s2f_switch_mode;
+extern SetupNG<float>  		s2f_threshold;
+extern SetupNG<float>  		s2f_flap_pos;
+extern SetupNG<float>  		s2f_gyro_deg;
+extern SetupNG<float>  		s2f_auto_lag;
 
 extern SetupNG<int>  		audio_variable_frequency;
-extern SetupNG<int>  		s2f_switch_mode;
 extern SetupNG<int>  		chopping_mode;
 extern SetupNG<int>  		chopping_style;
 extern SetupNG<int>  		amplifier_shutdown;
@@ -482,9 +486,6 @@ extern SetupNG<float>		compass_i2c_cl;
 extern SetupNG<int> 		s2f_blockspeed;
 extern SetupNG<int>			needle_color;
 extern SetupNG<int>			s2f_arrow_color;
-extern SetupNG<float>  		s2f_hysteresis;
-extern SetupNG<float>  		s2f_flap_pos;
-extern SetupNG<float>  		s2f_gyro_deg;
 extern SetupNG<int> 		wk_label_plus_3;
 extern SetupNG<int> 		wk_label_plus_2;
 extern SetupNG<int> 		wk_label_plus_1;
@@ -534,6 +535,8 @@ extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		screen_gmeter;
 extern SetupNG<int> 		screen_horizon;
 extern SetupNG<int> 		screen_centeraid;
+extern SetupNG<int> 		screen_gauge_top;
+extern SetupNG<int> 		screen_gauge_bottom;
 extern SetupNG<bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;
 extern SetupNG<t_tenchar_id>  custom_wireless_id;

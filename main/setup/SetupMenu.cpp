@@ -207,12 +207,6 @@ int do_display_test(SetupMenuSelect *p) {
 	return 0;
 }
 
-int update_s2f_speed(SetupMenuValFloat *p) {
-	ESP_LOGI(FNAME,"sf2_speed: %.1f conv: %.1f", s2f_threshold.get(), Units::Airspeed2Kmh( s2f_threshold.get() ) );
-	S2FSWITCH->setCruiseThreshold(s2f_threshold.get());
-	return 0;
-}
-
 static char rentry0[32];
 static char rentry1[32];
 static char rentry2[32];
@@ -603,6 +597,19 @@ int varioAvChange(SetupMenuValFloat *p) {
 	return 0;
 }
 
+static int s2fModeChange(SetupMenuSelect *p) {
+	if ( S2FSWITCH ) {
+		S2FSWITCH->updateSwitchSetup();
+	}
+	return 0;
+}
+static int s2fModeChangeF(SetupMenuValFloat *p) {
+	if ( S2FSWITCH ) {
+		S2FSWITCH->updateSwitchSetup();
+	}
+	return 0;
+}
+
 void vario_menu_create_damping(SetupMenu *top) {
 	SetupMenuValFloat *vda = new SetupMenuValFloat("Damping", "sec", vario_setup, false, &vario_delay);
 	vda->setHelp("Response time, time constant of Vario low pass filter");
@@ -641,54 +648,51 @@ void vario_menu_create_s2f(SetupMenu *top) {
 
 	SetupMenuSelect *blck = new SetupMenuSelect("Blockspeed", RST_NONE, nullptr, &s2f_blockspeed);
 	blck->setHelp(
-			"With Blockspeed enabled, vertical movement of airmass or G-load is not considered for speed to fly (S2F) calculation");
+			"With Blockspeed enabled, vertical movement of airmass or G-load is not considered for speed to fly calculation");
 	blck->mkEnable();
 	top->addEntry(blck);
 
-	SetupMenuSelect *s2fmod = new SetupMenuSelect("S2F Mode", RST_NONE, nullptr, &s2f_switch_mode);
-	s2fmod->setHelp(
-			"Select data source for switching between S2F and Vario modes",
-			230);
-	s2fmod->addEntry("Vario fix");
-	s2fmod->addEntry("Cruise fix");
-	s2fmod->addEntry("Switch");
-	s2fmod->addEntry("AutoSpeed");
-	s2fmod->addEntry("External");
-	s2fmod->addEntry("Flap");
-	s2fmod->addEntry("AHRS-Gyro");
+	SetupMenuSelect *s2fmod = new SetupMenuSelect("S2F Mode", RST_NONE, s2fModeChange, &s2f_switch_mode);
+	s2fmod->setHelp("Select data source for switching between S2F and Vario modes", 230);
+	s2fmod->addEntry("Switch", AM_SWITCH);
+	s2fmod->addEntry("AutoSpeed", AM_AUTOSPEED);
+	if ( flap_enable.get() ) {
+		s2fmod->addEntry("AutoFlap", AM_FLAP); // not dynamic, exit setup to change
+	}
+	s2fmod->addEntry("AutoTurn", AM_AHRS);
+	s2fmod->addEntry("Vario fix", AM_VARIO);
+	s2fmod->addEntry("Cruise fix", AM_S2F);
+	s2fmod->addEntry("Master/Second", AM_EXTERNAL);
 	top->addEntry(s2fmod);
 
-	SetupMenuSelect *s2fsw = new SetupMenuSelect("S2F Switch", RST_NONE, nullptr, &s2f_switch_type);
+	SetupMenuSelect *s2fsw = new SetupMenuSelect("S2F Switch", RST_NONE, s2fModeChange, &s2f_switch_type);
 	top->addEntry(s2fsw);
-	s2fsw->setHelp(
-			"Select S2F switch type: normal switch, push button (toggling S2F mode on each press), or disabled");
-	s2fsw->addEntry("Switch");
-	s2fsw->addEntry("Push Button");
-	s2fsw->addEntry("Switch Invert");
-	s2fsw->addEntry("Disable");
+	s2fsw->setHelp("Select S2F switch type: normal switch, push button (toggling S2F mode on each press), or disabled");
+	s2fsw->addEntry("Disable", S2F_SWITCH_DISABLE );
+	s2fsw->addEntry("Switch", S2F_HW_SWITCH);
+	s2fsw->addEntry("Switch Invert", S2F_HW_SWITCH_INVERTED);
+	s2fsw->addEntry("Push Button", S2F_HW_PUSH_BUTTON);
 
-	SetupMenuValFloat *autospeed = new SetupMenuValFloat("S2F AutoSpeed", "", update_s2f_speed, false, &s2f_threshold);
+	SetupMenuValFloat *autospeed = new SetupMenuValFloat("AutoSpeed Thresh.", "", nullptr, false, &s2f_threshold);
 	top->addEntry(autospeed);
-	autospeed->setHelp(
-			"Transition speed if using AutoSpeed to switch Vario <-> Cruise (S2F) mode");
+	autospeed->setHelp("Transition speed for the AutoSpeed S2F switch");
 
-	SetupMenuValFloat *s2f_flap = new SetupMenuValFloat("S2F Flap Pos", "", nullptr, false, &s2f_flap_pos);
-	top->addEntry(s2f_flap);
-	s2f_flap->setHelp(
-			"Precise flap position used for switching Vario <-> Cruise (S2F)");
+	if ( flap_enable.get() ) {
+		SetupMenuValFloat *s2f_flap = new SetupMenuValFloat("AutoFlap Position", "<", nullptr, false, &s2f_flap_pos);
+		top->addEntry(s2f_flap);
+		s2f_flap->setHelp("Precise flap position for the AutoFlap S2F switch");
+	}
 
-	SetupMenuValFloat *s2f_gyro = new SetupMenuValFloat("S2F AHRS Deg", "°", 0, false, &s2f_gyro_deg);
+	SetupMenuValFloat *s2f_gyro = new SetupMenuValFloat("AutoTurn Rate", "°/s", nullptr, false, &s2f_gyro_deg);
 	top->addEntry(s2f_gyro);
-	s2f_gyro->setHelp(
-			"Attitude change in degrees per second to switch Vario <-> Cruise (S2F) mode");
+	s2f_gyro->setHelp("Turnrate for the AutoTurnrate switch");
 
-	SetupMenuValFloat *s2fhy = new SetupMenuValFloat("Hysteresis", "", 0, false, &s2f_hysteresis);
-	s2fhy->setHelp("Hysteresis (+- this value) for Autospeed S2F transition");
-	top->addEntry(s2fhy);
+	SetupMenuValFloat *s2flag = new SetupMenuValFloat("Switch Lag", "sec", s2fModeChangeF, false, &s2f_auto_lag);
+	s2flag->setHelp("Lag to delay the auto switch event (2-20sec)");
+	top->addEntry(s2flag);
 
 	SetupMenuSelect *s2fnc = new SetupMenuSelect("Arrow Color", RST_NONE, nullptr, &s2f_arrow_color);
-	s2fnc->setHelp(
-			"Select color of the S2F arrow when painted in Up/Down position");
+	s2fnc->setHelp("Select color of the S2F arrow when painted in Up/Down position");
 	s2fnc->addEntry("White/White");
 	s2fnc->addEntry("Blue/Blue");
 	s2fnc->addEntry("Green/Red");

@@ -317,10 +317,13 @@ extern SetupNG<float>		crew_weight;
 extern SetupNG<float>		gross_weight;
 
 extern SetupNG<int>  		s2f_ideal;
+extern SetupNG<int>  		s2f_switch_mode;
 extern SetupNG<float>  		s2f_threshold;
+extern SetupNG<float>  		s2f_flap_pos;
+extern SetupNG<float>  		s2f_gyro_deg;
+extern SetupNG<float>  		s2f_auto_lag;
 
 extern SetupNG<int>  		audio_variable_frequency;
-extern SetupNG<int>  		s2f_switch_mode;
 extern SetupNG<int>  		chopping_mode;
 extern SetupNG<int>  		chopping_style;
 extern SetupNG<int>  		amplifier_shutdown;
@@ -483,9 +486,6 @@ extern SetupNG<float>		compass_i2c_cl;
 extern SetupNG<int> 		s2f_blockspeed;
 extern SetupNG<int>			needle_color;
 extern SetupNG<int>			s2f_arrow_color;
-extern SetupNG<float>  		s2f_hysteresis;
-extern SetupNG<float>  		s2f_flap_pos;
-extern SetupNG<float>  		s2f_gyro_deg;
 extern SetupNG<int> 		wk_label_plus_3;
 extern SetupNG<int> 		wk_label_plus_2;
 extern SetupNG<int> 		wk_label_plus_1;

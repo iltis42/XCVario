@@ -415,12 +415,17 @@ void readSensors(void *pvParameters){
 		if( (int( te_vario.get()*20 +0.5 ) != int( te*20 +0.5)) || !(count%10) ){  // a bit more fine granular updates than 0.1 m/s as of sound
 					te_vario.set( te );  // max 10x per second
 		}
-		if( !(count%10) ){  // every second read temperature of baro sensor
-					bool ok=false;
-					float xt = baroSensor->readTemperature(ok);
-					if( ok ){
-						xcvTemp = xt;
-					}
+		if( !(count%10) ) { // every second read temperature of baro sensor
+			bool ok=false;
+			float xt = baroSensor->readTemperature(ok);
+			if( ok ){
+				xcvTemp = xt;
+			}
+
+			// Check auto s2f mode filter every second
+			if (S2FSWITCH) {
+				S2FSWITCH->checkCruiseMode();
+			}
 		}
 		float iasraw = Atmosphere::pascal2kmh( dynamicP );
 		if( baroP != 0 )

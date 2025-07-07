@@ -86,6 +86,14 @@ void drawDisplay(void *arg)
                 // else if ( detail == ScreenEvent::FLARM_ALARM ) {
                 // }
             }
+            else if (UiEvent(event).isModeEvent()) {
+                if ( detail == ModeEvent::MODE_SV_TOGGLE ) {
+                    cruise_mode.set(!cruise_mode.get());
+                }
+                else {
+                    cruise_mode.set(detail == ModeEvent::MODE_VARIO);
+                }
+            }
             else {
                 // ESP_LOGI(FNAME, "Unknown event %x", event);
             }

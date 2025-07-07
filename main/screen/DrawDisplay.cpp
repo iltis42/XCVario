@@ -13,6 +13,9 @@
 #include "MessageBox.h"
 #include "BootUpScreen.h"
 
+#include "setup/SetupMenuValFloat.h"
+#include "setup/SetupMenuDisplay.h"
+#include "setup/SetupMenu.h"
 #include "setup/SetupNG.h"
 #include "ESPRotary.h"
 #include "OneWireESP32.h"
@@ -90,8 +93,14 @@ void drawDisplay(void *arg)
                 if ( detail == ModeEvent::MODE_SV_TOGGLE ) {
                     cruise_mode.set(!cruise_mode.get());
                 }
-                else {
+                else if ( detail == ModeEvent::MODE_VARIO || detail == ModeEvent::MODE_S2F ) {
                     cruise_mode.set(detail == ModeEvent::MODE_VARIO);
+                }
+                else if ( detail == ModeEvent::MODE_QNHADJ) {
+                    Menu->begin(SetupMenu::createQNHMenu());
+                }
+                else if ( detail == ModeEvent::MODE_VOLTADJ) {
+                    Menu->begin(SetupMenu::createVoltmeterAdjustMenu());
                 }
             }
             else {

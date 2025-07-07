@@ -62,8 +62,10 @@ struct ScreenEvent
 struct ModeEvent
 {
     enum { MODE_S2F = 1,
-           MODE_VARIO = 2, 
-           MODE_SV_TOGGLE = 3};
+           MODE_VARIO, 
+           MODE_SV_TOGGLE,
+           MODE_VOLTADJ,
+           MODE_QNHADJ };
 
     uint32_t raw;
     ModeEvent() = delete;

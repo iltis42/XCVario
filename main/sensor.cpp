@@ -15,7 +15,6 @@
 #include "BLESender.h"
 #include "setup/SetupNG.h"
 #include "ESPAudio.h"
-#include "setup/SetupMenu.h"
 #include "ESPRotary.h"
 #include "AnalogInput.h"
 #include "Atmosphere.h"
@@ -24,8 +23,6 @@
 #include "Version.h"
 #include "glider/Polars.h"
 #include "Flarm.h"
-#include "setup/SetupMenuValFloat.h"
-#include "setup/SetupMenuDisplay.h"
 #include "protocol/Clock.h"
 #include "protocol/MagSensBin.h"
 #include "protocol/NMEA.h"
@@ -34,6 +31,7 @@
 #include "screen/BootUpScreen.h"
 #include "screen/MessageBox.h"
 #include "screen/DrawDisplay.h"
+#include "screen/UiEvents.h"
 
 #include "math/Quaternion.h"
 #include "wmm/geomag.h"
@@ -1311,13 +1309,13 @@ void system_startup(void *args){
 			QNH.set( qnh_best );
 		}
 		Display->clear();
+
+		int modeEvent = ModeEvent(ModeEvent::MODE_QNHADJ).raw;
 		if ( NEED_VOLTAGE_ADJUST ) {
 			ESP_LOGI(FNAME,"Do Factory Voltmeter adj");
-			Menu->begin(SetupMenu::createVoltmeterAdjustMenu());
+			modeEvent = ModeEvent(ModeEvent::MODE_VOLTADJ).raw;
 		}
-		else {
-			Menu->begin(SetupMenu::createQNHMenu());
-		}
+		xQueueSend(uiEventQueue, &modeEvent, 0);
 	}
 	else {
 		if ( SetupCommon::isClient() ) {

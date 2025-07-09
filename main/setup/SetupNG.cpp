@@ -229,8 +229,8 @@ SetupNG<int>  			s2f_switch_mode( "AUDIO_MODE" ,  AM_AUTOSPEED, false, SYNC_BIDI
 SetupNG<float>  		s2f_threshold( "S2F_SPEED", 100.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(20.0, 250.0, 1.0));
 SetupNG<float>  		s2f_flap_pos( "S2F_FLAP", 1, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-3, 3, 0.1));
 static const limits_t percentage_limits = {0, 100, 1.0};
-SetupNG<float>  		s2f_gyro_deg( "S2F_GYRO", 12, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
-SetupNG<float>  		s2f_auto_lag( "S2F_HYST", 1, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(2, 20, 1));
+SetupNG<float>  		s2f_gyro_deg( "S2F_GYRO", 10, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
+SetupNG<float>  		s2f_auto_lag( "S2F_HYST", 10, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(2, 20, 1));
 
 SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume, QUANT_NONE, &percentage_limits);
 SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0 );

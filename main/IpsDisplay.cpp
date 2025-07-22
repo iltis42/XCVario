@@ -75,20 +75,20 @@ public:
 	// API
 	void setGeometry(int16_t r) { _radius = r; }
 	void forceRedraw() { dirty = true; }
-	void draw();
+	void draw(int sdir, int sw, int idir, int iw);
 
 private:
 	enum DRAWTYP { ERASE=0x10, SYNAPT=1, INST=2 };
-	void drawPolarWind(float a, int w, uint8_t type);
+	void drawPolarWind(int a, int w, uint8_t type);
 
 	// attributes
 private:
 	int16_t _center_x;
 	int16_t _center_y;
 	int16_t _radius = 0; // distance to wind number
-	float _sytic_dir = 0.; // deg
+	int _sytic_dir = 0.; // deg
 	int   _sytic_w = 0;
-	float _inst_dir = 0; // deg
+	int _inst_dir = 0; // deg
 	int   _inst_w = 0;
 	int _cheight;
 	int _cwidth;
@@ -1393,7 +1393,7 @@ static void format3digits(int value, char *out) {
 
 // draw a number at the spot where the wind is comeing from
 // a - wind in deg 0 - 360
-void PolarWind::drawPolarWind( float a, int speed, uint8_t type )
+void PolarWind::drawPolarWind( int a, int speed, uint8_t type )
 {
 	// ESP_LOGI(FNAME, "polWind (%f,%d)", a, speed);
 	float si=fast_sin_deg(a);
@@ -1534,7 +1534,7 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(flap_neg_max.get()))-18 );
 	}
 	if( theCenteraid ){
-		theCenteraid->setGeometry(AMIDX, AMIDY, 72);
+		theCenteraid->setGeometry(AMIDX+AVGOFFX-38, AMIDY, 45);
 	}
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
@@ -2054,18 +2054,21 @@ float IpsDisplay::getHeading(){
 }
 
 
-void PolarWind::draw()
+void PolarWind::draw(int sdir, int sw, int idir, int iw)
 {
-	drawPolarWind(_sytic_dir, 5, ERASE);
-	_sytic_dir = extwind_sptc_dir.get();
-	_sytic_w = extwind_sptc_speed.get();
-	IpsDisplay::ucg->setColor(DARK_GREY);
-	IpsDisplay::ucg->drawCircle(_center_x, _center_y, _radius+4);
-	drawPolarWind(_sytic_dir, 5, SYNAPT);
-	drawPolarWind(_inst_dir, 6/*_inst_w*/, ERASE);
-	_inst_dir = extwind_inst_dir.get();
-	_inst_dir = extwind_inst_speed.get();
-	drawPolarWind(_inst_dir, 6/*_inst_w*/, INST);
+	if ( sdir != _sytic_dir || sw != _sytic_w
+		|| idir != _inst_dir || iw != _inst_w ) {
+		if ( _sytic_dir > 0 ) drawPolarWind(_sytic_dir, _sytic_w, ERASE);
+		_sytic_dir = sdir;
+		_sytic_w = sw;
+		IpsDisplay::ucg->setColor(DARK_GREY);
+		IpsDisplay::ucg->drawCircle(_center_x, _center_y, _radius+4);
+		if ( _sytic_dir > 0 ) drawPolarWind(_sytic_dir, _sytic_w, SYNAPT);
+		if ( _inst_dir > 0 ) drawPolarWind(_inst_dir, _inst_w, ERASE);
+		_inst_dir = idir;
+		_inst_dir = iw;
+		if ( _inst_dir > 0 ) drawPolarWind(_inst_dir, _inst_w, INST);
+	}
 }
 
 // Compass or Wind Display
@@ -2111,12 +2114,7 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _dirty, bool compass_dir
 			}
 			ESP_LOGI(FNAME, "SWIND dir=%d, SSPEED=%f ageC=%d ageS=%d okc:=%d oks=%d ok:=%d", wds, ws, ageCircling, ageStraight, okc, oks, wind_ok  );
 		}
-		else if( wind_enable.get() == WA_EXT_ANEMOI ) {
-			wind = extwind_inst_speed.get();
-			winddir = extwind_inst_dir.get();
-			type = '~';
-			wind_ok = true;
-		}
+
 		ucg->setPrintPos(85,104);
 		// ESP_LOGI(FNAME, "WIND dir %d, speed %f, ok=%d", winddir, wind, ok );
 		// Windspeed and Direction digital
@@ -2317,33 +2315,39 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		// 	}
 		// }
 	}
-	// Wind
-	if( !(tick%7) ){
-		// if( bg_prio )
-		// 	drawCompass(INNER_RIGHT_ALIGN, 116, wind_dirty, compass_dirty );
-		// else{
-		// 	if( drawCompass(INNER_RIGHT_ALIGN, 116, wind_dirty && !(tick%10), compass_dirty && !(tick%10) ) ){
-		// 		indicator->drawPolarIndicatorAndBow(needle_pos, true);
-		// 	}
-		// }
-		static float w=0;
-		w += 1;
-		extwind_sptc_dir.set(w);
-		static float v=1000;
-		v -= 2;
-		extwind_inst_dir.set(v);
-		polWind->draw();
-	}
 
-	// Center Aid around grafic wind
-	if( theCenteraid && !(tick % 4)   ){
-		theCenteraid->drawCenterAid();
+	// Wind & center aid
+	if( !(tick%4) ){
+		if ( theCenteraid && ! s2fmode ) {
+			theCenteraid->drawCenterAid();
+		}
+		else {
+			int swdir=-1, iwdir=-1;
+			int sw=0, iw=0;
+			// int ageStraight;
+			// int ageCircling;
+			// if ( wind_enable.get() & WA_BOTH ) {
+			// 	if ( straightWind && ! straightWind->getWind(&iwdir, &iw, &ageStraight) ) {
+			// 		iwdir = -1;
+			// 	}
+
+			// 	if ( circleWind && ! circleWind->getWind(&swdir, &iw, &ageCircling) ) {
+			// 		iwdir = -1;
+			// 	}
+			// }
+			// else {
+				iwdir = (int)extwind_inst_dir.get();
+				iw = extwind_inst_speed.get();
+				swdir = (int)extwind_sptc_dir.get();
+				sw = extwind_sptc_speed.get();
+			// }
+			polWind->draw(swdir, (int)sw, iwdir, (int)iw);
 		}
 
 	// Vario Needle in Front mode drawn as last
 	if( !(tick%2) && needle_prio ){
 		indicator->drawPolarIndicatorAndBow(needle_pos, false);
-	}
+		}
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
 	if( ps_display.get() && !(tick%3) ){
 		if( int( polar_sink*100.) != int( old_polar_sink*100. ) ){

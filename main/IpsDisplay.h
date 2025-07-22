@@ -25,6 +25,7 @@ typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY
 extern int screens_init;
 
 class PolarIndicator;
+class PolarWind;
 
 class IpsDisplay {
 public:
@@ -111,6 +112,7 @@ private:
 	static int last_avg;
 	static int  x_start;
 	static PolarIndicator* indicator;
+    static PolarWind* polWind;
 	static temp_status_t siliconTempStatusOld;
 
 	static void drawMC( float mc, bool large=false );

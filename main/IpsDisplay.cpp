@@ -68,7 +68,32 @@ private:
 	bool dirty = true;
 };
 
+// Wind indicator around gauge center
+class PolarWind {
+public:
+	PolarWind(int cx, int cy);
+	// API
+	void setGeometry(int16_t r) { _radius = r; }
+	void forceRedraw() { dirty = true; }
+	void draw();
 
+private:
+	enum DRAWTYP { ERASE=0x10, SYNAPT=1, INST=2 };
+	void drawPolarWind(float a, int w, uint8_t type);
+
+	// attributes
+private:
+	int16_t _center_x;
+	int16_t _center_y;
+	int16_t _radius = 0; // distance to wind number
+	float _sytic_dir = 0.; // deg
+	int   _sytic_w = 0;
+	float _inst_dir = 0; // deg
+	int   _inst_w = 0;
+	int _cheight;
+	int _cwidth;
+	bool dirty = true;
+};
 
 // local variables
 int screens_init = INIT_DISPLAY_NULL;
@@ -89,6 +114,8 @@ int16_t IpsDisplay::char_height;
 int IpsDisplay::last_avg = -1000;
 int IpsDisplay::x_start = 240;
 PolarIndicator* IpsDisplay::indicator = nullptr;
+PolarWind* IpsDisplay::polWind = nullptr;
+
 
 int16_t DISPLAY_H;
 int16_t DISPLAY_W;
@@ -146,6 +173,8 @@ int S2FST = 45;
 int ASLEN = 0;
 static int AMIDY;
 static int AMIDX;
+static int AVGOFFX;
+static int SPEEDYPOS;
 
 static int16_t INNER_RIGHT_ALIGN = 170;
 static int16_t LOAD_MPG_POS = 0;
@@ -193,6 +222,8 @@ int   IpsDisplay::prev_windspeed = 0;
 float IpsDisplay::pref_qnh = 0;
 float IpsDisplay::old_polar_sink = 0;
 
+static float prev_needle = 0;
+
 temp_status_t IpsDisplay::siliconTempStatusOld = MPU_T_UNKNOWN;
 
 constexpr float sincosScale = 180.f/M_PI*2.f; // rad -> deg/2 a 0.5deg resolution discrete scale
@@ -206,7 +237,6 @@ static bool alt_dirty = false;
 static bool speed_dirty = false;
 static bool bottom_dirty = false;
 
-static float prev_needle = 0;
 
 #define WKBARMID (AMIDY-15)
 
@@ -282,14 +312,18 @@ static void initGauge(const float max, const bool log)
 	}
 
 	// center the gauge
-	AMIDY = DISPLAY_H/2;
 	AMIDX = (DISPLAY_W/2 + 30);
+	AMIDY = (DISPLAY_H)/2;
+	AVGOFFX = 0;
+	SPEEDYPOS = 86;
 	INNER_RIGHT_ALIGN = DISPLAY_W - 70;
 	LOAD_MPG_POS = DISPLAY_H*0.25;
 	LOAD_MNG_POS = DISPLAY_H*0.64;
 	LOAD_MIAS_POS = DISPLAY_H*0.81;
 	if ( display_orientation.get() == DISPLAY_NINETY ) {
 		AMIDX = DISPLAY_W/2 - 43;
+		AVGOFFX = 36;
+		SPEEDYPOS = 80;
 		LOAD_MNG_POS = DISPLAY_H*0.53;
 		_scale_k *= 1.4; // scale cover -0.7pi .. 0.7pi
 	}
@@ -325,6 +359,17 @@ void PolarIndicator::setGeometry(int16_t base_p, int16_t tip_p, int16_t half_wid
 	prev.y_2 = gaugeSinCenteredDeg2(prev_needle_pos, tip);
 }
 
+PolarWind::PolarWind(int cx, int cy)
+{
+	_center_x = cx;
+	_center_y = cy;
+	_radius = 45;
+	IpsDisplay::ucg->setFont(ucg_font_fub11_hr);
+	_cheight = IpsDisplay::ucg->getFontAscent() - IpsDisplay::ucg->getFontDescent();
+	_cwidth = IpsDisplay::ucg->getStrWidth("0");
+	ESP_LOGI(FNAME, "asc %d %d", IpsDisplay::ucg->getFontAscent(), IpsDisplay::ucg->getFontDescent());
+	ESP_LOGI(FNAME, "sw %d", _cwidth);
+}
 
 ////////////////////////////
 // IpsDisplay implementation
@@ -348,6 +393,10 @@ IpsDisplay::~IpsDisplay() {
 	if ( indicator ) {
 		delete indicator;
 		indicator = nullptr;
+	}
+	if ( polWind ) {
+		delete polWind;
+		polWind = nullptr;
 	}
 }
 
@@ -1209,14 +1258,16 @@ void IpsDisplay::drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t
 	for ( int i = old_a_level + ((old_a_level==0 || old_a_level*inc>0) ? inc : 0);
 			i != level+((i*inc < 0)?0:inc); i+=inc ) {
 		if ( i != 0 ) {
-			int x = gaugeCosCenteredDeg2(i, l1);
-			int y = gaugeSinCenteredDeg2(i, l1);
-			int xe = x - gaugeCosDeg2(i, 5);
-			int ye = y - gaugeSinDeg2(i, 5);
+			int16_t x = gaugeCosCenteredDeg2(i, l1);
+			int16_t y = gaugeSinCenteredDeg2(i, l1);
+			int16_t xe = x - gaugeCosDeg2(i, 3);
+			int16_t ye = y - gaugeSinDeg2(i, 3);
 			// ESP_LOGI(FNAME,"drawLine x1:%d y1:%d x2:%d y2:%d", x,y,xe,ye );
 			ucg->drawLine(x, y, xe, ye);
-			int d = std::signbit(i)?-1:1;
-			ucg->drawLine(x, y+d, xe, ye+d);
+			int16_t d = std::signbit(i)?-1:1;
+			int16_t ds = fast_sin_deg(0.5f*i) * d;
+			int16_t dc = fast_cos_deg(0.5f*i) * d;
+			ucg->drawLine(x+ds, y+dc, xe+ds, ye+dc);
 		}
 		else ucg->setColor(c.color[0], c.color[1], c.color[2]);
 	}
@@ -1303,6 +1354,8 @@ void IpsDisplay::drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16
 	}
 	// ucg->setFontMode(UCG_FONT_MODE_SOLID);
 	ucg->setFontPosBottom();
+	ucg->setColor(DARK_GREY);
+	ucg->drawCircle(AMIDX, AMIDY, pos+2, EGLIB_DRAW_UPPER_LEFT|EGLIB_DRAW_LOWER_LEFT);
 }
 
 // Draw scale label numbers for -pi/2 to pi/2 w/o sign
@@ -1330,6 +1383,71 @@ void IpsDisplay::drawOneLabel( float val, int16_t labl, int16_t pos, int16_t off
 		ucg->print(abs(labl));
 	}
 }
+
+
+static void format3digits(int value, char *out) {
+    if (value > 199) value = 199;
+	if (value < 0) value = 0;
+    sprintf(out, "%d", value);
+}
+
+// draw a number at the spot where the wind is comeing from
+// a - wind in deg 0 - 360
+void PolarWind::drawPolarWind( float a, int speed, uint8_t type )
+{
+	// ESP_LOGI(FNAME, "polWind (%f,%d)", a, speed);
+	float si=fast_sin_deg(a);
+	float co=fast_cos_deg(a);
+	// float wrel = a;// - getHeading();
+	int16_t x0 = -si * _radius;
+	int16_t y0 =  co * _radius;
+	int16_t x1 = x0/4;
+	int16_t y1 = y0/4;
+	if ( type & ERASE ) {
+		IpsDisplay::ucg->setColor( COLOR_BLACK );
+	}
+	else if ( type & INST ) {
+		IpsDisplay::ucg->setColor( COLOR_ORANGE );
+	}
+	else {
+		IpsDisplay::ucg->setColor( COLOR_BBLUE );
+	}
+	// a number at where the wind is coming from
+	if ( type & ERASE ) {
+		int16_t sw = _cwidth * count_digits(speed);
+		IpsDisplay::ucg->drawBox(_center_x-x0-x1/2-1, _center_y-y0-y1/2+5-_cheight, sw, _cheight);
+	}
+	else {
+		IpsDisplay::ucg->setFontPosCenter();
+		IpsDisplay::ucg->setFont(ucg_font_fub11_hr);
+		IpsDisplay::ucg->setPrintPos(_center_x-x0-x1/2, _center_y-y0-y1/2+5);
+		char buf[6];
+		format3digits(speed, buf);
+		IpsDisplay::ucg->print(buf);
+		IpsDisplay::ucg->setFontPosBottom();
+	}
+
+	// a tip in direction the wind is blowing
+	x0 += _center_x;
+	y0 += _center_y;
+	int16_t ws = std::roundf(si);;
+	int16_t wc = std::roundf(co);
+	if ( type & INST ) {
+		int16_t bs = std::roundf(si*4);;
+		int16_t bc = std::roundf(co*4);
+		IpsDisplay::ucg->drawLine(x0+bc, y0+bs, x0+x1, y0+y1);
+		IpsDisplay::ucg->drawLine(x0+bc+wc, y0+bs+ws, x0+wc+x1, y0+ws+y1);
+		IpsDisplay::ucg->drawLine(x0-bc, y0-bs, x0+x1, y0+y1);
+		IpsDisplay::ucg->drawLine(x0-bc-wc, y0-bs-ws, x0-wc+x1, y0-ws+y1);
+	}
+	else {
+		IpsDisplay::ucg->drawLine(x0, y0, x0+x1, y0+y1);
+		IpsDisplay::ucg->drawLine(x0+wc, y0+ws, x0+wc+x1, y0+ws+y1); // one step to the left
+		IpsDisplay::ucg->drawLine(x0-wc, y0-ws, x0-wc+x1, y0-ws+y1); // one step to the right
+		// ESP_LOGI(FNAME, "x0, y0 (%d,%d)", x0, y0);
+	}
+}
+
 
 static int wx0,wy0,wx1,wy1,wx3,wy3 = 0;  // initialize by zero
 
@@ -1396,6 +1514,9 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	initGauge(_range, log_scale.get());
 	drawScale( _range, -_range, DISPLAY_H/2-20, 0);
 	indicator->setGeometry(DISPLAY_H/2-24-26, DISPLAY_H/2-24, 8);
+	if ( ! polWind ) {
+		polWind = new PolarWind(AMIDX+AVGOFFX-38, AMIDY);
+	}
 
 	// Unit's
 	ucg->setFont(ucg_font_fub11_hr);
@@ -1412,6 +1533,8 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 		FLAP->setBarPosition( WKSYMST-4, WKBARMID);
 		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(flap_neg_max.get()))-18 );
 	}
+	if( theCenteraid ){
+		theCenteraid->setGeometry(AMIDX, AMIDY, 72);
 	}
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){
@@ -1442,14 +1565,18 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val, bool large )
 		// }
 		ucg->setFontPosCenter();
 		static const char* format[2] = {"%2.1f","%2.0f"};
-		sprintf(s, format[std::abs(ival)>100], float(ival/10.) );
+		sprintf(s, format[std::abs(ival)>100], float(abs(ival)/10.) );
 		int new_x_start = x - ucg->getStrWidth(s);
 		if( new_x_start > x_start ){         // do we have a shorter string starting at higer x position
 			ucg->setColor( COLOR_BLACK );    // yes -> so blank exact prepending area
 			int fh = ucg->getFontAscent();   // height of blanking box
 			ucg->drawBox( x_start, y-fh/2, new_x_start-x_start, fh );  // draw blanking box
 		}
+		if (ival<0) {
+			ucg->setColor( COLOR_BBLUE );
+		} else {
 			ucg->setColor( COLOR_WHITE );
+		}
 		ucg->setPrintPos(new_x_start, y + 8);
 		ucg->print(s);
 		last_avg = ival;
@@ -1753,7 +1880,7 @@ void IpsDisplay::initLoadDisplay(){
 	}
 
 	initGauge(max_gscale, false); // no logarithmic gauge for g-load
-	drawScale( max_gscale, -max_gscale, DISPLAY_H/2-16, 1);
+	drawScale( max_gscale, -max_gscale, DISPLAY_H/2-20, 1);
 	indicator->setGeometry(DISPLAY_H/2-24-26, DISPLAY_H/2-24, 8);
 	old_gmax = 100;
 	old_gmin = -100;
@@ -1926,6 +2053,21 @@ float IpsDisplay::getHeading(){
 	return heading;
 }
 
+
+void PolarWind::draw()
+{
+	drawPolarWind(_sytic_dir, 5, ERASE);
+	_sytic_dir = extwind_sptc_dir.get();
+	_sytic_w = extwind_sptc_speed.get();
+	IpsDisplay::ucg->setColor(DARK_GREY);
+	IpsDisplay::ucg->drawCircle(_center_x, _center_y, _radius+4);
+	drawPolarWind(_sytic_dir, 5, SYNAPT);
+	drawPolarWind(_inst_dir, 6/*_inst_w*/, ERASE);
+	_inst_dir = extwind_inst_dir.get();
+	_inst_dir = extwind_inst_speed.get();
+	drawPolarWind(_inst_dir, 6/*_inst_w*/, INST);
+}
+
 // Compass or Wind Display
 bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _dirty, bool compass_dirty) {
 	bool ret=false;
@@ -2089,7 +2231,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 	// indicate vario mode
 	if( netto != netto_old ) {
-		drawNetto( 126, DISPLAY_H/2-33, netto );
+		drawNetto( DISPLAY_W-38, 50, netto );
 		netto_old = netto;
 	}
 
@@ -2120,17 +2262,17 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// average Climb
 	if( ((int)(ate*10) != _ate) || !(tick%10) ) {
-		drawAvgVario( AMIDX+36, AMIDY, ate );
+		drawAvgVario( AMIDX+AVGOFFX, AMIDY+4, ate );
 		_ate = (int)(ate*10);
 	}
 
 	// S2F Command triangle
-	if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30)) && !ulmode ) {
+	// if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30)) && !ulmode ) {
 		// static float s=0; // check the bar code
 		// s2fd = sin(s) * 42.;
 		// s+=0.04;
-		drawS2FBar(AMIDX, AMIDY,(int)s2fd);
-	}
+	// 	drawS2FBar(AMIDX, AMIDY,(int)s2fd);
+	// }
 
 	// MC val
 	if(  !(tick%8) && !ulmode ) {
@@ -2152,38 +2294,45 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if( !(tick%2) && bg_prio ){  // draw needle first when background has prio
 		indicator->drawPolarIndicatorAndBow(needle_pos, false);
 	}
-	// Airspeed (NEEDLE overlap)
-	if( screen_gauge_top.get() && !(tick%6) ) {
-		if( bg_prio ){
-			drawTopGauge( airspeed_kmh, INNER_RIGHT_ALIGN, 75, speed_dirty );
-		}else {
-			if( drawTopGauge( airspeed_kmh, INNER_RIGHT_ALIGN, 75, (speed_dirty && !(tick%10)) ) ){
-		indicator->drawPolarIndicatorAndBow(needle_pos, false);
-	}
-		}
+	// Airspeed
+	if( !(tick%5) ) {
+		// if( bg_prio ){
+			drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, SPEEDYPOS, speed_dirty );
+		// }else {
+		// 	if( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 80, (speed_dirty && !(tick%10)) ) ){
+		// 		indicator->drawPolarIndicatorAndBow(needle_pos, false);
+		// 	}
+		// }
 	}
 	// Altitude
-	if( screen_gauge_bottom.get() && !(tick%4) ) {
+	if( !(tick%4) ) {
 		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
 		// static float alt = 0, rad = 0.0; int min_aq = std::max(alt_quant, (int16_t)1);
 		// altitude = alt + sin(rad) * (5*min_aq+2); rad += 0.003*min_aq;
-		if( bg_prio ){
+		// if( bg_prio ){
 		drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, alt_dirty );
-		}else{  // needle prio
-			if( drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, (alt_dirty && !(tick%10)) ) ){
-				indicator->drawPolarIndicatorAndBow(needle_pos, true);
-			}
+		// }else{  // needle prio
+		// 	if( drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, (alt_dirty && !(tick%10)) ) ){
+		// 		indicator->drawPolarIndicatorAndBow(needle_pos, true);
+		// 	}
+		// }
 	}
-		}
-	// Compass  (NEEDLE overlap)
-	if( !(tick%2) ){
-		if( bg_prio )
-			drawCompass(INNER_RIGHT_ALIGN, 116, wind_dirty, compass_dirty );
-		else {
-			if( drawCompass(INNER_RIGHT_ALIGN, 116, wind_dirty && !(tick%10), compass_dirty && !(tick%10) ) ){
-				indicator->drawPolarIndicatorAndBow(needle_pos, true);
-			}
-		}
+	// Wind
+	if( !(tick%7) ){
+		// if( bg_prio )
+		// 	drawCompass(INNER_RIGHT_ALIGN, 116, wind_dirty, compass_dirty );
+		// else{
+		// 	if( drawCompass(INNER_RIGHT_ALIGN, 116, wind_dirty && !(tick%10), compass_dirty && !(tick%10) ) ){
+		// 		indicator->drawPolarIndicatorAndBow(needle_pos, true);
+		// 	}
+		// }
+		static float w=0;
+		w += 1;
+		extwind_sptc_dir.set(w);
+		static float v=1000;
+		v -= 2;
+		extwind_inst_dir.set(v);
+		polWind->draw();
 	}
 
 	// Center Aid around grafic wind

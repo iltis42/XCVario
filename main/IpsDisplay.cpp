@@ -8,7 +8,7 @@
 
 #include "IpsDisplay.h"
 
-#include "math/GaugeTrig.h"
+#include "math/Trigenometry.h"
 #include "comm/DeviceMgr.h"
 #include "BLESender.h"
 #include "OneWireESP32.h"

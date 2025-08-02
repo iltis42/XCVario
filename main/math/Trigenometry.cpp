@@ -6,7 +6,7 @@
  ***       Copyright (C) Rohs Engineering Design         ***
  ***********************************************************/
 
-#include "GaugeTrig.h"
+#include "Trigenometry.h"
 
 #include <math.h>
 #include <float.h>

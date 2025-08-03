@@ -3,6 +3,7 @@
 #include <mpu/math.hpp>
 #include "sensor.h"
 #include "math/Quaternion.h"
+#include "math/Trigenometry.h"
 #include "vector.h"
 #include "logdef.h"
 
@@ -147,7 +148,7 @@ void IMU::init()
 
 float IMU::getGyroYawDelta()
 {
-    EulerAngles e = rad2deg(omega_step.toEulerRad());
+    EulerAngles e = omega_step.toEulerRad() * rad2deg(1.f);
     // ESP_LOGI(FNAME,"ngrav deg r=%.3f  p=%.3f  y=%.3f ", e.Roll(), e.Pitch(), e.Yaw() );
 	return e.Yaw();
 }
@@ -183,7 +184,7 @@ void IMU::Process()
 	float gravity_trust = 1;
 
 	// create a gyro base rotation axis
-	vector_ijk gyro_rad = deg2rad(gyro);
+	vector_ijk gyro_rad = gyro * deg2rad(1.f);
 	omega_step = Quaternion::fromGyro(gyro_rad, dt);
 	vector_ijk axis;
 	float w = omega_step.getAngleAndAxis(axis) * 1.f / dt; // angular speed [rad/sec]
@@ -217,7 +218,7 @@ void IMU::Process()
 		petal.c = cos(roll)*cos(pitch);      // Any roll or pitch creates a smaller positive Z, gravity Z is positive
 		// trust in gyro at load factors unequal 1 g
 		gravity_trust = (ahrs_min_gyro_factor.get() + (ahrs_gyro_factor.get() * ( pow(10, abs(loadFactor-1) * ahrs_dynamic_factor.get()) - 1)));
-		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f W_yz: %f Gyro Trust: %f", R2D(roll), R2D(pitch), circle_omega, gravity_trust );
+		// ESP_LOGI( FNAME,"Omega roll: %f Pitch: %f W_yz: %f Gyro Trust: %f", rad2deg(roll), rad2deg(pitch), circle_omega, gravity_trust );
 	}
 	else {
 		// For still stand centripetal forces are taken from the accelerometer
@@ -233,8 +234,8 @@ void IMU::Process()
 	// ESP_LOGI(FNAME,"Circle Omega: %f", circle_omega );
 	euler_rad = att_quat.toEulerRad() * -1.f;
 	if ( (att_vector-att_prev).get_norm2() > 0.5 ) {
-		[[maybe_unused]] EulerAngles euler = rad2deg(euler_rad);
-		ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f OR:%.1f IMUP:%.1f %.1f@GA(%.3f,%.3f,%.3f)", euler.Roll(), euler.Pitch(), R2D(roll), R2D(pitch), R2D(w), axis.a, axis.b, axis.c );
+		[[maybe_unused]] EulerAngles euler = euler_rad * rad2deg(1.f);
+		ESP_LOGI( FNAME,"Euler R:%.1f P:%.1f OR:%.1f IMUP:%.1f %.1f@GA(%.3f,%.3f,%.3f)", euler.Roll(), euler.Pitch(), rad2deg(roll), rad2deg(pitch), rad2deg(w), axis.a, axis.b, axis.c );
 	}
 
 	// treat gimbal lock, limit to 88 deg
@@ -447,7 +448,7 @@ int IMU::getAccelSamplesAndCalib(int side, float &wing_angle  )
 			wing_angle = Quaternion::AlignVectors(vector_ijk(bob_right_wing.a, bob_right_wing.b, bob_right_wing.c),
 														vector_ijk(bob_left_wing.a, bob_left_wing.b, bob_left_wing.c)).getAngle();
 			ESP_LOGI(FNAME, "Wing Angle: %f degree.", rad2deg(wing_angle/2.));
-			if ( wing_angle < deg2rad(8) ) {
+			if ( wing_angle < deg2rad(8.f) ) {
 				progress = 0; // resert the progress
 				return -1;
 			}
@@ -576,7 +577,7 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 		MYUCG->setPrintPos( 1, 130 );
 		MYUCG->printf( "Success, Finished!" );
 		MYUCG->setPrintPos( 1, 160 );
-		MYUCG->printf( "Wing Angle: %.2f°", R2D(angle) );
+		MYUCG->printf( "Wing Angle: %.2f°", rad2deg(angle) );
 		delay(1000);
 		MYUCG->setPrintPos( 1, 220 );
 		MYUCG->printf( "press button to return" );

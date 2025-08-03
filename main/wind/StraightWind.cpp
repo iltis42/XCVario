@@ -31,7 +31,7 @@
 #include "math.h"
 #include "sensor.h"
 #include "KalmanMPU6050.h"
-#include "vector.h"  // D2R, R2D
+#include "math/Trigenometry.h"
 #include "comm/DeviceMgr.h"
 #include "logdef.h"
 
@@ -220,14 +220,14 @@ bool StraightWind::calculateWind()
 // view-source:http://www.owoba.de/fliegerei/flugrechner.html
 // direction in degrees of third vector in windtriangle
 void StraightWind::calculateSpeedAndAngle( float angle1, float speed1, float angle2, float speed2, float& speed, float& angle ){
-	float tcrad = D2R( angle1 );
-	float thrad = D2R( angle2 );
+	float tcrad = deg2rad( angle1 );
+	float thrad = deg2rad( angle2 );
 	float wca = Vector::angleDiff( thrad, tcrad );
 	float s2wca = speed2 * cos( wca );
 	float ang = tcrad + atan2( speed2 * sin( wca ), s2wca - speed1 );
 	// Cosinus sentence: c^2 = a^2 + b^2 − 2 * a * b * cos( α ) for wind speed in km/h
 	speed = sqrt( (speed2 * speed2) + (speed1 * speed1 ) - ( 2 * s2wca * speed1  ) );
-	angle = Vector::normalizeDeg( R2D( ang ) );  // convert radian to degree
+	angle = Vector::normalizeDeg( rad2deg( ang ) );  // convert radian to degree
 	// ESP_LOGI(FNAME,"calcAngleSpeed( A1/S1=%3.1f°/%3.1f km/h  A2/S2=%3.1f°/%3.1f km/h): A/S: %3.2f°/%3.2f km/h", angle1, speed1, angle2, speed2, angle, speed  );
 }
 
@@ -346,7 +346,7 @@ void StraightWind::calculateWind( float tc, float gs, float th, float tas, float
 void StraightWind::newCirclingWind( float angle, float speed ){
 	ESP_LOGI(FNAME,"New good circling wind %3.2f°/%3.2f", angle, speed );
 	circlingWindDir = angle;
-	circlingWindDirReverse = Vector::reverse( angle );      // revers windvector
+	circlingWindDirReverse = Vector::reverseBearing( angle );      // revers windvector
 	ESP_LOGI(FNAME,"Wind dir %3.2f, reverse circling wind dir %3.2f", angle, circlingWindDirReverse );
 	circlingWindSpeed = speed;
 	circlingWindAge = 0;

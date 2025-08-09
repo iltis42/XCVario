@@ -205,10 +205,10 @@ SetupNG<float>  		swind_speed( "SWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, re
 SetupNG<float>  		swind_sideslip_lim( "SWSL", 2.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 45.0, 0.1));
 SetupNG<float>  		cwind_dir( "CWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetCWindAge );
 SetupNG<float>  		cwind_speed( "CWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetCWindAge );
-SetupNG<float>  		extwind_sptc_dir( "EWDD", 0.0, false, SYNC_BIDIR, VOLATILE ); // synoptic and
-SetupNG<float>  		extwind_sptc_speed( "EWDS", 0.0, false, SYNC_BIDIR, VOLATILE );
-SetupNG<float>  		extwind_inst_dir( "EIWDD", 0.0, false, SYNC_BIDIR, VOLATILE ); // instant external wind
-SetupNG<float>  		extwind_inst_speed( "EIWDS", 0.0, false, SYNC_BIDIR, VOLATILE );
+SetupNG<int>  			extwind_sptc_dir( "EWDD", 0.0, false, SYNC_BIDIR, VOLATILE ); // synoptic and
+SetupNG<int>  			extwind_sptc_speed( "EWDS", 0.0, false, SYNC_BIDIR, VOLATILE );
+SetupNG<int>  			extwind_inst_dir( "EIWDD", 0.0, false, SYNC_BIDIR, VOLATILE ); // instant external wind
+SetupNG<int>  			extwind_inst_speed( "EIWDS", 0.0, false, SYNC_BIDIR, VOLATILE );
 SetupNG<int>  			extwind_status( "EWST", -1, false, SYNC_BIDIR, VOLATILE );
 SetupNG<float>  		mag_hdm( "HDM", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		mag_hdt( "HDT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );

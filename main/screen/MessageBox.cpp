@@ -72,7 +72,7 @@ bool MessageBox::nextMsg()
         // All done
         xSemaphoreGive(display_mutex);
         current = nullptr;
-        Display->redrawValues(); // fixme
+        // Display->redrawValues(); // fixme
         return false;
     }
 

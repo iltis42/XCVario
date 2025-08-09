@@ -22,6 +22,7 @@ extern uint8_t g_col_header_light_b;
 #define LIGHT_GREEN 127,0,255
 #define COLOR_YELLOW 0, 0, 255
 #define DARK_GREY    230, 230, 230
+#define DARK_DGREY   242, 242, 242
 #define COLOR_MGREY  180, 180, 180
 #define COLOR_BLUE   255, 255, 0
 #define COLOR_LBLUE  200, 200, 0

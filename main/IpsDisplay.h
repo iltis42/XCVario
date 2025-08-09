@@ -24,8 +24,8 @@ enum ips_display { ILI9341 };
 typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY_RETRO=2, INIT_DISPLAY_FLARM=4, INIT_DISPLAY_GLOAD=8, INIT_DISPLAY_UL=16, INIT_DISPLAY_HORIZON=32 } e_screens_t;
 extern int screens_init;
 
-class PolarIndicator;
-class PolarWind;
+class PolarGauge;
+class WindCircle;
 
 class IpsDisplay {
 public:
@@ -42,7 +42,8 @@ public:
 	static void drawLoadDisplay( float loadFactor );
 	static void drawHorizon( float pitch, float roll, float yaw );
 	static void drawLoadDisplayTexts();
-	static void drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t color );
+	static void drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t color, int16_t w=2 );
+	static void drawSeg( float a0, float a1, int16_t r);
 	static void initDisplay();
 	static void clear();   // erase whole display
 	static void drawArrowBox( int x, int y, bool are=true );
@@ -111,8 +112,8 @@ private:
 
 	static int last_avg;
 	static int  x_start;
-	static PolarIndicator* indicator;
-    static PolarWind* polWind;
+	static PolarGauge* gauge;
+    static WindCircle* polWind;
 	static temp_status_t siliconTempStatusOld;
 
 	static void drawMC( float mc, bool large=false );
@@ -129,22 +130,19 @@ private:
 	static void drawBat( float volt, int x, int y, bool blank );
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
-	static void drawOneScaleLine(float a, int16_t l1, int16_t l2, int16_t w, uint8_t r, uint8_t g, uint8_t b);
 
 	static void initRetroDisplay( bool ulmode );
 	static void initLoadDisplay();
 	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor, bool ulmode );
 	static void drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
-	static void drawScale( int16_t max_pos, int16_t max_neg, int16_t pos, int16_t offset, int16_t at=-1000 );
-	static void drawOneLabel( float val, int16_t labl, int16_t pos, int16_t offset );
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
-	static bool drawAltitude( float altitude, int16_t x, int16_t y, bool dirty, bool inc_unit=false );
+	static bool drawAltitude( float altitude, int16_t x, int16_t y, bool inc_unit=false );
 	static void drawSmallSpeed(float v_kmh, int16_t x, int16_t y);
-	static bool drawTopGauge(int val, int16_t x, int16_t y, bool dirty, bool inc_unit=false);
+	static bool drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit=false);
 	static void drawLegend( bool onlyLines=false );
 	static void drawAvgVario( int16_t x, int16_t y, float ate, bool large=false );
 	static void drawNetto( int16_t x, int16_t y, bool netto );

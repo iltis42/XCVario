@@ -4,7 +4,6 @@
 #include "AnalogInput.h"
 #include "MP5004DP.h"
 #include "MS4525DO.h"
-#include "IpsDisplay.h"
 #include "Compass.h" // 3-Axis Magnetic Sensor
 #include "S2F.h"
 #include "AdaptUGC.h"

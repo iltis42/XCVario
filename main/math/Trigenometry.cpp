@@ -8,6 +8,8 @@
 
 #include "Trigenometry.h"
 
+#include "logdef.h"
+
 #include <cmath>
 #include <cfloat>
 
@@ -36,6 +38,16 @@ int angleDiffDeg(int a1, int a2)
 // tan(a)           ~42657
 // atan2(100., a)   ~14064
 // atan2f(100., a)  ~14064
+// static_cast<int16_t>(std::roundf(a) ~2268
+// (int)std::roundf(a);    ~1823
+// fast_roundf_to_int(a) ~1818
+// b1 = b1 - std::roundf(fast_sin_idx(idx) * b1); ~5000
+// b1 = b1 - fast_roundf_to_int(fast_sin_idx(idx) * b1); ~2753
+// b1 = std::abs((int)b1); ~1
+// a = a * ((std::signbit(a) ? -1. : 1.));  ~176
+// idx = ((std::signbit(a) ? -1 : 1));  ~4
+// idx = ((std::signbit(idx) ? -1 : 1));  ~10
+
 
 
 // O():=1360c
@@ -102,8 +114,30 @@ float fast_sin_deg(float angle) {
     return negative ? -result : result;
 }
 
+// an idx index is an integer representation of an angle with unit [0.5deg]
+float fast_sin_idx(int16_t angle) {
+    int16_t r = angle % 720;
+    angle = (r < 0) ? r + 720 : r;
+    
+    bool negative = false;
+    if (angle > 360) {
+        angle -= 360;
+        negative = true;
+    }
+    // fold to 90° index
+    if (angle > 180)
+        angle = 360 - angle;
+
+    float result = sin_table_0_5deg[angle];
+    return negative ? -result : result;
+}
+
 float fast_cos_deg(float angle) {
     return fast_sin_deg(angle + 90.0f);
+}
+
+float fast_cos_idx(int angle) {
+    return fast_sin_idx(angle + 180);
 }
 
 float fast_sin_rad(float rad) {

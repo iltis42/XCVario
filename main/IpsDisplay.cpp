@@ -1431,7 +1431,7 @@ static float oroll=0;
 static int heading_old = -1;
 
 void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
-	// ESP_LOGI(FNAME,"drawHorizon P: %1.1f R: %1.1f Y: %1.1f", R2D(pitch), R2D(roll), R2D(yaw) );
+	// ESP_LOGI(FNAME,"drawHorizon P: %1.1f R: %1.1f Y: %1.1f", rad2deg(pitch), rad2deg(roll), rad2deg(yaw) );
 	tick++;
 	if( !(screens_init & INIT_DISPLAY_HORIZON) ){
 		clear();
@@ -1462,7 +1462,7 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 	Point P4r = P4.rotate( Center, -roll );
 	Point P5r = P5.rotate( Center, -roll );
 	Point P6r = P6.rotate( Center, -roll );
-	int p = -rint(R2D( pitch )*2);  // 1 deg := 1 pixel
+	int p = -rint(rad2deg( pitch )*2);  // 1 deg := 1 pixel
 	P1r.moveVertical(p);
 	P2r.moveVertical(p);
 	P3r.moveVertical(p);
@@ -1471,9 +1471,9 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 	P6r.moveVertical(p);
 	int heading = 0;
 
-	// ESP_LOGI(FNAME,"P1:%d/%d P2:%d/%d P3:%d/%d P4:%d/%d roll:%f d:%d ", P1r.x, P1r.y+p, P2r.x, P2r.y+p, P3r.x, P3r.y+p, P4r.x , P4r.y+p, R2D(roll), p  );
+	// ESP_LOGI(FNAME,"P1:%d/%d P2:%d/%d P3:%d/%d P4:%d/%d roll:%f d:%d ", P1r.x, P1r.y+p, P2r.x, P2r.y+p, P3r.x, P3r.y+p, P4r.x , P4r.y+p, rad2deg(roll), p  );
 	if( P1r.y != P1o.y || P1r.x != P1o.x ){
-		// ESP_LOGI(FNAME,"drawHorizon P: %1.1f R: %1.1f Y: %1.1f", R2D(pitch), R2D(roll), R2D(yaw) );
+		// ESP_LOGI(FNAME,"drawHorizon P: %1.1f R: %1.1f Y: %1.1f", rad2deg(pitch), rad2deg(roll), rad2deg(yaw) );
 		xSemaphoreTake(display_mutex,portMAX_DELAY );
 		ucg->setClipRange( 20, 60, 200, 200 );
 		ucg->setColor( COLOR_LBLUE );

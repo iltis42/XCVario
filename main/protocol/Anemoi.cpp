@@ -131,10 +131,10 @@ void Anemoi::parseStatus()
  */
 void Anemoi::parseWind()
 {
-    extwind_inst_dir.set(((_sm._frame[2]<<8) | _sm._frame[3]));
-    extwind_inst_speed.set(_sm._frame[4]);
-    extwind_sptc_dir.set(((_sm._frame[5]<<8) | _sm._frame[6]));
-    extwind_sptc_speed.set(_sm._frame[7]);
+    extwind_inst_dir.set(static_cast<float>((_sm._frame[2]<<8) | _sm._frame[3]));
+    extwind_inst_speed.set(static_cast<float>(_sm._frame[4]));
+    extwind_sptc_dir.set(static_cast<float>((_sm._frame[5]<<8) | _sm._frame[6]));
+    extwind_sptc_speed.set(static_cast<float>(_sm._frame[7]));
     ESP_LOGI(FNAME,"WDir %.1f, Wval %.1f", extwind_inst_dir.get(), extwind_inst_speed.get());
 }
 

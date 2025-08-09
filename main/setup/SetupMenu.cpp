@@ -1297,14 +1297,6 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	diso->addEntry( "TOPDOWN");
 	diso->addEntry( "NINETY");
 
-	//
-	SetupMenuSelect *drawp = new SetupMenuSelect("Needle Alignment", RST_NONE, nullptr, &drawing_prio);
-	top->addEntry(drawp);
-	drawp->setHelp(
-			"Alignment of the variometer needle either in front of the displayed info, or in background");
-	drawp->addEntry("Front");
-	drawp->addEntry("Back");
-
 	SetupMenuSelect *dtest = new SetupMenuSelect("Display Test", RST_NONE, do_display_test, &display_test);
 	top->addEntry(dtest);
 	dtest->setHelp("Start display test screens, press rotary to cancel");

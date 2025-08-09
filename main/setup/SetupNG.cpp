@@ -421,7 +421,6 @@ SetupNG<int> 			screen_gauge_bottom("SCR_GB", GAUGE_NONE, false);
 SetupNG<bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
 SetupNG<t_tenchar_id>	custom_wireless_id("WLID", t_tenchar_id("") );
-SetupNG<int> 			drawing_prio("DRAWP", DP_NEEDLE );
 SetupNG<int> 			logging("LOGGING", 0 );
 SetupNG<float>      	display_clock_adj("DSCLADHJ", 0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-2, 2, 0.1));
 

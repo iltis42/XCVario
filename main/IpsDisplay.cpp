@@ -8,6 +8,9 @@
 
 #include "IpsDisplay.h"
 
+#include "screen/element/PolarGauge.h"
+#include "screen/element/WindCircle.h"
+
 #include "math/Trigenometry.h"
 #include "comm/DeviceMgr.h"
 #include "BLESender.h"
@@ -40,60 +43,6 @@
 ////////////////////////////
 // types
 
-// Triangle
-typedef struct Triangle {
-	int16_t x_0=0, y_0=0, x_1=0, y_1=1, x_2=1, y_2=0;
-} Triangle_t;
-
-// Indicator
-class PolarIndicator {
-public:
-	PolarIndicator();
-	// API
-	void setGeometry(int16_t base, int16_t tip, int16_t half_width);
-	void forceRedraw() { dirty = true; }
-	void setColor(ucg_color_t c) { color = c;}
-	bool drawPolarIndicator( float a, bool dirty=false );
-	bool drawPolarIndicatorAndBow( float a, bool dirty=false );
-
-	// attributes
-private:
-	int16_t base = 0; // distance from center to base of arrow
-	int16_t tip = 0; // distance from center to arrow tip
-	int16_t h_width = 0; // half width of the arrow base
-	int base_val_offset; // angle "* sincosScale" from base point to shoulder point of arrow, wrt display center
-	ucg_color_t color;
-	Triangle_t prev;
-	int prev_needle_pos = 0; // -pi/2 .. pi/2 * sincosScale
-	bool dirty = true;
-};
-
-// Wind indicator around gauge center
-class PolarWind {
-public:
-	PolarWind(int cx, int cy);
-	// API
-	void setGeometry(int16_t r) { _radius = r; }
-	void forceRedraw() { dirty = true; }
-	void draw(int sdir, int sw, int idir, int iw);
-
-private:
-	enum DRAWTYP { ERASE=0x10, SYNAPT=1, INST=2 };
-	void drawPolarWind(int a, int w, uint8_t type);
-
-	// attributes
-private:
-	int16_t _center_x;
-	int16_t _center_y;
-	int16_t _radius = 0; // distance to wind number
-	int _sytic_dir = 0.; // deg
-	int   _sytic_w = 0;
-	int _inst_dir = 0; // deg
-	int   _inst_w = 0;
-	int _cheight;
-	int _cwidth;
-	bool dirty = true;
-};
 
 // local variables
 int screens_init = INIT_DISPLAY_NULL;
@@ -113,8 +62,8 @@ int16_t IpsDisplay::char_height;
 // Average Vario data
 int IpsDisplay::last_avg = -1000;
 int IpsDisplay::x_start = 240;
-PolarIndicator* IpsDisplay::indicator = nullptr;
-PolarWind* IpsDisplay::polWind = nullptr;
+PolarGauge* IpsDisplay::gauge = nullptr;
+WindCircle* IpsDisplay::polWind = nullptr;
 
 
 int16_t DISPLAY_H;
@@ -231,10 +180,6 @@ static int16_t old_vario_bar_val = 0;
 static int16_t old_sink_bar_val = 0;
 static int16_t alt_quant = 1;
 
-static bool wind_dirty = false;
-static bool compass_dirty = false;
-static bool alt_dirty = false;
-static bool speed_dirty = false;
 static bool bottom_dirty = false;
 
 
@@ -1590,9 +1535,9 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val, bool large )
 // altidude >=0 are displayed correctly with last two digits rolling accoring to their fraction to the right
 static uint8_t last_quant = 0;
 
-bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty, bool incl_unit )
+bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool incl_unit )
 {
-	// ESP_LOGI(FNAME,"draw alt %f dirty:%d", altitude, dirty );
+	// ESP_LOGI(FNAME,"draw alt %f", altitude);
 	// check on the rendered value for change
 
 	int alt = (int)(altitude);
@@ -1608,13 +1553,11 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		alt = (int)(altitude*(20.0/used_quant)); // respect difference according to choosen quantisation
 	}
 	// The dirty criterion
-	dirty = dirty || alt != alt_prev;
-	if ( ! dirty ) return false;
+	if ( alt == alt_prev ) return false;
 	alt_prev = alt;
 	alt = (int)roundf(altitude);
 
 	bool ret=false;
-	// ESP_LOGI(FNAME,"draw alt %f dirty:%d", altitude, dirty );
 
 	char s[32]; // plain altimeter as a string
 	ucg->setFont(ucg_font_fub25_hr, true);
@@ -1627,7 +1570,6 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		ucg->drawBox(x-2*char_width,y-char_height*1.5, 2*char_width, char_height*2 );
 	}
 
-	alt_dirty = false;
 	if ( ! used_quant ) {
 		// Plain plot of altitude for m and ft
 		sprintf(s,"  %d", alt);
@@ -1650,7 +1592,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		int alt_leadpart = alt/(mod*10); // left remaining part of altitude
 		s[len-nr_rolling_digits] = '\0'; len -= nr_rolling_digits; // chop nr_rolling_digits digits
 		static float fraction_prev = 1.;
-		if (dirty || std::abs(fraction - fraction_prev) > 0.01 )
+		if (std::abs(fraction - fraction_prev) > 0.01 )
 		{
 			// move last used_quant digit(s)
 			int base = mod/10;
@@ -1702,7 +1644,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool dirty,
 		}
 		ucg->setPrintPos(x - ucg->getStrWidth(s) - nr_rolling_digits*char_width , y);
 		static char altpart_prev_s[32] = "";
-		if (dirty || strcmp(altpart_prev_s, s) != 0 ) {
+		if (strcmp(altpart_prev_s, s) != 0 ) {
 			ucg->print(s);
 			// ESP_LOGI(FNAME,"s5: %s", s );
 			strcpy(altpart_prev_s, s);
@@ -1775,7 +1717,7 @@ static const char* AirspeedModeStr()
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // set dirty, when obscured from vario needle
 // right-aligned to value
-bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool dirty, bool inc_unit)
+bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 {
 	switch ( screen_gauge_top.get() ) {
 	case GAUGE_S2F:
@@ -1790,9 +1732,9 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool dirty, bool in
 	default:
 		break;
 	}
+	
 
-	dirty = dirty || as_prev != val;
-	if ( ! dirty ) return false;
+	if ( as_prev == val ) return false;
 	// ESP_LOGI(FNAME,"draw val %d %d", val, as_prev );
 
 	ucg->setColor( COLOR_WHITE );
@@ -1833,7 +1775,6 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool dirty, bool in
 		}
 	}
 	as_prev = val;
-	speed_dirty = false;
 	return true;
 }
 
@@ -2152,7 +2093,6 @@ bool IpsDisplay::drawCompass(int16_t x, int16_t y, bool _dirty, bool compass_dir
 				ret = true;
 			}
 			prev_windspeed = windspeed;
-			wind_dirty = false;
 		}
 	}
 	// Compass
@@ -2287,33 +2227,13 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawConnection(DISPLAY_W-25, FLOGO );
 	}
 
-	bool needle_prio = (drawing_prio.get() == DP_NEEDLE);
-	bool bg_prio = (drawing_prio.get() == DP_BACKGROUND);
-	if( !(tick%2) && bg_prio ){  // draw needle first when background has prio
-		indicator->drawPolarIndicatorAndBow(needle_pos, false);
-	}
 	// Airspeed
-	if( !(tick%5) ) {
-		// if( bg_prio ){
-			drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, SPEEDYPOS, speed_dirty );
-		// }else {
-		// 	if( drawSpeed( airspeed_kmh, INNER_RIGHT_ALIGN, 80, (speed_dirty && !(tick%10)) ) ){
-		// 		indicator->drawPolarIndicatorAndBow(needle_pos, false);
-		// 	}
-		// }
+	if( screen_gauge_top.get() && !(tick%5) ) {
+		drawTopGauge( airspeed_kmh, INNER_RIGHT_ALIGN, SPEEDYPOS );
 	}
 	// Altitude
-	if( !(tick%4) ) {
-		// { // Enable those line, comment previous condition, for a drawAltimeter simulation
-		// static float alt = 0, rad = 0.0; int min_aq = std::max(alt_quant, (int16_t)1);
-		// altitude = alt + sin(rad) * (5*min_aq+2); rad += 0.003*min_aq;
-		// if( bg_prio ){
-		drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, alt_dirty );
-		// }else{  // needle prio
-		// 	if( drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, (alt_dirty && !(tick%10)) ) ){
-		// 		indicator->drawPolarIndicatorAndBow(needle_pos, true);
-		// 	}
-		// }
+	if( screen_gauge_bottom.get() && !(tick%4) ) {
+		drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H );
 	}
 
 	// Wind & center aid
@@ -2344,10 +2264,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			polWind->draw(swdir, (int)sw, iwdir, (int)iw);
 		}
 
-	// Vario Needle in Front mode drawn as last
-	if( !(tick%2) && needle_prio ){
-		indicator->drawPolarIndicatorAndBow(needle_pos, false);
-		}
+	// Vario indicator
+	if( !(tick%2) ){
+		gauge->draw(te);
+	}
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
 	if( ps_display.get() && !(tick%3) ){
 		if( int( polar_sink*100.) != int( old_polar_sink*100. ) ){
@@ -2507,7 +2427,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	// Altitude
 	if(!(tick%2) ) {
-		drawAltitude( altitude, FIELD_START+80, YALT-12, !(tick%40), true );  // small alignment for larger tape
+		drawAltitude( altitude, FIELD_START+80, YALT-12, true );  // small alignment for larger tape
 	}
 	// MC Value
 	if(  !(tick%8) ) {

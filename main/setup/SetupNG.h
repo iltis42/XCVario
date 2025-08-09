@@ -80,7 +80,7 @@ typedef enum e_vario_unit { VARIO_UNIT_MS, VARIO_UNIT_FPM, VARIO_UNIT_KNOTS } e_
 typedef enum e_qnh_unit { QNH_HPA, QNH_INHG } e_qnh_unit_t;
 typedef enum e_compasss_sensor_type { CS_DISABLE=0, CS_I2C=1, CS_CAN=3 } e_compasss_sensor_type_t;
 typedef enum e_alt_quantisation { ALT_QUANT_DISABLE, ALT_QUANT_2, ALT_QUANT_5, ALT_QUANT_10, ALT_QUANT_20 } e_alt_quantisation_t;
-enum gauge_definition_t { GAUGE_NONE, GAUGE_SPEED, GAUGE_ALT, GAUGE_SLIP, GAUGE_S2F, GAUGE_HEADING };
+enum gauge_definition_t { GAUGE_NONE, GAUGE_SPEED, GAUGE_ALT, GAUGE_SLIP, GAUGE_S2F, NETTO_VARIO, GAUGE_HEADING, GAUGE_WIND };
 typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client. BIDIR means sync at commit from both sides
 typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
 typedef enum e_volatility { VOLATILE, PERSISTENT, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while

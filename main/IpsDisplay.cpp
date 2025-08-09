@@ -1316,6 +1316,9 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 	case GAUGE_S2F:
 		val = s2f_ideal.get();
 		break;
+	case NETTO_VARIO:
+		val = static_cast<int>(std::round(slipAngle*-10.f)); // todo better home for the variable
+		break;
 	case GAUGE_SLIP:
 		val = static_cast<int>(std::round(slipAngle*-10.f)); // todo better home for the variable
 		break;

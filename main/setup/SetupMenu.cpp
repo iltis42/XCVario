@@ -1142,6 +1142,7 @@ static void screens_menu_create_vario(SetupMenu *top) {
 	tgauge->addEntry("Disable");
 	tgauge->addEntry("Airspeed", GAUGE_SPEED);
 	tgauge->addEntry("Speed2Fly", GAUGE_S2F);
+	tgauge->addEntry("Net. Vario", NETTO_VARIO);
 	tgauge->addEntry("Heading", GAUGE_HEADING);
 	tgauge->addEntry("Slip Angle", GAUGE_SLIP);
 	top->addEntry(tgauge);

@@ -44,6 +44,9 @@
 // types
 
 
+
+static const char* AirspeedModeStr();
+
 // local variables
 int screens_init = INIT_DISPLAY_NULL;
 
@@ -366,7 +369,7 @@ void IpsDisplay::initDisplay() {
 		ucg->setPrintPos(FIELD_START+6,YS2F-(2*fh) - 8);
 		ucg->setColor(COLOR_HEADER );
 
-		ucg->printf("%s %s", Units::AirspeedModeStr(), Units::AirspeedUnitStr() );
+		ucg->printf("%s %s", AirspeedModeStr(), Units::AirspeedUnitStr() );
 
 		ucg->setPrintPos(ASVALX,YS2F-(2*fh) - 8);
 		ucg->print(" S2F");
@@ -1284,7 +1287,7 @@ void IpsDisplay::drawSmallSpeed(float v, int16_t x, int16_t y)
 	ucg->print(s);
 }
 
-static const char* AirspeedModeStr()
+const char* AirspeedModeStr()
 {
 	if (airspeed_mode.get() == MODE_IAS)
 	{
@@ -1347,7 +1350,7 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 			ucg->print(Units::AirspeedUnitStr() );
 			ucg->setPrintPos(x+5,y-17);
 			if ( screen_gauge_top.get() == GAUGE_SPEED ) { 
-				ucg->print(Units::AirspeedModeStr());
+				ucg->print(AirspeedModeStr());
 			}
 			else {
 				ucg->print("S2F");

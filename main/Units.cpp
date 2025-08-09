@@ -178,30 +178,6 @@ const char* Units::AirspeedUnitStr(int u)
 	return "none";
 }
 
-const char* Units::AirspeedModeStr()
-{
-	if (airspeed_mode.get() == MODE_IAS)
-	{
-		return "IAS";
-	}
-	else if (airspeed_mode.get() == MODE_TAS)
-	{
-		return "TAS";
-	}
-	else if (airspeed_mode.get() == MODE_CAS)
-	{
-		return "CAS";
-	}
-	// else if (airspeed_mode.get() == MODE_SLIP)
-	// {
-	// 	return "SLIP";
-	// }
-	else
-	{
-		return "-";
-	}
-}
-
 float Units::Vario(const float te)
 { // standard is m/s
 	if (vario_unit.get() == VARIO_UNIT_MS)

@@ -1255,10 +1255,11 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool incl_u
 			dmode = "QNH";
 		else
 			dmode = "";
-		sprintf(s, "%s %s ", Units::AltitudeUnit(unitalt), dmode );  // e.g. ' m QNH'
-		ucg->print(s);
+		ucg->print(dmode);// e.g. 'QNH'
+		ucg->setPrintPos(x+5, y-3+16);
+		ucg->print(Units::AltitudeUnit(unitalt));// e.g. 'm'
 		// QNH
-		int16_t qnh_x = x+25;
+		// int16_t qnh_x = x+25;
 		float qnh = QNH.get();
 		if( gflags.standard_setting == true ){
 			qnh = 1013;
@@ -1267,7 +1268,7 @@ bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool incl_u
 			sprintf(s, "%.2f ", Units::Qnh(qnh));
 		else
 			sprintf(s, "%d ", Units::QnhRounded(qnh));
-		ucg->setPrintPos(qnh_x, y-19);
+		ucg->setPrintPos(x+5, y-3-16);
 		ucg->setColor( COLOR_WHITE );
 		ucg->print(s);
 	}

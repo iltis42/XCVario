@@ -11,11 +11,12 @@
 #include "DrawDisplay.h"
 #include "UiEvents.h"
 #include "protocol/Clock.h"
+#include "logdefnone.h"
 #include "sensor.h"
 
 MessageBox *MBOX; // the global representation
 
-const int CLOCK_DIVIDER = 4;
+const int CLOCK_DIVIDER = 8;
 
 // A message is represented throught 
 // - alert level (1,2,3)
@@ -72,7 +73,6 @@ bool MessageBox::nextMsg()
         // All done
         xSemaphoreGive(display_mutex);
         current = nullptr;
-        // Display->redrawValues(); // fixme
         return false;
     }
 
@@ -117,9 +117,12 @@ void MessageBox::removeMsg()
 // returns true when the message box is finished
 bool MessageBox::draw()
 {
+    ESP_LOGI(FNAME, "draw message");
+    _msg_queued = false; // a 1:1 request quing
     if ( _msg_to <= 0 ) {
         if ( ! nextMsg() ) {
             Clock::stop(this);
+            ESP_LOGI(FNAME, "message stop");
             return true;
         }
     }
@@ -145,8 +148,11 @@ bool MessageBox::draw()
 
 bool MessageBox::tick()
 {
-    int evt = ScreenEvent(ScreenEvent::MSG_BOX).raw;
-    xQueueSend(uiEventQueue, &evt, 0);
+    if ( !_msg_queued ) {
+        int evt = ScreenEvent(ScreenEvent::MSG_BOX).raw;
+        xQueueSend(uiEventQueue, &evt, 0);
+        _msg_queued = true;
+    }
     return false;
 }
 

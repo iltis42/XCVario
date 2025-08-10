@@ -36,6 +36,7 @@ public:
     PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t radius);
     ~PolarGauge();
     void setRange(float pos_range, float zero_at, bool log);
+    float getMRange() const { return _mrange; }
     void setColor(int color_idx);
 
     float clipValue(float a) const;

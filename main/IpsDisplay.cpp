@@ -1031,6 +1031,7 @@ void IpsDisplay::drawWindArrow( float a, float speed, int type ){
 void IpsDisplay::setBottomDirty()
 {
 	bottom_dirty = true;
+	ESP_LOGI(FNAME,"bottom dirty");
 }
 
 void IpsDisplay::initRetroDisplay( bool ulmode ){
@@ -1403,9 +1404,6 @@ void IpsDisplay::initLoadDisplay(){
 	drawLoadDisplayTexts();
 	int max_gscale = gload_pos_limit.get() + 2;
 	int min_gscale = gload_neg_limit.get() - 2;
-	// if( -(gload_neg_limit.get() - 2) >= max_gscale ) {
-	// 	max_gscale = -(gload_neg_limit.get() - 2);
-	// }
 	gauge->setRange(max_gscale, 1.f, false);
 	// put the scale colored section into the background
 	gauge->colorRange(gload_pos_limit_low.get(), gload_pos_limit.get(), PolarGauge::ORANGE);
@@ -1560,8 +1558,8 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 		drawLoadDisplayTexts();
 	}
 	if ( bottom_dirty ) {
-		initLoadDisplay();
 		bottom_dirty = false;
+		initLoadDisplay();
 	}
 }
 
@@ -1898,8 +1896,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 	if ( bottom_dirty ) {
 		ESP_LOGI(FNAME,"redraw sale around %f", -_range+2);
-		gauge->drawScale(-_range+2);
 		bottom_dirty = false;
+		gauge->drawScale(gauge->getMRange()+2);
+		drawMC(MC.get(), true);
+		drawBat(volt, BATX, BATY, blank);
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 }
@@ -2177,7 +2177,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	ucg->drawHLine( DISPLAY_LEFT+6, dmid, bw );
 
 	if ( bottom_dirty ) {
-		drawLegend();
 		bottom_dirty = false;
+		drawLegend();
 	}
 }

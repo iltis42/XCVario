@@ -28,6 +28,7 @@
 #include "comm/SerialLine.h"
 #include "protocol/NMEA.h"
 #include "protocol/AliveMonitor.h"
+#include "screen/element/Battery.h"
 #include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
@@ -296,7 +297,7 @@ SetupNG<int>  			serial2_pin_swap( "SERIAL2_PINS", 0 );
 SetupNG<int>  			serial2_ttl_signals( "SERIAL2_TTL", RS232_NORMAL );
 SetupNG<int>  			serial2_tx_enable( "SER2_TX_ENA", 1 );
 SetupNG<int>  			software_update( "SOFTWARE_UPDATE", 0 );
-SetupNG<int>  			battery_display( "BAT_DISPLAY", 0 );
+SetupNG<int>  			battery_display( "BAT_DISPLAY", Battery::BAT_PERCENTAGE );
 SetupNG<int>  			airspeed_mode( "AIRSPEED_MODE", MODE_IAS );
 SetupNG<int>  			nmea_protocol( "NMEA_PROTOCOL", XCVARIO_P );
 SetupNG<int>		    log_level( "LOG_LEVEL", 3 );

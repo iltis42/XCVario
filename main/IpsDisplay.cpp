@@ -11,6 +11,7 @@
 #include "screen/element/PolarGauge.h"
 #include "screen/element/WindCircle.h"
 #include "screen/element/McCready.h"
+#include "screen/element/Battery.h"
 
 #include "math/Trigenometry.h"
 #include "comm/DeviceMgr.h"
@@ -45,7 +46,6 @@
 // types
 
 
-
 static const char* AirspeedModeStr();
 
 // local variables
@@ -69,7 +69,7 @@ int IpsDisplay::x_start = 240;
 PolarGauge* IpsDisplay::gauge = nullptr;
 WindCircle* IpsDisplay::polWind = nullptr;
 McCready*   IpsDisplay::MCgauge = nullptr;
-
+Battery*    IpsDisplay::BATgauge = nullptr;
 
 int16_t DISPLAY_H;
 int16_t DISPLAY_W;
@@ -150,7 +150,6 @@ int IpsDisplay::s2fdalt=0;
 int IpsDisplay::s2f_level_prev=0;
 int IpsDisplay::s2fmode_prev=100;
 int IpsDisplay::alt_prev=0;
-int IpsDisplay::chargealt=-1;
 bool IpsDisplay::wireless_alive = false;
 int IpsDisplay::tempalt = -2000;
 bool IpsDisplay::s2fmodealt = false;
@@ -191,8 +190,6 @@ static bool bottom_dirty = false;
 
 float polar_sink_prev = 0;
 float te_prev = 0;
-bool blankold = false;
-bool blank = false;
 bool flarm_connected=false;
 typedef enum e_bow_color { BC_GREEN, BC_BLUE, BC_RED, BC_ORANGE } t_bow_color;
 const static ucg_color_t bowcolor[4] = { {COLOR_GREEN}, {COLOR_BBLUE}, {COLOR_RED}, {COLOR_ORANGE} };
@@ -346,13 +343,30 @@ void IpsDisplay::initDisplay() {
 		g_col_header_light_g=168;
 		g_col_header_light_b=255;
 	}
-	if( display_style.get() == DISPLAY_RETRO ) {
-		initRetroDisplay( false );
+	// Create common elements
+	AMIDX = (DISPLAY_W/2 + 30);
+	AMIDY = (DISPLAY_H)/2;
+	int16_t scale_geometry = 90;
+	if ( display_orientation.get() == DISPLAY_NINETY ) {
+		AMIDX = DISPLAY_W/2 - 43;
+		scale_geometry = 120;
 	}
-	if( display_style.get() == DISPLAY_UL ) {
-		initRetroDisplay( true );
+	if ( ! gauge ) { // shared with 
+		gauge = new PolarGauge(AMIDX, AMIDY, scale_geometry, DISPLAY_H/2-20);
 	}
-	if( display_style.get() == DISPLAY_AIRLINER ) {
+	gauge->setRange(Units::Vario(scale_range.get()), 0.f, log_scale.get());
+	gauge->setColor(needle_color.get());
+	if ( ! MCgauge ) {
+		MCgauge = new McCready(1, DISPLAY_H+2);
+	}
+	if ( ! BATgauge ) {
+		BATgauge = new Battery(BATX, BATY);
+	}
+
+	if( display_style.get() != DISPLAY_AIRLINER ) {
+		initRetroDisplay( display_style.get() == DISPLAY_UL );
+	}
+	else { // Airliner
 		clear();
 		ucg->setFont(ucg_font_fub11_tr);
 		ucg->setFontPosBottom();
@@ -363,6 +377,9 @@ void IpsDisplay::initDisplay() {
 
 		ucg->print("AV Vario");
 		ucg->setColor(COLOR_WHITE );
+
+		// small MC
+		MCgauge->setLarge(false);
 
 		// draw TE scale
 		drawLegend();
@@ -537,18 +554,16 @@ void IpsDisplay::drawAvg( float avclimb, float delta ){
 void IpsDisplay::redrawValues()
 {
 	// ESP_LOGI(FNAME,"IpsDisplay::redrawValues()");
-	chargealt = 101;
 	tempalt = -2000;
 	s2falt = -1;
 	s2fdalt = -1;
 	s2f_level_prev = 0;
 	wireless_alive = false;
 	_te=-200;
-	gauge->forceRedraw();
-	gauge->setColor(needle_color.get());
 	if ( MCgauge ) {
 		MCgauge->forceRedraw();
 	}
+	BATgauge->forceRedraw();
 	as_prev = -1;
 	_ate = -2000;
 	last_avg = -1000;
@@ -858,72 +873,6 @@ void IpsDisplay::drawConnection( int16_t x, int16_t y )
 	}
 }
 
-void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
-	if( blank ) {  // blank battery for blinking
-		// ESP_LOGI(FNAME,"blank bat");
-		if( battery_display.get() != BAT_VOLTAGE_BIG ){
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( x-40,y-2, 40, 12  );
-		}else{
-			ucg->setColor( COLOR_BLACK );
-			ucg->drawBox( x-55,y-12, 65, 22  );
-		}
-	}
-	else
-	{
-		charge = (int)(( volt -  bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
-		if(charge < 0)
-			charge = 0;
-		if( charge > 100 )
-			charge = 100;
-		if( (tick%100) == 0 )  // check setup changes all 10 sec
-		{
-			yellow =  (int)(( bat_yellow_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
-			red = (int)(( bat_red_volt.get() - bat_low_volt.get() )*100)/( bat_full_volt.get() - bat_low_volt.get() );
-		}
-		if ( battery_display.get() != BAT_VOLTAGE_BIG ){
-			ucg->setColor( COLOR_HEADER );
-			ucg->drawBox( x-40,y-2, 36, 12  );  // Bat body square
-			ucg->drawBox( x-4, y+1, 3, 6  );      // Bat pluspole pimple
-			if ( charge > yellow )  // >25% grün
-				ucg->setColor( COLOR_GREEN ); // green
-			else if ( charge < yellow && charge > red )
-				ucg->setColor( COLOR_YELLOW ); //  yellow
-			else if ( charge < red )
-				ucg->setColor( COLOR_RED ); // red
-			else
-				ucg->setColor( COLOR_RED ); // red
-			int chgpos=(charge*32)/100;
-			if(chgpos <= 4)
-				chgpos = 4;
-			ucg->drawBox( x-40+2,y, chgpos, 8  );  // Bat charge state
-			ucg->setColor( DARK_GREY );
-			ucg->drawBox( x-40+2+chgpos,y, 32-chgpos, 8 );  // Empty bat bar
-			ucg->setFont(ucg_font_fub11_hr, true);
-			ucg->setPrintPos(x-42,y-6);
-		}
-		ucg->setColor( COLOR_WHITE );
-		if( battery_display.get() == BAT_PERCENTAGE ) {
-			ucg->printf("%3d", charge);
-			ucg->setColor( COLOR_HEADER );
-			ucg->print("% ");
-		}
-		else if ( battery_display.get() == BAT_VOLTAGE ) {
-			// ucg->setPrintPos(x-40,y-8);
-			ucg->printf("%2.1f", volt);
-			ucg->setColor( COLOR_HEADER );
-			ucg->print("V ");
-		}
-		else if ( battery_display.get() == BAT_VOLTAGE_BIG ) {
-			ucg->setPrintPos(x-50,y+11);
-			ucg->setFont(ucg_font_fub14_hr, true);
-			ucg->printf("%2.1f", volt);
-			ucg->setColor( COLOR_HEADER );
-			ucg->print("V ");
-		}
-
-	}
-}
 
 // accept temperature in deg C and display in configured unit
 // right-aligned value to x, incl. unit right of x
@@ -1027,18 +976,10 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	clear();
 	ucg->setFontPosBottom();
 	_range = Units::Vario( scale_range.get() );
-	AMIDX = (DISPLAY_W/2 + 30);
-	AMIDY = (DISPLAY_H)/2;
-	int16_t scale_geometry = 90;
-	if ( display_orientation.get() == DISPLAY_NINETY ) {
-		AMIDX = DISPLAY_W/2 - 43;
-		scale_geometry = 120;
-	}
-	if ( ! gauge ) {
-		gauge = new PolarGauge(AMIDX, AMIDY, scale_geometry, DISPLAY_H/2-20);
-	}
-	gauge->setRange(Units::Vario(scale_range.get()), 0.f, log_scale.get());
+
 	gauge->drawScale();
+	gauge->forceRedraw();
+
 	initRefs();
 	if ( ! polWind ) {
 		polWind = new WindCircle(AMIDX+AVGOFFX-38, AMIDY);
@@ -1050,9 +991,7 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 		}
 	}
 	else {
-		if ( ! MCgauge ) {
-			MCgauge = new McCready(1, DISPLAY_H+2);
-		}
+		MCgauge->setLarge(true);
 	}
 	redrawValues();
 
@@ -1838,19 +1777,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Battery
-	int chargev = (int)( volt *10 );
-	if( volt < bat_red_volt.get() ){
-		if( !(tick%40) )
-			blank = true;
-		else if( !((tick+10)%20) )
-			blank = false;
-	}
-	else
-		blank = false;
-	if ( chargealt != chargev || blank != blankold  ) {
-		drawBat( volt, BATX, BATY, blank );
-		chargealt = chargev;
-		blankold = blank;
+	if ( !(tick%40) ) {
+		BATgauge->draw(volt);
 	}
 
 	// Temperature Value
@@ -1898,7 +1826,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			MCgauge->forceRedraw();
 			MCgauge->draw(MC.get());
 		}
-		drawBat(volt, BATX, BATY, blank);
+		BATgauge->draw(volt);
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 }
@@ -2005,21 +1933,10 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		drawTemperature( FIELD_START+18, DISPLAY_H+3, temp );
 		tempalt=(int)(temp*10);
 	}
-	// Battery Symbol
 
-	int chargev = (int)( volt *10 );
-	if( volt < bat_red_volt.get() ){
-		if( !(tick%40) )
-			blank = true;
-		else if( !((tick+20)%40) )
-			blank = false;
-	}
-	else
-		blank = false;
-	if ( chargealt != chargev || blank != blankold ) {
-		drawBat( volt, BATX, BATY, blank );
-		chargealt = chargev;
-		blankold = blank;
+	// Battery Symbol
+	if ( !(tick%40) ) {
+		BATgauge->draw(volt);
 	}
 
 	// Bluetooth Symbol etc

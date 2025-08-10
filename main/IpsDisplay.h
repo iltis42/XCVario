@@ -27,6 +27,8 @@ extern int screens_init;
 class PolarGauge;
 class WindCircle;
 class McCready;
+class Battery;
+
 
 class IpsDisplay {
 public:
@@ -84,7 +86,6 @@ private:
 	static int16_t psink_level_prev;
 	static int alt_prev;
 	static float pref_qnh;
-	static int chargealt;
 	static bool wireless_alive;
 	static int tempalt;
 	static bool s2fmodealt;
@@ -115,6 +116,7 @@ private:
 	static PolarGauge* gauge;
     static WindCircle* polWind;
 	static McCready*   MCgauge;
+	static Battery*    BATgauge;
 	static temp_status_t siliconTempStatusOld;
 
 	static void drawS2FMode( int x, int y, bool cruise );
@@ -131,6 +133,7 @@ private:
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
 
+private:
 	static void initRetroDisplay( bool ulmode );
 	static void initLoadDisplay();
 	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor, bool ulmode );

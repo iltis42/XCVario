@@ -26,6 +26,7 @@ extern int screens_init;
 
 class PolarGauge;
 class WindCircle;
+class McCready;
 
 class IpsDisplay {
 public:
@@ -86,7 +87,6 @@ private:
 	static int chargealt;
 	static bool wireless_alive;
 	static int tempalt;
-	static int mcalt;
 	static bool s2fmodealt;
 	static int s2fclipalt;
 	static int as_prev;
@@ -114,9 +114,9 @@ private:
 	static int  x_start;
 	static PolarGauge* gauge;
     static WindCircle* polWind;
+	static McCready*   MCgauge;
 	static temp_status_t siliconTempStatusOld;
 
-	static void drawMC( float mc, bool large=false );
 	static void drawS2FMode( int x, int y, bool cruise );
 	static void setArrowColor( bool upper );
 	static void drawArrow(int16_t x, int16_t y, int16_t level, bool del);

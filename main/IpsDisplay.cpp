@@ -10,6 +10,7 @@
 
 #include "screen/element/PolarGauge.h"
 #include "screen/element/WindCircle.h"
+#include "screen/element/McCready.h"
 
 #include "math/Trigenometry.h"
 #include "comm/DeviceMgr.h"
@@ -67,6 +68,7 @@ int IpsDisplay::last_avg = -1000;
 int IpsDisplay::x_start = 240;
 PolarGauge* IpsDisplay::gauge = nullptr;
 WindCircle* IpsDisplay::polWind = nullptr;
+McCready*   IpsDisplay::MCgauge = nullptr;
 
 
 int16_t DISPLAY_H;
@@ -151,7 +153,6 @@ int IpsDisplay::alt_prev=0;
 int IpsDisplay::chargealt=-1;
 bool IpsDisplay::wireless_alive = false;
 int IpsDisplay::tempalt = -2000;
-int IpsDisplay::mcalt = -100;
 bool IpsDisplay::s2fmodealt = false;
 int IpsDisplay::s2fclipalt = 0;
 int IpsDisplay::as_prev = -1;
@@ -240,6 +241,10 @@ IpsDisplay::~IpsDisplay() {
 		delete polWind;
 		polWind = nullptr;
 	}
+	if ( MCgauge ) {
+		delete MCgauge;
+		MCgauge = nullptr;
+	}
 }
 
 
@@ -302,7 +307,6 @@ void IpsDisplay::clear(){
 	ucg->setColor( COLOR_BLACK );
 	ucg->drawBox( 0,0,DISPLAY_W,DISPLAY_H );
 	screens_init = INIT_DISPLAY_NULL;
-	// redrawValues();
 }
 
 void IpsDisplay::bootDisplay() {
@@ -542,7 +546,9 @@ void IpsDisplay::redrawValues()
 	_te=-200;
 	gauge->forceRedraw();
 	gauge->setColor(needle_color.get());
-	mcalt = -100;
+	if ( MCgauge ) {
+		MCgauge->forceRedraw();
+	}
 	as_prev = -1;
 	_ate = -2000;
 	last_avg = -1000;
@@ -636,23 +642,6 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 	}
 }
 
-void IpsDisplay::drawMC( float mc, bool large ) {
-	ucg->setPrintPos(1, DISPLAY_H+2);
-	ucg->setColor(COLOR_WHITE);
-	if( large ) {
-		ucg->setFont(ucg_font_fub20_hn, false);
-	} else {
-		ucg->setFont(ucg_font_fub14_hn, false);
-	}
-	char s[32];
-	std::sprintf(s, "%1.1f", Units::Vario(mc) );
-	ucg->print(s);
-	int16_t fl = ucg->getStrWidth(s);
-	ucg->setFont(ucg_font_fub11_hr, false);
-	ucg->setColor(COLOR_HEADER);
-	ucg->setPrintPos(1+fl+2, DISPLAY_H+2);
-	ucg->print("MC");
-}
 
 #define S2FSS 10
 #define S2FTS 5
@@ -834,7 +823,7 @@ void IpsDisplay::drawWifi( int x, int y ) {
 	}
 	bool wla = WIFI->isAlive();
 	if( wla != wireless_alive || flarm_alive.get() > ALIVE_NONE ){
-		ESP_LOGD(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,wla);
+		ESP_LOGI(FNAME,"IpsDisplay::drawWifi %d %d %d", x,y,wla);
 		if( ! wla ) {
 			ucg->setColor(COLOR_MGREY);
 		} else {
@@ -1053,6 +1042,17 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	initRefs();
 	if ( ! polWind ) {
 		polWind = new WindCircle(AMIDX+AVGOFFX-38, AMIDY);
+	}
+	if ( ulmode ) {
+		if ( MCgauge ) {
+			delete MCgauge;
+			MCgauge = nullptr;
+		}
+	}
+	else {
+		if ( ! MCgauge ) {
+			MCgauge = new McCready(1, DISPLAY_H+2);
+		}
 	}
 	redrawValues();
 
@@ -1771,12 +1771,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// }
 
 	// MC val
-	if(  !(tick%8) && !ulmode ) {
-		int aMC = MC.get() * 10;
-		if( aMC != mcalt && !(tick%4) ) {
-			drawMC( MC.get(), true );
-			mcalt=aMC;
-		}
+	if( MCgauge && !(tick%8) ) {
+		MCgauge->draw(MC.get());
 	}
 
 	// Bluetooth etc
@@ -1898,7 +1894,10 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		ESP_LOGI(FNAME,"redraw sale around %f", -_range+2);
 		bottom_dirty = false;
 		gauge->drawScale(gauge->getMRange()+2);
-		drawMC(MC.get(), true);
+		if ( MCgauge ) {
+			MCgauge->forceRedraw();
+			MCgauge->draw(MC.get());
+		}
 		drawBat(volt, BATX, BATY, blank);
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
@@ -1997,12 +1996,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		drawAltitude( altitude, FIELD_START+80, YALT-12, true );  // small alignment for larger tape
 	}
 	// MC Value
-	if(  !(tick%8) ) {
-		int aMC = MC.get() * 10;
-		if( aMC != mcalt && !(tick%4) ) {
-			drawMC( MC.get(), false );
-			mcalt=aMC;
-		}
+	if( MCgauge && !(tick%8) ) {
+		MCgauge->draw(MC.get());
 	}
 
 	// Temperature ValueAirliner

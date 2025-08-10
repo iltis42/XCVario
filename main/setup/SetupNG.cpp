@@ -29,6 +29,7 @@
 #include "protocol/NMEA.h"
 #include "protocol/AliveMonitor.h"
 #include "screen/element/Battery.h"
+#include "screen/element/Altimeter.h"
 #include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
@@ -246,7 +247,7 @@ SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
 SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS );
 SetupNG<int>  			alt_select( "ALT_SELECT" , AS_BARO_SENSOR );
 SetupNG<int>  			fl_auto_transition( "FL_AUTO" , 0 );
-SetupNG<int>  			alt_display_mode( "ALT_DISP_MODE" , MODE_QNH );
+SetupNG<int>  			alt_display_mode( "ALT_DISP_MODE" , Altimeter::MODE_QNH );
 SetupNG<float>  		transition_alt( "TRANS_ALT", 50, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 400, 10)); // Transition Altitude
 SetupNG<int>  			glider_type_index( "GLIDER_TYPE_IDX", 1000, true, SYNC_FROM_MASTER, PERSISTENT, polar_update );
 SetupNG<int>  			ps_display( "PS_DISPLAY", 1 );
@@ -281,7 +282,7 @@ SetupNG<float>  		flap_0(       "FLAP_0", 88, true, SYNC_FROM_MASTER, PERSISTENT
 SetupNG<float>  		flap_plus_1(  "FLAP_PLUS_1", 78, true, SYNC_FROM_MASTER, PERSISTENT, flap_act, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<float>  		flap_plus_2(  "FLAP_PLUS_2", 70, true, SYNC_FROM_MASTER, PERSISTENT, flap_act, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER );
-SetupNG<int>  			alt_quantization( "ALT_QUANT", ALT_QUANT_10 );
+SetupNG<int>  			alt_quantization( "ALT_QUANT", Altimeter::ALT_QUANT_10 );
 SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH );
 SetupNG<int>  			vario_unit( "VARIO_UNIT", VARIO_UNIT_MS );
 SetupNG<int>  			temperature_unit( "TEMP_UNIT", T_CELCIUS );

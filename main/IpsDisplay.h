@@ -28,6 +28,7 @@ class PolarGauge;
 class WindCircle;
 class McCready;
 class Battery;
+class Altimeter;
 
 
 class IpsDisplay {
@@ -84,7 +85,6 @@ private:
     static int s2f_level_prev;
 	static int16_t bow_level_prev;
 	static int16_t psink_level_prev;
-	static int alt_prev;
 	static float pref_qnh;
 	static bool wireless_alive;
 	static int tempalt;
@@ -100,14 +100,9 @@ private:
 	static int tyalt;
 	static int pyalt;
 	static float average_climbf;
-	// Battery Indicator related
-	static int charge;
-	static int red;
-	static int yellow;
+	
 	static ucg_color_t wkcolor;
 	static bool netto_old;
-	static int16_t char_width;
-	static int16_t char_height;
 	static float old_polar_sink;
 	static float flt_altitude;
 
@@ -117,6 +112,7 @@ private:
     static WindCircle* polWind;
 	static McCready*   MCgauge;
 	static Battery*    BATgauge;
+	static Altimeter*  ALTgauge;
 	static temp_status_t siliconTempStatusOld;
 
 	static void drawS2FMode( int x, int y, bool cruise );
@@ -136,7 +132,7 @@ private:
 private:
 	static void initRetroDisplay( bool ulmode );
 	static void initLoadDisplay();
-	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor, bool ulmode );
+	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();

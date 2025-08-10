@@ -12,6 +12,7 @@
 #include "screen/element/WindCircle.h"
 #include "screen/element/McCready.h"
 #include "screen/element/Battery.h"
+#include "screen/element/Altimeter.h"
 
 #include "math/Trigenometry.h"
 #include "comm/DeviceMgr.h"
@@ -53,15 +54,8 @@ int screens_init = INIT_DISPLAY_NULL;
 
 int   IpsDisplay::tick = 0;
 int   IpsDisplay::_pixpmd = 10;
-int   IpsDisplay::charge = 100;
-int   IpsDisplay::red = 10;
-int   IpsDisplay::yellow = 25;
-float IpsDisplay::flt_altitude = 0;
-
 
 bool IpsDisplay::netto_old = false;
-int16_t IpsDisplay::char_width; // for roling altimeter
-int16_t IpsDisplay::char_height;
 
 // Average Vario data
 int IpsDisplay::last_avg = -1000;
@@ -70,6 +64,7 @@ PolarGauge* IpsDisplay::gauge = nullptr;
 WindCircle* IpsDisplay::polWind = nullptr;
 McCready*   IpsDisplay::MCgauge = nullptr;
 Battery*    IpsDisplay::BATgauge = nullptr;
+Altimeter*	IpsDisplay::ALTgauge = nullptr;
 
 int16_t DISPLAY_H;
 int16_t DISPLAY_W;
@@ -149,7 +144,6 @@ int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
 int IpsDisplay::s2f_level_prev=0;
 int IpsDisplay::s2fmode_prev=100;
-int IpsDisplay::alt_prev=0;
 bool IpsDisplay::wireless_alive = false;
 int IpsDisplay::tempalt = -2000;
 bool IpsDisplay::s2fmodealt = false;
@@ -181,7 +175,6 @@ temp_status_t IpsDisplay::siliconTempStatusOld = MPU_T_UNKNOWN;
 // constexpr float sincosScale = 180.f/My_PIf*2.f; // rad -> deg/2 a 0.5deg resolution discrete scale
 static int16_t old_vario_bar_val = 0;
 static int16_t old_sink_bar_val = 0;
-static int16_t alt_quant = 1;
 
 static bool bottom_dirty = false;
 
@@ -362,6 +355,9 @@ void IpsDisplay::initDisplay() {
 	if ( ! BATgauge ) {
 		BATgauge = new Battery(BATX, BATY);
 	}
+	if ( screen_gauge_bottom.get() && ! ALTgauge ) {
+		ALTgauge = new Altimeter(INNER_RIGHT_ALIGN, 0.8*DISPLAY_H);
+	}
 
 	if( display_style.get() != DISPLAY_AIRLINER ) {
 		initRetroDisplay( display_style.get() == DISPLAY_UL );
@@ -380,6 +376,8 @@ void IpsDisplay::initDisplay() {
 
 		// small MC
 		MCgauge->setLarge(false);
+		ALTgauge->setRef(FIELD_START+80, YALT-12);
+		
 
 		// draw TE scale
 		drawLegend();
@@ -415,11 +413,6 @@ void IpsDisplay::initDisplay() {
 		}
 		bottom_dirty = false;
 	}
-
-	// Fancy altimeter
-	ucg->setFont(ucg_font_fub25_hr, true);
-	char_width = ucg->getStrWidth("2");
-	char_height = ucg->getFontAscent() - ucg->getFontDescent() - 4;
 
 	redrawValues();
 }
@@ -564,12 +557,15 @@ void IpsDisplay::redrawValues()
 		MCgauge->forceRedraw();
 	}
 	BATgauge->forceRedraw();
+	if ( ALTgauge ) {
+		ALTgauge->drawUnit();
+		ALTgauge->forceRedraw();
+	}
 	as_prev = -1;
 	_ate = -2000;
 	last_avg = -1000;
 	x_start = 240;
 
-	alt_prev = -1;
 	pref_qnh = -1;
 	tyalt = 0;
 	for( int l=TEMIN-1; l<=TEMAX; l++){
@@ -593,23 +589,6 @@ void IpsDisplay::redrawValues()
 	old_sink_bar_val = 0;
 	prev_winddir = -1000;
 	prev_heading = -1000;
-
-	switch ( alt_quantization.get() ) {
-	case ALT_QUANT_DISABLE:
-		alt_quant = 0;
-		break;
-	case ALT_QUANT_5:
-		alt_quant = 5;
-		break;
-	case ALT_QUANT_10:
-		alt_quant = 10;
-		break;
-	case ALT_QUANT_20:
-		alt_quant = 20;
-		break;
-	default:
-		alt_quant = 2;
-	}
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -993,6 +972,13 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	else {
 		MCgauge->setLarge(true);
 	}
+	if ( screen_gauge_bottom.get() ) {
+		ALTgauge->setRef(INNER_RIGHT_ALIGN, 0.8*DISPLAY_H);
+	}
+	else {
+		delete ALTgauge;
+		ALTgauge = nullptr;
+	}
 	redrawValues();
 
 	// Unit's
@@ -1003,9 +989,7 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	if ( screen_gauge_top.get() ) {
 		drawTopGauge(0, INNER_RIGHT_ALIGN, SPEEDYPOS, true );
 	}
-	if ( screen_gauge_bottom.get() ) {
-	drawAltitude( altitude.get(), INNER_RIGHT_ALIGN, 0.8*DISPLAY_H, true );
-	}
+
 	if ( FLAP ) {
 		FLAP->setBarPosition( WKSYMST-4, WKBARMID);
 		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(flap_neg_max.get()))-18 );
@@ -1063,157 +1047,6 @@ void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val, bool large )
 	}
 }
 
-
-// right-aligned to value, unit optional behind
-// altidude >=0 are displayed correctly with last two digits rolling accoring to their fraction to the right
-static uint8_t last_quant = 0;
-
-bool IpsDisplay::drawAltitude( float altitude, int16_t x, int16_t y, bool incl_unit )
-{
-	// ESP_LOGI(FNAME,"draw alt %f", altitude);
-	// check on the rendered value for change
-
-	int alt = (int)(altitude);
-	int unitalt = alt_unit.get();
-	if( gflags.standard_setting == true ){ // respect autotransition switch
-		unitalt = ALT_UNIT_FL;
-	}
-	int used_quant = alt_quant;
-	if( unitalt == ALT_UNIT_FL ) { // may change dynamically in case of autotransition enabled
-		used_quant = 1;            // we use 1 for FL, this rolls smooth as slowly
-	}
-	if ( used_quant ) {
-		alt = (int)(altitude*(20.0/used_quant)); // respect difference according to choosen quantisation
-	}
-	// The dirty criterion
-	if ( alt == alt_prev ) return false;
-	alt_prev = alt;
-	alt = (int)roundf(altitude);
-
-	bool ret=false;
-
-	char s[32]; // plain altimeter as a string
-	ucg->setFont(ucg_font_fub25_hr, true);
-	ucg->setColor( COLOR_WHITE );
-	sprintf(s,"  %03d", alt); // need the string with at least three digits !!
-	// FL also now also displayed fancy with low quant looks good to allow switching with no artefacts
-	if( used_quant != last_quant ){ // cleanup artefacts from higher digits
-		last_quant = used_quant;
-		ucg->setColor( COLOR_BLACK );
-		ucg->drawBox(x-2*char_width,y-char_height*1.5, 2*char_width, char_height*2 );
-	}
-
-	if ( ! used_quant ) {
-		// Plain plot of altitude for m and ft
-		sprintf(s,"  %d", alt);
-		ucg->setPrintPos(x-ucg->getStrWidth(s),y);
-		ucg->print(s);
-	}
-	else {
-		// Modifications on altitude string when quantization is set
-		// for meter and feet
-		int len = std::strlen(s);
-		int nr_rolling_digits = (used_quant>9)? 2 : 1; // maximum two rolling last digits
-
-		// Quantized altitude, strip and save sign
-		float alt_f = std::abs(altitude); // float altitude w/o sign
-		int sign = std::signbit(altitude)?-1:1; // interger sign of the altitude
-		alt = (int)(alt_f); // to integer truncated altitude
-		alt = ((alt+used_quant/2)/used_quant)*used_quant;
-		float fraction = (alt_f+used_quant/2 - alt) / used_quant;
-		int mod = (nr_rolling_digits==2)? 100 : 10; // mod = pow10(nr_rolling_digits);
-		int alt_leadpart = alt/(mod*10); // left remaining part of altitude
-		s[len-nr_rolling_digits] = '\0'; len -= nr_rolling_digits; // chop nr_rolling_digits digits
-		static float fraction_prev = 1.;
-		if (std::abs(fraction - fraction_prev) > 0.01 )
-		{
-			// move last used_quant digit(s)
-			int base = mod/10;
-			int lastdigit = alt%mod;
-			int16_t m = sign * ((1.f-fraction) * char_height - char_height/2); // to pixel offest
-			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d", altitude, alt, fraction, m, lastdigit);
-			int16_t xp = x - nr_rolling_digits*char_width;
-			// ucg->drawFrame(xp-1, y - char_height* 1.35 -1, char_width*nr_rolling_digits, char_height*1.8 +1); // checker box
-			ucg->setClipRange(xp, y - char_height * 1.35, char_width*nr_rolling_digits-1, char_height * 1.8 ); // space to get 2 digits displayed uncut
-			ucg->setPrintPos(xp, y - m - char_height);
-			char tmp[32];
-			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit+(sign*used_quant))%mod) );
-			// ESP_LOGI(FNAME,"tmp0 %s ld: %d", tmp, (lastdigit+(sign*used_quant))%mod );
-			ucg->print(tmp); // one above
-			ucg->setPrintPos(xp, y - m);
-			sprintf(tmp, "%0*u", nr_rolling_digits, lastdigit);
-			// ESP_LOGI(FNAME,"tmp1 %s ld: %d", tmp, lastdigit );
-			ucg->print(tmp);
-			ucg->setPrintPos(xp, y - m + char_height);
-			// ESP_LOGI(FNAME,"Last %f/%d: %f m%d .%d ldc:%d mod:%d", altitude, alt, fraction, m, lastdigit, ((lastdigit+mod-(sign*used_quant))%mod), mod );
-			sprintf(tmp, "%0*u", nr_rolling_digits, abs((lastdigit+mod-(sign*used_quant))%mod));
-			// ESP_LOGI(FNAME,"tmp2 %s ld: %d rd:%d s:%d aq:%d las:%d ", tmp, (lastdigit-(sign*used_quant))%mod, nr_rolling_digits, sign, used_quant, lastdigit );
-			ucg->print(tmp); // one below
-			fraction_prev = fraction;
-			ucg->undoClipRange();
-
-			// Roll leading digit independant of quant setting in 2 * (mod/10) range
-			int lead_quant = 2 * base; // eg. 2 for Q=1 and Q=5
-			int rollover = ((int)(alt_f)%mod)/base;
-			if ( (rollover < 1 && alt_leadpart != 0) || (rollover > 8) ) { // [9.1,..,0.9]: roll-over needs clarification on leading digit
-				// Re-Quantized leading altitude part
-				fraction = (float)((int)((alt_f+base)*10)%(mod*10)) / (lead_quant*10);
-				int16_t m = sign * fraction * char_height; // to pixel offest
-				int lead_digit = ((alt+lead_quant)/mod)%10;
-				// ESP_LOGI(FNAME,"Lead %f/%d: %f - %f m%d %d.", altitude, alt_leadpart, fraction, m, lead_digit);
-				nr_rolling_digits++; // one less digit remains to print
-				xp -= char_width; // one to the left
-				// ucg->drawFrame(xp-1, y - char_height-1, char_width+1, char_height+1);
-				ucg->setClipRange(xp, y - char_height, char_width-1, char_height-1);
-				ucg->setPrintPos(xp, y + m - char_height);
-				ucg->print(lead_digit); // one above
-				ucg->setPrintPos(xp, y + m );
-				ucg->print((lead_digit+9)%10);
-				ucg->undoClipRange();
-				// ESP_LOGI(FNAME,"ld4: %d", (lead_digit+9)%10 );
-				s[len-1] = '\0'; len--; // chop another digits
-			}
-			ret=true;
-		}
-		ucg->setPrintPos(x - ucg->getStrWidth(s) - nr_rolling_digits*char_width , y);
-		static char altpart_prev_s[32] = "";
-		if (strcmp(altpart_prev_s, s) != 0 ) {
-			ucg->print(s);
-			// ESP_LOGI(FNAME,"s5: %s", s );
-			strcpy(altpart_prev_s, s);
-		}
-	}
-	if ( incl_unit ) {
-		// unit todo needs further refinment to not draw the unit every time to just have the QNH updated
-		ucg->setFont(ucg_font_fub11_hr, true);
-		ucg->setColor( COLOR_HEADER );
-		ucg->setPrintPos(x+5, y-3);
-		const char * dmode;
-		if( alt_display_mode.get() == MODE_QFE )
-			dmode = "QFE";
-		else if( alt_display_mode.get() == MODE_QNH )
-			dmode = "QNH";
-		else
-			dmode = "";
-		ucg->print(dmode);// e.g. 'QNH'
-		ucg->setPrintPos(x+5, y-3+16);
-		ucg->print(Units::AltitudeUnit(unitalt));// e.g. 'm'
-		// QNH
-		// int16_t qnh_x = x+25;
-		float qnh = QNH.get();
-		if( gflags.standard_setting == true ){
-			qnh = 1013;
-		}
-		if( qnh_unit.get() == QNH_INHG )
-			sprintf(s, "%.2f ", Units::Qnh(qnh));
-		else
-			sprintf(s, "%d ", Units::QnhRounded(qnh));
-		ucg->setPrintPos(x+5, y-3-16);
-		ucg->setColor( COLOR_WHITE );
-		ucg->print(s);
-	}
-	return ret;
-}
 
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // right-aligned to value in 25 font size, no unit
@@ -1454,7 +1287,6 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	}
 	// draw G pointer
 	gauge->drawIndicator( loadFactor );
-	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 
 	// G load digital
 	if( (int)(loadFactor*30) != _ate && !(tick%3) ) {
@@ -1642,7 +1474,7 @@ void IpsDisplay::drawNetto( int16_t x, int16_t y, bool netto ) {
 }
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
-		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor, bool ulmode ){
+		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
 	// ESP_LOGI(FNAME,"drawRetroDisplay polar_sink: %f AVario: %f m/s", polar_sink_ms, ate_ms );
 	if( !(screens_init & INIT_DISPLAY_RETRO) ){
 		initDisplay();
@@ -1684,12 +1516,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	//  float s2f = Units::Airspeed( s2f_ms );   not used for now
 	// float s2fd = Units::Airspeed( s2fd_ms );
 	// int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
-	int unit = alt_unit.get();
-	if( gflags.standard_setting == true ){
-		unit = ALT_UNIT_FL;
-	}
-	flt_altitude += (altitude_m - flt_altitude) *0.1; // a bit lowpass make sense, any jitter would mess up tape display
-	float altitude = Units::Altitude( flt_altitude, unit );
 
 	// TE vario pointer position in rad
 	// float needle_pos = (*_gauge)(te);
@@ -1725,8 +1551,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawTopGauge( airspeed_kmh, INNER_RIGHT_ALIGN, SPEEDYPOS );
 	}
 	// Altitude
-	if( screen_gauge_bottom.get() && !(tick%4) ) {
-		drawAltitude( altitude, INNER_RIGHT_ALIGN, 0.8*DISPLAY_H );
+	if( ALTgauge && !(tick%4) ) {
+		ALTgauge->draw(altitude_m);
 	}
 
 	// Wind & center aid
@@ -1808,7 +1634,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Cruise mode or circling
-	if( ((int)s2fmode != s2fmode_prev) && !ulmode ){
+	if( ((int)s2fmode != s2fmode_prev) ) { // && !ulmode ){
 		drawS2FMode( DISPLAY_W-50, 18, s2fmode );
 		s2fmode_prev = (int)s2fmode;
 	}
@@ -1832,20 +1658,15 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 }
 
 void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
-		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_setting, float wksensor ){
-
-	if ( alt_display_mode.get() == MODE_QFE ) {
-		altitude -= elevation.get(); // fixme, what is elevation is not set?
-	}
+		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_setting, float wksensor )
+{
 	xSemaphoreTake(display_mutex,portMAX_DELAY);
-	if( display_style.get() == DISPLAY_AIRLINER )
+	if( display_style.get() == DISPLAY_AIRLINER ) {
 		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
-	else if( display_style.get() == DISPLAY_RETRO )
-		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor, false );
-	else if( display_style.get() == DISPLAY_UL )
-		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor, true );
+	} else {
+		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
+	}
 	xSemaphoreGive(display_mutex);
-
 }
 
 void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
@@ -1885,12 +1706,6 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	float polar_sink = Units::Vario( polar_sink_ms );
 	float s2f = Units::Airspeed( s2f_ms );
 	float s2fd = Units::Airspeed( s2fd_ms );
-	int unit = alt_unit.get();
-	if( gflags.standard_setting == true ){
-		unit = ALT_UNIT_FL;
-	}
-	flt_altitude += (altitude_m - flt_altitude) *0.1; // a bit lowpass make sense, any jitter would mess up tape display readability
-	float altitude = Units::Altitude( flt_altitude, unit );
 
 	// WK-Indicator
 	if( FLAP && !(tick%7) )
@@ -1920,8 +1735,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	}
 
 	// Altitude
-	if(!(tick%2) ) {
-		drawAltitude( altitude, FIELD_START+80, YALT-12, true );  // small alignment for larger tape
+	if( ALTgauge && !(tick%4) ) {
+		ALTgauge->draw(altitude_m);
 	}
 	// MC Value
 	if( MCgauge && !(tick%8) ) {

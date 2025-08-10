@@ -4,7 +4,7 @@
       "name": "Linux",
       "includePath": [
         "${workspaceFolder}/**",
-        "${IDF_PATH}/components/**",
+        "${env:IDF_PATH}/components/**",
         "${workspaceFolder}/build/config"
       ]
     }

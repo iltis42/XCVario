@@ -60,7 +60,6 @@ private:
     PolarGauge &_gauge;             // ref to gauge the pointer belonges to
     const int16_t _base;            // distance from base center to shoulder of the arrow
     const int16_t _tip;             // distance from base center to arrow tip
-    //  int16_t h_width = 8; // half width of the arrow base
     const int16_t _base_val_offset = 8; // .5deg steps from base point to shoulder point of arrow
     int16_t _needle_pos;
     int16_t prev_needle_pos = 0;    // -_range .. _range diced up
@@ -70,13 +69,12 @@ private:
 
 PolarIndicator::PolarIndicator(PolarGauge &g) : 
     _gauge(g),
-   	_base(DISPLAY_H/2-24-26),
-	_tip(DISPLAY_H/2-24),
-    _base_val_offset(atan(8.f/_base)*g._idx_scale)
+    _base(DISPLAY_H/2-24-20),
+    _tip(DISPLAY_H/2-24),
+    _base_val_offset(atan(8.f/_base)*g._idx_scale) // half width of the arrow base
 
 {
     color = needlecolor[1];
-    ESP_LOGI(FNAME,"PolarIndicator base off: %d %f", _base_val_offset, atan(static_cast<float>(8.)/_base));
     prev.x_0 = _gauge.CosCenteredDeg2(_base_val_offset, _base); // top shoulder
     prev.y_0 = _gauge.SinCenteredDeg2(_base_val_offset, _base);
     prev.x_1 = _gauge.CosCenteredDeg2(-_base_val_offset, _base); // lower shoulder
@@ -166,7 +164,6 @@ PolarGauge::PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t ra
 {
     _indicator = new PolarIndicator(*this);
     func = new GaugeFunc(1.,0.);
-    ESP_LOGI(FNAME, "_idx_scale: %f", _idx_scale);
 }
 PolarGauge::~PolarGauge()
 {
@@ -274,19 +271,16 @@ void PolarGauge::drawOneScaleLine(float a, int16_t l2, int16_t w) const
 // draw incremental bow up to indicator given in diced 0.5° steps, pos
 void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t color) const
 {
-    if (idx == old)
-    {
+    if (idx == old) {
         return;
     }
     // ESP_LOGI(FNAME,"drawBbow af= level=%d old_level=%d", idx, old );
 
     // potentially clean first
-    if (std::abs(idx) < std::abs(old) || idx * old < 0)
-    {
+    if (std::abs(idx) < std::abs(old) || idx * old < 0) {
         MYUCG->setColor(DARK_DGREY);
     }
-    else
-    {
+    else {
         MYUCG->setColor(bow_color[color].color[0], bow_color[color].color[1], bow_color[color].color[2]);
     }
     // ESP_LOGI(FNAME,"bow lev %d", idx);

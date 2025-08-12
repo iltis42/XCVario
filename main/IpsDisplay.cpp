@@ -311,6 +311,13 @@ void IpsDisplay::bootDisplay() {
 	ucg->setColor(1, COLOR_BLACK );
 	ucg->setColor(0, COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_tr);
+
+	// grab screen layout
+	AMIDX = (DISPLAY_W/2 + 30);
+	AMIDY = (DISPLAY_H)/2;
+	if ( display_orientation.get() == DISPLAY_NINETY ) {
+		AMIDX = DISPLAY_W/2 - 43;
+	}
 }
 
 void IpsDisplay::initDisplay() {
@@ -337,14 +344,9 @@ void IpsDisplay::initDisplay() {
 		g_col_header_light_b=255;
 	}
 	// Create common elements
-	AMIDX = (DISPLAY_W/2 + 30);
-	AMIDY = (DISPLAY_H)/2;
-	int16_t scale_geometry = 90;
-	if ( display_orientation.get() == DISPLAY_NINETY ) {
-		AMIDX = DISPLAY_W/2 - 43;
-		scale_geometry = 120;
-	}
+	
 	if ( ! gauge ) { // shared with 
+		int16_t scale_geometry = ( display_orientation.get() == DISPLAY_NINETY ) ? 120 : 90;
 		gauge = new PolarGauge(AMIDX, AMIDY, scale_geometry, DISPLAY_H/2-20);
 	}
 	gauge->setRange(Units::Vario(scale_range.get()), 0.f, log_scale.get());
@@ -1176,7 +1178,12 @@ void IpsDisplay::initLoadDisplay(){
 	drawLoadDisplayTexts();
 	int max_gscale = gload_pos_limit.get() + 2;
 	int min_gscale = gload_neg_limit.get() - 2;
+	if ( ! gauge ) { // shared with 
+		int16_t scale_geometry = ( display_orientation.get() == DISPLAY_NINETY ) ? 120 : 90;
+		gauge = new PolarGauge(AMIDX, AMIDY, scale_geometry, DISPLAY_H/2-20);
+	}
 	gauge->setRange(max_gscale, 1.f, false);
+	gauge->setColor(needle_color.get());
 	// put the scale colored section into the background
 	gauge->colorRange(gload_pos_limit_low.get(), gload_pos_limit.get(), PolarGauge::ORANGE);
 	gauge->colorRange(gload_pos_limit.get(), max_gscale, PolarGauge::RED);

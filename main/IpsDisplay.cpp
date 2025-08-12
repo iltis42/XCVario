@@ -1090,7 +1090,7 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 {
 	switch ( vario_upper_gauge.get() ) {
 	case GAUGE_S2F:
-		val = s2f_ideal.get();
+		val = Units::Airspeed(s2f_ideal.get());
 		break;
 	case NETTO_VARIO:
 		val = static_cast<int>(std::round(slipAngle*-10.f)); // todo better home for the variable

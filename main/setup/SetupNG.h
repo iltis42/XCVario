@@ -455,8 +455,6 @@ extern SetupNG<int>       	flarm_warning;
 extern SetupNG<float>     	flarm_volume;
 extern SetupNG<float>       flarm_alarm_time;
 extern SetupNG<int>       	flap_sensor;
-extern SetupNG<float>     	flap_pos_max;
-extern SetupNG<float>     	flap_neg_max;
 extern SetupNG<int>       	compass_dev_auto;
 extern SetupNG<float>       compass_dev_0;
 extern SetupNG<float>       compass_dev_45;

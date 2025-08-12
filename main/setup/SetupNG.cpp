@@ -136,12 +136,24 @@ void change_max_volume() {
 
 void flap_act() {
     if (flap_enable.get()) {
-        FLAP = Flap::theFlap(MYUCG);
+        FLAP = Flap::theFlap();
     }
     else if ( FLAP ) {
         delete FLAP;
 		FLAP = nullptr;
     }
+}
+
+void flap_speed_act() {
+	if( FLAP ) {
+		FLAP->initSpeeds();
+	}
+}
+
+void flap_label_act() {
+	if( FLAP ) {
+		FLAP->initLabels();
+	}
 }
 
 void send_config( httpd_req *req ){
@@ -170,7 +182,7 @@ static void ch_airborne_state(){
 SetupNG<float>          MC(  "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc, QUANT_VSPEED, LIMITS(0.0, 9.9, 0.1) );
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_QNH, LIMITS(900, 1100.0, 0.250) );
 SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast, QUANT_NONE, LIMITS(10.0, 100.0, 0.1) );
-const limits_t polar_speed_limits = {20.0, 450.0, 1};
+const limits_t polar_speed_limits = {0.0, 450.0, 1};
 SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar, QUANT_HSPEED, &polar_speed_limits);
 const limits_t polar_sink_limits = {-6.0, 0.0, 0.01};
 SetupNG<float> 			polar_sink1( "POLAR_SINK1",    -0.66, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar, QUANT_VSPEED, &polar_sink_limits);
@@ -273,13 +285,13 @@ SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ", 0.00815, false, SYNC_NONE
 SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
 SetupNG<int>  			display_test( "DISPLAY_TEST", 0, false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , DISPLAY_NORMAL, true, SYNC_NONE, PERSISTENT, chg_display_orientation );
-SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0, true, SYNC_FROM_MASTER, PERSISTENT, flap_act);
-SetupNG<float>  		flap_minus_3( "FLAP_MINUS_3", 200, true, SYNC_FROM_MASTER, PERSISTENT, flap_act, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float>  		flap_minus_2( "FLAP_MINUS_2", 165, true, SYNC_FROM_MASTER, PERSISTENT, flap_act, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105, true, SYNC_FROM_MASTER, PERSISTENT, flap_act, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float>  		flap_0(       "FLAP_0", 88, true, SYNC_FROM_MASTER, PERSISTENT, flap_act, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float>  		flap_plus_1(  "FLAP_PLUS_1", 78, true, SYNC_FROM_MASTER, PERSISTENT, flap_act, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float>  		flap_plus_2(  "FLAP_PLUS_2", 70, true, SYNC_FROM_MASTER, PERSISTENT, flap_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0, true, SYNC_BIDIR, PERSISTENT, flap_act);
+SetupNG<float>  		flap_minus_3( "FLAP_MINUS_3", 200, true, SYNC_BIDIR, PERSISTENT, flap_speed_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		flap_minus_2( "FLAP_MINUS_2", 165, true, SYNC_BIDIR, PERSISTENT, flap_speed_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105, true, SYNC_BIDIR, PERSISTENT, flap_speed_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		flap_0(       "FLAP_0", 88, true, SYNC_BIDIR, PERSISTENT, flap_speed_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		flap_plus_1(  "FLAP_PLUS_1", 78, true, SYNC_BIDIR, PERSISTENT, flap_speed_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		flap_plus_2(  "FLAP_PLUS_2", 70, true, SYNC_BIDIR, PERSISTENT, flap_speed_act, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER );
 SetupNG<int>  			alt_quantization( "ALT_QUANT", Altimeter::ALT_QUANT_10 );
 SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH );
@@ -334,12 +346,10 @@ SetupNG<int>		    wk_sens_pos_minus_3("WKSM3", 4000);
 SetupNG<int>            stall_warning( "STALL_WARN", 0 );
 SetupNG<float>			stall_speed( "STALL_SPEED", 70, true, SYNC_FROM_MASTER, PERSISTENT, 0, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<int>            flarm_warning( "FLARM_LEVEL", 1 );
-static const limits_t volume_limits = {20, 100, 1};
+static const limits_t volume_limits = {0, 100, 1};
 SetupNG<float>          flarm_volume( "FLARM_VOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &volume_limits);
 SetupNG<float>          flarm_alarm_time( "FLARM_ALM", 5, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1, 15, 1));
 SetupNG<int>            flap_sensor( "FLAP_SENS", 0, false, SYNC_FROM_MASTER, PERSISTENT, flap_act);
-SetupNG<float>          flap_pos_max("FL_POS_M", +2, true, SYNC_FROM_MASTER, PERSISTENT, flap_act, QUANT_NONE, LIMITS(0., 3., 1.));
-SetupNG<float>          flap_neg_max("FL_NEG_M", -2, true, SYNC_FROM_MASTER, PERSISTENT, flap_act, QUANT_NONE, LIMITS(-3., 0., 1.));
 SetupNG<float>          compass_dev_0( "CP_DEV_0", 0 );
 SetupNG<float>          compass_dev_45( "CP_DEV_45", 0 );
 SetupNG<float>          compass_dev_90( "CP_DEV_90", 0 );
@@ -376,14 +386,14 @@ SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0, true, SYNC_NONE, PERSIST
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0, true, SYNC_BIDIR );  // considering netto vario and g load for S2F or not
 SetupNG<int> 			needle_color("NEEDLE_COLOR", VN_COLOR_ORANGE );
 SetupNG<int>			s2f_arrow_color("S2F_ARRCOL", AC_WHITE_WHITE );
-SetupNG<int> 			wk_label_plus_3( "WKLP3", 41,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  L
-SetupNG<int> 			wk_label_plus_2( "WKLP2", 11,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  2
-SetupNG<int> 			wk_label_plus_1( "WKLP1", 10,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  1
-SetupNG<int> 			wk_label_null_0( "WKL0",   9,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  //  0
-SetupNG<int> 			wk_label_minus_1( "WKLM1", 8,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  // -1
-SetupNG<int> 			wk_label_minus_2( "WKLM2", 7,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act);  // -2
-SetupNG<int> 			wk_label_minus_3( "WKLM3", 42,  true, SYNC_FROM_MASTER, PERSISTENT, flap_act); //  S
-SetupNG<float>       	flap_takeoff("FLAPTO", 1,  true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-3, 3, 1));
+SetupNG<int> 			wk_label_plus_3( "WKLP3", 41,  true, SYNC_BIDIR, PERSISTENT, flap_label_act);  //  L
+SetupNG<int> 			wk_label_plus_2( "WKLP2", 11,  true, SYNC_BIDIR, PERSISTENT, flap_label_act);  //  2
+SetupNG<int> 			wk_label_plus_1( "WKLP1", 10,  true, SYNC_BIDIR, PERSISTENT, flap_label_act);  //  1
+SetupNG<int> 			wk_label_null_0( "WKL0",   9,  true, SYNC_BIDIR, PERSISTENT, flap_label_act);  //  0
+SetupNG<int> 			wk_label_minus_1( "WKLM1", 8,  true, SYNC_BIDIR, PERSISTENT, flap_label_act);  // -1
+SetupNG<int> 			wk_label_minus_2( "WKLM2", 7,  true, SYNC_BIDIR, PERSISTENT, flap_label_act);  // -2
+SetupNG<int> 			wk_label_minus_3( "WKLM3", 42,  true, SYNC_BIDIR, PERSISTENT, flap_label_act); //  S
+SetupNG<float>       	flap_takeoff("FLAPTO", 1,  true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-3, 3, 1));
 SetupNG<int> 			audio_mute_menu( "AUDIS", 0 );
 SetupNG<int> 			audio_mute_sink( "AUDISS", 0 );
 SetupNG<int> 			audio_mute_gen( "AUDISG", AUDIO_ON );

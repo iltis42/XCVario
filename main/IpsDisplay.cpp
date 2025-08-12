@@ -994,7 +994,7 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 
 	if ( FLAP ) {
 		FLAP->setBarPosition( WKSYMST-4, WKBARMID);
-		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(flap_neg_max.get()))-18 );
+		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(FLAP->getNegMax()))-18 );
 	}
 	if( theCenteraid ){
 		theCenteraid->setGeometry(AMIDX+AVGOFFX-38, AMIDY, 47);
@@ -1635,7 +1635,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		FLAP->drawBigBar( (float)(wk)/10, wksensor );
 		wkoptalt = wk;
 
-		if ( flap_neg_max.get() > -3 ) {
+		if ( FLAP->getNegMax() > -3 ) {
 			FLAP->drawWingSymbol( wki, wksensor);
 		}
 	}

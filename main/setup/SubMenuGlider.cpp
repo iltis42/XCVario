@@ -6,6 +6,7 @@
 #include "setup/SetupMenuValFloat.h"
 #include "setup/SetupMenu.h"
 #include "setup/SetupNG.h"
+#include "Flap.h"
 #include "sensor.h"
 #include "logdefnone.h"
 
@@ -48,36 +49,93 @@ static void glider_menu_create_polarpoints(SetupMenu *top) {
 	top->addEntry(pos3);
 }
 
-void glider_menu_create(SetupMenu *poe) {
+
+static void position_labels_menu_create(SetupMenu* top){
+	SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label +3", RST_NONE, nullptr, &wk_label_plus_3 );
+	flab->addEntryList( flap_labels ); // Initialize Flap Label Entries
+	top->addEntry( flab );
+	flab = new SetupMenuSelect( "Flap Label +2", RST_NONE, nullptr, &wk_label_plus_2 );
+	flab->addEntryList( flap_labels );
+	top->addEntry( flab );
+	flab = new SetupMenuSelect( "Flap Label +1", RST_NONE, nullptr, &wk_label_plus_1 );
+	flab->addEntryList( flap_labels );
+	top->addEntry( flab );
+	flab = new SetupMenuSelect( "Flap Label  0", RST_NONE, nullptr, &wk_label_null_0 );
+	flab->addEntryList( flap_labels );
+	top->addEntry( flab );
+	flab = new SetupMenuSelect( "Flap Label -1", RST_NONE, nullptr, &wk_label_minus_1 );
+	flab->addEntryList( flap_labels );
+	top->addEntry( flab );
+	flab = new SetupMenuSelect( "Flap Label -2", RST_NONE, nullptr, &wk_label_minus_2 );
+	flab->addEntryList( flap_labels );
+	top->addEntry( flab );
+	flab = new SetupMenuSelect( "Flap Label -3", RST_NONE, nullptr, &wk_label_minus_3 );
+	flab->addEntryList( flap_labels );
+	top->addEntry( flab );
+}
+
+static void flap_speeds_menu_create(SetupMenu* top){
+	SetupMenuValFloat *flgnd = new SetupMenuValFloat("Takeoff Flap","", nullptr, false, &flap_takeoff  );
+	flgnd->setHelp("Flap position to be set on ground for takeoff, when there is no airspeed");
+	top->addEntry( flgnd );
+
+	SetupMenu *flapls = new SetupMenu("Flap Position Labels", position_labels_menu_create);
+	top->addEntry( flapls );
+
+	SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "", nullptr, false, &flap_plus_2  );
+	top->addEntry( plus3 );
+
+	SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "", nullptr, false, &flap_plus_1  );
+	top->addEntry( plus2 );
+
+	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to  0", "", nullptr, false, &flap_0  );
+	top->addEntry( plus1 );
+
+	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed  0 to -1", "", nullptr, false, &flap_minus_1  );
+	top->addEntry( min1 );
+
+	SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "", nullptr, false, &flap_minus_2  );
+	top->addEntry( min2 );
+
+	SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "", nullptr, false, &flap_minus_3  );
+	top->addEntry( min3 );
+}
+
+void glider_menu_create(SetupMenu *top) {
 	SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type_index);
-	poe->addEntry(glt);
+	top->addEntry(glt);
 	ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
 	for (int x = 0; x < Polars::numPolars(); x++) {
 		ESP_LOGI(FNAME, "P: %s - %d", Polars::getPolarName(x), Polars::getPolarIndex(x));
 		glt->addEntry(Polars::getPolarName(x), Polars::getPolarIndex(x));
 	}
-	poe->setHelp("Weight and polar of the glider");
-	glt->setSelect(Polars::getGliderEnumPos()); // Cannot set select from nvs variable value containing the magix index
+	glt->setSelect(Polars::getGliderEnumPos()); // glider type nvs variable contains the magic index value
 	ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
 
 	SetupMenu *pa = new SetupMenu("Polar Points", glider_menu_create_polarpoints);
-	pa->setHelp("Adjust the polar at 3 points, in the commonly used metric system",230);
-	poe->addEntry(pa);
+	pa->setHelp("Adjust the polar at 3 points, in the commonly used metric system");
+	top->addEntry(pa);
 
 	SetupMenuValFloat *maxbal = new SetupMenuValFloat("Max Ballast", "liters", nullptr, false, &polar_max_ballast);
-	poe->addEntry(maxbal);
+	top->addEntry(maxbal);
 
 	SetupMenuValFloat *wingarea = new SetupMenuValFloat("Wing Area", "m2", nullptr, false, &polar_wingarea);
-	poe->addEntry(wingarea);
+	top->addEntry(wingarea);
 
 	SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", start_weight_adj, false, &empty_weight);
 	fixball->setPrecision(0);
 	fixball->setHelp("Net rigged weight of the glider, according to the weight and balance plan");
 	fixball->setNeverInline();
-	poe->addEntry(fixball);
+	top->addEntry(fixball);
 
 	SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", nullptr, false, &v_max);
 	vmax->setHelp("Configure maximum speed for corresponding aircraft type");
-	poe->addEntry(vmax);
+	top->addEntry(vmax);
+
+	SetupMenu *flaps = new SetupMenu("Flap Speeds", flap_speeds_menu_create);
+	flaps->setHelp("Transition speed for flap settings at ref wingload. Set to 0, if not aplicable");
+	top->addEntry( flaps );
+
+
 }
 

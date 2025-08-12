@@ -18,7 +18,7 @@ enum ScreenTypes
     SCREEN_GMETER = 2,
     SCREEN_HORIZON = 4,
     SCREEN_FLARM = 8,
-    SCREEN_THERMAL_ASSISTANT = 16
+    SCREEN_LIST_END = 16
 }; // all regular screens
 
 class IpsDisplay;

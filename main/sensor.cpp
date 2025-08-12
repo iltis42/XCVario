@@ -887,10 +887,8 @@ void system_startup(void *args){
 		Cipher crypt;
 		gflags.ahrsKeyValid = crypt.checkKeyAHRS();
 		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
-		if ( ! gflags.ahrsKeyValid ) {
-			// make sure the AHRS screen is not set
-			screen_horizon.set(false);
-		}
+		// make sure the AHRS screen is not set
+		screen_horizon.set( screen_horizon.get() && gflags.ahrsKeyValid );
 	}
 	boot_screen->finish(0);
 
@@ -1358,7 +1356,7 @@ void system_startup(void *args){
 			gflags.mpu_pwm_initalized = true;
 		}
 	}
-	if( screen_centeraid.get() ){
+	if( vario_centeraid.get() ){
 		CenterAid::create();
 	}
 

@@ -355,7 +355,7 @@ void IpsDisplay::initDisplay() {
 	if ( ! BATgauge ) {
 		BATgauge = new Battery(BATX, BATY);
 	}
-	if ( screen_gauge_bottom.get() && ! ALTgauge ) {
+	if ( vario_lower_gauge.get() && ! ALTgauge ) {
 		ALTgauge = new Altimeter(INNER_RIGHT_ALIGN, 0.8*DISPLAY_H);
 	}
 
@@ -972,7 +972,7 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	else {
 		MCgauge->setLarge(true);
 	}
-	if ( screen_gauge_bottom.get() ) {
+	if ( vario_lower_gauge.get() ) {
 		ALTgauge->setRef(INNER_RIGHT_ALIGN, 0.8*DISPLAY_H);
 	}
 	else {
@@ -986,7 +986,7 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	ucg->setPrintPos(2,50);
 	ucg->setColor(COLOR_HEADER);
 	ucg->print( Units::VarioUnit() );
-	if ( screen_gauge_top.get() ) {
+	if ( vario_upper_gauge.get() ) {
 		drawTopGauge(0, INNER_RIGHT_ALIGN, SPEEDYPOS, true );
 	}
 
@@ -1086,7 +1086,7 @@ const char* AirspeedModeStr()
 // right-aligned to value
 bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 {
-	switch ( screen_gauge_top.get() ) {
+	switch ( vario_upper_gauge.get() ) {
 	case GAUGE_S2F:
 		val = s2f_ideal.get();
 		break;
@@ -1111,7 +1111,7 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 	ucg->setFont(ucg_font_fub25_hn, true);
 
 	char s[32];
-	if ( screen_gauge_top.get() != GAUGE_SLIP ) {
+	if ( vario_upper_gauge.get() != GAUGE_SLIP ) {
 		sprintf(s,"  %3d", val);
 	}
 	else {
@@ -1123,10 +1123,10 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 		ucg->setFont(ucg_font_fub11_hr);
 		ucg->setColor( COLOR_HEADER );
 		ucg->setPrintPos(x+5,y-3);
-		if( screen_gauge_top.get() == GAUGE_SPEED ||screen_gauge_top.get() == GAUGE_S2F ) {
+		if( vario_upper_gauge.get() == GAUGE_SPEED ||vario_upper_gauge.get() == GAUGE_S2F ) {
 			ucg->print(Units::AirspeedUnitStr() );
 			ucg->setPrintPos(x+5,y-17);
-			if ( screen_gauge_top.get() == GAUGE_SPEED ) { 
+			if ( vario_upper_gauge.get() == GAUGE_SPEED ) { 
 				ucg->print(AirspeedModeStr());
 			}
 			else {
@@ -1136,7 +1136,7 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 		else {
 			ucg->print("deg");
 		ucg->setPrintPos(x+5,y-17);
-			if ( screen_gauge_top.get() == GAUGE_SLIP ) { 
+			if ( vario_upper_gauge.get() == GAUGE_SLIP ) { 
 				ucg->print("SLIP");
 			}
 			else {
@@ -1547,7 +1547,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Airspeed
-	if( screen_gauge_top.get() && !(tick%5) ) {
+	if( vario_upper_gauge.get() && !(tick%5) ) {
 		drawTopGauge( airspeed_kmh, INNER_RIGHT_ALIGN, SPEEDYPOS );
 	}
 	// Altitude

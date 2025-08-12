@@ -91,10 +91,15 @@ void SetupRoot::exit(int levels)
     }
     free_connected_devices_menu();
 
-    screens_init = INIT_DISPLAY_NULL;
     if (_restart) {
         reBoot();
     }
+    screens_init = INIT_DISPLAY_NULL; // set screen dirty
+
+    // apply any change on AHRS license and screen setup
+    screen_horizon.set( screen_horizon.get() && gflags.ahrsKeyValid );
+    initScreens();
+
     delete _childs.front(); // hook to the entire setup tree
     _childs.clear();
     gflags.inSetup = false;
@@ -143,7 +148,7 @@ void SetupRoot::press()
     // cycle through screens, incl. setup
     if (!gflags.inSetup)
     {
-        while (active_screen < SCREEN_THERMAL_ASSISTANT)
+        while (active_screen < SCREEN_LIST_END)
         {
             active_screen <<= 1;
             if (all_screens & active_screen)
@@ -152,7 +157,7 @@ void SetupRoot::press()
                 break;
             }
         }
-        if ( active_screen >= SCREEN_THERMAL_ASSISTANT ) {
+        if ( active_screen >= SCREEN_LIST_END ) {
             ESP_LOGI(FNAME, "select vario screen");
             active_screen = SCREEN_VARIO;
         }

@@ -131,7 +131,7 @@ void drawDisplay(void *arg)
             }
 
             // Stall Warning Screen
-			if( stall_warning.get() && gload_mode.get() != GLOAD_ALWAYS_ON ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
+			if( stall_warning.get() && screen_gmeter.get() != SCREEN_PRIMARY ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
 				if( gflags.stall_warning_armed ){
 					float acceleration=IMU::getGliderAccelZ();
 					if( acceleration < 0.3 )
@@ -227,8 +227,8 @@ void drawDisplay(void *arg)
 				Flarm::drawFlarmWarning();
 			// G-Load Display
 			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
-			if( ((IMU::getGliderAccelZ() > gload_pos_thresh.get() || IMU::getGliderAccelZ() < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
-					( gload_mode.get() == GLOAD_ALWAYS_ON ) || (Menu->getActiveScreen() == SCREEN_GMETER)  )
+			if( ((IMU::getGliderAccelZ() > gload_pos_thresh.get() || IMU::getGliderAccelZ() < gload_neg_thresh.get()) && screen_gmeter.get() == SCREEN_DYNAMIC ) ||
+					( screen_gmeter.get() == SCREEN_PRIMARY ) || (Menu->getActiveScreen() == SCREEN_GMETER)  )
 			{
 				if( !gflags.gLoadDisplay ){
 					gflags.gLoadDisplay = true;
@@ -252,7 +252,7 @@ void drawDisplay(void *arg)
 				gflags.horizon = false;
 			}
 			// G-Load Alarm when limits reached
-			if( gload_mode.get() != GLOAD_OFF  ){
+			if( screen_gmeter.get() != SCREEN_OFF  ){
 				if( IMU::getGliderAccelZ() > gload_pos_limit.get() || IMU::getGliderAccelZ() < gload_neg_limit.get()  ){
 					if( !gflags.gload_alarm ) {
 						AUDIO->alarm( true, gload_alarm_volume.get() );
@@ -271,7 +271,7 @@ void drawDisplay(void *arg)
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 				Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), t, batteryVoltage, s2f_delta, as2f, average_climb.get(), cruise_mode.get(), gflags.standard_setting, flap_pos.get() );
 			}
-			if( screen_centeraid.get() ){
+			if( vario_centeraid.get() ){
 				if( theCenteraid ){
 					theCenteraid->tick();
 				}

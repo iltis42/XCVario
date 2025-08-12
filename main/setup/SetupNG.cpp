@@ -8,7 +8,6 @@
 #include "setup/SetupNG.h"
 
 #include "setup/SetupMenuCommon.h"
-#include "screen/SetupRoot.h"
 #include "math/Quaternion.h"
 #include "ESP32NVS.h"
 #include "ESPAudio.h"
@@ -393,7 +392,6 @@ SetupNG<int>			airspeed_sensor_type("PTYPE", PS_NONE, false);
 SetupNG<int>			cruise_audio_mode("CAUDIO", 0 );
 SetupNG<int>			netto_mode("NETMOD", NETTO_RELATIVE );  // regard polar sink
 SetupNG<float>			v_max("VMAX", 270, true, SYNC_FROM_MASTER, PERSISTENT, 0, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<int>			gload_mode("GLMOD", GLOAD_OFF );
 static const limits_t pos_g_limits = {1.0, 8.0, 0.1};
 SetupNG<float>			gload_pos_thresh("GLOADPT", 4, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &pos_g_limits);
 static const limits_t neg_g_limits = {-8.0, 1.0, 0.1};
@@ -415,11 +413,11 @@ SetupNG<float>       	circle_wind_lowpass("CI_WINDLOW", 5, true, SYNC_NONE, PERS
 SetupNG<int> 			can_speed( "CANSPEED", CAN_SPEED_1MBIT, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(CAN_SPEED_250KBIT, CAN_SPEED_1MBIT, 1));
 SetupNG<float> 			master_xcvario( "MSXCV", 0, false, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1000, 9999, 1));
 SetupNG<int> 			menu_long_press("MENU_LONG", 0 );
-SetupNG<int> 			screen_gmeter("SCR_GMET", 0, false, SYNC_NONE, PERSISTENT, &SetupRoot::initScreens);
-SetupNG<int> 			screen_horizon("SCR_HORIZ", 0, true, SYNC_NONE, PERSISTENT, &SetupRoot::initScreens);
-SetupNG<int> 			screen_centeraid("SCR_CA", 0, false);
-SetupNG<int> 			screen_gauge_top("SCR_GT", GAUGE_NONE, false);
-SetupNG<int> 			screen_gauge_bottom("SCR_GB", GAUGE_NONE, false);
+SetupNG<int> 			screen_gmeter("SCR_GMET", SCREEN_OFF, false);
+SetupNG<int> 			screen_horizon("SCR_HORIZ", SCREEN_OFF);
+SetupNG<int> 			vario_centeraid("SCR_CA", 0, false);
+SetupNG<int> 			vario_upper_gauge("SCR_GT", GAUGE_NONE, false);
+SetupNG<int> 			vario_lower_gauge("SCR_GB", GAUGE_NONE, false);
 SetupNG<bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
 SetupNG<t_tenchar_id>	custom_wireless_id("WLID", t_tenchar_id("") );

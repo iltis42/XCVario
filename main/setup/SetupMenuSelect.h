@@ -10,8 +10,11 @@
 #include "setup/MenuEntry.h"
 #include "setup/SetupNG.h"
 
+#include <string_view>
 #include <vector>
 #include <utility>
+
+extern const std::string_view ENABLE_MODE[4];
 
 class SetupMenuSelect : public MenuEntry
 {
@@ -30,11 +33,10 @@ public:
 	const char *value() const override;
 	void setTerminateMenu() { bits._end_menu = true; }
 
-
 	bool existsEntry(const char* ent);
     void addEntry(const char* ent, int val);
     void addEntry(const char* ent);
-	void addEntryList( const char ent[][4], int size );
+	void addEntryList( const std::string_view ent[] );
 	void delEntry( const char * ent );
 	void delAllEntries();
 	void mkEnable(const char *what=nullptr);

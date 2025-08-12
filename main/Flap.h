@@ -1,11 +1,14 @@
 #pragma once
 
 #include "AnalogInput.h"
+#include <string_view>
 
 class AdaptUGC;
 class SetupMenu;
 class SetupMenuSelect;
 class SetupMenuValFloat;
+
+extern const std::string_view flap_labels[];
 
 int select_flap_sens_pin(SetupMenuSelect *p);
 int flap_speed_act(SetupMenuValFloat *p);
@@ -71,7 +74,7 @@ private:
 	int   senspos[MAX_NR_POS];
 	int16_t leverold = -2.;
 	int   flapSpeeds[MAX_NR_POS];
-	char *flapLabels[MAX_NR_POS];
+	const char *flapLabels[MAX_NR_POS];
 	bool  dirty = true;
 	int16_t optPosOldY = 0;
 	int16_t sensorOldY = 0;

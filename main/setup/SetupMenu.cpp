@@ -42,6 +42,7 @@
 #include <iterator>
 #include <algorithm>
 #include <string>
+#include <string_view>
 
 static void setup_create_root(SetupMenu *top);
 
@@ -1397,10 +1398,10 @@ void system_menu_create_ahrs_calib(SetupMenu *top) {
 	top->addEntry(ahrs_ground_aa);
 }
 
-static const char  lkeys[][4] { "0", "1", "2", "3", "4", "5", "6", "7",
+static const std::string_view lkeys[] { "0", "1", "2", "3", "4", "5", "6", "7",
 		"8", "9", ":", ";", "<", "=", ">", "?", "@", "A", "B", "C", "D", "E",
 		"F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
-		"T", "U", "V", "W", "X", "Y", "Z" };
+		"T", "U", "V", "W", "X", "Y", "Z", "" };
 
 void system_menu_create_hardware_ahrs_lc(SetupMenu *top) {
 	SetupMenuSelect *ahrslc1 = new SetupMenuSelect("First    Letter", RST_NONE, add_key, &ahrs_licence_dig1);
@@ -1411,10 +1412,10 @@ void system_menu_create_hardware_ahrs_lc(SetupMenu *top) {
 	top->addEntry(ahrslc2);
 	top->addEntry(ahrslc3);
 	top->addEntry(ahrslc4);
-	ahrslc1->addEntryList(lkeys, sizeof(lkeys) / 4);
-	ahrslc2->addEntryList(lkeys, sizeof(lkeys) / 4);
-	ahrslc3->addEntryList(lkeys, sizeof(lkeys) / 4);
-	ahrslc4->addEntryList(lkeys, sizeof(lkeys) / 4);
+	ahrslc1->addEntryList(lkeys);
+	ahrslc2->addEntryList(lkeys);
+	ahrslc3->addEntryList(lkeys);
+	ahrslc4->addEntryList(lkeys);
 }
 
 void system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
@@ -1634,6 +1635,7 @@ void setup_create_root(SetupMenu *top) {
 		// Glider Setup
 		SetupMenu *po = new SetupMenu("Glider Details", glider_menu_create);
 		po->setBuzzword(Polars::getGliderType());
+		po->setHelp("Polar, weight and all attributes of the glider");
 		top->addEntry(po);
 
 		// Options Setup

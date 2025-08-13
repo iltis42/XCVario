@@ -46,8 +46,6 @@ public:
 	static void drawLoadDisplay( float loadFactor );
 	static void drawHorizon( float pitch, float roll, float yaw );
 	static void drawLoadDisplayTexts();
-	static void drawBow( float a, int16_t &old_a_level, int16_t l1, ucg_color_t color, int16_t w=2 );
-	static void drawSeg( float a0, float a1, int16_t r);
 	static void initDisplay();
 	static void clear();   // erase whole display
 	static void drawArrowBox( int x, int y, bool are=true );
@@ -61,15 +59,11 @@ public:
 	static AdaptUGC *ucg;
 
 private:
-	gpio_num_t _reset;
-	gpio_num_t _cs;
-	gpio_num_t _dc;
 	static float _range;
 	static int prev_winddir;
 	static int prev_heading;
 	static int prev_windspeed;
 	static int _divisons;
-	static float _range_clip;
 	static int _pixpmd;
 
 	enum ips_display _dtype;
@@ -78,14 +72,9 @@ private:
 	static ucg_color_t colorsalt[];
 
 	// local variabls for dynamic display
-	static int _te;
-	static int _ate;
 	static int s2falt;
 	static int s2fdalt;
     static int s2f_level_prev;
-	static int16_t bow_level_prev;
-	static int16_t psink_level_prev;
-	static float pref_qnh;
 	static bool wireless_alive;
 	static int tempalt;
 	static bool s2fmodealt;
@@ -96,7 +85,6 @@ private:
 	static int wkalt;
 	static int wkoptalt;
 
-	static int yposalt;
 	static int tyalt;
 	static int pyalt;
 	static float average_climbf;
@@ -106,10 +94,8 @@ private:
 	static float old_polar_sink;
 	static float flt_altitude;
 
-	static int last_avg;
-	static int  x_start;
-	static PolarGauge* gauge;
-    static WindCircle* polWind;
+	static PolarGauge* MAINgauge;
+    static WindCircle* WNDgauge;
 	static McCready*   MCgauge;
 	static Battery*    BATgauge;
 	static Altimeter*  ALTgauge;
@@ -125,7 +111,6 @@ private:
 	static void drawCable(int16_t x, int16_t y);
 	static void drawWifi( int x, int y );
 	static void drawConnection( int16_t x, int16_t y );
-	static void drawBat( float volt, int x, int y, bool blank );
 	static void drawTemperature( int x, int y, float t );
 	static void drawThermometer( int x, int y );
 
@@ -139,10 +124,8 @@ private:
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
-	static bool drawAltitude( float altitude, int16_t x, int16_t y, bool inc_unit=false );
 	static void drawSmallSpeed(float v_kmh, int16_t x, int16_t y);
 	static bool drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit=false);
 	static void drawLegend( bool onlyLines=false );
-	static void drawAvgVario( int16_t x, int16_t y, float ate, bool large=false );
 	static void drawNetto( int16_t x, int16_t y, bool netto );
 };

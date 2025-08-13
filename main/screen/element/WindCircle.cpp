@@ -19,10 +19,11 @@
 
 extern AdaptUGC *MYUCG;
 
-WindCircle::WindCircle(int cx, int cy)
+WindCircle::WindCircle(int cx, int cy) :
+	ScreenElement(cx, cy)
 {
-	_center_x = cx;
-	_center_y = cy;
+	_ref_x = cx;
+	_ref_y = cy;
 	_radius = 49;
 	MYUCG->setFont(ucg_font_fub11_hr);
 	_cheight = MYUCG->getFontAscent() - MYUCG->getFontDescent();
@@ -63,20 +64,20 @@ void WindCircle::drawPolarWind( int a, int speed, uint8_t type )
 	int16_t sw = _cwidth * count_digits(speed);
 	int16_t xshift = sw/2;
 	if ( type & ERASE ) {
-		MYUCG->drawBox(_center_x-x0-x1/2-xshift, _center_y-y0-y1/2-_cheight/2, sw, _cheight);
+		MYUCG->drawBox(_ref_x-x0-x1/2-xshift, _ref_y-y0-y1/2-_cheight/2, sw, _cheight);
 	}
 	else {
 		char buf[6];
 		format3digits(speed, buf);
 		MYUCG->setFont(ucg_font_fub11_hr);
-		MYUCG->setPrintPos(_center_x-x0-x1/2-xshift, _center_y-y0-y1/2+_cheight/2);
+		MYUCG->setPrintPos(_ref_x-x0-x1/2-xshift, _ref_y-y0-y1/2+_cheight/2);
 
 		MYUCG->print(buf);
 	}
 
 	// a tip in direction the wind is blowing
-	x0 += _center_x;
-	y0 += _center_y;
+	x0 += _ref_x;
+	y0 += _ref_y;
 	int16_t ws = std::roundf(si);
 	int16_t wc = std::roundf(co);
 	if ( type & INST ) {
@@ -119,7 +120,7 @@ void WindCircle::draw(int sdir, int sw, int idir, int iw)
 	}
 	if (redraw_s || redraw_i) {
 		MYUCG->setColor(COLOR_MGREY);
-		MYUCG->drawCircle(_center_x, _center_y, _radius+4);
+		MYUCG->drawCircle(_ref_x, _ref_y, _radius+4);
 		if ( redraw_s ) {
 			drawPolarWind(_sytic_dir, _sytic_w, SYNAPT);
 		}
@@ -127,4 +128,10 @@ void WindCircle::draw(int sdir, int sw, int idir, int iw)
 			drawPolarWind(_inst_dir, _inst_w, INST);
 		}
 	}
+}
+
+void WindCircle::clear() const
+{
+	MYUCG->setColor(COLOR_BLACK);
+	MYUCG->drawDisc(_ref_x, _ref_y, _radius+_radius/4, UCG_DRAW_ALL);
 }

@@ -8,16 +8,20 @@
 
 #pragma once
 
+#include "ScreenElement.h"
+
 #include <cinttypes>
 
 // Wind indicator around gauge center
-class WindCircle {
+class WindCircle : public ScreenElement
+{
 public:
 	WindCircle(int cx, int cy);
 	// API
 	void setGeometry(int16_t r) { _radius = r; }
 	void forceRedraw() { dirty = true; }
 	void draw(int sdir, int sw, int idir, int iw);
+	void clear() const;
 
 private:
 	enum DRAWTYP { ERASE=0x10, SYNAPT=1, INST=2 };

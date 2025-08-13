@@ -9,9 +9,10 @@
 #include "PolarGauge.h"
 
 #include "math/Trigenometry.h"
+#include "Units.h"
 #include "Colors.h"
 #include "AdaptUGC.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <cmath>
 
@@ -83,7 +84,7 @@ PolarIndicator::PolarIndicator(PolarGauge &g) :
 
 
 // > 0,5° step counter
-// return status on updated a changed pointer position
+// return status on changed pointer position
 bool PolarIndicator::draw(int16_t val)
 {
     Triangle_t n;
@@ -153,6 +154,44 @@ bool PolarIndicator::draw(int16_t val)
     return change;
 }
 
+
+////////////////////////////
+// PolarFigure
+
+void PolarFigure::draw(float val)
+{
+	int16_t ival = std::rint(val*10);  // integer value in steps of 10th
+	if (_figure != ival) {
+        // only print if there is a change in rounded numeric string
+		char s[32];
+		MYUCG->setFont(ucg_font_fub35_hn, false );
+		MYUCG->setFontPosCenter();
+		
+		sprintf(s, _format[std::abs(ival)>100], float(abs(ival)/10.) );
+		int16_t tmp = MYUCG->getStrWidth(s);
+		if( tmp < _fig_len ) {
+            // do we have a shorter string
+			MYUCG->setColor( COLOR_BLACK );
+			int16_t fh = MYUCG->getFontAscent();
+            // -> so blank exact prepending area
+			MYUCG->drawBox( _ref_x-_fig_len, _ref_y-fh/2, _fig_len-tmp, fh );
+		}
+		if (val<0) {
+			MYUCG->setColor( COLOR_BBLUE );
+		} else {
+			MYUCG->setColor( COLOR_WHITE );
+		}
+		MYUCG->setPrintPos(_ref_x-tmp, _ref_y+8);
+		MYUCG->print(s);
+		_figure = ival;
+		_fig_len = tmp;
+		MYUCG->setFontPosBottom();
+	}
+}
+
+
+
+
 ////////////////////////////
 // PolarGauge
 const ucg_color_t PolarGauge::bow_color[4] = {{COLOR_GREEN}, {COLOR_BBLUE}, {COLOR_ORANGE}, {COLOR_RED}};
@@ -177,8 +216,8 @@ PolarGauge::~PolarGauge()
 
 void PolarGauge::setRange(float pos_range, float zero_at, bool log)
 {
-    _range = pos_range;
-    _mrange = 2 * zero_at - pos_range;
+    _range = pos_range * _unit_fac;
+    _mrange = 2 * zero_at - _range;
     if ( func ) delete func;
     if ( log ) {
         func = new LogGaugeFunc(_scale_max / fast_log2f((_range - zero_at) + 1.), zero_at);
@@ -187,27 +226,33 @@ void PolarGauge::setRange(float pos_range, float zero_at, bool log)
         func = new LinGaugeFunc(_scale_max / (_range - zero_at), zero_at);
     }
 }
+
 void PolarGauge::setColor(int color_idx)
 {
     _indicator->setColor(needlecolor[color_idx & 3]);
 }
 
+void PolarGauge::setFigOffset(int16_t ox, int16_t oy)
+{
+    _figure.setPos(_ref_x+ox, _ref_y+oy);
+}
+
 float PolarGauge::clipValue(float a) const
 {
-    if (a > _range)
-    {
+    if (a > _range) {
         a = _range;
     }
-    else if (a < _mrange)
-    {
+    else if (a < _mrange) {
         a = _mrange;
     }
     return a;
 }
 
+// > in [m/s]
 bool PolarGauge::draw(float a)
 {
-    int16_t val = dice_up(a);
+    a *= _unit_fac;
+    int16_t val = dice_up(clipValue(a));
     // ESP_LOGI(FNAME,"draw  a:%f - %d", a, val);
     if (_indicator->draw(val))
     {
@@ -222,16 +267,23 @@ bool PolarGauge::draw(float a)
 
 bool PolarGauge::drawIndicator(float a)
 {
-    return _indicator->draw(dice_up(a));
+    return _indicator->draw(dice_up(clipValue(a)));
 }
 
-// sink speed in m/s
+// sink speed in [m/s]
 void PolarGauge::drawPolarSink(float a)
 {
-    int16_t val = dice_up(a);
+    a *= _unit_fac;
+    int16_t val = dice_up(clipValue(a));
     // ESP_LOGI(FNAME,"sink  a:%f - %d", a, val);
     // Draw blue bow for polar sink
     drawBow(val, _old_polar_sink, 3, BLUE);
+}
+
+void PolarGauge::drawFigure(float a)
+{
+    a *= _unit_fac;
+    _figure.draw(a);
 }
 
 // idx [rad], end radius, width

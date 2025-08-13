@@ -1017,37 +1017,6 @@ void IpsDisplay::drawWarning( const char *warn, bool push ){
 }
 
 
-void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val, bool large )
-{
-	int ival = rint(val*10);  // integer value in steps of 10th
-	if( last_avg != ival){  // only print if there a change in rounded numeric string
-		char s[32];
-		// if( large ) {
-		// 	ucg->setFont(eglib_font_free_sansbold_66, false );
-		// } else {
-		ucg->setFont(ucg_font_fub35_hn, false );
-		// }
-		ucg->setFontPosCenter();
-		static const char* format[2] = {"%2.1f","%2.0f"};
-		sprintf(s, format[std::abs(ival)>100], float(abs(ival)/10.) );
-		int new_x_start = x - ucg->getStrWidth(s);
-		if( new_x_start > x_start ){         // do we have a shorter string starting at higer x position
-			ucg->setColor( COLOR_BLACK );    // yes -> so blank exact prepending area
-			int fh = ucg->getFontAscent();   // height of blanking box
-			ucg->drawBox( x_start, y-fh/2, new_x_start-x_start, fh );  // draw blanking box
-		}
-		if (ival<0) {
-			ucg->setColor( COLOR_BBLUE );
-		} else {
-			ucg->setColor( COLOR_WHITE );
-		}
-		ucg->setPrintPos(new_x_start, y + 8);
-		ucg->print(s);
-		last_avg = ival;
-		x_start = new_x_start;
-		ucg->setFontPosBottom();
-	}
-}
 
 
 // Accepts speed in kmh IAS/TAS, translates into configured unit
@@ -1297,10 +1266,10 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 	gauge->drawIndicator( loadFactor );
 
 	// G load digital
-	if( (int)(loadFactor*30) != _ate && !(tick%3) ) {
-		drawAvgVario( AMIDX+38, AMIDY, loadFactor, true );
-		_ate = (int)(loadFactor*30);
+	if( !(tick%3) ) {
+		MAINgauge->drawFigure(loadFactor);
 	}
+
 	// Min/Max values
 	if( old_gmax != gload_pos_max.get() || !(tick%10)) {
 		if( gload_pos_max.get() < gload_pos_limit.get() )
@@ -1511,28 +1480,15 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Unit adaption for mph and knots
-	float te = Units::Vario( te_ms );
-	float ate = Units::Vario( ate_ms );
 	float acl = Units::Vario( acl_ms );
-	if( te > _range )
-		te = _range;
-	if( te < -_range )
-		te = -_range;
-	float polar_sink = Units::Vario( polar_sink_ms );
-	if( polar_sink < -_range )
-		polar_sink = -_range;
+
 	//  float s2f = Units::Airspeed( s2f_ms );   not used for now
 	// float s2fd = Units::Airspeed( s2fd_ms );
 	// int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
 
-	// TE vario pointer position in rad
-	// float needle_pos = (*_gauge)(te);
-	// Check overlap on inner figures
-
 	// average Climb
-	if( ((int)(ate*10) != _ate) || !(tick%10) ) {
-		drawAvgVario( AMIDX+AVGOFFX, AMIDY+4, ate );
-		_ate = (int)(ate*10);
+	if( !(tick%10) ) {
+		MAINgauge->drawFigure(ate_ms);
 	}
 
 	// S2F Command triangle

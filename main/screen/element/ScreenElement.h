@@ -13,13 +13,13 @@
 class ScreenElement
 {
 public:
-    ScreenElement() = delete;
+    ScreenElement() = default;
     ScreenElement(int16_t refx, int16_t refy) : _ref_x(refx), _ref_y(refy) {}
     ~ScreenElement() = default;
     void forceRedraw() { _dirty = true; }
 
 public:
-    int16_t _ref_x;
-    int16_t _ref_y;
+    int16_t _ref_x = 0;
+    int16_t _ref_y = 0;
     bool _dirty = true;
 };

@@ -29,37 +29,56 @@ protected:
     float _zero_at; // value at the middle of the scale
 };
 
+class PolarFigure : public ScreenElement
+{
+public:
+    void setPos(int16_t x, int16_t y) { _ref_x = x; _ref_y = y; }
+    void draw(float a);
+private:
+    static constexpr const char* _format[2] = {"%2.1f","%2.0f"};
+    int16_t _figure = 0;
+    int16_t _fig_len = 0;
+};
+
 class PolarGauge : public ScreenElement
 {
     friend class PolarIndicator;
+    friend class PolarFigure;
 public:
     PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t radius);
     ~PolarGauge();
     void setRange(float pos_range, float zero_at, bool log);
     float getMRange() const { return _mrange; }
+    void setUnit(float uf) { _unit_fac = uf; }
     void setColor(int color_idx);
-
+    void setFigOffset(int16_t ox, int16_t oy);
     float clipValue(float a) const;
-   	bool draw(float a);
+
+    bool draw(float a);
     bool drawIndicator(float a);
     void drawPolarSink(float a);
+    void drawFigure(float a);
     using BowColorIdx = enum { GREEN, BLUE, ORANGE, RED };
     void colorRange(float from, float to, int16_t color);
     void drawScale(int16_t at = -1000);
     // drawAVG();
 
 private:
+    // indicator and attributes
     PolarIndicator *_indicator = nullptr;
     float _scale_max = 1.57f; // half scale extend in rad
     int16_t _radius = 50; // pixel
     float _range = 5.; // max positive value of the scale
     float _mrange = -5.; // resulting from range and zero_at, assuming an always symetric scale
     const float _idx_scale; // cut the scale range into discrete 0.5deg steps.
+    float _unit_fac = 1.f; // scale  from SI units to the guage unit
     int16_t _old_idx = 360; // discretized previous index value
     int16_t _old_bow_idx = 0;
     int16_t _old_polar_sink = 0;
     static const ucg_color_t bow_color[4];
 
+    // gauge value as average or figures
+    PolarFigure _figure;
 
     // gauge function
     GaugeFunc *func = nullptr; // map value range to scale range [rad]

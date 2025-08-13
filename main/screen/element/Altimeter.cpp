@@ -13,6 +13,7 @@
 #include "Units.h"
 #include "AdaptUGC.h"
 #include "sensor.h"
+#include "logdefnone.h"
 
 #include <cstdio>
 
@@ -24,17 +25,15 @@ Altimeter::Altimeter(int16_t cx, int16_t cy) :
     MYUCG->setFont(ucg_font_fub25_hr, true);
     _char_width = MYUCG->getStrWidth("2");
     _char_height = MYUCG->getFontAscent() - MYUCG->getFontDescent() - 4;
-    _unit = alt_unit.get();
+    _unit = _unit_drawn = alt_unit.get();
 }
 
 void Altimeter::drawUnit()
 {
-    int16_t tmp = alt_unit.get();
-    if (gflags.standard_setting == true) {
-        tmp = ALT_UNIT_FL;
-    }
-    _unit = tmp;
+    // copy unit
+    _unit = _unit_drawn = alt_unit.get();
 
+    // decode quantization
     switch (alt_quantization.get())
     {
     case ALT_QUANT_DISABLE:
@@ -53,30 +52,38 @@ void Altimeter::drawUnit()
         _quant = 2;
     }
 
+    // 'm', 'ft', ..
+    char s[16];
     MYUCG->setFont(ucg_font_fub11_hr, true);
     MYUCG->setColor( COLOR_HEADER );
-    MYUCG->setPrintPos(_ref_x+5, _ref_y-3);
-    const char *dmode;
-    if( alt_display_mode.get() == MODE_QFE )
-        dmode = "QFE";
-    else if( alt_display_mode.get() == MODE_QNH )
-        dmode = "QNH";
-    else
-        dmode = "";
-    MYUCG->print(dmode);// e.g. 'QNH'
-    MYUCG->setPrintPos(_ref_x+5, _ref_y-3+16);
-    MYUCG->print(Units::AltitudeUnit(_unit)); // e.g. 'm'
-    // QNH
+    MYUCG->setPrintPos(_ref_x+5, _ref_y+3+16);
+    sprintf(s, "%s  ", Units::AltitudeUnit(_unit_drawn));
+    MYUCG->print(s); // e.g. 'm', 'ft' ..
+
+    // QNH, QFE
+    MYUCG->setPrintPos(_ref_x+5, _ref_y+3);
+    const char *dmode = "";
+    if (gflags.standard_setting) {
+        dmode = "STD ";
+    }
+    else if (alt_display_mode.get() == MODE_QFE) {
+        dmode = "QFE ";
+    }
+    else if (alt_display_mode.get() == MODE_QNH) {
+        dmode = "QNH ";
+    }
+    MYUCG->print(dmode);
+
+    // QNH number
     float qnh = QNH.get();
     if( gflags.standard_setting == true ){
         qnh = 1013;
     }
-    char s[24];
     if( qnh_unit.get() == QNH_INHG )
         sprintf(s, "%.2f ", Units::Qnh(qnh));
     else
         sprintf(s, "%d ", Units::QnhRounded(qnh));
-    MYUCG->setPrintPos(_ref_x+5, _ref_y-3-16);
+    MYUCG->setPrintPos(_ref_x+5, _ref_y+3-16);
     MYUCG->setColor( COLOR_WHITE );
     MYUCG->print(s);
 }
@@ -90,39 +97,54 @@ void Altimeter::draw(float alt_m)
     // ESP_LOGI(FNAME,"draw alt %f", altitude);
     // check on the rendered value for change
 
+    // apply mode
+    ESP_LOGI(FNAME,"A1 %f", alt_m);
     float altitude = _altflt += (alt_m - _altflt) * 0.1; // a bit lowpass make sense, any jitter would mess up tape display readability
+    ESP_LOGI(FNAME,"A2 %f", altitude);
     if (alt_display_mode.get() == MODE_QFE)
     {
         altitude -= elevation.get(); // fixme, what is elevation is not set?
     }
-    altitude = Units::Altitude(altitude, _unit);
 
-    int alt = (int)(altitude);
-    int16_t unitalt = alt_unit.get();
-    if (gflags.standard_setting)
-    { // respect autotransition switch
-        unitalt = ALT_UNIT_FL;
-    }
-    if (_unit != unitalt)
+    // moment to take over a changed unit, or quant
+    if (_dirty)
     {
         drawUnit();
     }
+
+    // unit conversion
+    int16_t unitalt = _unit;
+    if (gflags.standard_setting) // respect autotransition switch
+    {
+        unitalt = ALT_UNIT_FL;
+    }
+    if (_unit_drawn != unitalt) // update unit display on an autotransition
+    {
+        _unit_drawn = unitalt;
+        _dirty = true; // need to draw all figures
+        drawUnit();
+    }
+    altitude = Units::Altitude(altitude, unitalt);
+    ESP_LOGI(FNAME,"A3 %f", altitude);
+    int alt = (int)(altitude);
+
+    // track quantization
     int used_quant = _quant;
     if (unitalt == ALT_UNIT_FL)
     {                   // may change dynamically in case of autotransition enabled
         used_quant = 1; // we use 1 for FL, this rolls smooth as slowly
     }
-    if (used_quant)
-    {
+    // check dirty according to used quantization
+    if (used_quant) {
         alt = (int)(altitude * (20.0 / used_quant)); // respect difference according to choosen quantisation
     }
-    // The dirty criterion
+    // the dirty criterion
     if (alt == _alt_prev && !_dirty)
         return;
     _alt_prev = alt;
-    _dirty = false;
-    // alt = fast_roundf_to_int(altitude);
 
+    // a rounded altitude as base for the display
+    alt = fast_roundf_to_int(altitude);
     char s[32]; // plain altimeter as a string
     MYUCG->setFont(ucg_font_fub25_hr, true);
     MYUCG->setColor(COLOR_WHITE);
@@ -159,8 +181,7 @@ void Altimeter::draw(float alt_m)
         int alt_leadpart = alt / (mod * 10);           // left remaining part of altitude
         s[len - nr_rolling_digits] = '\0';
         len -= nr_rolling_digits; // chop nr_rolling_digits digits
-        static float fraction_prev = 1.;
-        if (std::abs(fraction - fraction_prev) > 0.01)
+        if (std::abs(fraction - fraction_prev) > 0.01 || _dirty)
         {
             // move last used_quant digit(s)
             int base = mod / 10;
@@ -190,7 +211,7 @@ void Altimeter::draw(float alt_m)
             // Roll leading digit independant of quant setting in 2 * (mod/10) range
             int lead_quant = 2 * base; // eg. 2 for Q=1 and Q=5
             int rollover = ((int)(alt_f) % mod) / base;
-            if ((rollover < 1 && alt_leadpart != 0) || (rollover > 8))
+            if ((rollover < 1 && alt_leadpart != 0) || (rollover > 8) || _dirty)
             { // [9.1,..,0.9]: roll-over needs clarification on leading digit
                 // Re-Quantized leading altitude part
                 fraction = (float)((int)((alt_f + base) * 10) % (mod * 10)) / (lead_quant * 10);
@@ -212,12 +233,12 @@ void Altimeter::draw(float alt_m)
             }
         }
         MYUCG->setPrintPos(_ref_x - MYUCG->getStrWidth(s) - nr_rolling_digits * _char_width, _ref_y);
-        static char altpart_prev_s[32] = "";
-        if (strcmp(altpart_prev_s, s) != 0)
+        if (strcmp(altpart_prev_s, s) != 0 || _dirty)
         {
             MYUCG->print(s);
             // ESP_LOGI(FNAME,"s5: %s", s );
             strcpy(altpart_prev_s, s);
         }
     }
+    _dirty = false;
 }

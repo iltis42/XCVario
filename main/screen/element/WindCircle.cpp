@@ -23,7 +23,7 @@ WindCircle::WindCircle(int cx, int cy)
 {
 	_center_x = cx;
 	_center_y = cy;
-	_radius = 45;
+	_radius = 49;
 	MYUCG->setFont(ucg_font_fub11_hr);
 	_cheight = MYUCG->getFontAscent() - MYUCG->getFontDescent();
 	_cwidth = MYUCG->getStrWidth("0");

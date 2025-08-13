@@ -190,7 +190,7 @@ const static ucg_color_t bowcolor[4] = { {COLOR_GREEN}, {COLOR_BBLUE}, {COLOR_RE
 
 static void initRefs()
 {
-	AVGOFFX = 0;
+	AVGOFFX = -4;
 	SPEEDYPOS = 106;
 	INNER_RIGHT_ALIGN = DISPLAY_W - 44;
 	LOAD_MPG_POS = DISPLAY_H*0.25;
@@ -560,7 +560,7 @@ void IpsDisplay::redrawValues()
 	}
 	BATgauge->forceRedraw();
 	if ( ALTgauge ) {
-		ALTgauge->drawUnit();
+		// ALTgauge->drawUnit();
 		ALTgauge->forceRedraw();
 	}
 	as_prev = -1;
@@ -963,7 +963,7 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 
 	initRefs();
 	if ( ! polWind ) {
-		polWind = new WindCircle(AMIDX+AVGOFFX-38, AMIDY);
+		polWind = new WindCircle(AMIDX+AVGOFFX-37, AMIDY);
 	}
 	if ( ulmode ) {
 		if ( MCgauge ) {

@@ -112,7 +112,7 @@ void WindCircle::draw(int sdir, int sw, int idir, int iw)
 		redraw_s = true;
 	}
 	if ( idir != _inst_dir || iw != _inst_w ) {
-		drawPolarWind(_inst_dir, _inst_w, ERASE);
+		drawPolarWind(_inst_dir, _inst_w, INST | ERASE);
 		_inst_dir = idir;
 		_inst_w = iw;
 		redraw_i = true;
@@ -128,4 +128,3 @@ void WindCircle::draw(int sdir, int sw, int idir, int iw)
 		}
 	}
 }
-

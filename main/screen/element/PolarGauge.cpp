@@ -55,14 +55,12 @@ public:
     bool draw(int16_t val);
     int16_t getSize() { return _tip - _base; }
 
-    // attributes
-private:
+private: // attributes
     PolarGauge &_gauge;             // ref to gauge the pointer belonges to
     const int16_t _base;            // distance from base center to shoulder of the arrow
     const int16_t _tip;             // distance from base center to arrow tip
     const int16_t _base_val_offset = 8; // .5deg steps from base point to shoulder point of arrow
-    int16_t _needle_pos;
-    int16_t prev_needle_pos = 0;    // -_range .. _range diced up
+    int16_t _needle_pos = 0;        // .5deg diced up
     ucg_color_t color;
     Triangle_t prev;
 };
@@ -89,12 +87,16 @@ PolarIndicator::PolarIndicator(PolarGauge &g) :
 bool PolarIndicator::draw(int16_t val)
 {
     Triangle_t n;
-    bool change = val != prev_needle_pos || _gauge._dirty;
-    if (!change)
+    bool change = val != _needle_pos;
+    if (!change && !_gauge._dirty)
     {
         return false; // nothing painted
     }
-    _gauge._dirty = false;
+    if ( _gauge._dirty ) {
+        _gauge._old_bow_idx = 0; // redraw bows
+        _gauge._old_polar_sink = 0;
+        _gauge._dirty = false;
+    }
 
     n.x_0 = _gauge.CosCenteredDeg2(val + _base_val_offset, _base); // top shoulder
     n.y_0 = _gauge.SinCenteredDeg2(val + _base_val_offset, _base);
@@ -104,50 +106,50 @@ bool PolarIndicator::draw(int16_t val)
     n.y_2 = _gauge.SinCenteredDeg2(val, _tip);
     // ESP_LOGI(FNAME,"draw Triangle  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d", n.x_0, n.y_0, n.x_1 ,n.y_1, n.x_2, n.y_2 );
 
-    if (std::abs(val - prev_needle_pos) < _gauge.dice_rad(deg2rad(9.f)))
-    { // 6deg:=atan(7/70)
-
+    if (std::abs(val - _needle_pos) < _gauge.dice_rad(deg2rad(9.f)))
+    {
+        // new indicator position overlaps
         // Clear just a smal triangle
-        int16_t x_2 = _gauge.CosCenteredDeg2(prev_needle_pos, _base + 7);
-        int16_t y_2 = _gauge.SinCenteredDeg2(prev_needle_pos, _base + 7);
-        // if( change ){
-        MYUCG->setColor(DARK_DGREY);
-        MYUCG->drawTriangle(prev.x_0, prev.y_0, prev.x_1, prev.y_1, x_2, y_2);
-        // }
+        int16_t x_2 = _gauge.CosCenteredDeg2(_needle_pos, _base + 7);
+        int16_t y_2 = _gauge.SinCenteredDeg2(_needle_pos, _base + 7);
+        if( change ){
+            MYUCG->setColor(DARK_DGREY);
+            MYUCG->drawTriangle(prev.x_0, prev.y_0, prev.x_1, prev.y_1, x_2, y_2);
+        }
 
         // draw pointer
         MYUCG->setColor(color.color[0], color.color[1], color.color[2]);
         MYUCG->drawTriangle(n.x_0, n.y_0, n.x_1, n.y_1, n.x_2, n.y_2);
 
         // cleanup respecting overlap
-        // if( change ){  // we need to cleanup only if position has changed, otherwise a redraw at same position is enough
-        MYUCG->setColor(DARK_DGREY);
-        // clear area to the side
-        if (val > prev_needle_pos)
-        {
-            // up
-            MYUCG->drawTetragon(prev.x_2, prev.y_2, prev.x_1, prev.y_1, n.x_1, n.y_1, n.x_2, n.y_2);
+        if( change ){  // we need to cleanup only if position has changed, otherwise a redraw at same position is enough
+            MYUCG->setColor(DARK_DGREY);
+            // clear area to the side
+            if (val > _needle_pos)
+            {
+                // up
+                MYUCG->drawTetragon(prev.x_2, prev.y_2, prev.x_1, prev.y_1, n.x_1, n.y_1, n.x_2, n.y_2);
+            }
+            else
+            {
+                MYUCG->drawTetragon(prev.x_2, prev.y_2, n.x_2, n.y_2, n.x_0, n.y_0, prev.x_0, prev.y_0);
+            }
         }
-        else
-        {
-            MYUCG->drawTetragon(prev.x_2, prev.y_2, n.x_2, n.y_2, n.x_0, n.y_0, prev.x_0, prev.y_0);
-        }
-        // }
     }
     else
     {
-        // if( change ){
-        // cleanup previous incarnation
-        MYUCG->setColor(DARK_DGREY);
-        MYUCG->drawTriangle(prev.x_0, prev.y_0, prev.x_1, prev.y_1, prev.x_2, prev.y_2);
-        // draw pointer
-        MYUCG->setColor(color.color[0], color.color[1], color.color[2]);
-        MYUCG->drawTriangle(n.x_0, n.y_0, n.x_1, n.y_1, n.x_2, n.y_2);
-        // }
+        if( change ){
+            // cleanup previous incarnation
+            MYUCG->setColor(DARK_DGREY);
+            MYUCG->drawTriangle(prev.x_0, prev.y_0, prev.x_1, prev.y_1, prev.x_2, prev.y_2);
+            // draw pointer
+            MYUCG->setColor(color.color[0], color.color[1], color.color[2]);
+            MYUCG->drawTriangle(n.x_0, n.y_0, n.x_1, n.y_1, n.x_2, n.y_2);
+        }
     }
-    // ESP_LOGI(FNAME,"change=%d  prev=%d  now=%d", change, prev_needle_pos, val  );
+    // ESP_LOGI(FNAME,"change=%d  prev=%d  now=%d", change, _needle_pos, val  );
     prev = n;
-    prev_needle_pos = val;
+    _needle_pos = val;
     return change;
 }
 
@@ -361,12 +363,14 @@ void PolarGauge::drawScale(int16_t at)
 
     // calc pixel dist for interval 0.5-1 on scale bow
     int16_t dist = std::roundf(((*func)(1.) - (*func)(0.5)) * _radius); // in pixel
-    // ESP_LOGI(FNAME, "lines go m%d %d %d", modulo, dist, mid_lpos_upper);
+    ESP_LOGI(FNAME, "range %f/%f lines go m%d %d %d", _range, _mrange, modulo, dist, mid_lpos_upper);
 
     // increment in 1/10 scale steps
-    int16_t start = _range * 10, stop = _mrange * 10;
+    int16_t start = std::roundf(_range)*10, stop = std::roundf(_mrange)*10;
+    int16_t l_start = start, l_stop = stop;
     if (at != -1000)
     {
+        // partial scale repainting
         int16_t tmp = 10 * at + 40;
         if (tmp < start)
         {
@@ -382,7 +386,7 @@ void PolarGauge::drawScale(int16_t at)
             modulo = (dist > 24) ? 1 : (dist > 16) ? 2 : (dist > 8) ? 5 : 10;
         }
     }
-    // ESP_LOGI(FNAME, "scale from %d to %d", start, stop);
+    ESP_LOGI(FNAME, "scale from %d to %d", start, stop);
     bool draw_label = false;
     int zeroat = 10 * func->getZero();
     for (int16_t a = start; a >= stop; a--)
@@ -418,14 +422,14 @@ void PolarGauge::drawScale(int16_t at)
             if (!(a % 10))
             {
                 // every integer big line
-                if (modulo < 11 || a == _range * 10 || a == _range * 10 || a == mid_lpos_upper || a == mid_lpos_lower || a == zeroat)
+                if (modulo < 11 || a == l_start || a == l_stop || a == mid_lpos_upper || a == mid_lpos_lower || a == zeroat)
                 {
                     width = 3;
                     end = _radius + 15;
                 }
-                draw_label = a != zeroat && (draw_label || _range < 5 || a == mid_lpos_upper || a == mid_lpos_lower || a == _range * 10 || a == _mrange * 10);
+                draw_label = a != zeroat && (draw_label || _range < 5. || a == mid_lpos_upper || a == mid_lpos_lower || a == l_start || a == l_stop);
             }
-            // ESP_LOGI(FNAME, "lines a:%d end:%d label: %d  width: %d", a, end, draw_label, width );
+            ESP_LOGI(FNAME, "lines a:%d end:%d label: %d  width: %d", a, end, draw_label, width );
 
             drawOneScaleLine(val, end, width);
             if (draw_label)
@@ -435,20 +439,16 @@ void PolarGauge::drawScale(int16_t at)
             draw_label = false;
         }
     }
-    int16_t prev = dice_up((start+5.f)/10.);
-    int16_t end = 0;
+    int16_t prev = dice_up(start/10.) +6; // overdraw a bit
+    int16_t to = dice_up(stop/10.) -6;
     if (start > 0)
     {
-        drawBow(-1, prev, _indicator->getSize() + 5);
+        drawBow(to, prev, _indicator->getSize() + 5);
     }
     else
     {
-        end = (start-5.f) / 10;
-    }
-    if (stop < 0)
-    {
-        prev = dice_up((stop-5.f)/10.);
-        drawBow(end, prev, _indicator->getSize() + 5);
+        // draw bow towards zero to get the dark grey (background color)
+        drawBow(prev, to, _indicator->getSize() + 5);
     }
     MYUCG->setFontPosBottom();
 }

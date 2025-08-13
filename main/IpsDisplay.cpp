@@ -1190,6 +1190,7 @@ void IpsDisplay::initLoadDisplay(){
 	gauge->colorRange(gload_neg_limit_low.get(), gload_neg_limit.get(), PolarGauge::ORANGE);
 	gauge->colorRange(gload_neg_limit.get(), min_gscale, PolarGauge::RED);
 	gauge->drawScale();
+	gauge->forceRedraw();
 	old_gmax = 100;
 	old_gmin = -100;
 	old_ias_max = -1;

@@ -52,6 +52,7 @@ void Battery::draw(float volt)
 	if ( _charge == chargev && ! _dirty  ) {
         return;
 	}
+    _charge = chargev;
     _dirty = false;
 
     int chargep = (int)((volt - bat_low_volt.get())*100)/( bat_full_volt.get() - bat_low_volt.get());

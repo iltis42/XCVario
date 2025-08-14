@@ -8,6 +8,7 @@
 #include "setup/SetupNG.h"
 
 #include "setup/SetupMenuCommon.h"
+#include "setup/CruiseMode.h"
 #include "math/Quaternion.h"
 #include "ESP32NVS.h"
 #include "ESPAudio.h"
@@ -107,6 +108,10 @@ void polar_update(){
 
 void modifyPolar() {
 	Speed2Fly.modifyPolar();
+}
+
+void change_cruise() {
+	VCMode.updateCache();
 }
 
 void resetSWindAge() {
@@ -211,7 +216,7 @@ SetupNG<float>			crew_weight( "CREW_WGT", 80, true, SYNC_BIDIR, PERSISTENT, chan
 SetupNG<float>			gross_weight( "CREW_WGT", 350, true, SYNC_NONE, VOLATILE ); // derived from above
 SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, modifyPolar, QUANT_NONE, LIMITS(0.0, 50, 1));
 
-SetupNG<int>  			cruise_mode( "CRUISE", AUDIO_VARIO, false, SYNC_BIDIR, VOLATILE );
+SetupNG<int>  			cruise_mode( "CRUISE", AUDIO_VARIO, false, SYNC_BIDIR, VOLATILE, change_cruise ); // use the CruiseMode wrapper to access and modify
 SetupNG<float>  		OAT( "OAT", DEVICE_DISCONNECTED_C, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
 SetupNG<float>  		swind_dir( "SWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
 SetupNG<float>  		swind_speed( "SWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
@@ -397,10 +402,10 @@ SetupNG<float>       	flap_takeoff("FLAPTO", 1,  true, SYNC_BIDIR, PERSISTENT, n
 SetupNG<int> 			audio_mute_menu( "AUDIS", 0 );
 SetupNG<int> 			audio_mute_sink( "AUDISS", 0 );
 SetupNG<int> 			audio_mute_gen( "AUDISG", AUDIO_ON );
-SetupNG<int>			vario_mode("VAMOD", CRUISE_NETTO );  // switch to netto mode when cruising
+SetupNG<int>			vario_mode("VAMOD", CRUISE_ONLY_NETTO, true, SYNC_NONE, PERSISTENT, change_cruise);  // switch to netto mode when cruising
 SetupNG<int>			airspeed_sensor_type("PTYPE", PS_NONE, false);
 SetupNG<int>			cruise_audio_mode("CAUDIO", 0 );
-SetupNG<int>			netto_mode("NETMOD", NETTO_RELATIVE );  // regard polar sink
+SetupNG<int>			netto_mode("NETMOD", NETTO_RELATIVE, true, SYNC_NONE, PERSISTENT, change_cruise);  // regard polar sink
 SetupNG<float>			v_max("VMAX", 270, true, SYNC_FROM_MASTER, PERSISTENT, 0, QUANT_HSPEED, &polar_speed_limits);
 static const limits_t pos_g_limits = {1.0, 8.0, 0.1};
 SetupNG<float>			gload_pos_thresh("GLOADPT", 4, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &pos_g_limits);

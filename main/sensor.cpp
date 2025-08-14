@@ -14,6 +14,7 @@
 #include "comm/BTspp.h"
 #include "BLESender.h"
 #include "setup/SetupNG.h"
+#include "setup/CruiseMode.h"
 #include "ESPAudio.h"
 #include "ESPRotary.h"
 #include "AnalogInput.h"
@@ -262,7 +263,7 @@ static void toyFeed()
 		}
 		switch( nmea_protocol.get() ) {
 		case BORGELT_P:
-			ToyNmeaPrtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), gflags.validTemperature );
+			ToyNmeaPrtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), VCMode.getCMode(), gflags.validTemperature );
 			ToyNmeaPrtcl->sendXcvGeneric(te_vario.get(), altSTD, tas);
 			break;
 		case OPENVARIO_P:
@@ -272,7 +273,7 @@ static void toyFeed()
 			ToyNmeaPrtcl->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
 			break;
 		case XCVARIO_P:
-			ToyNmeaPrtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), gflags.validTemperature,
+			ToyNmeaPrtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), VCMode.getCMode(), altitude.get(), gflags.validTemperature,
 				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 			break;
 		default:
@@ -1309,12 +1310,12 @@ void system_startup(void *args){
 		}
 		Display->clear();
 
-		int modeEvent = ModeEvent(ModeEvent::MODE_QNHADJ).raw;
+		int screenEvent = ScreenEvent(ScreenEvent::QNH_ADJUST).raw;
 		if ( NEED_VOLTAGE_ADJUST ) {
 			ESP_LOGI(FNAME,"Do Factory Voltmeter adj");
-			modeEvent = ModeEvent(ModeEvent::MODE_VOLTADJ).raw;
+			screenEvent = ScreenEvent(ScreenEvent::VOLT_ADJUST).raw;
 		}
-		xQueueSend(uiEventQueue, &modeEvent, 0);
+		xQueueSend(uiEventQueue, &screenEvent, 0);
 	}
 	else {
 		if ( SetupCommon::isClient() ) {

@@ -7,8 +7,9 @@
  ***********************************************************/
 
 #include "S2fSwitch.h"
+
 #include "protocol/Clock.h"
-#include "setup/SetupNG.h"
+#include "setup/CruiseMode.h"
 #include "screen/UiEvents.h"
 #include "screen/DrawDisplay.h"
 #include "sensor.h"
@@ -17,12 +18,9 @@
 #include "logdefnone.h"
 
 // auto switch filters
-static bool Extern();
 static bool Speed();
 static bool Flap();
 static bool Omega();
-static bool VarioFix();
-static bool S2fFix();
 
 S2fSwitch *S2FSWITCH = nullptr;
 
@@ -63,7 +61,7 @@ bool IRAM_ATTR S2fSwitch::tick()
     else if (_state)
     {
         // toggle
-        gotEvent = ModeEvent(ModeEvent::MODE_SV_TOGGLE).raw;
+        gotEvent = ModeEvent(ModeEvent::MODE_TOGGLE).raw;
     }
     xQueueSend(uiEventQueue, &gotEvent, 0);
 
@@ -103,13 +101,10 @@ void S2fSwitch::updateSwitchSetup()
 
     // setup auto switches
     _auto_lag = 0;
-    _auto_state = cruise_mode.get(); // init event signalling state
+    _auto_state = VCMode.getCMode(); // init event signalling state
+    VCMode.unlockCMode();
     switch (s2f_switch_mode.get())
     {
-    case AM_EXTERNAL:
-    case AM_SWITCH:
-        auto_plug = nullptr; // Extern;
-        break;
     case AM_AUTOSPEED:
         _auto_lag = static_cast<int>(s2f_auto_lag.get());
         auto_plug = Speed;
@@ -123,23 +118,18 @@ void S2fSwitch::updateSwitchSetup()
         auto_plug = Omega;
         break;
     case AM_VARIO:
-        auto_plug = VarioFix;
-        break;
     case AM_S2F:
-        auto_plug = S2fFix;
-        break;
+        VCMode.lockTo(s2f_switch_mode.get()==AM_S2F);
+    case AM_EXTERNAL:
+    case AM_SWITCH:
     default:
-        auto_plug = nullptr;
+        auto_plug = nullptr; // alias "external"
         break;
     }
 }
 
 //////////////
 // auto switch filter
-bool Extern()
-{
-    return cruise_mode.get() != 0; // updated from peer, or switch
-}
 bool Speed()
 {
     if (ias.get() < s2f_threshold.get())
@@ -153,7 +143,7 @@ bool Speed()
 }
 bool Flap()
 {
-    if (flap_enable.get())
+    if (flap_sensor.get()) // fixme need to work for client, th.m. the vario w/o sensor
     {
         return FLAP->getFlapPosition() < s2f_flap_pos.get();
     }
@@ -171,14 +161,6 @@ bool Omega()
         return false;
     }
 }
-bool VarioFix()
-{
-    return false;
-}
-bool S2fFix()
-{
-    return true;
-}
 
 // call once a second
 void S2fSwitch::checkCruiseMode()
@@ -186,13 +168,15 @@ void S2fSwitch::checkCruiseMode()
     if (auto_plug)
     {
         bool cm = (*auto_plug)();
+        // an auto switch decision can be reverted before becoming effective
+        // when e.g. the criterion toggles in the defined auto lag duration
         if (cm != _auto_state)
         {
-            if (_lag_counter == (_auto_lag / (_auto_state ? 1 : 2)))
+            if (_lag_counter == (_auto_lag / (_auto_state ? 2 : 1))) // go twice as fast into vario mode, as out of it
             {
                 _auto_state = cm;
                 ESP_LOGI(FNAME, "New S2F auto mode: %d", cm);
-                int gotEvent = ModeEvent(cm ? ModeEvent::MODE_VARIO : ModeEvent::MODE_S2F).raw;
+                int gotEvent = ModeEvent(cm ? ModeEvent::MODE_S2F : ModeEvent::MODE_VARIO).raw;
                 xQueueSend(uiEventQueue, &gotEvent, 0);
             }
             _lag_counter++;

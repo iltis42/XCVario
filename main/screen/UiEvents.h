@@ -50,8 +50,10 @@ struct RotaryEvent
 struct ScreenEvent
 {
     enum { MSG_BOX = 1,
-           BOOT_SCREEN = 2,
-           FLARM_ALARM = 3 };
+           BOOT_SCREEN,
+           FLARM_ALARM,
+           VOLT_ADJUST,
+           QNH_ADJUST };
 
     uint32_t raw;
     ScreenEvent() = delete;
@@ -63,9 +65,7 @@ struct ModeEvent
 {
     enum { MODE_S2F = 1,
            MODE_VARIO, 
-           MODE_SV_TOGGLE,
-           MODE_VOLTADJ,
-           MODE_QNHADJ };
+           MODE_TOGGLE };
 
     uint32_t raw;
     ModeEvent() = delete;

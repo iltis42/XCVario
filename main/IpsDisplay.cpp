@@ -23,6 +23,7 @@
 #include "Flap.h"
 #include "Flarm.h"
 #include "Compass.h"
+#include "setup/CruiseMode.h"
 #include "wind/StraightWind.h"
 #include "wind/CircleWind.h"
 #include "comm/WifiApSta.h"
@@ -1448,18 +1449,16 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	bool netto=false;
 	// todo integrate better into screen element
-	if( vario_mode.get() == VARIO_NETTO || (s2fmode && ( vario_mode.get() == CRUISE_NETTO )) ){
-		// todo this calulation belongs to the blackboard that keeps hosted values consitent
-		if( netto_mode.get() == NETTO_NORMAL ){
-			te_ms = te_ms - polar_sink_ms;
-			ate_ms = ate_ms - polar_sink_ms;
-		}
-		else if( netto_mode.get() == NETTO_RELATIVE ){  // Super Netto, considering circling sink
-			te_ms = te_ms - polar_sink_ms + Speed2Fly.circlingSink( ias.get() );
-			ate_ms = ate_ms - polar_sink_ms + Speed2Fly.circlingSink( ias.get() );
-		}
+	if ( VCMode.isNetto() ) {
+		te_ms -= polar_sink_ms;
+		ate_ms -= polar_sink_ms;
 		netto=true;
 	}
+	if ( VCMode.getVMode() == CruiseMode::MODE_REL_NETTO ) { // Super Netto, considering circling sink
+		te_ms += Speed2Fly.circlingSink( ias.get() );
+		ate_ms += Speed2Fly.circlingSink( ias.get() );
+	}
+
 	// indicate vario mode
 	if( netto != netto_old ) {
 		drawNetto( DISPLAY_W-38, 50, netto );
@@ -1632,16 +1631,14 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 
 	// S2F given im km/h: Unit adaption for mph and knots
 	bool netto=false;
-	if( vario_mode.get() == VARIO_NETTO || (s2fmode && ( vario_mode.get() == CRUISE_NETTO )) ){
-		if( netto_mode.get() == NETTO_NORMAL ){
-			te_ms = te_ms - polar_sink_ms;
-			ate_ms = ate_ms - polar_sink_ms;
-		}
-		else if( netto_mode.get() == NETTO_RELATIVE ){  // Super Netto, considering circling sink
-			te_ms = te_ms - polar_sink_ms + Speed2Fly.circlingSink( ias.get() );
-			ate_ms = ate_ms - polar_sink_ms + Speed2Fly.circlingSink( ias.get() );
-		}
+	if ( VCMode.isNetto() ) {
+		te_ms -= polar_sink_ms;
+		ate_ms -= polar_sink_ms;
 		netto=true;
+	}
+	if ( VCMode.getVMode() == CruiseMode::MODE_REL_NETTO ) { // Super Netto, considering circling sink
+		te_ms += Speed2Fly.circlingSink( ias.get() );
+		ate_ms += Speed2Fly.circlingSink( ias.get() );
 	}
 	if( netto != netto_old ){
 		drawNetto( DISPLAY_W-37, 20, netto );

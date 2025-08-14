@@ -1550,7 +1550,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		MAINgauge->draw(te_ms);
 	}
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
-	if( ps_display.get() && !(tick%4) ){
+	if( ps_display.get() && !netto && !(tick%4) ){
 		MAINgauge->drawPolarSink(polar_sink);
 	}
 

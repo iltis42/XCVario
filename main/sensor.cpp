@@ -494,10 +494,10 @@ void readSensors(void *pvParameters){
 				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, gflags.standard_setting  );
 			}
 		}
-		if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
+		// if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
 			// ESP_LOGI(FNAME,"New Altitude: %.1f", new_alt );
 			altitude.set( new_alt );
-		}
+		// }
 
 		aTE = bmpVario.readAVGTE();
 

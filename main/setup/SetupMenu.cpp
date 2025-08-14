@@ -658,7 +658,7 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	s2fmod->setHelp("Select data source for switching between S2F and Vario modes", 230);
 	s2fmod->addEntry("Switch", AM_SWITCH);
 	s2fmod->addEntry("AutoSpeed", AM_AUTOSPEED);
-	if ( flap_enable.get() ) {
+	if ( flap_sensor.get() ) {
 		s2fmod->addEntry("AutoFlap", AM_FLAP); // not dynamic, exit setup to change
 	}
 	s2fmod->addEntry("AutoTurn", AM_AHRS);
@@ -679,8 +679,8 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	top->addEntry(autospeed);
 	autospeed->setHelp("Transition speed for the AutoSpeed S2F switch");
 
-	if ( flap_enable.get() ) {
-		SetupMenuValFloat *s2f_flap = new SetupMenuValFloat("AutoFlap Position", "<", nullptr, false, &s2f_flap_pos);
+	if ( flap_sensor.get() ) {
+		SetupMenuValFloat *s2f_flap = new SetupMenuValFloat("AutoFlap Position", "flp", nullptr, false, &s2f_flap_pos);
 		top->addEntry(s2f_flap);
 		s2f_flap->setHelp("Precise flap position for the AutoFlap S2F switch");
 	}

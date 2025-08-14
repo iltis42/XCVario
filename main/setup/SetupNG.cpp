@@ -213,7 +213,7 @@ SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_NONE, VOLATILE, 0 );  // 
 SetupNG<float>  		ballast_kg( "BAL_KG" , 0.0, true, SYNC_BIDIR, PERSISTENT, change_bal_water, QUANT_MASS, LIMITS(0.0, 500, 1));
 SetupNG<float>			empty_weight( "EMPTY_WGT", 361.2, true, SYNC_BIDIR, PERSISTENT, change_empty_weight, QUANT_MASS, LIMITS(0, 1000, 1));
 SetupNG<float>			crew_weight( "CREW_WGT", 80, true, SYNC_BIDIR, PERSISTENT, change_crew_weight, QUANT_MASS, LIMITS(0, 300, 1));
-SetupNG<float>			gross_weight( "CREW_WGT", 350, true, SYNC_NONE, VOLATILE ); // derived from above
+SetupNG<float>			gross_weight( "GROSS_WGT", 350, true, SYNC_NONE, VOLATILE ); // derived from above
 SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, modifyPolar, QUANT_NONE, LIMITS(0.0, 50, 1));
 
 SetupNG<int>  			cruise_mode( "CRUISE", AUDIO_VARIO, false, SYNC_BIDIR, VOLATILE, change_cruise ); // use the CruiseMode wrapper to access and modify

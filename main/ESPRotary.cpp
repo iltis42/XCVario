@@ -29,7 +29,7 @@ bool IRAM_ATTR ESPRotary::tick()
 {
 	// called every 10msec
 	int gotEvent;
-	bool buttonRead = gpio_get_level(getSw()) == 0; // button pressed (active LOW)
+	bool buttonRead = gpio_get_level(_sw) == 0; // button pressed (active LOW)
 	debounceCount = (buttonRead == lastButtonRead) ? (debounceCount+1) : 0;
 	lastButtonRead = buttonRead;
 	if ( holdCount > 0 ) {
@@ -110,11 +110,11 @@ ESPRotary::ESPRotary(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw) :
 	Clock_I(1),
 	clk(aclk),
 	dt(adt),
-	sw(asw)
+	_sw(asw)
 {
 	// Init. the button early
-	gpio_set_direction(sw, GPIO_MODE_INPUT);
-	gpio_pullup_en(sw); // Button
+	gpio_set_direction(_sw, GPIO_MODE_INPUT);
+	gpio_pullup_en(_sw); // Button
 	// Rotary Encoder
 	gpio_set_direction(clk, GPIO_MODE_INPUT);
 	gpio_set_direction(dt, GPIO_MODE_INPUT);

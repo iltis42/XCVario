@@ -35,19 +35,20 @@ bool IRAM_ATTR S2fSwitch::tick()
     _debounce = (buttonRead == _lastButtonRead) ? (_debounce + 1) : 0;
     _lastButtonRead = buttonRead;
 
-    if (_debounce < _dcount || (buttonRead == _state))
+    if (_debounce < _dcount || buttonRead == _state)
     {
-        if (!_state && _dcount > 4)
+        if (_dcount > 3) {
             _dcount--;
+        }
         return false;
     }
-    _dcount = 40;
+    _dcount = 15;
 
     // A valid edge detected
     _state = buttonRead;
     int gotEvent;
-    ESP_LOGI(FNAME, "cruise_mode _state: %d", _state);
-    if (s2f_switch_type.get() == S2F_HW_SWITCH)
+    ESP_LOGI(FNAME, "cruise_switch _state: %d", _state);
+    if (s2f_switch_type.get() != S2F_HW_PUSH_BUTTON)
     {
         // switch
         if (_state)
@@ -69,8 +70,9 @@ bool IRAM_ATTR S2fSwitch::tick()
     return false;
 }
 
-S2fSwitch::S2fSwitch(gpio_num_t sw) : Clock_I(1),
-                                      _sw(sw)
+S2fSwitch::S2fSwitch(gpio_num_t sw) :
+    Clock_I(1),
+    _sw(sw)
 {
     // prepare switch gpio
     gpio_set_direction(_sw, GPIO_MODE_INPUT);

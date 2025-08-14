@@ -80,7 +80,7 @@ private:
 	static bool s2fmodealt;
 	static int s2fclipalt;
 	static int as_prev;
-	static int s2fmode_prev;
+	static bool s2fmode_prev;
 
 	static int wkalt;
 	static int wkoptalt;
@@ -115,9 +115,9 @@ private:
 	static void drawThermometer( int x, int y );
 
 private:
-	static void initRetroDisplay( bool ulmode );
+	static void initRetroDisplay();
 	static void initLoadDisplay();
-	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
+	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, float wksensor );
 	static void drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
 	static void setTeBuf( int y1, int y2, int r, int g, int b );
 	static void drawTeBuf();

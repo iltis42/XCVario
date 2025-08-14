@@ -26,8 +26,6 @@ public:
     ~Flap();
 	static Flap* theFlap();
 	void  progress();
-	// inline float getLever() { return lever; }
-	// inline void setLever( float l ) { lever = l; }
 	// recommendations
 	float getOptimum( float wks, int& wki );
 	float getFlapPosition() { return lever; };

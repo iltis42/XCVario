@@ -140,7 +140,7 @@ AdaptUGC *IpsDisplay::ucg = 0;
 int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
 int IpsDisplay::s2f_level_prev=0;
-int IpsDisplay::s2fmode_prev=100;
+bool IpsDisplay::s2fmode_prev=false;
 bool IpsDisplay::wireless_alive = false;
 int IpsDisplay::tempalt = -2000;
 bool IpsDisplay::s2fmodealt = false;
@@ -349,12 +349,12 @@ void IpsDisplay::initDisplay() {
 	if ( ! BATgauge ) {
 		BATgauge = new Battery(BATX, BATY);
 	}
-	if ( vario_lower_gauge.get() && ! ALTgauge ) {
+	if ( ! ALTgauge ) {
 		ALTgauge = new Altimeter(INNER_RIGHT_ALIGN, 0.8*DISPLAY_H);
 	}
 
 	if( display_style.get() != DISPLAY_AIRLINER ) {
-		initRetroDisplay( display_style.get() == DISPLAY_UL );
+		initRetroDisplay();
 	}
 	else { // Airliner
 		clear();
@@ -938,13 +938,13 @@ void IpsDisplay::setBottomDirty()
 	ESP_LOGI(FNAME,"bottom dirty");
 }
 
-void IpsDisplay::initRetroDisplay( bool ulmode ){
+void IpsDisplay::initRetroDisplay(){
 	clear();
 	ucg->setFontPosBottom();
 	_range = Units::Vario( scale_range.get() );
 
 	MAINgauge->drawScale();
-	MAINgauge->forceRedraw();
+	MAINgauge->forceAllRedraw();
 
 	initRefs();
 	if ( ! WNDgauge ) {
@@ -1144,7 +1144,7 @@ void IpsDisplay::initLoadDisplay(){
 	MAINgauge->colorRange(gload_neg_limit_low.get(), gload_neg_limit.get(), PolarGauge::ORANGE);
 	MAINgauge->colorRange(gload_neg_limit.get(), min_gscale, PolarGauge::RED);
 	MAINgauge->drawScale();
-	MAINgauge->forceRedraw();
+	MAINgauge->forceAllRedraw();
 	old_gmax = 100;
 	old_gmin = -100;
 	old_ias_max = -1;
@@ -1436,7 +1436,7 @@ void IpsDisplay::drawNetto( int16_t x, int16_t y, bool netto ) {
 }
 
 void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
-		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
+		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, float wksensor ){
 	// ESP_LOGI(FNAME,"drawRetroDisplay polar_sink: %f AVario: %f m/s", polar_sink_ms, ate_ms );
 	if( !(screens_init & INIT_DISPLAY_RETRO) ){
 		initDisplay();
@@ -1505,8 +1505,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Wind & center aid
 	if( !(tick%4) ){
-		static bool WG_visible = true;
-		if ( theCenteraid && ! s2fmode ) {
+		static bool WG_visible = true; // fixme temp
+		if ( theCenteraid && ! VCMode.getCMode() ) {
 			if ( WG_visible ) {
 				WNDgauge->clear();
 
@@ -1583,9 +1583,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Cruise mode or circling
-	if( ((int)s2fmode != s2fmode_prev) ) { // && !ulmode ){
-		drawS2FMode( DISPLAY_W-50, 18, s2fmode );
-		s2fmode_prev = (int)s2fmode;
+	if( (VCMode.getCMode() != s2fmode_prev) ) { // && !ulmode ){
+		drawS2FMode( DISPLAY_W-50, 18, VCMode.getCMode() );
+		s2fmode_prev = VCMode.getCMode();
 	}
 	// Medium Climb Indicator
 	// ESP_LOGI(FNAME,"acl:%f nt:%d", acl, average_climbf, !(tick%9) );
@@ -1597,11 +1597,13 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		ESP_LOGI(FNAME,"redraw sale around %f", -_range+2);
 		bottom_dirty = false;
 		MAINgauge->drawScale(MAINgauge->getMRange()+2);
+		MAINgauge->forceAllRedraw();
 		if ( MCgauge ) {
 			MCgauge->forceRedraw();
-			MCgauge->draw(MC.get());
+			// MCgauge->draw(MC.get());
 		}
-		BATgauge->draw(volt);
+		BATgauge->forceRedraw();
+		// BATgauge->draw(volt);
 	}
 	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 }
@@ -1613,7 +1615,7 @@ void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sin
 	if( display_style.get() == DISPLAY_AIRLINER ) {
 		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 	} else {
-		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
+		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, wksensor );
 	}
 	xSemaphoreGive(display_mutex);
 }

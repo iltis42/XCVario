@@ -47,6 +47,7 @@ class PolarGauge : public ScreenElement
 public:
     PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t radius);
     ~PolarGauge();
+    void forceAllRedraw();
     void setRange(float pos_range, float zero_at, bool log);
     float getMRange() const { return _mrange; }
     void setUnit(float uf) { _unit_fac = uf; }
@@ -54,8 +55,8 @@ public:
     void setFigOffset(int16_t ox, int16_t oy);
     float clipValue(float a) const;
 
-    bool draw(float a);
-    bool drawIndicator(float a);
+    void draw(float a);
+    void drawIndicator(float a);
     void drawPolarSink(float a);
     void drawFigure(float a);
     using BowColorIdx = enum { GREEN, BLUE, ORANGE, RED };

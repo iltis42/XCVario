@@ -1098,6 +1098,7 @@ static void screens_menu_create_vario(SetupMenu *top) {
 	top->addEntry(scrcaid);
 
 	SetupMenuSelect *tgauge = new SetupMenuSelect("Upper Gauge", RST_NONE, nullptr, &vario_upper_gauge);
+	tgauge->setHelp("Choose the content for this gauge");
 	tgauge->addEntry("Disable");
 	tgauge->addEntry("Airspeed", GAUGE_SPEED);
 	tgauge->addEntry("Speed2Fly", GAUGE_S2F);
@@ -1107,9 +1108,10 @@ static void screens_menu_create_vario(SetupMenu *top) {
 	top->addEntry(tgauge);
 
 	SetupMenuSelect *bgauge = new SetupMenuSelect("Lower Gauge", RST_NONE, nullptr, &vario_lower_gauge);
+	bgauge->setHelp("Choose the content for this gauge");
 	bgauge->addEntry("Disable");
 	bgauge->addEntry("Altimeter", GAUGE_ALT);
-	bgauge->addEntry("Life Wind", GAUGE_NONE);
+	// bgauge->addEntry("Life Wind", GAUGE_NONE);
 	top->addEntry(bgauge);
 
 	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", RST_NONE, nullptr, &flap_enable );

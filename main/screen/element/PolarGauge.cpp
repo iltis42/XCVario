@@ -161,7 +161,7 @@ bool PolarIndicator::draw(int16_t val)
 void PolarFigure::draw(float val)
 {
 	int16_t ival = std::rint(val*10);  // integer value in steps of 10th
-	if (_figure != ival) {
+	if (_figure != ival || _dirty) {
         // only print if there is a change in rounded numeric string
 		char s[32];
 		MYUCG->setFont(ucg_font_fub35_hn, false );
@@ -214,6 +214,14 @@ PolarGauge::~PolarGauge()
     }
 }
 
+void PolarGauge::forceAllRedraw()
+{
+    _dirty = true;
+    _figure.forceRedraw();
+    _old_bow_idx = 0;
+    _old_polar_sink = 0;
+}
+
 void PolarGauge::setRange(float pos_range, float zero_at, bool log)
 {
     _range = pos_range * _unit_fac;
@@ -249,7 +257,7 @@ float PolarGauge::clipValue(float a) const
 }
 
 // > in [m/s]
-bool PolarGauge::draw(float a)
+void PolarGauge::draw(float a)
 {
     a *= _unit_fac;
     int16_t val = dice_up(clipValue(a));
@@ -260,14 +268,12 @@ bool PolarGauge::draw(float a)
         int16_t bar_val = (val > 0) ? val : 0;
         // draw green vario bar
         drawBow(bar_val, _old_bow_idx, 3, GREEN);
-        return true;
     }
-    return false;
 }
 
-bool PolarGauge::drawIndicator(float a)
+void PolarGauge::drawIndicator(float a)
 {
-    return _indicator->draw(dice_up(clipValue(a)));
+    _indicator->draw(dice_up(clipValue(a)));
 }
 
 // sink speed in [m/s]

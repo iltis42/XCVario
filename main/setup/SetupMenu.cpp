@@ -1116,6 +1116,11 @@ static void screens_menu_create_vario(SetupMenu *top) {
 	wke->mkEnable();
 	wke->setHelp("Enable flap indicator to assist optimum flap setting depending on speed, G-load and ballast");
 	top->addEntry( wke );
+
+	SetupMenuSelect *mc = new SetupMenuSelect("McCready Gauge", RST_NONE, nullptr, &vario_mc_gauge);
+	mc->setHelp("Show the currently used McCready setting");
+	mc->mkEnable();
+	top->addEntry(mc);
 }
 
 void screens_menu_create_gload(SetupMenu *top) {
@@ -1321,7 +1326,6 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 			"Display style in more digital airliner stype or retro mode with classic vario meter needle");
 	disty->addEntry("Airliner");
 	disty->addEntry("Retro");
-	disty->addEntry("UL");
 
 	SetupMenuSelect *disva = new SetupMenuSelect("Color Variant", RST_NONE, nullptr, &display_variant);
 	top->addEntry(disva);

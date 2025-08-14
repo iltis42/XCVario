@@ -433,6 +433,7 @@ SetupNG<int> 			screen_horizon("SCR_HORIZ", SCREEN_OFF);
 SetupNG<int> 			vario_centeraid("SCR_CA", 0, false);
 SetupNG<int> 			vario_upper_gauge("SCR_GT", GAUGE_NONE, false);
 SetupNG<int> 			vario_lower_gauge("SCR_GB", GAUGE_NONE, false);
+SetupNG<int> 			vario_mc_gauge("SCR_GMC", 1, false);
 SetupNG<bitfield_compass>  calibration_bits("CALBIT", { 0,0,0,0,0,0 } );
 SetupNG<int> 			gear_warning("GEARWA", 0 );
 SetupNG<t_tenchar_id>	custom_wireless_id("WLID", t_tenchar_id("") );

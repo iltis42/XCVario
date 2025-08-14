@@ -950,14 +950,12 @@ void IpsDisplay::initRetroDisplay( bool ulmode ){
 	if ( ! WNDgauge ) {
 		WNDgauge = new WindCircle(AMIDX+AVGOFFX-37, AMIDY);
 	}
-	if ( ulmode ) {
-		if ( MCgauge ) {
-			delete MCgauge;
-			MCgauge = nullptr;
-		}
+	if ( vario_mc_gauge.get() ) {
+		MCgauge->setLarge(true);
 	}
 	else {
-		MCgauge->setLarge(true);
+		delete MCgauge;
+		MCgauge = nullptr;
 	}
 	if ( vario_lower_gauge.get() ) {
 		ALTgauge->setRef(INNER_RIGHT_ALIGN, 0.8*DISPLAY_H);

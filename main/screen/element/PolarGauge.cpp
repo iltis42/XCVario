@@ -8,6 +8,7 @@
 
 #include "PolarGauge.h"
 
+#include "WindIndicator.h"
 #include "math/Trigenometry.h"
 #include "Units.h"
 #include "Colors.h"

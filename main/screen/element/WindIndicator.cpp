@@ -6,7 +6,7 @@
  ***       Copyright (C) Rohs Engineering Design         ***
  ***********************************************************/
 
-#include "WindCircle.h"
+#include "WindIndicator.h"
 
 #include "IpsDisplay.h"
 #include "math/Trigenometry.h"

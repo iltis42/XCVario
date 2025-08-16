@@ -15,12 +15,17 @@
 #include "Units.h"
 #include "Colors.h"
 #include "AdaptUGC.h"
-#include "logdefnone.h"
+#include "logdef.h"
 
 #include <cmath>
 
+float getHeading(); // fixme
+
 extern AdaptUGC *MYUCG;
 static const ucg_color_t ndl_color[3] = {{COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED}};
+static constexpr const ucg_color_t bow_color[4] = {{COLOR_GREEN}, {COLOR_BBLUE}, {COLOR_ORANGE}, {COLOR_RED}};
+static const ucg_color_t lne_color[3] = {{COLOR_MGREY}, {COLOR_LGREY}, {COLOR_WHITE}};
+
 
 ////////////////////////////
 // Function mapping the gauges value range to rad, or diced 0,5° steps
@@ -47,24 +52,40 @@ public:
     float invers(float rad) const override { return (rad / _scale_k) - _zero_at; }
 };
 
-
 ////////////////////////////
 // PolarGauge
-const ucg_color_t PolarGauge::bow_color[4] = {{COLOR_GREEN}, {COLOR_BBLUE}, {COLOR_ORANGE}, {COLOR_RED}};
 
 // pixel, pixel, degree, pixel
-PolarGauge::PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t radius) :
+PolarGauge::PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t radius, int16_t flavor) :
     ScreenElement(refx, refy),
     _scale_max(deg2rad((float)scale_end)),
-    _radius(radius),
-    _idx_scale(360.f/My_PIf) // scale 0.5° [in rad] to 2 (0.5deg resolution discrete scale)
+    _radius(radius)
 {
-    _indicator = new PolarIndicator(*this);
     func = new GaugeFunc(1.,0.);
+    if ( flavor != COMPASS ) {
+        _arrow = new ArrowIndicator(*this, 4, 20);
+    }
+    else {
+        _wind_avg = new WindIndicator(*this, false);
+        _wind_live = new WindIndicator(*this, true);
+
+        _unit_fac = 1.;
+        _range = 360.;
+        _mrange = -360.;
+        func = new RoseGaugeFunc();
+    }
 }
 PolarGauge::~PolarGauge()
 {
-    delete _indicator;
+    if ( _arrow ) {
+        delete _arrow;
+    }
+    if ( _wind_avg ) {
+        delete _wind_avg;
+    }
+    if ( _wind_live ) {
+        delete _wind_live;
+    }
     if ( _figure ) {
         delete _figure;
     }
@@ -98,7 +119,7 @@ void PolarGauge::setRange(float pos_range, float zero_at, bool log)
 
 void PolarGauge::setColor(int color_idx)
 {
-    _indicator->setColor(needlecolor[color_idx & 3]);
+    _arrow->setColor(ndl_color[color_idx & 3]);
 }
 
 void PolarGauge::setFigOffset(int16_t ox, int16_t oy)
@@ -128,7 +149,7 @@ void PolarGauge::draw(float a)
     a *= _unit_fac;
     int16_t val = dice_up(clipValue(a));
     // ESP_LOGI(FNAME,"draw  a:%f - %d", a, val);
-    if (_indicator->draw(val))
+    if (_arrow->draw(val))
     {
         // Draw colored bow
         int16_t bar_val = (val > 0) ? val : 0;
@@ -139,7 +160,7 @@ void PolarGauge::draw(float a)
 
 void PolarGauge::drawIndicator(float a)
 {
-    _indicator->draw(dice_up(clipValue(a)));
+    _arrow->draw(dice_up(clipValue(a)));
 }
 
 // sink speed in [m/s]
@@ -148,7 +169,6 @@ void PolarGauge::drawPolarSink(float a)
     a *= _unit_fac;
     int16_t val = dice_up(clipValue(a));
     // ESP_LOGI(FNAME,"sink  a:%f - %d", a, val);
-    // Draw blue bow for polar sink
     drawBow(val, _old_polar_sink, 3, BLUE);
 }
 
@@ -160,46 +180,41 @@ void PolarGauge::drawFigure(float a)
     }
 }
 
+void PolarGauge::drawWind(int16_t wdir, int16_t wval)
+{
+    if ( _wind_live ) {
+        ESP_LOGI(FNAME,"PW  d:%d - %d", wdir%360, wval);
+        wval *= _unit_fac;
+        // wdir -= static_cast<int16_t>(std::roundf(getHeading()));
+        // wdir = dice_up(wdir);
+        // ESP_LOGI(FNAME,"PW  d:%d - %d", (wdir/2)%360, wval);
+        _wind_live->draw(wdir, wval);
+    }
 }
 
 // idx [rad], end radius, width
-void PolarGauge::drawOneScaleLine(float a, int16_t l2, int16_t w) const
+void PolarGauge::drawOneScaleLine(float a, int16_t l2, int16_t w, int16_t cidx) const
 {
     float si = fast_sin_rad(a);
     float co = fast_cos_rad(a);
-    int16_t l1 = _radius + 1;
+    int16_t l1 = _radius;
     int16_t w0 = w / 2;
     int16_t w1 = w - w0; // total width := w1 + w0
     int16_t xn_0 = _ref_x - static_cast<int16_t>(std::roundf(co * l1 - si * w0));
     int16_t yn_0 = _ref_y - static_cast<int16_t>(std::roundf(si * l1 + co * w0));
     int16_t xn_1 = _ref_x - static_cast<int16_t>(std::roundf(co * l1 + si * w1));
-    if (xn_1 < 0)
-        xn_1 = 0;
     int16_t yn_1 = _ref_y - static_cast<int16_t>(std::roundf(si * l1 - co * w1));
     int16_t xn_2 = _ref_x - static_cast<int16_t>(std::roundf(co * l2 + si * w1));
-    if (xn_2 < 0)
-        xn_2 = 0;
     int16_t yn_2 = _ref_y - static_cast<int16_t>(std::roundf(si * l2 - co * w1));
     int16_t xn_3 = _ref_x - static_cast<int16_t>(std::roundf(co * l2 - si * w0));
     int16_t yn_3 = _ref_y - static_cast<int16_t>(std::roundf(si * l2 + co * w0));
     // ESP_LOGI(FNAME,"drawTetragon  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d x3:%d y3:%d", xn_0, yn_0, xn_1, yn_1, xn_2, yn_2, xn_3, yn_3 );
-    if (w == 1)
-    {
-        MYUCG->setColor(COLOR_MGREY);
-    }
-    else if (w == 2)
-    {
-        MYUCG->setColor(COLOR_MGREY);
-    }
-    else
-    {
-        MYUCG->setColor(COLOR_WHITE);
-    }
+    MYUCG->setColor(lne_color[cidx].color[0], lne_color[cidx].color[1], lne_color[cidx].color[2]);
     MYUCG->drawTetragon(xn_0, yn_0, xn_1, yn_1, xn_2, yn_2, xn_3, yn_3);
 }
 
 // draw incremental bow up to indicator given in diced 0.5° steps, pos
-void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t color) const
+void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t cidx) const
 {
     if (idx == old) {
         return;
@@ -211,7 +226,7 @@ void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t color) co
         MYUCG->setColor(DARK_DGREY);
     }
     else {
-        MYUCG->setColor(bow_color[color].color[0], bow_color[color].color[1], bow_color[color].color[2]);
+        MYUCG->setColor(bow_color[cidx].color[0], bow_color[cidx].color[1], bow_color[cidx].color[2]);
     }
     // ESP_LOGI(FNAME,"bow lev %d", idx);
     int16_t l1 = _radius;
@@ -275,7 +290,11 @@ void PolarGauge::colorRange(float from, float to, int16_t color)
     drawBow(dice_up(to), ol, -10, color);
 }
 
-// +/- range, radius to AMID [pixel], zero label offset, opt. small area refresh at [scale*10]
+// draw a scale from _range down to _mrange
+// with radius _radius
+// to _ref_xy center [pixel]
+// and zero label offset according to (_mrange + _range) / 2
+// opt. small area refresh at [scale]
 void PolarGauge::drawScale(int16_t at)
 {
     // line density on outer scale area
@@ -295,23 +314,25 @@ void PolarGauge::drawScale(int16_t at)
 
     // increment in 1/10 scale steps
     int16_t start = std::roundf(_range)*10, stop = std::roundf(_mrange)*10;
-    int16_t l_start = start, l_stop = stop;
+    int16_t l_start = start, l_stop = stop; // for labels
     if (at != -1000)
     {
         // partial scale repainting
-        int16_t tmp = 10 * at + 40;
-        if (tmp < start)
-        {
-            start = tmp;
+        if ( at > 0 ) { // Redraw the AVG area
+        int16_t tmp = 10 * at + 5; // alias .5
+            if (tmp < start) {
+                start = tmp;
+            }
+            tmp = 10 * at - 5;
+            if (tmp > stop) {
+                stop = tmp;
+            }
+            if (std::abs(start) <= 10) {
+                modulo = (dist > 24) ? 1 : (dist > 16) ? 2 : (dist > 8) ? 5 : 10;
+            }
         }
-        tmp = 10 * at - 40;
-        if (tmp > stop)
-        {
-            stop = tmp;
-        }
-        if (std::abs(start) <= 10)
-        {
-            modulo = (dist > 24) ? 1 : (dist > 16) ? 2 : (dist > 8) ? 5 : 10;
+        else {
+            start = 10 * at;
         }
     }
     ESP_LOGI(FNAME, "scale from %d to %d", start, stop);
@@ -359,7 +380,7 @@ void PolarGauge::drawScale(int16_t at)
             }
             ESP_LOGI(FNAME, "lines a:%d end:%d label: %d  width: %d", a, end, draw_label, width );
 
-            drawOneScaleLine(val, end, width);
+            drawOneScaleLine(val, end, width, width);
             if (draw_label)
             {
                 drawOneLabel(val, a / 10);
@@ -371,16 +392,74 @@ void PolarGauge::drawScale(int16_t at)
     int16_t to = dice_up(stop/10.) -6;
     if (start > 0)
     {
-        drawBow(to, prev, _indicator->getSize() + 5);
+        drawBow(to, prev, _radius - _arrow->getBase());
     }
     else
     {
         // draw bow towards zero to get the dark grey (background color)
-        drawBow(prev, to, _indicator->getSize() + 5);
+        drawBow(prev, to, _radius - _arrow->getBase());
     }
     MYUCG->setFontPosBottom();
 }
 
+void PolarGauge::drawScaleBottom()
+{
+    // Area of -60° to -90° is concerned
+    drawScale( static_cast<int16_t>(std::roundf(func->invers(deg2rad(-60.)))) );
+}
+
+// a [deg]; 0° ref on top
+void PolarGauge::drawTwoDots(int16_t a, int16_t size, int16_t cidx)
+{
+    float si = -fast_sin_idx(a*2);
+    float co = fast_cos_idx(a*2);
+    int16_t l1 = _radius + 2;
+    int16_t bx = static_cast<int16_t>(std::roundf(si * l1));
+    int16_t by = static_cast<int16_t>(std::roundf(co * l1));
+    MYUCG->setColor(lne_color[cidx].color[0], lne_color[cidx].color[1], lne_color[cidx].color[2]);
+    if ( (a%360) != 0 ) { // skip the "north" position
+        MYUCG->drawDisc(_ref_x-bx,_ref_y-by, size, UCG_DRAW_ALL );
+    }
+    if ( ((a+180)%360) != 0 ) { // skip the "north" position (vis-a-vi)
+        MYUCG->drawDisc(_ref_x+bx,_ref_y+by, size, UCG_DRAW_ALL ); // 180° mirrored
+    }
+}
+
+void PolarGauge::drawRose(int16_t at)
+{
+    int16_t start = _range/2 - 10;
+    int16_t stop = 0;
+    if (at != -1000)
+    {
+        // partial scale repainting
+        start = at + 17;
+        stop = at - 17;
+    }
+    start = (start/10)*10;
+    stop = (stop/10)*10;
+    for (int16_t a = start; a >= stop; a-=10)
+    {
+        // ESP_LOGI(FNAME, "dot a:%d", a%360);
+        if (!(a % 30)) {
+            drawTwoDots( a, 2, 2);
+        }
+        else if (!(a % 10)) {
+            drawTwoDots( a, 1, 0);
+        }
+        if (!(a%180) ) {
+            // Draw ^ for heading-up, or N for north-up
+            MYUCG->setFont(ucg_font_fub11_hr);
+            char s[3] = "^";
+            if ( _north_up ) {
+                s[0] = 'N';
+            }
+            int16_t w2 = MYUCG->getStrWidth(s)/2;
+            MYUCG->setColor(COLOR_LBBLUE);
+            MYUCG->setPrintPos(_ref_x-w2+1, _ref_y-_radius+9);
+            MYUCG->print(s);
+        }
+    }
+}
 
 ////////////////////////////
 // trigenometric helpers for gauge painters

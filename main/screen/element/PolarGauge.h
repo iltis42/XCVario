@@ -9,11 +9,14 @@
 #pragma once
 
 #include "ScreenElement.h"
+#include "math/Trigenometry.h"
 #include "AdaptUGC.h"
 
 class ArrowIndicator;
+class WindIndicator;
 class LargeFigure;
 
+// map gauge values to gauge scale angles
 class GaugeFunc
 {
 public:
@@ -30,12 +33,16 @@ protected:
     float _zero_at; // value at the middle of the scale
 };
 
+// a polar gauge
 class PolarGauge : public ScreenElement
 {
-    friend class PolarIndicator;
+    friend class ArrowIndicator;
+    friend class WindIndicator;
     friend class LargeFigure;
+
 public:
-    PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t radius);
+    using GaugeFlavor = enum { VARIO, GLOAD, COMPASS};
+    PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t radius, int16_t flavor);
     ~PolarGauge();
     void forceAllRedraw();
     void setRange(float pos_range, float zero_at, bool log);
@@ -44,29 +51,35 @@ public:
     void setColor(int color_idx);
     void setFigOffset(int16_t ox, int16_t oy);
     float clipValue(float a) const;
+    void setNorthUp(bool nup) { _north_up = nup; }
 
     void draw(float a);
     void drawIndicator(float a);
     void drawPolarSink(float a);
     void drawFigure(float a);
+    void drawWind(int16_t wdir, int16_t wval);
     using BowColorIdx = enum { GREEN, BLUE, ORANGE, RED };
     void colorRange(float from, float to, int16_t color);
     void drawScale(int16_t at = -1000);
+    void drawScaleBottom();
+    void drawRose(int16_t at = -1000);
     // drawAVG();
 
 private:
     // indicator and attributes
     ArrowIndicator *_arrow = nullptr;
+    WindIndicator *_wind_avg = nullptr;
+    WindIndicator *_wind_live = nullptr;
+    bool _north_up = false;
     float _scale_max = 1.57f; // half scale extend in rad
     int16_t _radius = 50; // pixel
     float _range = 5.; // max positive value of the scale
     float _mrange = -5.; // resulting from range and zero_at, assuming an always symetric scale
-    const float _idx_scale; // cut the scale range into discrete 0.5deg steps.
+    static constexpr const float IDX_SCALE = 360.f/My_PIf; // cut the scale range into discrete 0.5deg steps [rad]
     float _unit_fac = 1.f; // scale  from SI units to the guage unit
     int16_t _old_idx = 360; // discretized previous index value
     int16_t _old_bow_idx = 0;
     int16_t _old_polar_sink = 0;
-    static const ucg_color_t bow_color[4];
 
     // gauge value as average or figures
     LargeFigure *_figure = nullptr;
@@ -74,8 +87,8 @@ private:
     // gauge function
     GaugeFunc *func = nullptr; // map value range to scale range [rad]
     // dice up into (arbitrary) discrete steps, map scale range into a 0,5° step counter
-    int16_t dice_up(float a) const { return (int16_t)(_idx_scale*(*func)(a)); }
-    int16_t dice_rad(float rad) const { return (int16_t)(rad*_idx_scale); }
+    int16_t dice_up(float a) const { return (int16_t)(IDX_SCALE*(*func)(a)); }
+    int16_t dice_rad(float rad) const { return (int16_t)(rad*IDX_SCALE); }
 
     // trigenometric macros
     int16_t SinCentered(float val, int16_t len) const; // output in pixel
@@ -88,8 +101,9 @@ private:
     int16_t CosDeg2(int16_t val, int16_t len) const;
 
     // gauge helpers
-    void drawOneScaleLine(float a, int16_t l2, int16_t w) const;
-    void drawBow(int16_t idx, int16_t &old, int16_t w, int16_t color=0) const;
+    void drawOneScaleLine(float a, int16_t l2, int16_t w, int16_t cidx) const;
+    void drawBow(int16_t idx, int16_t &old, int16_t w, int16_t cidx=0) const;
     void drawSeg(float a0, float a1) const;
     void drawOneLabel(float val, int16_t labl) const;
+    void drawTwoDots(int16_t a, int16_t size, int16_t cidx);
 };

@@ -25,11 +25,13 @@ typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY
 extern int screens_init;
 
 class PolarGauge;
-class WindCircle;
+class WindIndicator;
 class McCready;
 class Battery;
 class Altimeter;
 
+// fixme needs a home
+float getHeading();
 
 class IpsDisplay {
 public:
@@ -50,7 +52,6 @@ public:
 	static void clear();   // erase whole display
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
-	static float getHeading();
 	static bool drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty );
 	static void drawWindArrow( float dir, float speed, int type );
 	static void setBottomDirty();
@@ -88,14 +89,14 @@ private:
 	static int tyalt;
 	static int pyalt;
 	static float average_climbf;
-	
+
 	static ucg_color_t wkcolor;
 	static bool netto_old;
 	static float old_polar_sink;
 	static float flt_altitude;
 
 	static PolarGauge* MAINgauge;
-    static WindCircle* WNDgauge;
+    static PolarGauge* WNDgauge;
 	static McCready*   MCgauge;
 	static Battery*    BATgauge;
 	static Altimeter*  ALTgauge;

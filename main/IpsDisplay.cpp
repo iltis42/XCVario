@@ -9,7 +9,7 @@
 #include "IpsDisplay.h"
 
 #include "screen/element/PolarGauge.h"
-#include "screen/element/WindCircle.h"
+#include "screen/element/WindIndicator.h"
 #include "screen/element/McCready.h"
 #include "screen/element/Battery.h"
 #include "screen/element/Altimeter.h"
@@ -60,7 +60,7 @@ bool IpsDisplay::netto_old = false;
 
 // Average Vario data
 PolarGauge* IpsDisplay::MAINgauge = nullptr;
-WindCircle* IpsDisplay::WNDgauge = nullptr;
+PolarGauge* IpsDisplay::WNDgauge = nullptr;
 McCready*   IpsDisplay::MCgauge = nullptr;
 Battery*    IpsDisplay::BATgauge = nullptr;
 Altimeter*	IpsDisplay::ALTgauge = nullptr;
@@ -184,8 +184,8 @@ const static ucg_color_t bowcolor[4] = { {COLOR_GREEN}, {COLOR_BBLUE}, {COLOR_RE
 
 static void initRefs()
 {
-	AVGOFFX = -5;
-	SPEEDYPOS = 106;
+	AVGOFFX = -5-38;
+	SPEEDYPOS = 102;
 	INNER_RIGHT_ALIGN = DISPLAY_W - 44;
 	LOAD_MPG_POS = DISPLAY_H*0.25;
 	LOAD_MNG_POS = DISPLAY_H*0.64;
@@ -193,7 +193,7 @@ static void initRefs()
 	if ( display_orientation.get() == DISPLAY_NINETY ) {
 		INNER_RIGHT_ALIGN = DISPLAY_W - 70;
 		AMIDX = DISPLAY_W/2 - 43;
-		AVGOFFX = 36;
+		AVGOFFX = -2;
 		SPEEDYPOS = 80;
 		LOAD_MNG_POS = DISPLAY_H*0.53;
 	}
@@ -334,12 +334,11 @@ void IpsDisplay::initDisplay() {
 		g_col_header_light_b=255;
 	}
 	// Create common elements
-	
-	if ( ! MAINgauge ) { // shared with 
+
+	if ( ! MAINgauge ) { // shared with
 		int16_t scale_geometry = ( display_orientation.get() == DISPLAY_NINETY ) ? 120 : 90;
-		MAINgauge = new PolarGauge(AMIDX, AMIDY, scale_geometry, DISPLAY_H/2-20);
+		MAINgauge = new PolarGauge(AMIDX, AMIDY, scale_geometry, DISPLAY_H/2-20, PolarGauge::VARIO);
 	}
-	MAINgauge->setFigOffset(AVGOFFX, 4);
 	MAINgauge->setUnit(Units::Vario(1.));
 	MAINgauge->setRange(scale_range.get(), 0.f, log_scale.get());
 	MAINgauge->setColor(needle_color.get());
@@ -371,7 +370,7 @@ void IpsDisplay::initDisplay() {
 		// small MC
 		MCgauge->setLarge(false);
 		ALTgauge->setRef(FIELD_START+80, YALT-12);
-		
+
 
 		// draw TE scale
 		drawLegend();
@@ -947,9 +946,11 @@ void IpsDisplay::initRetroDisplay(){
 	MAINgauge->forceAllRedraw();
 
 	initRefs();
+    MAINgauge->setFigOffset(AVGOFFX, 0);
 	if ( ! WNDgauge ) {
-		WNDgauge = new WindCircle(AMIDX+AVGOFFX-37, AMIDY);
+		WNDgauge = new PolarGauge(AMIDX+AVGOFFX, AMIDY, 360, 49, PolarGauge::COMPASS);
 	}
+    WNDgauge->drawRose();
 	if ( vario_mc_gauge.get() ) {
 		MCgauge->setLarge(true);
 	}
@@ -980,7 +981,7 @@ void IpsDisplay::initRetroDisplay(){
 		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(FLAP->getNegMax()))-18 );
 	}
 	if( theCenteraid ){
-		theCenteraid->setGeometry(AMIDX+AVGOFFX-38, AMIDY, 47);
+		theCenteraid->setGeometry(AMIDX+AVGOFFX-30, AMIDY, 47);
 	}
 }
 
@@ -1056,7 +1057,7 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 	default:
 		break;
 	}
-	
+
 
 	if ( as_prev == val ) return false;
 	// ESP_LOGI(FNAME,"draw val %d %d", val, as_prev );
@@ -1080,7 +1081,7 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 		if( vario_upper_gauge.get() == GAUGE_SPEED ||vario_upper_gauge.get() == GAUGE_S2F ) {
 			ucg->print(Units::AirspeedUnitStr() );
 			ucg->setPrintPos(x+5,y-17);
-			if ( vario_upper_gauge.get() == GAUGE_SPEED ) { 
+			if ( vario_upper_gauge.get() == GAUGE_SPEED ) {
 				ucg->print(AirspeedModeStr());
 			}
 			else {
@@ -1090,7 +1091,7 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 		else {
 			ucg->print("deg");
 		ucg->setPrintPos(x+5,y-17);
-			if ( vario_upper_gauge.get() == GAUGE_SLIP ) { 
+			if ( vario_upper_gauge.get() == GAUGE_SLIP ) {
 				ucg->print("SLIP");
 			}
 			else {
@@ -1130,11 +1131,11 @@ void IpsDisplay::initLoadDisplay(){
 	drawLoadDisplayTexts();
 	int max_gscale = gload_pos_limit.get() + 2;
 	int min_gscale = gload_neg_limit.get() - 2;
-	if ( ! MAINgauge ) { // shared with 
+	if ( ! MAINgauge ) { // shared with
 		int16_t scale_geometry = ( display_orientation.get() == DISPLAY_NINETY ) ? 120 : 90;
-		MAINgauge = new PolarGauge(AMIDX, AMIDY, scale_geometry, DISPLAY_H/2-20);
+		MAINgauge = new PolarGauge(AMIDX, AMIDY, scale_geometry, DISPLAY_H/2-20, PolarGauge::GLOAD);
 	}
-	MAINgauge->setFigOffset(38, 0);
+	MAINgauge->setFigOffset(0, 0);
 	MAINgauge->setUnit(1.);
 	MAINgauge->setRange(max_gscale, 1.f, false);
 	MAINgauge->setColor(needle_color.get());
@@ -1297,7 +1298,7 @@ void IpsDisplay::drawLoadDisplay( float loadFactor ){
 }
 
 
-float IpsDisplay::getHeading(){
+float getHeading(){
 	float heading = 0;
 	if( (wind_reference.get() & WR_HEADING) )  // wind relative to airplane, first choice compass, second is GPS true course
 	{
@@ -1508,7 +1509,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		static bool WG_visible = true; // fixme temp
 		if ( theCenteraid && ! VCMode.getCMode() ) {
 			if ( WG_visible ) {
-				WNDgauge->clear();
+				// WNDgauge->clear();
 
 			}
 			theCenteraid->drawCenterAid();
@@ -1538,7 +1539,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 				swdir = extwind_sptc_dir.get();
 				sw = extwind_sptc_speed.get();
 		// 	}
-			WNDgauge->draw(swdir, sw, iwdir, iw);
+			WNDgauge->drawWind(iwdir, iw);
 		}
 	}
 
@@ -1547,7 +1548,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		MAINgauge->draw(te_ms);
 	}
 	// ESP_LOGI(FNAME,"polar-sink:%f Old:%f int:%d old:%d", polar_sink, old_polar_sink, int( polar_sink*100.), int( old_polar_sink*100. ) );
-	if( ps_display.get() && !(tick%4) ){
+	if( !(tick%4) ){
 		MAINgauge->drawPolarSink(netto ? 0. : polar_sink);
 	}
 
@@ -1596,7 +1597,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	if ( bottom_dirty ) {
 		ESP_LOGI(FNAME,"redraw sale around %f", -_range+2);
 		bottom_dirty = false;
-		MAINgauge->drawScale(MAINgauge->getMRange()+2);
+		MAINgauge->drawScaleBottom();
 		MAINgauge->forceAllRedraw();
 		if ( MCgauge ) {
 			MCgauge->forceRedraw();

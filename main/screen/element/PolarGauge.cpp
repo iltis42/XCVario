@@ -8,6 +8,7 @@
 
 #include "PolarGauge.h"
 
+#include "ArrowIndicator.h"
 #include "WindIndicator.h"
 #include "math/Trigenometry.h"
 #include "Units.h"
@@ -18,7 +19,7 @@
 #include <cmath>
 
 extern AdaptUGC *MYUCG;
-const static ucg_color_t needlecolor[3] = {{COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED}};
+static const ucg_color_t ndl_color[3] = {{COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED}};
 
 ////////////////////////////
 // Function mapping the gauges value range to rad, or diced 0,5° steps
@@ -37,124 +38,13 @@ public:
     float operator()(float a) const override { return fast_log2f(std::abs((a-_zero_at)) + 1.f) * _scale_k * (std::signbit((a-_zero_at)) ? -1. : 1.); }
     float invers(float rad) const override { return ((pow(2., std::abs(rad)) - 1.f) / _scale_k * (std::signbit(rad) ? -1.f : 1.f)) + _zero_at; }
 };
-
-
-////////////////////////////
-// PolarIndicator
-
-typedef struct Triangle
-{
-    int16_t x_0 = 0, y_0 = 0, x_1 = 0, y_1 = 1, x_2 = 1, y_2 = 0;
-} Triangle_t;
-
-class PolarIndicator
+class RoseGaugeFunc : public GaugeFunc
 {
 public:
-    PolarIndicator() = delete;
-    PolarIndicator(PolarGauge &g);
-    // API
-    void setColor(ucg_color_t c) { color = c; }
-    bool draw(int16_t val);
-    int16_t getSize() { return _tip - _base; }
-
-private: // attributes
-    PolarGauge &_gauge;             // ref to gauge the pointer belonges to
-    const int16_t _base;            // distance from base center to shoulder of the arrow
-    const int16_t _tip;             // distance from base center to arrow tip
-    const int16_t _base_val_offset = 8; // .5deg steps from base point to shoulder point of arrow
-    int16_t _needle_pos = 0;        // .5deg diced up
-    ucg_color_t color;
-    Triangle_t prev;
+    RoseGaugeFunc() : GaugeFunc(My_PIf/180.f, 90.f) {}
+    float operator()(float a) const override { return (a + _zero_at) * _scale_k; }
+    float invers(float rad) const override { return (rad / _scale_k) - _zero_at; }
 };
-
-PolarIndicator::PolarIndicator(PolarGauge &g) : 
-    _gauge(g),
-    _base(DISPLAY_H/2-24-20),
-    _tip(DISPLAY_H/2-24),
-    _base_val_offset(atan(8.f/_base)*g._idx_scale) // half width of the arrow base
-
-{
-    color = needlecolor[1];
-    prev.x_0 = _gauge.CosCenteredDeg2(_base_val_offset, _base); // top shoulder
-    prev.y_0 = _gauge.SinCenteredDeg2(_base_val_offset, _base);
-    prev.x_1 = _gauge.CosCenteredDeg2(-_base_val_offset, _base); // lower shoulder
-    prev.y_1 = _gauge.SinCenteredDeg2(-_base_val_offset, _base);
-    prev.x_2 = _gauge.CosCenteredDeg2(0, _tip); // tip
-    prev.y_2 = _gauge.SinCenteredDeg2(0, _tip);
-}
-
-
-// > 0,5° step counter
-// return status on changed pointer position
-bool PolarIndicator::draw(int16_t val)
-{
-    Triangle_t n;
-    bool change = val != _needle_pos;
-    if (!change && !_gauge._dirty)
-    {
-        return false; // nothing painted
-    }
-    if ( _gauge._dirty ) {
-        _gauge._old_bow_idx = 0; // redraw bows
-        _gauge._old_polar_sink = 0;
-        _gauge._dirty = false;
-    }
-
-    n.x_0 = _gauge.CosCenteredDeg2(val + _base_val_offset, _base); // top shoulder
-    n.y_0 = _gauge.SinCenteredDeg2(val + _base_val_offset, _base);
-    n.x_1 = _gauge.CosCenteredDeg2(val - _base_val_offset, _base); // lower shoulder
-    n.y_1 = _gauge.SinCenteredDeg2(val - _base_val_offset, _base);
-    n.x_2 = _gauge.CosCenteredDeg2(val, _tip); // tip
-    n.y_2 = _gauge.SinCenteredDeg2(val, _tip);
-    // ESP_LOGI(FNAME,"draw Triangle  x0:%d y0:%d x1:%d y1:%d x2:%d y2:%d", n.x_0, n.y_0, n.x_1 ,n.y_1, n.x_2, n.y_2 );
-
-    if (std::abs(val - _needle_pos) < _gauge.dice_rad(deg2rad(9.f)))
-    {
-        // new indicator position overlaps
-        // Clear just a smal triangle
-        int16_t x_2 = _gauge.CosCenteredDeg2(_needle_pos, _base + 7);
-        int16_t y_2 = _gauge.SinCenteredDeg2(_needle_pos, _base + 7);
-        if( change ){
-            MYUCG->setColor(DARK_DGREY);
-            MYUCG->drawTriangle(prev.x_0, prev.y_0, prev.x_1, prev.y_1, x_2, y_2);
-        }
-
-        // draw pointer
-        MYUCG->setColor(color.color[0], color.color[1], color.color[2]);
-        MYUCG->drawTriangle(n.x_0, n.y_0, n.x_1, n.y_1, n.x_2, n.y_2);
-
-        // cleanup respecting overlap
-        if( change ){  // we need to cleanup only if position has changed, otherwise a redraw at same position is enough
-            MYUCG->setColor(DARK_DGREY);
-            // clear area to the side
-            if (val > _needle_pos)
-            {
-                // up
-                MYUCG->drawTetragon(prev.x_2, prev.y_2, prev.x_1, prev.y_1, n.x_1, n.y_1, n.x_2, n.y_2);
-            }
-            else
-            {
-                MYUCG->drawTetragon(prev.x_2, prev.y_2, n.x_2, n.y_2, n.x_0, n.y_0, prev.x_0, prev.y_0);
-            }
-        }
-    }
-    else
-    {
-        if( change ){
-            // cleanup previous incarnation
-            MYUCG->setColor(DARK_DGREY);
-            MYUCG->drawTriangle(prev.x_0, prev.y_0, prev.x_1, prev.y_1, prev.x_2, prev.y_2);
-            // draw pointer
-            MYUCG->setColor(color.color[0], color.color[1], color.color[2]);
-            MYUCG->drawTriangle(n.x_0, n.y_0, n.x_1, n.y_1, n.x_2, n.y_2);
-        }
-    }
-    // ESP_LOGI(FNAME,"change=%d  prev=%d  now=%d", change, _needle_pos, val  );
-    prev = n;
-    _needle_pos = val;
-    return change;
-}
-
 
 ////////////////////////////
 // PolarFigure

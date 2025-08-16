@@ -11,7 +11,7 @@
 #include "ScreenElement.h"
 #include "AdaptUGC.h"
 
-class PolarIndicator;
+class ArrowIndicator;
 
 class GaugeFunc
 {
@@ -66,7 +66,7 @@ public:
 
 private:
     // indicator and attributes
-    PolarIndicator *_indicator = nullptr;
+    ArrowIndicator *_arrow = nullptr;
     float _scale_max = 1.57f; // half scale extend in rad
     int16_t _radius = 50; // pixel
     float _range = 5.; // max positive value of the scale

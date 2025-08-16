@@ -131,7 +131,7 @@ int MPU::pi_control(int tick_count, float XCVTemp){
 	float temp = getTemperature();
 	mpu_heat_pwm = 9.0*(mpu_target_temp-XCVTemp)-30;
 	mpu_t_delta = temp - mpu_target_temp;
-	float mpu_t_delta_p = -mpu_t_delta*100.0;     // P control with Kp=100;
+	// float mpu_t_delta_p = -mpu_t_delta*100.0;     // P control with Kp=100;
 	mpu_heat_pwm -= mpu_t_delta*100.0;            // P part
 	// To avoid damping of temperature correction, integral correction is only applied when pwm is close enougn to target pwm
 	// I control with Ki = 1
@@ -1051,7 +1051,7 @@ esp_err_t MPU::rotation(int16_t* x, int16_t* y, int16_t* z)
 }
 
 float MPU::getTemperature(){
-	int16_t t;
+	int16_t t=0;
 	temperature( &t );
 	if( whoAmI() == 0x12 )  // ICM 20602 uses a different formula
 		return( (float)t/326.8 + 25.00 );

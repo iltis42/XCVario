@@ -76,7 +76,6 @@ private:
 	static XCVSyncMsg *syncProto;
 	static bool factoryReset();
 	static std::vector<SetupCommon *> instances;
-	static char _ID[16];
+	static char _ID[18];
 	static char default_id[6];
 };
-

@@ -98,7 +98,7 @@ bool AnalogInput::tick()
 	constexpr int BATCH = 5;
 	int adc = 0;
 	for( int i=0; i<BATCH; i++ ) {
-		int rawadc;
+		int rawadc = 0;
 		if( _unit == ADC_UNIT_1 )
 			rawadc =  adc1_get_raw((adc1_channel_t)_adc_ch);
 		else if( _unit == ADC_UNIT_2 )
@@ -113,7 +113,7 @@ bool AnalogInput::tick()
 float AnalogInput::get( bool nofilter, int loops ){
 	int adc = getRaw();
 	int voltage;
-	
+
 	if( _cal ) {
 		voltage = esp_adc_cal_raw_to_voltage(adc, &adc_chars);
 	}
@@ -130,5 +130,3 @@ float AnalogInput::get( bool nofilter, int loops ){
 
 	return _value;
 }
-
-

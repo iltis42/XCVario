@@ -324,6 +324,36 @@ void NmeaPrtcl::sendXCVNmeaHDT( float heading )
     DEV::Send(msg);
 }
 
+/*
+    WIND angle and speed - True
+
+     $--MWV,x.x,a,x.x,a,a,a,*hh
+
+     Field Number:
+      1) wind angle
+      2) (R)elative or (T)rue
+      3) wind speed
+      4) K/M/N
+      5) Status A=valid
+      8) Checksum
+
+ */
+void NmeaPrtcl::sendXCVNmeaMWV( float angle, float speed )
+{
+    if ( _dl.isBinActive() ) {
+        return; // no NMEA output in binary mode
+    }
+    Message *msg = newMessage();
+
+    msg->buffer = "$WIMWV,";
+    char str[32];
+    sprintf(str, "%3.1f,T,%3.1f,K,A", angle, speed);
+    ESP_LOGI(FNAME, "WIND: %3.1f°/%3.1f km/h", angle, speed);
+    msg->buffer += str;
+    msg->buffer += "*" + NMEA::CheckSum(msg->buffer.c_str()) + "\r\n";
+    DEV::Send(msg);
+}
+
 // send a prepared nmea telegram
 void NmeaPrtcl::sendXCV(const char *str) const
 {

@@ -1375,23 +1375,23 @@ void system_startup(void *args){
 	AUDIO->startAudio();
 }
 
-#include <xtensa/core-macros.h>  // for XTHAL_GET_CCOUNT
+// #include <xtensa/core-macros.h>  // for XTHAL_GET_CCOUNT
 
-uint32_t IRAM_ATTR cycle_count() {
-	float a, b = rand() % 400 - 200;
-	int idx = b*2;
-	a = deg2rad(b);
-	int16_t b1 = 50;
-    uint32_t start = XTHAL_GET_CCOUNT();
-    // asm volatile("add a4, a1, a2");
-	idx = ((std::signbit(idx) ? -1 : 1));
-	// b1 = fast_roundf_to_int(b);
-	uint32_t end = XTHAL_GET_CCOUNT();
-	audio_volume.set(idx);
-	// for(b=0.; b<400.; b+=My_PIf)
-	ESP_LOGI(FNAME,"CMP %f %d", b, b1);
-    return end - start;
-}
+// uint32_t IRAM_ATTR cycle_count() {
+// 	float a, b = rand() % 400 - 200;
+// 	int idx = b*2;
+// 	a = deg2rad(b);
+// 	int16_t b1 = 50;
+//     uint32_t start = XTHAL_GET_CCOUNT();
+//     // asm volatile("add a4, a1, a2");
+// 	idx = ((std::signbit(idx) ? -1 : 1));
+// 	// b1 = fast_roundf_to_int(b);
+// 	uint32_t end = XTHAL_GET_CCOUNT();
+// 	audio_volume.set(idx);
+// 	// for(b=0.; b<400.; b+=My_PIf)
+// 	ESP_LOGI(FNAME,"CMP %f %d", b, b1);
+//     return end - start;
+// }
 
 
 extern "C" void  app_main(void)
@@ -1419,7 +1419,7 @@ extern "C" void  app_main(void)
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();
 
-	ESP_LOGI(FNAME,"Measure add %ucount", (unsigned int)cycle_count());
+	// ESP_LOGI(FNAME,"Measure add %ucount", (unsigned int)cycle_count());
 
 	// Instance to a simple esp timer based clock
 	MY_CLOCK = new Clock();

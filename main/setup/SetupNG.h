@@ -333,7 +333,6 @@ extern SetupNG<int>  		fl_auto_transition;
 extern SetupNG<int>  		alt_display_mode;
 extern SetupNG<float>  		transition_alt;
 extern SetupNG<int>  		glider_type_index;
-extern SetupNG<int>  		ps_display;
 
 extern SetupNG<float>  		as_offset;
 extern SetupNG<float>  		bat_low_volt;

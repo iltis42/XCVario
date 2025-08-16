@@ -265,7 +265,6 @@ SetupNG<int>  			fl_auto_transition( "FL_AUTO" , 0 );
 SetupNG<int>  			alt_display_mode( "ALT_DISP_MODE" , Altimeter::MODE_QNH );
 SetupNG<float>  		transition_alt( "TRANS_ALT", 50, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 400, 10)); // Transition Altitude
 SetupNG<int>  			glider_type_index( "GLIDER_TYPE_IDX", 1000, true, SYNC_FROM_MASTER, PERSISTENT, polar_update );
-SetupNG<int>  			ps_display( "PS_DISPLAY", 1 );
 
 SetupNG<float>  		as_offset( "AS_OFFSET" , -1 );
 static const limits_t bat_limits = {0.0, 28.0, 0.1};

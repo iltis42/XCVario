@@ -1762,15 +1762,15 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		setTeBuf(  dmid, MAXTEBAR, COLOR_BLACK );
 		setTeBuf(  dmid, -MAXTEBAR, COLOR_BLACK );
 
-		if( ps_display.get() && !netto )
+		if( !netto )
 			setTeBuf(  dmid, py, COLOR_BLUE );
 		if( ty > 0 ){
 			setTeBuf(  dmid, ty, COLOR_GREEN );
-			if( ps_display.get() && !netto )
+			if( !netto )
 				setTeBuf(  dmid, py, COLOR_GREEN );
 		}
 		else {
-			if( ps_display.get() && !netto ) {
+			if( !netto ) {
 				if( ty > py ){
 					setTeBuf(  dmid, ty, COLOR_BLUE );
 					setTeBuf(  dmid+ty, py-ty, COLOR_GREEN );

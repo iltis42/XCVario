@@ -1081,11 +1081,6 @@ void screens_menu_create_extreme_records(SetupMenu *top) {
 }
 
 static void screens_menu_create_vario(SetupMenu *top) {
-	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, nullptr, &ps_display);
-	sink->setHelp("Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
-	sink->mkEnable();
-	top->addEntry(sink);
-
 	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, nullptr, &needle_color);
 	ncolor->addEntry("White");
 	ncolor->addEntry("Orange");

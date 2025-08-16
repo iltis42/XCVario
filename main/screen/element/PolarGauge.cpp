@@ -10,6 +10,7 @@
 
 #include "ArrowIndicator.h"
 #include "WindIndicator.h"
+#include "LargeFigure.h"
 #include "math/Trigenometry.h"
 #include "Units.h"
 #include "Colors.h"
@@ -46,42 +47,6 @@ public:
     float invers(float rad) const override { return (rad / _scale_k) - _zero_at; }
 };
 
-////////////////////////////
-// PolarFigure
-
-void PolarFigure::draw(float val)
-{
-	int16_t ival = std::rint(val*10);  // integer value in steps of 10th
-	if (_figure != ival || _dirty) {
-        // only print if there is a change in rounded numeric string
-		char s[32];
-		MYUCG->setFont(ucg_font_fub35_hn, false );
-		MYUCG->setFontPosCenter();
-		
-		sprintf(s, _format[std::abs(ival)>100], float(abs(ival)/10.) );
-		int16_t tmp = MYUCG->getStrWidth(s);
-		if( tmp < _fig_len ) {
-            // do we have a shorter string
-			MYUCG->setColor( COLOR_BLACK );
-			int16_t fh = MYUCG->getFontAscent();
-            // -> so blank exact prepending area
-			MYUCG->drawBox( _ref_x-_fig_len, _ref_y-fh/2, _fig_len-tmp, fh );
-		}
-		if (val<0) {
-			MYUCG->setColor( COLOR_BBLUE );
-		} else {
-			MYUCG->setColor( COLOR_WHITE );
-		}
-		MYUCG->setPrintPos(_ref_x-tmp, _ref_y+8);
-		MYUCG->print(s);
-		_figure = ival;
-		_fig_len = tmp;
-		MYUCG->setFontPosBottom();
-	}
-}
-
-
-
 
 ////////////////////////////
 // PolarGauge
@@ -100,6 +65,9 @@ PolarGauge::PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t ra
 PolarGauge::~PolarGauge()
 {
     delete _indicator;
+    if ( _figure ) {
+        delete _figure;
+    }
     if ( func ) {
         delete func;
     }
@@ -108,7 +76,9 @@ PolarGauge::~PolarGauge()
 void PolarGauge::forceAllRedraw()
 {
     _dirty = true;
-    _figure.forceRedraw();
+    if ( _figure ) {
+        _figure->forceRedraw();
+    }
     _old_bow_idx = 0;
     _old_polar_sink = 0;
 }
@@ -133,7 +103,12 @@ void PolarGauge::setColor(int color_idx)
 
 void PolarGauge::setFigOffset(int16_t ox, int16_t oy)
 {
-    _figure.setPos(_ref_x+ox, _ref_y+oy);
+    if ( ! _figure ) {
+        _figure = new LargeFigure(_ref_x+ox, _ref_y+oy);
+    }
+    else {
+        _figure->setPos(_ref_x+ox, _ref_y+oy);
+    }
 }
 
 float PolarGauge::clipValue(float a) const
@@ -179,8 +154,12 @@ void PolarGauge::drawPolarSink(float a)
 
 void PolarGauge::drawFigure(float a)
 {
-    a *= _unit_fac;
-    _figure.draw(a);
+    if ( _figure ) {
+        a *= _unit_fac;
+        _figure->draw(a);
+    }
+}
+
 }
 
 // idx [rad], end radius, width

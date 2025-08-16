@@ -12,6 +12,7 @@
 #include "AdaptUGC.h"
 
 class ArrowIndicator;
+class LargeFigure;
 
 class GaugeFunc
 {
@@ -29,21 +30,10 @@ protected:
     float _zero_at; // value at the middle of the scale
 };
 
-class PolarFigure : public ScreenElement
-{
-public:
-    void setPos(int16_t x, int16_t y) { _ref_x = x; _ref_y = y; }
-    void draw(float a);
-private:
-    static constexpr const char* _format[2] = {"%2.1f","%2.0f"};
-    int16_t _figure = 0;
-    int16_t _fig_len = 0;
-};
-
 class PolarGauge : public ScreenElement
 {
     friend class PolarIndicator;
-    friend class PolarFigure;
+    friend class LargeFigure;
 public:
     PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t radius);
     ~PolarGauge();
@@ -79,7 +69,7 @@ private:
     static const ucg_color_t bow_color[4];
 
     // gauge value as average or figures
-    PolarFigure _figure;
+    LargeFigure *_figure = nullptr;
 
     // gauge function
     GaugeFunc *func = nullptr; // map value range to scale range [rad]

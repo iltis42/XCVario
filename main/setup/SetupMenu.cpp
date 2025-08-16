@@ -1118,10 +1118,6 @@ static void screens_menu_create_vario(SetupMenu *top) {
 	nup->setHelp("Display wind relative to glider is default, choose north-up, if prefered");
 	nup->mkEnable();
 	top->addEntry(nup);
-	SetupMenuSelect *mc = new SetupMenuSelect("McCready Gauge", RST_NONE, nullptr, &vario_mc_gauge);
-	mc->setHelp("Show the currently used McCready setting");
-	mc->mkEnable();
-	top->addEntry(mc);
 }
 
 void screens_menu_create_gload(SetupMenu *top) {
@@ -1187,6 +1183,11 @@ static void options_menu_create_screens(SetupMenu *top) { // dynamic!
 		SetupMenu *vario = new SetupMenu("Variometer", screens_menu_create_vario);
 		top->addEntry(vario);
 
+        SetupMenuSelect *mc = new SetupMenuSelect("McCready Gauge", RST_NONE, nullptr, &vario_mc_gauge);
+        mc->setHelp("Show the currently used McCready setting");
+        mc->mkEnable();
+        top->addEntry(mc);
+
 		SetupMenu *gload = new SetupMenu("G-Meter", screens_menu_create_gload);
 		top->addEntry(gload);
 
@@ -1204,10 +1205,10 @@ static void options_menu_create_screens(SetupMenu *top) { // dynamic!
 		tmp_menu->lock();
 	}
 
-	tmp_menu = static_cast<SetupMenu*>(top->getEntry(1)); // gload
+	tmp_menu = static_cast<SetupMenu*>(top->getEntry(2)); // gload
 	tmp_menu->setBuzzword(ENABLE_MODE[screen_gmeter.get()].data());
 
-	tmp_menu = static_cast<SetupMenu*>(top->getEntry(2)); // horizon
+	tmp_menu = static_cast<SetupMenu*>(top->getEntry(3)); // horizon
 	if ( screen_gmeter.get() == SCREEN_PRIMARY ) {
 		tmp_menu->setBuzzword(ENABLE_MODE[0].data());
 		tmp_menu->lock();

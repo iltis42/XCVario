@@ -1119,6 +1119,10 @@ static void screens_menu_create_vario(SetupMenu *top) {
 	wke->setHelp("Enable flap indicator to assist optimum flap setting depending on speed, G-load and ballast");
 	top->addEntry( wke );
 
+	SetupMenuSelect *nup = new SetupMenuSelect("Wind North-Up", RST_NONE, nullptr, &wind_northup);
+	nup->setHelp("Display wind relative to glider is default, choose north-up, if prefered");
+	nup->mkEnable();
+	top->addEntry(nup);
 	SetupMenuSelect *mc = new SetupMenuSelect("McCready Gauge", RST_NONE, nullptr, &vario_mc_gauge);
 	mc->setHelp("Show the currently used McCready setting");
 	mc->mkEnable();

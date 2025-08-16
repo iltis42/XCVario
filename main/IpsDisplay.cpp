@@ -951,6 +951,7 @@ void IpsDisplay::initRetroDisplay(){
 		WNDgauge = new PolarGauge(AMIDX+AVGOFFX, AMIDY, 360, 49, PolarGauge::COMPASS);
 	}
     WNDgauge->drawRose();
+    WNDgauge->setNorthUp(wind_northup.get());
 	if ( vario_mc_gauge.get() ) {
 		MCgauge->setLarge(true);
 	}

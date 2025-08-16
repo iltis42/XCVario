@@ -483,7 +483,7 @@ void readSensors(void *pvParameters){
 			}else if( (fl_auto_transition.get() == 1) && ((int)Units::meters2FL( altSTD ) + (int)(gflags.standard_setting) > transition_alt.get() ) ) { // above transition altitude
 				new_alt = altSTD;
 				gflags.standard_setting = true;
-				ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, gflags.standard_setting, transition_alt.get() );
+				// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, gflags.standard_setting, transition_alt.get() );
 			}
 			else {
 				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )

@@ -12,31 +12,32 @@
 
 #include <cinttypes>
 
+class PolarGauge;
+
 // Wind indicator around gauge center
-class WindCircle : public ScreenElement
+
+class WindIndicator
 {
 public:
-	WindCircle(int cx, int cy);
-	// API
-	void setGeometry(int16_t r) { _radius = r; }
-	void forceRedraw() { dirty = true; }
-	void draw(int sdir, int sw, int idir, int iw);
-	void clear() const;
+    WindIndicator() = delete;
+    WindIndicator(PolarGauge &g, bool live);
+
+    // API
+    void forceRedraw() { dirty = true; }
+    bool draw(int16_t wdir, int16_t wval);
 
 private:
-	enum DRAWTYP { ERASE=0x10, SYNAPT=1, INST=2 };
-	void drawPolarWind(int a, int w, uint8_t type);
+    enum DRAWTYP { ERASE = 0x10, SYNAPT = 1, INST = 2 };
+    void drawWind(bool erase);
+    // void drawPolarWind(int16_t a, int16_t w);
 
-	// attributes
-private:
-	int16_t _center_x;
-	int16_t _center_y;
-	int16_t _radius = 0; // distance to wind number
-	int _sytic_dir = 0.; // deg
-	int _sytic_w = 0;
-	int _inst_dir = 0; // deg
-	int _inst_w = 0;
-	int _cheight;
-	int _cwidth;
-	bool dirty = true;
+    // attributes
+  private:
+    PolarGauge &_gauge;  // ref to gauge the indicator belonges to
+    int16_t _dir = 0; // 0.5 deg
+    int16_t _val = 0;
+    bool _live = false;
+    static int16_t _cheight;
+    static int16_t _cwidth;
+    bool dirty = true;
 };

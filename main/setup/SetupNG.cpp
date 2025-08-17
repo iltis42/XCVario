@@ -111,7 +111,8 @@ void modifyPolar() {
 }
 
 void change_cruise() {
-	VCMode.updateCache();
+    VCMode.updateCache();
+    Display->setCruiseChanged();
 }
 
 void resetSWindAge() {

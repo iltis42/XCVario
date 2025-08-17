@@ -16,7 +16,7 @@
 // vario_mode - persistent info, but individual for master/client, about brutto/netto
 // netto_mode - persistent info, but individual for master/client, about used netto flavor (in case)
 // cruise_mode - volatile status of the s2f mode, whereas syncronized bidirectional
-// 
+//
 // This class as a combinated logic gives straight access to
 //  - S2F/Vario status queries
 //  - Vario gauge display status
@@ -27,24 +27,22 @@
 class CruiseMode
 {
 public:
-	using VarioModeBits = enum { MODE_BRUTTO=0, MODE_NORMAL_NETTO=1, MODE_REL_NETTO=3 }; // vario mode bits
-	CruiseMode();
-	inline bool getCMode() const { return _cmode; };
-    inline bool isNetto() const { return _vmode; }
+    using VarioModeBits = enum { MODE_BRUTTO=0, MODE_NORMAL_NETTO=1, MODE_REL_NETTO=3 }; // vario mode bits
+    CruiseMode();
+    inline bool getCMode() const { return _cmode; };
+    inline bool isNetto() const { return _vmode != MODE_BRUTTO; }
     inline int16_t getVMode() const { return _vmode; }
 
-	// setter
-	void setCMode(bool cruise);
-	void lockTo(bool cruise);
-	void unlockCMode() { _lock = false; }
-	void updateCache();
+    // setter
+    void setCMode(bool cruise);
+    void lockTo(bool cruise);
+    void unlockCMode() { _lock = false; }
+    void updateCache();
 
 private:
     bool _cmode = false; // cached cruise mode
     int16_t _vmode = 0; // cached vario mode
     bool _lock = false; // lock the cruise mode
-
-	// SemaphoreHandle_t mutex; // 
 };
 
 

@@ -39,18 +39,13 @@ void CruiseMode::updateCache()
     _cmode = cruise_mode.get();
 
     // set the vario mode cache
-	if( vario_mode.get() == VARIO_NETTO || (_cmode && ( vario_mode.get() == CRUISE_ONLY_NETTO )) ){
-		if( netto_mode.get() == NETTO_NORMAL ) {
+    if (vario_mode.get() == VARIO_NETTO || (_cmode && (vario_mode.get() == CRUISE_ONLY_NETTO))) {
+        if (netto_mode.get() == NETTO_NORMAL) {
             _vmode = MODE_NORMAL_NETTO;
-		}
-		else { // Super Netto
+        } else { // Super Netto
             _vmode = MODE_REL_NETTO;
-		}
-	}
-    else {
+        }
+    } else {
         _vmode = MODE_BRUTTO;
     }
 }
-
-
-

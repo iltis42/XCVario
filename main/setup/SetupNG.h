@@ -143,7 +143,7 @@ public:
 			void (* action)()=nullptr, e_quantity_t quant = QUANT_NONE, const limits_t *l = nullptr) :
 		SetupCommon(akey),
 		_default(adefault),
-		_limt(l)
+		_limt(l)    
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		// if( strlen( akey ) > 15 ) {

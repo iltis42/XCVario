@@ -29,6 +29,7 @@ class WindIndicator;
 class McCready;
 class Battery;
 class Altimeter;
+class CruiseStatus;
 
 // fixme needs a home
 float getHeading();
@@ -52,9 +53,10 @@ public:
 	static void clear();   // erase whole display
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
-	static bool drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty );
-	static void drawWindArrow( float dir, float speed, int type );
+	// static bool drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty );
+	// static void drawWindArrow( float dir, float speed, int type );
 	static void setBottomDirty();
+	static void setCruiseChanged();
 
 	static inline AdaptUGC *getDisplay() { return ucg; };
 	static AdaptUGC *ucg;
@@ -81,7 +83,6 @@ private:
 	static bool s2fmodealt;
 	static int s2fclipalt;
 	static int as_prev;
-	static bool s2fmode_prev;
 
 	static int wkalt;
 	static int wkoptalt;
@@ -91,7 +92,6 @@ private:
 	static float average_climbf;
 
 	static ucg_color_t wkcolor;
-	static bool netto_old;
 	static float old_polar_sink;
 	static float flt_altitude;
 
@@ -100,14 +100,12 @@ private:
 	static McCready*   MCgauge;
 	static Battery*    BATgauge;
 	static Altimeter*  ALTgauge;
+    static CruiseStatus* STATgauge;
 	static temp_status_t siliconTempStatusOld;
 
-	static void drawS2FMode( int x, int y, bool cruise );
 	static void setArrowColor( bool upper );
 	static void drawArrow(int16_t x, int16_t y, int16_t level, bool del);
 	static void drawS2FBar(int16_t x, int16_t y, int s2fd);
-	static void drawCircling( int x, int y, bool draw );
-	static void drawCruise( int x, int y, bool draw );
 	static void drawBT();
 	static void drawCable(int16_t x, int16_t y);
 	static void drawWifi( int x, int y );

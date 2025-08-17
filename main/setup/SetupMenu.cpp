@@ -126,18 +126,6 @@ int audio_setup_f(SetupMenuValFloat *p) {
 	return 0;
 }
 
-int centeraid_action(SetupMenuSelect *p)
-{
-    if ( p->getSelect() ) {
-        // create the center aid
-        CenterAid::create();
-    }
-    else {
-        CenterAid::remove();
-    }
-    return 0;
-}
-
 int speedcal_change(SetupMenuValFloat *p) {
 	if (asSensor)
 		asSensor->changeConfig();
@@ -1087,7 +1075,7 @@ static void screens_menu_create_vario(SetupMenu *top) {
 	ncolor->addEntry("Red");
 	top->addEntry(ncolor);
 
-	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Assistent", RST_NONE, centeraid_action, &vario_centeraid);
+	SetupMenuSelect *scrcaid = new SetupMenuSelect("Thermal-Assist", RST_NONE, nullptr, &vario_centeraid);
 	scrcaid->setHelp("Enable/disable display of the thermal assistent");
 	scrcaid->mkEnable();
 	top->addEntry(scrcaid);

@@ -7,7 +7,6 @@
 #include "Compass.h" // 3-Axis Magnetic Sensor
 #include "S2F.h"
 #include "AdaptUGC.h"
-#include "CenterAid.h"
 #include "vector_3d.h"
 #include "BMPVario.h"
 #include "AirspeedSensor.h"
@@ -63,7 +62,6 @@ extern CANbus* CAN;
 extern SerialLine *S1,*S2;
 extern Clock *MY_CLOCK;
 extern SemaphoreHandle_t xMutex;
-extern CenterAid *theCenteraid;
 extern AirspeedSensor *asSensor;
 extern PressureSensor *baroSensor;
 extern SetupRoot *Menu;

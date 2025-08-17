@@ -8,6 +8,8 @@
 
 #include "DrawDisplay.h"
 
+#include "CenterAid.h"
+#include "IpsDisplay.h"
 #include "UiEvents.h"
 #include "SetupRoot.h"
 #include "MessageBox.h"
@@ -272,10 +274,8 @@ void drawDisplay(void *arg)
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
 				Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), t, batteryVoltage, s2f_delta, as2f, average_climb.get(), VCMode.getCMode(), gflags.standard_setting, flap_pos.get() );
 			}
-			if( vario_centeraid.get() ){
-				if( theCenteraid ){
-					theCenteraid->tick();
-				}
+			if( theCenteraid ){
+				theCenteraid->tick();
 			}
 		}
 		// esp_task_wdt_reset();

@@ -6,24 +6,31 @@
  */
 
 #include "CenterAid.h"
-#include "types.h"
+
+#include "screen/element/PolarGauge.h"
 #include "math/Trigenometry.h"
-#include "string.h"
 #include "Flarm.h"
 #include "sensor.h"
 #include "AdaptUGC.h"
 #include "KalmanMPU6050.h"
-#include "sensor.h"
 #include "logdef.h"
 
+#include <cstring>
 
+constexpr int CA_STEP = 360/CA_NUM_DIRS; // 15
+constexpr float CA_STEP_2 = CA_STEP/2.f;  // 7.5
+constexpr int MAX_DISK_RAD = 6;
+constexpr int PEAK_STORAGE = 120;
+constexpr int DRAW_SCALE = PEAK_STORAGE/MAX_DISK_RAD;
+
+extern AdaptUGC *MYUCG;
 CenterAid  *theCenteraid = 0;
 
-CenterAid *CenterAid::create()
+CenterAid *CenterAid::create(PolarGauge &g)
 {
     if ( ! theCenteraid ) {
         // create the singleton
-        theCenteraid = new CenterAid();
+        theCenteraid = new CenterAid(g);
     }
     return theCenteraid;
 }
@@ -37,8 +44,9 @@ void CenterAid::remove()
     }
 }
 
-CenterAid::CenterAid() {
-	ucg = MYUCG;
+CenterAid::CenterAid(PolarGauge &g) :
+    _gauge(g)
+{
 	_tick = 0;
 	for( int i=0; i<CA_NUM_DIRS; i++ ){
 		thermals[i] = 0;
@@ -56,7 +64,6 @@ CenterAid::CenterAid() {
 	scale = 1.0;
 	gps_heading = 0.0;
 	last_rts = 0.0;
-    _radius = CA_STEP*2;
 }
 
 void CenterAid::drawThermal( int tn, int idir, bool draw_red ){
@@ -65,22 +72,22 @@ void CenterAid::drawThermal( int tn, int idir, bool draw_red ){
 		ESP_LOGE(FNAME,"index out of range: %d", agedir );
 		return;
 	}
-	short int cy = CENTER_Y-fast_cos_deg(idir*CA_STEP)*_radius;
-	short int cx = CENTER_X+fast_sin_deg(idir*CA_STEP)*_radius;
+	short int cy = _gauge._ref_y-fast_cos_idx(2*idir*CA_STEP)*_gauge._radius;
+	short int cx = _gauge._ref_x+fast_sin_idx(2*idir*CA_STEP)*_gauge._radius;
 	int td = drawn_thermals[idir];
 
 	if( td && (tn <  td) ){
-		ucg->setColor( COLOR_BLACK );
+		MYUCG->setColor( COLOR_BLACK );
 		// ESP_LOGI(FNAME,"erase TH, dir:%d, TE:%d", idir, td );
-		ucg->drawDisc(cx,cy, td/DRAW_SCALE, UCG_DRAW_ALL );  // 120 / 20 = 6
+		MYUCG->drawDisc(cx,cy, td/DRAW_SCALE, UCG_DRAW_ALL );  // 120 / 20 = 6
 	}
 	if( tn > 0 ){
 		// ESP_LOGI(FNAME,"draw TH, dir:%d, TE:%d", idir, td );
 		if( draw_red )  // for max climb
-			ucg->setColor( COLOR_RED );
+			MYUCG->setColor( COLOR_RED );
 		else
-			ucg->setColor( COLOR_GREEN );
-		ucg->drawDisc(cx,cy, tn/DRAW_SCALE, UCG_DRAW_ALL );
+			MYUCG->setColor( COLOR_GREEN );
+		MYUCG->drawDisc(cx,cy, tn/DRAW_SCALE, UCG_DRAW_ALL );
 	}
 	drawn_thermals[idir] = tn;
 }
@@ -134,12 +141,6 @@ void CenterAid::drawCenterAid(){
 	}
 }
 
-void CenterAid::setGeometry(int x, int y, int r)
-{
-    CENTER_X = x;
-    CENTER_Y = y;
-    _radius = r;
-}
 
 // add one thermal and draw thermal
 void CenterAid::addThermal( int teval ){
@@ -244,7 +245,7 @@ void CenterAid::tick(){
 				// ESP_LOGI(FNAME,"GPS OK TC:%f gdY:%f fused:%f diff:%f", gpshead, gyro_delta, new_heading, diff );
 			}else{     // trust as last resort just only gyro for Center Aid
 				new_heading = IMU::getYaw();
-				// ESP_LOGI(FNAME,"Gyro yaw %f", new_heading );
+				// ESP_LOGI(FNAME,"Gyro yaw %f", new_heading);
 			}
 		}
 		float diff = Vector::angleDiffDeg( new_heading, cur_heading );

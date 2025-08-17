@@ -912,6 +912,15 @@ void IpsDisplay::initRetroDisplay(){
 		WNDgauge = new PolarGauge(AMIDX+AVGOFFX, AMIDY, 360, 49, PolarGauge::COMPASS);
 	}
     WNDgauge->setNorthUp(wind_northup.get());
+    // if (VCMode.getCMode() || !vario_centeraid.get()) {
+    //     WNDgauge->drawRose();
+    // }
+    if ( vario_centeraid.get() ) {
+        CenterAid::create(*WNDgauge);
+    }
+    else {
+        CenterAid::remove();
+    }
     STATgauge->useSymbol(true);
     if (vario_mc_gauge.get()) { MCgauge->setLarge(true); }
     else {
@@ -940,9 +949,7 @@ void IpsDisplay::initRetroDisplay(){
 		FLAP->setBarPosition( WKSYMST-4, WKBARMID);
 		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(FLAP->getNegMax()))-18 );
 	}
-	if( theCenteraid ){
-		theCenteraid->setGeometry(AMIDX+AVGOFFX-30, AMIDY, 47);
-	}
+
 }
 
 void IpsDisplay::drawWarning( const char *warn, bool push ){

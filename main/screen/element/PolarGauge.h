@@ -15,6 +15,7 @@
 class ArrowIndicator;
 class WindIndicator;
 class LargeFigure;
+class CenterAid;
 
 // map gauge values to gauge scale angles
 class GaugeFunc
@@ -39,6 +40,7 @@ class PolarGauge : public ScreenElement
     friend class ArrowIndicator;
     friend class WindIndicator;
     friend class LargeFigure;
+    friend class CenterAid;
 
 public:
     using GaugeFlavor = enum { VARIO, GLOAD, COMPASS};

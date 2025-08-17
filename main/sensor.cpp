@@ -56,7 +56,6 @@
 #include "comm/DeviceMgr.h"
 #include "protocol/TestQuery.h"
 #include "AdaptUGC.h"
-#include "CenterAid.h"
 #include "OneWireESP32.h"
 #include "logdef.h"
 #include "math/Trigenometry.h"
@@ -1357,13 +1356,8 @@ void system_startup(void *args){
 			gflags.mpu_pwm_initalized = true;
 		}
 	}
-	if( vario_centeraid.get() ){
-		CenterAid::create();
-	}
 
 	// enter normal operation
-
-
 	if( SetupCommon::isClient() ){
 		xTaskCreate(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid);
 	}

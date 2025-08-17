@@ -34,6 +34,7 @@
 #include "math/Trigenometry.h"
 #include "comm/DeviceMgr.h"
 #include "logdef.h"
+#include "wind/CircleWind.h"
 
 #include <esp_system.h>
 

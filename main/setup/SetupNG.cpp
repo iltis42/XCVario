@@ -7,6 +7,7 @@
 
 #include "setup/SetupNG.h"
 
+#include "IpsDisplay.h"
 #include "setup/SetupMenuCommon.h"
 #include "setup/CruiseMode.h"
 #include "math/Quaternion.h"

@@ -128,3 +128,5 @@ private:
 	static void drawLegend( bool onlyLines=false );
 	static void drawNetto( int16_t x, int16_t y, bool netto );
 };
+
+extern IpsDisplay *Display;

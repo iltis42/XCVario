@@ -19,6 +19,7 @@ Last update: 2021-03-29
 
 #include "Deviation.h"
 #include "KalmanMPU6050.h"
+#include "vector.h"
 #include "sensor.h"
 #include "logdef.h"
 
@@ -280,4 +281,3 @@ void Deviation::saveDeviation(){
 	}
 	xSemaphoreGive(splineMutex);
 }
-

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cinttypes>
+
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
 extern uint8_t g_col_header_r;

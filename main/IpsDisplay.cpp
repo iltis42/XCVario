@@ -113,6 +113,7 @@ int S2FST = 45;
 #define UNITAS (ias_unit.get())
 #define UNITALT (alt_unit.get())
 
+IpsDisplay *Display = nullptr;
 
 int ASLEN = 0;
 static int AMIDY;

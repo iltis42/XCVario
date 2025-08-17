@@ -8,6 +8,7 @@
 
 #include "BootUpScreen.h"
 
+#include "Colors.h"
 #include "DrawDisplay.h"
 #include "UiEvents.h"
 #include "protocol/Clock.h"

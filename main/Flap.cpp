@@ -4,6 +4,7 @@
 #include "AnalogInput.h"
 #include "setup/SetupNG.h"
 #include "Units.h"
+#include "Colors.h"
 #include "setup/SetupMenu.h"
 #include "setup/SetupMenuSelect.h"
 #include "setup/SetupMenuValFloat.h"
@@ -26,7 +27,7 @@ const std::string_view flap_labels[] = { "-9", "-8", "-7", "-6", "-5", "-4", "-3
 		" 0", " 1", " 2", " 3", " 4", " 5", " 6", " 7", " 8", " 9", "10",  // 29
 		"11", "12", "13", "14", "15", "16", "17", "18", "19", "20",   // 39
 		// N,L,S,3a,3b,A,21,..,27
-		
+
 		" N", " L", " S", "3a", "3b", " A", "21", "22", "23", "24", "25", "26", "27", "" };  // L=41  S=42
 // Action Routines
 int select_flap_sens_pin(SetupMenuSelect *p){

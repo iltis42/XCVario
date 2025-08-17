@@ -116,7 +116,6 @@ PressureSensor *baroSensor = nullptr;
 PressureSensor *teSensor = nullptr;
 
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
-IpsDisplay *Display = 0;
 SetupRoot  *Menu = nullptr;
 WatchDog_C *uiMonitor = nullptr;
 

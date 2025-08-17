@@ -8,6 +8,7 @@
 
 #include "MessageBox.h"
 
+#include "Colors.h"
 #include "DrawDisplay.h"
 #include "UiEvents.h"
 #include "protocol/Clock.h"
@@ -18,7 +19,7 @@ MessageBox *MBOX; // the global representation
 
 const int CLOCK_DIVIDER = 8;
 
-// A message is represented throught 
+// A message is represented throught
 // - alert level (1,2,3)
 // - and a text message
 
@@ -155,4 +156,3 @@ bool MessageBox::tick()
     }
     return false;
 }
-

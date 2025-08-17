@@ -1,4 +1,6 @@
 #include "LeakTest.h"
+
+#include "IpsDisplay.h"
 #include "ESPRotary.h"
 #include "logdef.h"
 
@@ -88,4 +90,3 @@ void LeakTest::start( PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSens
 	}
 	Display->clear();
 }
-

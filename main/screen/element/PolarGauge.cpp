@@ -15,7 +15,7 @@
 #include "Units.h"
 #include "Colors.h"
 #include "AdaptUGC.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <cmath>
 
@@ -24,7 +24,7 @@ float getHeading(); // fixme
 extern AdaptUGC *MYUCG;
 static const ucg_color_t ndl_color[3] = {{COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED}};
 static constexpr const ucg_color_t bow_color[4] = {{COLOR_GREEN}, {COLOR_BBLUE}, {COLOR_ORANGE}, {COLOR_RED}};
-static const ucg_color_t lne_color[3] = {{COLOR_MGREY}, {COLOR_LGREY}, {COLOR_WHITE}};
+static const ucg_color_t lne_color[3] = {{COLOR_LGREY}, {COLOR_MGREY}, {COLOR_WHITE}};
 
 
 ////////////////////////////
@@ -44,13 +44,13 @@ public:
     float operator()(float a) const override { return fast_log2f(std::abs((a-_zero_at)) + 1.f) * _scale_k * (std::signbit((a-_zero_at)) ? -1. : 1.); }
     float invers(float rad) const override { return ((pow(2., std::abs(rad)) - 1.f) / _scale_k * (std::signbit(rad) ? -1.f : 1.f)) + _zero_at; }
 };
-class RoseGaugeFunc : public GaugeFunc
-{
-public:
-    RoseGaugeFunc() : GaugeFunc(My_PIf/180.f, 90.f) {}
-    float operator()(float a) const override { return (a + _zero_at) * _scale_k; }
-    float invers(float rad) const override { return (rad / _scale_k) - _zero_at; }
-};
+// class RoseGaugeFunc : public GaugeFunc
+// {
+// public:
+//     RoseGaugeFunc() : GaugeFunc(My_PIf/180.f, 90.f) {}
+//     float operator()(float a) const override { return (a + _zero_at) * _scale_k; }
+//     float invers(float rad) const override { return (rad / _scale_k) - _zero_at; }
+// };
 
 ////////////////////////////
 // PolarGauge
@@ -72,7 +72,7 @@ PolarGauge::PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t ra
         _unit_fac = 1.;
         _range = 360.;
         _mrange = -360.;
-        func = new RoseGaugeFunc();
+        // func = new RoseGaugeFunc();
     }
 }
 PolarGauge::~PolarGauge()
@@ -154,7 +154,7 @@ void PolarGauge::draw(float a)
         // Draw colored bow
         int16_t bar_val = (val > 0) ? val : 0;
         // draw green vario bar
-        drawBow(bar_val, _old_bow_idx, 3, GREEN);
+        drawBow(bar_val, _old_bow_idx, 3, 0, GREEN);
     }
 }
 
@@ -169,7 +169,7 @@ void PolarGauge::drawPolarSink(float a)
     a *= _unit_fac;
     int16_t val = dice_up(clipValue(a));
     // ESP_LOGI(FNAME,"sink  a:%f - %d", a, val);
-    drawBow(val, _old_polar_sink, 3, BLUE);
+    drawBow(val, _old_polar_sink, 3, 0, BLUE);
 }
 
 void PolarGauge::drawFigure(float a)
@@ -180,17 +180,33 @@ void PolarGauge::drawFigure(float a)
     }
 }
 
-void PolarGauge::drawWind(int16_t wdir, int16_t wval)
+void PolarGauge::drawWind(int16_t wdir, int16_t wval, int16_t idir, int16_t ival)
 {
-    if ( _wind_live ) {
-        ESP_LOGI(FNAME,"PW  d:%d - %d", wdir%360, wval);
-        wval *= _unit_fac;
-        // wdir -= static_cast<int16_t>(std::roundf(getHeading()));
-        // wdir = dice_up(wdir);
-        // ESP_LOGI(FNAME,"PW  d:%d - %d", (wdir/2)%360, wval);
-        _wind_live->draw(wdir, wval);
+    int16_t heading = 0;
+
+    if ( ! _north_up ) {
+        heading = static_cast<int16_t>(std::roundf(getHeading()));
+    }
+
+    wval *= _unit_fac;
+    wdir -= heading;
+    // ESP_LOGI(FNAME,"PW  d:%d - %d", wdir%360, wval);
+    bool redraw_w = _wind_avg->changed(wdir, wval) || _dirty;
+
+    ival *= _unit_fac;
+    idir -= heading;
+    bool redraw_i = _wind_live->changed(idir, ival) || _dirty;
+
+    if (redraw_w || redraw_i) {
+        if (redraw_w) {
+            _wind_avg->drawWind();
+        }
+        if (redraw_i || (angleDiffDeg(idir, wdir) % 180) < 20) {
+            _wind_live->drawWind();
+        }
     }
 }
+
 
 // idx [rad], end radius, width
 void PolarGauge::drawOneScaleLine(float a, int16_t l2, int16_t w, int16_t cidx) const
@@ -214,7 +230,7 @@ void PolarGauge::drawOneScaleLine(float a, int16_t l2, int16_t w, int16_t cidx) 
 }
 
 // draw incremental bow up to indicator given in diced 0.5° steps, pos
-void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t cidx) const
+void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t off, int16_t cidx) const
 {
     if (idx == old) {
         return;
@@ -226,10 +242,15 @@ void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t cidx) con
         MYUCG->setColor(DARK_DGREY);
     }
     else {
-        MYUCG->setColor(bow_color[cidx].color[0], bow_color[cidx].color[1], bow_color[cidx].color[2]);
+        if (cidx>=0) {
+            MYUCG->setColor(bow_color[cidx].color[0], bow_color[cidx].color[1], bow_color[cidx].color[2]);
+
+        } else {
+            MYUCG->setColor(COLOR_BLACK);
+        }
     }
     // ESP_LOGI(FNAME,"bow lev %d", idx);
-    int16_t l1 = _radius;
+    int16_t l1 = _radius + off;
     if (  w < 0 ) {
         w = -w;
         l1 += w;
@@ -238,6 +259,9 @@ void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t cidx) con
     if ( std::abs(w) > 4 && std::abs(old - idx) > 4)
     {
         inc *= 4;
+        if ( std::abs(idx-old)>160 ) {
+            inc *= 2;
+        }
     }
     int16_t step = std::abs(inc) * ((old<0||idx<0)?-1:1);
     for (int i = old; i != idx; i += inc)
@@ -250,7 +274,7 @@ void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t cidx) con
         int16_t ye = SinDeg2(i, w);
 
         MYUCG->drawTetragon(x0, y0, x1, y1, x1 + xe, y1 + ye, x0 + xe, y0 + ye);
-        if (std::abs(inc) > 1 && std::abs(i - idx) < 4)
+        if (std::abs(inc) > 1 && std::abs(i - idx) < 8)
         {
             inc /= std::abs(inc);;
             step /= std::abs(step);
@@ -287,7 +311,7 @@ void PolarGauge::drawOneLabel(float val, int16_t labl) const
 void PolarGauge::colorRange(float from, float to, int16_t color)
 {
     int16_t ol = dice_up(from);
-    drawBow(dice_up(to), ol, -10, color);
+    drawBow(dice_up(to), ol, -10, 0, color);
 }
 
 // draw a scale from _range down to _mrange
@@ -380,7 +404,7 @@ void PolarGauge::drawScale(int16_t at)
             }
             ESP_LOGI(FNAME, "lines a:%d end:%d label: %d  width: %d", a, end, draw_label, width );
 
-            drawOneScaleLine(val, end, width, width);
+            drawOneScaleLine(val, end, width, width-1);
             if (draw_label)
             {
                 drawOneLabel(val, a / 10);
@@ -392,12 +416,12 @@ void PolarGauge::drawScale(int16_t at)
     int16_t to = dice_up(stop/10.) -6;
     if (start > 0)
     {
-        drawBow(to, prev, _radius - _arrow->getBase());
+        drawBow(to, prev, _radius - _arrow->getBase(), 0);
     }
     else
     {
         // draw bow towards zero to get the dark grey (background color)
-        drawBow(prev, to, _radius - _arrow->getBase());
+        drawBow(prev, to, _radius - _arrow->getBase(), 0);
     }
     MYUCG->setFontPosBottom();
 }
@@ -409,7 +433,7 @@ void PolarGauge::drawScaleBottom()
 }
 
 // a [deg]; 0° ref on top
-void PolarGauge::drawTwoDots(int16_t a, int16_t size, int16_t cidx)
+void PolarGauge::drawTwoDots(int16_t a, int16_t size, int16_t cidx) const
 {
     float si = -fast_sin_idx(a*2);
     float co = fast_cos_idx(a*2);
@@ -425,15 +449,15 @@ void PolarGauge::drawTwoDots(int16_t a, int16_t size, int16_t cidx)
     }
 }
 
-void PolarGauge::drawRose(int16_t at)
+void PolarGauge::drawRose(int16_t at) const
 {
     int16_t start = _range/2 - 10;
     int16_t stop = 0;
     if (at != -1000)
     {
         // partial scale repainting
-        start = at + 17;
-        stop = at - 17;
+        start = at + 15;
+        stop = at - 15;
     }
     start = (start/10)*10;
     stop = (stop/10)*10;
@@ -461,40 +485,31 @@ void PolarGauge::drawRose(int16_t at)
     }
 }
 
+void PolarGauge::clearGauge()
+{
+    int16_t tmp = 0;
+    drawBow(720, tmp, 14, 10, -1 );
+    // remove last indicator print
+    if (_wind_live) {
+        _wind_live->drawWind(true);
+    }
+    if (_wind_avg) {
+        _wind_avg->drawWind(true);
+    }
+}
+
 ////////////////////////////
 // trigenometric helpers for gauge painters
 
 // get sin/cos position from gauge index in radian with gauge centered mapping
-int16_t PolarGauge::SinCentered(float val, int16_t len) const
-{
+int16_t PolarGauge::SinCentered(float val, int16_t len) const {
     return _ref_y - static_cast<int16_t>(fast_roundf_to_int(fast_sin_rad(val) * len));
 }
-int16_t PolarGauge::CosCentered(float val, int16_t len) const
-{
-    return _ref_x - static_cast<int16_t>(fast_roundf_to_int(fast_cos_rad(val) * len));
-}
+int16_t PolarGauge::CosCentered(float val, int16_t len) const { return _ref_x - static_cast<int16_t>(fast_roundf_to_int(fast_cos_rad(val) * len)); }
 // based on discrete integral values with 0.5deg resolution
-int16_t PolarGauge::SinCenteredDeg2(int16_t val, int16_t len) const
-{
-    return _ref_y - fast_roundf_to_int(fast_sin_idx(val) * len);
-}
-int16_t PolarGauge::CosCenteredDeg2(int16_t val, int16_t len) const
-{
-    return _ref_x - fast_roundf_to_int(fast_cos_idx(val) * len);
-}
-int16_t PolarGauge::Sin(float val, int16_t len) const
-{
-    return static_cast<int16_t>(fast_roundf_to_int(fast_sin_rad(val) * len));
-}
-int16_t PolarGauge::Cos(float val, int16_t len) const
-{
-    return static_cast<int16_t>(fast_roundf_to_int(fast_cos_rad(val) * len));
-}
-int16_t PolarGauge::SinDeg2(int16_t val, int16_t len) const
-{
-    return fast_roundf_to_int(fast_sin_idx(val) * len);
-}
-int16_t PolarGauge::CosDeg2(int16_t val, int16_t len) const
-{
-    return fast_roundf_to_int(fast_cos_idx(val) * len);
-}
+int16_t PolarGauge::SinCenteredDeg2(int16_t val, int16_t len) const { return _ref_y - fast_roundf_to_int(fast_sin_idx(val) * len); }
+int16_t PolarGauge::CosCenteredDeg2(int16_t val, int16_t len) const { return _ref_x - fast_roundf_to_int(fast_cos_idx(val) * len); }
+int16_t PolarGauge::Sin(float val, int16_t len) const { return static_cast<int16_t>(fast_roundf_to_int(fast_sin_rad(val) * len)); }
+int16_t PolarGauge::Cos(float val, int16_t len) const { return static_cast<int16_t>(fast_roundf_to_int(fast_cos_rad(val) * len)); }
+int16_t PolarGauge::SinDeg2(int16_t val, int16_t len) const { return fast_roundf_to_int(fast_sin_idx(val) * len); }
+int16_t PolarGauge::CosDeg2(int16_t val, int16_t len) const { return fast_roundf_to_int(fast_cos_idx(val) * len); }

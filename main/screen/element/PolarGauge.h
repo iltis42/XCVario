@@ -57,15 +57,16 @@ public:
     void drawIndicator(float a);
     void drawPolarSink(float a);
     void drawFigure(float a);
-    void drawWind(int16_t wdir, int16_t wval);
+    void drawWind(int16_t wdir, int16_t wval, int16_t idir, int16_t ival);
     using BowColorIdx = enum { GREEN, BLUE, ORANGE, RED };
     void colorRange(float from, float to, int16_t color);
     void drawScale(int16_t at = -1000);
     void drawScaleBottom();
-    void drawRose(int16_t at = -1000);
+    void drawRose(int16_t at = -1000) const;
+    void clearGauge();
     // drawAVG();
 
-private:
+  private:
     // indicator and attributes
     ArrowIndicator *_arrow = nullptr;
     WindIndicator *_wind_avg = nullptr;
@@ -102,8 +103,8 @@ private:
 
     // gauge helpers
     void drawOneScaleLine(float a, int16_t l2, int16_t w, int16_t cidx) const;
-    void drawBow(int16_t idx, int16_t &old, int16_t w, int16_t cidx=0) const;
+    void drawBow(int16_t idx, int16_t &old, int16_t w, int16_t off, int16_t cidx = 0) const;
     void drawSeg(float a0, float a1) const;
     void drawOneLabel(float val, int16_t labl) const;
-    void drawTwoDots(int16_t a, int16_t size, int16_t cidx);
+    void drawTwoDots(int16_t a, int16_t size, int16_t cidx) const;
 };

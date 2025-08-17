@@ -35,7 +35,7 @@
 #include "CenterAid.h"
 #include "Rotate.h"
 #include "AdaptUGC.h"
-#include "logdefnone.h"
+#include "logdef.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -100,11 +100,6 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 
 #define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +22 )
 
-#define BATX (DISPLAY_W-10)
-#define BATY (DISPLAY_H-12)
-#define LOWBAT  11.6    // 20%  -> 0%
-#define FULLBAT 12.8    // 100%
-
 #define BTSIZE  5
 #define BTW    15
 #define BTH    24
@@ -160,8 +155,6 @@ float IpsDisplay::average_climbf = 0;
 int   IpsDisplay::prev_winddir = 0;
 int   IpsDisplay::prev_heading = 0;
 int   IpsDisplay::prev_windspeed = 0;
-
-// static float prev_needle = 0;
 
 temp_status_t IpsDisplay::siliconTempStatusOld = MPU_T_UNKNOWN;
 
@@ -310,7 +303,9 @@ void IpsDisplay::bootDisplay() {
 
 void IpsDisplay::initDisplay() {
 	// ESP_LOGI(FNAME,"IpsDisplay::initDisplay()");
-	// set global color variables according to selected display_variant
+    clear();
+
+    // set global color variables according to selected display_variant
 	if ( display_variant.get() == DISPLAY_WHITE_ON_BLACK ) {
 		g_col_background = 255;
 		g_col_highlight = 0;
@@ -345,20 +340,20 @@ void IpsDisplay::initDisplay() {
         MCgauge = new McCready(1, DISPLAY_H + 2);
     }
     if (!BATgauge) {
-        BATgauge = new Battery(BATX, BATY);
+        BATgauge = new Battery(DISPLAY_W - 10, DISPLAY_H - 12);
     }
     if (!ALTgauge) {
         ALTgauge = new Altimeter(INNER_RIGHT_ALIGN, 0.8 * DISPLAY_H);
     }
     if ( !STATgauge ) {
-        STATgauge = new CruiseStatus(DISPLAY_W - (DISPLAY_W - INNER_RIGHT_ALIGN + 10) * ((display_orientation.get() == DISPLAY_NINETY) + 1), 18);
+        STATgauge = new CruiseStatus(DISPLAY_W - (DISPLAY_W - INNER_RIGHT_ALIGN + 8) * ((display_orientation.get() == DISPLAY_NINETY) + 1), 18);
     }
 
     if( display_style.get() != DISPLAY_AIRLINER ) {
 		initRetroDisplay();
 	}
 	else { // Airliner
-		clear();
+
 		ucg->setFont(ucg_font_fub11_tr);
 		ucg->setFontPosBottom();
 		ucg->setPrintPos(DISPLAY_LEFT+5,YVAR-VARFONTH+7);
@@ -906,7 +901,6 @@ void IpsDisplay::setCruiseChanged()
 }
 
 void IpsDisplay::initRetroDisplay(){
-	clear();
 	ucg->setFontPosBottom();
 	_range = Units::Vario( scale_range.get() );
 
@@ -918,7 +912,6 @@ void IpsDisplay::initRetroDisplay(){
 		WNDgauge = new PolarGauge(AMIDX+AVGOFFX, AMIDY, 360, 49, PolarGauge::COMPASS);
 	}
     WNDgauge->setNorthUp(wind_northup.get());
-    WNDgauge->drawRose();
     STATgauge->useSymbol(true);
     if (vario_mc_gauge.get()) { MCgauge->setLarge(true); }
     else {
@@ -1452,21 +1445,16 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Wind & center aid
 	if( !(tick%4) ){
-		static bool WG_visible = true; // fixme temp
 		if ( theCenteraid && ! VCMode.getCMode() ) {
-			if ( WG_visible ) {
-				// WNDgauge->clear();
-
-			}
 			theCenteraid->drawCenterAid();
 		}
 		else {
-			static int swdir=-1, iwdir=-1;
-			static int sw=0, iw=0;
+			static int wdir=-1, idir=-1;
+			static int wval=0, ival=0;
 			// check the wind
-			float d = (rand()%180) / M_PI_2;
-			iwdir += abs(sin(d)) + 2;
-			iw = int((sw+d))%120;
+			// float d = (rand()%180) / M_PI_2;
+			// idir += abs(sin(d)) + 2;
+			// ival = int((wval+d))%120;
 
 			// int ageStraight;
 			// int ageCircling;
@@ -1480,12 +1468,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 			// 	}
 			// }
 		// else{
-				// iwdir = extwind_inst_dir.get();
-				// iw = extwind_inst_speed.get();
-				swdir = extwind_sptc_dir.get();
-				sw = extwind_sptc_speed.get();
+				idir = extwind_inst_dir.get();
+				ival = extwind_inst_speed.get();
+				wdir = extwind_sptc_dir.get();
+				wval = extwind_sptc_speed.get();
 		// 	}
-			WNDgauge->drawWind(iwdir, iw);
+			WNDgauge->drawWind(wdir, wval, idir, ival);
 		}
 	}
 
@@ -1531,6 +1519,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// Cruise mode or circling
 	if( mode_dirty ) {
         STATgauge->draw();
+        if (vario_centeraid.get()) {
+            WNDgauge->clearGauge();
+            if (VCMode.getCMode()) {
+                WNDgauge->drawRose();
+            }
+        }
         mode_dirty = false;
     }
 

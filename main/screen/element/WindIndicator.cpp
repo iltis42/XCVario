@@ -34,29 +34,46 @@ WindIndicator::WindIndicator(PolarGauge &g, bool live) :
     ESP_LOGI(FNAME, "sw %d", _cwidth);
 }
 
-// [0,5°]
+// Check if changed
+// -> clear, and take over new values (but not draw)
+bool WindIndicator::changed(int16_t wdir, int16_t wval)
+{
+    if (wdir != _dir || wval != _val) {
+        drawWind(true);
+        _gauge.drawRose(_dir);
+        _val = wval;
+        if ( wval < 0 ) {
+            return false;
+        }
+        _dir = wdir;
+        return true;
+    }
+    return false;
+}
+
+// direction [°], northwind as 0°; strength [any]
+// wval < 0 just removes the
 bool WindIndicator::draw(int16_t wdir, int16_t wval)
 {
     // ESP_LOGI(FNAME, "Wind (%d,%d)", wdir, wval);
-
     if (wdir != _dir || wval != _val) {
         drawWind(true);
-        _dir = wdir;
+        _gauge.drawRose(_dir);
         _val = wval;
-        _gauge.drawRose(wdir);
+        if ( wval < 0 ) {
+            return false;
+        }
+        _dir = wdir;
         drawWind(false);
         return true;
     }
     return false;
 }
 
-
-
-// a [deg]; 0° ref on top
+// 0° reference on top of the compass rose
 void WindIndicator::drawWind(bool erase)
 {
-    _val = _dir %  360;
-    if ( ! erase ) ESP_LOGI(FNAME, "wind deg:%d, a:%d ", _dir, _val);
+    // if ( ! erase ) ESP_LOGI(FNAME, "wind deg:%d, a:%d ", _dir, _val);
     float si = -fast_sin_idx(_dir*2);
     float co = fast_cos_idx(_dir*2);
 
@@ -84,7 +101,6 @@ void WindIndicator::drawWind(bool erase)
         sprintf(buf, "%d", value);
         MYUCG->setFont(ucg_font_fub11_hr);
         MYUCG->setPrintPos(_gauge._ref_x - x0 - x1 / 2 - xshift, _gauge._ref_y - y0 - y1 / 2 + _cheight / 2);
-
         MYUCG->print(buf);
     }
 
@@ -110,5 +126,3 @@ void WindIndicator::drawWind(bool erase)
         // ESP_LOGI(FNAME, "x0, y0 (%d,%d)", x0, y0);
     }
 }
-
-

@@ -25,17 +25,14 @@ public:
     // API
     void forceRedraw() { dirty = true; }
     bool draw(int16_t wdir, int16_t wval);
+    void setWind(int16_t wdir, int16_t wval) { _dir = wdir; _val = wval; }
+    bool changed(int16_t wdir, int16_t wval);
+    void drawWind(bool erase=false);
 
-private:
-    enum DRAWTYP { ERASE = 0x10, SYNAPT = 1, INST = 2 };
-    void drawWind(bool erase);
-    // void drawPolarWind(int16_t a, int16_t w);
-
-    // attributes
-  private:
-    PolarGauge &_gauge;  // ref to gauge the indicator belonges to
+  private: // attributes
+    const PolarGauge &_gauge;  // ref to gauge the indicator belonges to
     int16_t _dir = 0; // 0.5 deg
-    int16_t _val = 0;
+    int16_t _val = -1;
     bool _live = false;
     static int16_t _cheight;
     static int16_t _cwidth;

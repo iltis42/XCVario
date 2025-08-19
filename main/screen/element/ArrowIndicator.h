@@ -29,7 +29,7 @@ class ArrowIndicator
 {
 public:
     ArrowIndicator() = delete;
-    ArrowIndicator(PolarGauge &g, int16_t tipref, int16_t length);
+    ArrowIndicator(PolarGauge &g, int16_t tipref, int16_t length, int16_t half_base);
     // API
     void setColor(ucg_color_t c) { color = c; }
     bool draw(int16_t val);
@@ -39,7 +39,7 @@ private: // attributes
     PolarGauge &_gauge;             // ref to gauge the pointer belonges to
     const int16_t _tip;             // distance from base center to arrow tip
     const int16_t _base;            // distance from base center to shoulder of the arrow
-    const int16_t _base_val_offset = 8; // .5deg steps from base point to shoulder point of arrow
+    const int16_t _base_val_offset; // .5deg steps from base point to shoulder point of arrow
     static constexpr const int16_t _half_width = 8;
     int16_t _needle_pos = 0;        // .5deg diced up
     ucg_color_t color;

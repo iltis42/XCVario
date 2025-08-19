@@ -63,7 +63,7 @@ PolarGauge::PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t ra
 {
     func = new GaugeFunc(1.,0.);
     if ( flavor != COMPASS ) {
-        _arrow = new ArrowIndicator(*this, 4, 20);
+        _arrow = new ArrowIndicator(*this, 0, 20, 9);
     }
     else {
         _wind_avg = new WindIndicator(*this, false);
@@ -100,7 +100,7 @@ void PolarGauge::forceAllRedraw()
     if ( _figure ) {
         _figure->forceRedraw();
     }
-    _old_bow_idx = 0;
+    _old_bow_idx = 0; // redraw bows
     _old_polar_sink = 0;
 }
 
@@ -161,6 +161,7 @@ void PolarGauge::draw(float a)
         // draw green vario bar
         drawBow(bar_val, _old_bow_idx, 3, 0, GREEN);
     }
+    _dirty = false;
 }
 
 void PolarGauge::drawIndicator(float a)
@@ -244,7 +245,7 @@ void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t off, int1
 
     // potentially clean first
     if (std::abs(idx) < std::abs(old) || idx * old < 0) {
-        MYUCG->setColor(DARK_DGREY);
+        MYUCG->setColor(DARK_GREY);
     }
     else {
         if (cidx>=0) {

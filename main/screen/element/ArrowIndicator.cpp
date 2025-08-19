@@ -21,13 +21,15 @@ extern AdaptUGC *MYUCG;
 ////////////////////////////
 // ArrowIndicator
 
-ArrowIndicator::ArrowIndicator(PolarGauge &g, int16_t tipref, int16_t length) :
+ArrowIndicator::ArrowIndicator(PolarGauge &g, int16_t tipref, int16_t length, int16_t half_base) :
     _gauge(g),
     _tip(g._radius-tipref),
-    _base(_tip-length),
-    _base_val_offset(atan(8.f/_base)*g.IDX_SCALE)
+        // correct for cutting the radius from base points
+    _base(cos(atan(static_cast<float>(half_base)/(_tip-length))) * (_tip-length)),
+    _base_val_offset(atan(static_cast<float>(half_base)/(_tip-length))*g.IDX_SCALE)
 {
     color = { COLOR_WHITE };
+    ESP_LOGI(FNAME,"Base  tl:%d off:%d tip:%d base:%d", _tip-length, _base_val_offset, _tip, _base );
     prev.x_0 = _gauge.CosCenteredDeg2(0, _base); // base center
     prev.y_0 = _gauge.SinCenteredDeg2(0, _base);
     prev.x_1 = prev.x_0 - 0; // lower shoulder
@@ -48,11 +50,6 @@ bool ArrowIndicator::draw(int16_t val)
     if (!change && !_gauge._dirty)
     {
         return false; // nothing painted
-    }
-    if ( _gauge._dirty ) {
-        _gauge._old_bow_idx = 0; // redraw bows
-        _gauge._old_polar_sink = 0;
-        _gauge._dirty = false;
     }
 
     // same about ~5000 cycles effort, but with tiny artifacts remaining
@@ -81,7 +78,7 @@ bool ArrowIndicator::draw(int16_t val)
         int16_t x_2 = _gauge.CosCenteredDeg2(_needle_pos, _base + 7);
         int16_t y_2 = _gauge.SinCenteredDeg2(_needle_pos, _base + 7);
         if( change ){
-            MYUCG->setColor(DARK_DGREY);
+            MYUCG->setColor(DARK_GREY);
             MYUCG->drawTriangle(prev.x_0, prev.y_0, prev.x_1, prev.y_1, x_2, y_2);
         }
 
@@ -91,7 +88,7 @@ bool ArrowIndicator::draw(int16_t val)
 
         // cleanup respecting overlap
         if( change ){  // we need to cleanup only if position has changed, otherwise a redraw at same position is enough
-            MYUCG->setColor(DARK_DGREY);
+            MYUCG->setColor(DARK_GREY);
             // clear area to the side
             if (val > _needle_pos)
             {
@@ -108,7 +105,7 @@ bool ArrowIndicator::draw(int16_t val)
     {
         if( change ){
             // cleanup previous incarnation
-            MYUCG->setColor(DARK_DGREY);
+            MYUCG->setColor(DARK_GREY);
             MYUCG->drawTriangle(prev.x_0, prev.y_0, prev.x_1, prev.y_1, prev.x_2, prev.y_2);
             // draw pointer
             MYUCG->setColor(color.color[0], color.color[1], color.color[2]);

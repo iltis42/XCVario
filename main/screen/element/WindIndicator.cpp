@@ -32,6 +32,13 @@ WindIndicator::WindIndicator(PolarGauge &g, bool live) :
     _cwidth = MYUCG->getStrWidth("0");
     ESP_LOGI(FNAME, "asc %d %d", MYUCG->getFontAscent(), MYUCG->getFontDescent());
     ESP_LOGI(FNAME, "sw %d", _cwidth);
+
+    if ( _live ) {
+        _color = { COLOR_ORANGE };
+    }
+    else {
+        _color = { COLOR_BBLUE };
+    }
 }
 
 // Check if changed
@@ -83,10 +90,8 @@ void WindIndicator::drawWind(bool erase)
     int16_t y1 = y0 / 4;
     if (erase) {
         MYUCG->setColor(COLOR_BLACK);
-    } else if (_live) {
-        MYUCG->setColor(COLOR_ORANGE);
     } else {
-        MYUCG->setColor(COLOR_BBLUE);
+        MYUCG->setColor(_color.color[0], _color.color[1], _color.color[2]);
     }
     // a number at where the wind is coming from
     int16_t sw = _cwidth * count_digits(_val);

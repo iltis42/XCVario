@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "AdaptUGC.h"
 
 #include <cinttypes>
 
@@ -22,9 +23,10 @@ public:
     WindIndicator(PolarGauge &g, bool live);
 
     // API
-    bool draw(int16_t wdir, int16_t wval);
-    void setWind(int16_t wdir, int16_t wval) { _dir = wdir; _val = wval; }
+    // void setWind(int16_t wdir, int16_t wval) { _dir = wdir; _val = wval; }
+    void setColor(ucg_color_t c) { _color = c; }
     bool changed(int16_t wdir, int16_t wval);
+    bool draw(int16_t wdir, int16_t wval);
     void drawWind(bool erase=false);
 
   private: // attributes
@@ -32,6 +34,7 @@ public:
     int16_t _dir = 0; // 0.5 deg
     int16_t _val = -1;
     bool _live = false;
+    ucg_color_t _color;
     static int16_t _cheight;
     static int16_t _cwidth;
 };

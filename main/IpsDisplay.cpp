@@ -913,9 +913,7 @@ void IpsDisplay::initRetroDisplay(){
 		WNDgauge = new PolarGauge(AMIDX+AVGOFFX, AMIDY, 360, 49, PolarGauge::COMPASS);
 	}
     WNDgauge->setNorthUp(wind_northup.get());
-    // if (VCMode.getCMode() || !vario_centeraid.get()) {
-    //     WNDgauge->drawRose();
-    // }
+    WNDgauge->setColor(needle_color.get());
     if ( vario_centeraid.get() ) {
         CenterAid::create(*WNDgauge);
     }

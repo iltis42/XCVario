@@ -119,7 +119,12 @@ void PolarGauge::setRange(float pos_range, float zero_at, bool log)
 
 void PolarGauge::setColor(int color_idx)
 {
-    _arrow->setColor(ndl_color[color_idx & 3]);
+    if ( _arrow ) {
+        _arrow->setColor(ndl_color[color_idx & 3]);
+    }
+    if ( _wind_live ) {
+        _wind_live->setColor(ndl_color[color_idx & 3]);
+    }
 }
 
 void PolarGauge::setFigOffset(int16_t ox, int16_t oy)

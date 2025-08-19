@@ -348,7 +348,7 @@ void PolarGauge::drawScale(int16_t at)
     {
         // partial scale repainting
         if ( at > 0 ) { // Redraw the AVG area
-        int16_t tmp = 10 * at + 5; // alias .5
+            int16_t tmp = 10 * at + 5; // alias .5
             if (tmp < start) {
                 start = tmp;
             }
@@ -449,7 +449,7 @@ void PolarGauge::drawTwoDots(int16_t a, int16_t size, int16_t cidx) const
     if ( (a%360) != 0 ) { // skip the "north" position
         MYUCG->drawDisc(_ref_x-bx,_ref_y-by, size, UCG_DRAW_ALL );
     }
-    if ( ((a+180)%360) != 0 ) { // skip the "north" position (vis-a-vi)
+    if ( ((a+180)%360) != 0 ) { // skip the "north" position (vis-a-vis)
         MYUCG->drawDisc(_ref_x+bx,_ref_y+by, size, UCG_DRAW_ALL ); // 180° mirrored
     }
 }
@@ -476,16 +476,18 @@ void PolarGauge::drawRose(int16_t at) const
             drawTwoDots( a, 1, 0);
         }
         if (!(a%180) ) {
-            // Draw ^ for heading-up, or N for north-up
-            MYUCG->setFont(ucg_font_fub11_hr);
-            char s[3] = "^";
-            if ( _north_up ) {
-                s[0] = 'N';
-            }
-            int16_t w2 = MYUCG->getStrWidth(s)/2;
             MYUCG->setColor(COLOR_LBBLUE);
-            MYUCG->setPrintPos(_ref_x-w2+1, _ref_y-_radius+9);
-            MYUCG->print(s);
+            if ( _north_up ) {
+                // Draw a blue dot for heading-up, or N for north-up
+                MYUCG->setFont(ucg_font_fub11_hr);
+                char s[] = "N";
+                int16_t w2 = MYUCG->getStrWidth(s)/2;
+                MYUCG->setPrintPos(_ref_x-w2+1, _ref_y-_radius+9);
+                MYUCG->print(s);
+            }
+            else {
+                MYUCG->drawDisc(_ref_x,_ref_y-_radius, 2, UCG_DRAW_ALL );
+            }
         }
     }
 }

@@ -8,7 +8,6 @@
 
 #pragma once
 
-#include "ScreenElement.h"
 
 #include <cinttypes>
 
@@ -23,7 +22,6 @@ public:
     WindIndicator(PolarGauge &g, bool live);
 
     // API
-    void forceRedraw() { dirty = true; }
     bool draw(int16_t wdir, int16_t wval);
     void setWind(int16_t wdir, int16_t wval) { _dir = wdir; _val = wval; }
     bool changed(int16_t wdir, int16_t wval);
@@ -36,5 +34,4 @@ public:
     bool _live = false;
     static int16_t _cheight;
     static int16_t _cwidth;
-    bool dirty = true;
 };

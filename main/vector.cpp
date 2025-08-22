@@ -44,94 +44,64 @@ Vector::Vector(const float angle, const float speed )
 	flags._isValid = true;
 }
 
-
-float Vector::normalize(float angle)
+//  in: -oo < angle < oo
+// out: 0 .. 2*pi
+float Vector::normalizePI2(float angle)
 {
-	//perhaps use something similar here?
-	if (angle < 0)
-		return normalize (angle + PI2);
-
-	if (angle >= PI2)
-		return normalize (angle - PI2);
-
-	return angle;
+    return angle - PI2f * fast_floorf(angle / PI2f);
 }
 
-float Vector::normalizeDeg(float angle)
-{
-	float a=angle;
-	while( a < 0.0 )
-		a += 360.0;
-	while( a >= 360.0 )
-		a -= 360.0;
-	return a;
-}
-
+//  in: -oo < angle < oo
+// out: 0 .. 2*pi
 float Vector::normalizePI(float angle)
 {
-	float a=angle;
-	while( a < -M_PI )
-		a += PI2;
-	while( a >= M_PI )
-		a -= PI2;
-	return a;
+    return angle - PI2f * fast_floorf((angle + My_PIf) / PI2f);
 }
 
+//  in: -oo < angle < oo
+// out: 0 .. 360
+float Vector::normalizeDeg(float angle)
+{
+    return angle - 360.0f * fast_floorf(angle / 360.0f);
+}
+
+//  in: -oo < angle < oo
+// out: -180 .. 180
 float Vector::normalizeDeg180(float angle)
 {
-	float a=angle;
-	while( a < -180.0 )
-		a += 360.0;
-	while( a >= 180.0 )
-		a -= 360.0;
-	return a;
+    return angle - 360.0f * fast_floorf((angle+180.0f) / 360.0f);
 }
 
-float Vector::reverse( float angle ){
-	float opposite = 0;
-	normalizeDeg( angle );
-	if( abs( angle ) < 0.1 )
-		opposite = 180.0;           // or -180 as you wish
-	else if(angle > 180.0)
-		opposite = angle - 180.0;
-	else if (angle < 180.0)
-		opposite = angle + 180.0;
-	return opposite;
+//  in: -oo < angle < oo
+// out: -180 .. 180
+float Vector::reverseBearing(float angle)
+{
+	return normalizeDeg180(angle+180.0f);
 }
 
+//  in: -oo < x,y < oo
+// out: 0 .. 2*pi
 float Vector::polar(float y, float x)
 {
-	float angle = 0.0;
-	if(x >= -0.001 && x <= 0.001) {
-		if(y < 0.0)
-			return -M_PI / 2;   // Corrected to -PI/2 for y < 0
-		else
-			return M_PI / 2;    // Corrected to PI/2 for y >= 0
+    float angle = atan2f(y, x);  // range: (–π, π]
+    if (angle < 0.0f) {
+        angle += PI2f;    // convert to [0, 2π)
 	}
-	// Punkt liegt auf der neg. X-Achse
-	if(x < 0.0)
-		angle = atan( y / x ) + M_PI;
-	else
-		angle = atan( y / x );
-
-	// Normalize
-	if(angle < 0.0)
-		angle = PI2 + angle;
-
-	if(angle > (PI2))
-		angle = angle - (PI2);
-
-	return angle;
+    return angle;
 }
 
+//  in: -oo < ang1, ang2 < oo
+// out: -180 .. 180
 float Vector::angleDiffDeg(float ang1, float ang2)
 {
-	return( normalizeDeg180( normalizeDeg180(ang1) - normalizeDeg180( ang2 ) ) );
+	return normalizeDeg180(ang1 - ang2);
 }
 
+//  in: -oo < ang1, ang2 < oo
+// out: -pi .. pi
 float Vector::angleDiff(float ang1, float ang2)
 {
-	return( normalizePI( normalizePI(ang1) - normalizePI(ang2) ));
+	return normalizePI(ang1 - ang2);
 }
 
 Vector::~Vector()
@@ -144,7 +114,7 @@ float Vector::getAngleDeg()
 		recalcDR();
 	}
 
-	return (_angle * 180.0/M_PI);
+	return (_angle * 180.0/My_PIf);
 }
 
 /** Get angle in radian. */
@@ -166,7 +136,7 @@ void Vector::setAngle(const float angle)
 		recalcDR();
 	}
 
-	_angle = normalize( angle*M_PI/180.0 );
+	_angle = normalizePI2( angle*My_PIf/180.0 );
 	flags.dirtyXY = true;
 	flags._isValid = true;
 	// ESP_LOGI(FNAME, "New angle ang:%f", _angle );
@@ -198,7 +168,7 @@ void Vector::setAngleRad(const float& angle)
 		recalcDR();
 	}
 
-	_angle = normalize( angle );
+	_angle = normalizePI2( angle );
 	flags.dirtyXY = true;
 	flags.dirtyDR = false;
 	flags._isValid = true;
@@ -259,7 +229,7 @@ float Vector::getSpeedMps()
 /** Recalculates the the angle and the speed from the known x and y values. */
 void Vector::recalcDR()
 {
-	_angle = normalize( polar( _y, _x ) );
+	_angle = normalizePI2( polar( _y, _x ) );
 	_speed = hypot( _y, _x );
 	flags.dirtyDR = false;
 }
@@ -485,7 +455,7 @@ Vector Vector::operator - ()
 	//there are two options for this. We use the one that involves the least conversions.
 	if( !flags.dirtyDR )
 	{
-		return Vector( _angle + M_PI, float( _speed ) );
+		return Vector( _angle + My_PIf, float( _speed ) );
 	}
 	else if( !flags.dirtyXY )
 	{
@@ -501,16 +471,16 @@ Vector Vector::operator - ()
 
 /** * operator for vector. */
 Vector operator * (Vector& left, float right)
-		{
+{
 	return Vector( left.getAngleRad(), float( right * left.getSpeed() ) );
-		}
+}
 
 
 /** * operator for vector. */
 Vector operator * (float left, Vector& right)
-		{
+{
 	return Vector( right.getAngleRad(), float( left * right.getSpeed() ) );
-		}
+}
 
 
 /** / operator for vector. */

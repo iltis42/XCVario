@@ -10,7 +10,6 @@
 #include "setup/SubMenuCompassWind.h"
 #include "setup/SubMenuGlider.h"
 #include "setup/ShowBootMsg.h"
-#include "screen/SetupRoot.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
 #include "BMPVario.h"
@@ -43,6 +42,7 @@
 #include <iterator>
 #include <algorithm>
 #include <string>
+#include <string_view>
 
 static void setup_create_root(SetupMenu *top);
 
@@ -65,6 +65,7 @@ static void options_menu_create(SetupMenu *top);
 static void options_menu_create_units(SetupMenu *top);
 static void options_menu_create_flarm(SetupMenu *top);
 static void screens_menu_create_gload(SetupMenu *top);
+static void screens_menu_create_extreme_records(SetupMenu *top);
 
 static void system_menu_create(SetupMenu *top);
 static void system_menu_create_software(SetupMenu *top);
@@ -87,10 +88,11 @@ float elev_step = 1;
 bool SetupMenu::focus = false;
 
 int gload_reset(SetupMenuSelect *p) {
-	if ( p->getSelect() == 0 ) {
+	if ( p->getSelect() == 1 ) {
 		gload_pos_max.set(1);
 		gload_neg_max.set(0);
 		airspeed_max.set(0);
+		p->setSelect(0);
 	}
 	return 0;
 }
@@ -122,18 +124,6 @@ int audio_setup_s(SetupMenuSelect *p) {
 int audio_setup_f(SetupMenuValFloat *p) {
 	AUDIO->setup();
 	return 0;
-}
-
-int centeraid_action(SetupMenuSelect *p)
-{
-    if ( p->getSelect() ) {
-        // create the center aid
-        CenterAid::create();
-    }
-    else {
-        CenterAid::remove();
-    }
-    return 0;
 }
 
 int speedcal_change(SetupMenuValFloat *p) {
@@ -183,7 +173,7 @@ int config_gear_warning(SetupMenuSelect *p) {
 
 int upd_screens(SetupMenuSelect *p)
 {
-	Menu->initScreens();
+	p->getParent()->getParent()->setDirty();
 	return 0;
 }
 
@@ -656,7 +646,7 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	s2fmod->setHelp("Select data source for switching between S2F and Vario modes", 230);
 	s2fmod->addEntry("Switch", AM_SWITCH);
 	s2fmod->addEntry("AutoSpeed", AM_AUTOSPEED);
-	if ( flap_enable.get() ) {
+	if ( flap_sensor.get() ) {
 		s2fmod->addEntry("AutoFlap", AM_FLAP); // not dynamic, exit setup to change
 	}
 	s2fmod->addEntry("AutoTurn", AM_AHRS);
@@ -677,8 +667,8 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	top->addEntry(autospeed);
 	autospeed->setHelp("Transition speed for the AutoSpeed S2F switch");
 
-	if ( flap_enable.get() ) {
-		SetupMenuValFloat *s2f_flap = new SetupMenuValFloat("AutoFlap Position", "<", nullptr, false, &s2f_flap_pos);
+	if ( flap_sensor.get() ) {
+		SetupMenuValFloat *s2f_flap = new SetupMenuValFloat("AutoFlap Position", "flp", nullptr, false, &s2f_flap_pos);
 		top->addEntry(s2f_flap);
 		s2f_flap->setHelp("Precise flap position for the AutoFlap S2F switch");
 	}
@@ -1059,13 +1049,73 @@ void options_menu_create_flarm(SetupMenu *top) {
 	top->addEntry(flarms);
 }
 
+void screens_menu_create_extreme_records(SetupMenu *top) {
+	SetupMenuValFloat *gmpos = new SetupMenuValFloat("Peak Positive G", "", nullptr, false, &gload_pos_max);
+	top->addEntry(gmpos);
+	gmpos->lock();
+
+	SetupMenuValFloat *gmneg = new SetupMenuValFloat("Peak Negative G", "", nullptr, false, &gload_neg_max);
+	top->addEntry(gmneg);
+	gmneg->lock();
+
+	SetupMenuValFloat *maxias = new SetupMenuValFloat("Peak Airspeed", "", nullptr, false, &airspeed_max);
+	top->addEntry(maxias);
+	maxias->lock();
+
+	SetupMenuSelect *gloadres = new SetupMenuSelect("Reset Peak-Hold", RST_NONE, gload_reset);
+	gloadres->addEntry("Cancel");
+	gloadres->addEntry("Reset");
+	top->addEntry(gloadres);
+}
+
+static void screens_menu_create_vario(SetupMenu *top) {
+	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, nullptr, &needle_color);
+	ncolor->addEntry("White");
+	ncolor->addEntry("Orange");
+	ncolor->addEntry("Red");
+	top->addEntry(ncolor);
+
+	SetupMenuSelect *scrcaid = new SetupMenuSelect("Thermal-Assist", RST_NONE, nullptr, &vario_centeraid);
+	scrcaid->setHelp("Enable/disable display of the thermal assistent");
+	scrcaid->mkEnable();
+	top->addEntry(scrcaid);
+
+	SetupMenuSelect *tgauge = new SetupMenuSelect("Upper Gauge", RST_NONE, nullptr, &vario_upper_gauge);
+	tgauge->setHelp("Choose the content for this gauge");
+	tgauge->addEntry("Disable");
+	tgauge->addEntry("Airspeed", GAUGE_SPEED);
+	tgauge->addEntry("Speed2Fly", GAUGE_S2F);
+	tgauge->addEntry("Net. Vario", NETTO_VARIO);
+	tgauge->addEntry("Heading", GAUGE_HEADING);
+	tgauge->addEntry("Slip Angle", GAUGE_SLIP);
+	top->addEntry(tgauge);
+
+	SetupMenuSelect *bgauge = new SetupMenuSelect("Lower Gauge", RST_NONE, nullptr, &vario_lower_gauge);
+	bgauge->setHelp("Choose the content for this gauge");
+	bgauge->addEntry("Disable");
+	bgauge->addEntry("Altimeter", GAUGE_ALT);
+	// bgauge->addEntry("Life Wind", GAUGE_NONE);
+	top->addEntry(bgauge);
+
+	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", RST_NONE, nullptr, &flap_enable );
+	wke->mkEnable();
+	wke->setHelp("Enable flap indicator to assist optimum flap setting depending on speed, G-load and ballast");
+	top->addEntry( wke );
+
+	SetupMenuSelect *nup = new SetupMenuSelect("Wind North-Up", RST_NONE, nullptr, &wind_northup);
+	nup->setHelp("Display wind relative to glider is default, choose north-up, if prefered");
+	nup->mkEnable();
+	top->addEntry(nup);
+}
+
 void screens_menu_create_gload(SetupMenu *top) {
-	SetupMenuSelect *glmod = new SetupMenuSelect("Activation Mode", RST_NONE, nullptr, &gload_mode);
+	SetupMenuSelect *glmod = new SetupMenuSelect("Screen Mode", RST_NONE, upd_screens, &screen_gmeter);
 	glmod->setHelp(
-			"Switch off G-Force screen, or activate by threshold G-Force 'Dynamic', or static by 'Always-On'");
-	glmod->addEntry("Off");
-	glmod->addEntry("Dynamic");
-	glmod->addEntry("Always-On");
+			"Switch off G-Force screen, switch it 'On', activate by threshold G-Force 'Dynamic', or choose it as 'Primary' screen");
+	glmod->addEntry(ENABLE_MODE[0].data());
+	glmod->addEntry(ENABLE_MODE[1].data());
+	glmod->addEntry(ENABLE_MODE[2].data());
+	glmod->addEntry(ENABLE_MODE[3].data());
 	top->addEntry(glmod);
 
 	SetupMenuValFloat *gtpos = new SetupMenuValFloat("Positive Threshold", "", nullptr, false, &gload_pos_thresh);
@@ -1078,7 +1128,7 @@ void screens_menu_create_gload(SetupMenu *top) {
 	gtneg->setPrecision(1);
 	gtneg->setHelp("Negative threshold to launch G-Load display");
 
-	SetupMenuValFloat *glpos = new SetupMenuValFloat("Red positive limit", "", nullptr, false, &gload_pos_limit);
+	SetupMenuValFloat *glpos = new SetupMenuValFloat("Red positive Limit", "", nullptr, false, &gload_pos_limit);
 	top->addEntry(glpos);
 	glpos->setPrecision(1);
 	glpos->setHelp(
@@ -1090,7 +1140,7 @@ void screens_menu_create_gload(SetupMenu *top) {
 	glposl->setHelp(
 			"Positive g load factor limit the aircraft is able to handle above maneuvering speed, see manual");
 
-	SetupMenuValFloat *glneg = new SetupMenuValFloat("Red negative limit", "", nullptr, false, &gload_neg_limit);
+	SetupMenuValFloat *glneg = new SetupMenuValFloat("Red negative Limit", "", nullptr, false, &gload_neg_limit);
 	top->addEntry(glneg);
 	glneg->setPrecision(1);
 	glneg->setHelp(
@@ -1102,76 +1152,62 @@ void screens_menu_create_gload(SetupMenu *top) {
 	glnegl->setHelp(
 			"Negative g load factor limit the aircraft is able to handle above maneuvering speed, see manual");
 
-	SetupMenuValFloat *gmpos = new SetupMenuValFloat("Peak Positive", "", nullptr, false, &gload_pos_max);
-	top->addEntry(gmpos);
-	gmpos->lock();
-
-	SetupMenuValFloat *gmneg = new SetupMenuValFloat("Peak Negative", "", nullptr, false, &gload_neg_max);
-	top->addEntry(gmneg);
-	gmneg->lock();
-
-	SetupMenuSelect *gloadres = new SetupMenuSelect("Reset peak-hold", RST_NONE, gload_reset);
-	gloadres->addEntry("Reset");
-	gloadres->addEntry("Cancel");
-	top->addEntry(gloadres);
+	SetupMenu *extreme = new SetupMenu("Extreme Recordings", screens_menu_create_extreme_records);
+	top->addEntry(extreme);
 
 	SetupMenuValFloat *gloadalvo = new SetupMenuValFloat("Alarm Volume", "%", nullptr, false, &gload_alarm_volume);
 	gloadalvo->setHelp("Maximum volume of G-Load alarm audio warning");
 	top->addEntry(gloadalvo);
 }
 
-static void screens_menu_create_vario(SetupMenu *top) {
-
-	SetupMenuSelect *sink = new SetupMenuSelect("Polar Sink", RST_NONE, nullptr, &ps_display);
-	sink->setHelp("Display polar sink rate together with climb rate when Vario is in Brutto Mode (else disabled)");
-	sink->mkEnable();
-	top->addEntry(sink);
-
-	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, nullptr, &needle_color);
-	ncolor->addEntry("White");
-	ncolor->addEntry("Orange");
-	ncolor->addEntry("Red");
-	top->addEntry(ncolor);
-
-	SetupMenuSelect *scrcaid = new SetupMenuSelect("Center-Assistent", RST_NONE, centeraid_action, &screen_centeraid);
-	scrcaid->setHelp("Enable/disable display of the thermal assistent");
-	scrcaid->mkEnable();
-	top->addEntry(scrcaid);
-
-	SetupMenuSelect *tgauge = new SetupMenuSelect("Upper Gauge", RST_NONE, nullptr, &screen_gauge_top);
-	tgauge->addEntry("Disable");
-	tgauge->addEntry("Airspeed", GAUGE_SPEED);
-	tgauge->addEntry("Speed2Fly", GAUGE_S2F);
-	tgauge->addEntry("Heading", GAUGE_HEADING);
-	tgauge->addEntry("Slip Angle", GAUGE_SLIP);
-	top->addEntry(tgauge);
-
-	SetupMenuSelect *bgauge = new SetupMenuSelect("Lower Gauge", RST_NONE, nullptr, &screen_gauge_bottom);
-	bgauge->addEntry("Disable");
-	bgauge->addEntry("Altimeter", GAUGE_ALT);
-	bgauge->addEntry("Life Wind", GAUGE_NONE);
-	top->addEntry(bgauge);
+void screens_menu_create_horizon(SetupMenu *top) {
+	SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens, &screen_horizon);
+	horizon->mkEnable();
+	top->addEntry(horizon);
 }
 
 static void options_menu_create_screens(SetupMenu *top) { // dynamic!
 	if ( top->getNrChilds() == 0 ) {
-		SetupMenu *gload = new SetupMenu("G-Load Screen", screens_menu_create_gload);
-		top->addEntry(gload);
-
-		SetupMenu *vario = new SetupMenu("Vario Screen", screens_menu_create_vario);
+		SetupMenu *vario = new SetupMenu("Variometer", screens_menu_create_vario);
 		top->addEntry(vario);
 
-		SetupMenuSelect *scrgmet = new SetupMenuSelect("G-Meter", RST_NONE, upd_screens, &screen_gmeter);
-		scrgmet->mkEnable();
-		top->addEntry(scrgmet);
-	}
-	if ( top->getNrChilds() == 4 ) {
-		top->delEntry(top->getEntry(3));
-	}
-	if (gflags.ahrsKeyValid) {
-		SetupMenuSelect *horizon = new SetupMenuSelect("Horizon", RST_NONE, upd_screens, &screen_horizon);
-		horizon->mkEnable();
+        SetupMenuSelect *mc = new SetupMenuSelect("McCready Gauge", RST_NONE, nullptr, &vario_mc_gauge);
+        mc->setHelp("Show the currently used McCready setting");
+        mc->mkEnable();
+        top->addEntry(mc);
+
+		SetupMenu *gload = new SetupMenu("G-Meter", screens_menu_create_gload);
+		top->addEntry(gload);
+
+		SetupMenu *horizon = new SetupMenu("Horizon", screens_menu_create_horizon);
 		top->addEntry(horizon);
+	}
+
+	SetupMenu *tmp_menu = static_cast<SetupMenu*>(top->getEntry(0)); // vario
+	if ( screen_gmeter.get() != SCREEN_PRIMARY ) {
+		tmp_menu->setBuzzword("Primary");
+		tmp_menu->unlock();
+	}
+	else {
+		tmp_menu->setBuzzword("Disabled");
+		tmp_menu->lock();
+	}
+
+	tmp_menu = static_cast<SetupMenu*>(top->getEntry(2)); // gload
+	tmp_menu->setBuzzword(ENABLE_MODE[screen_gmeter.get()].data());
+
+	tmp_menu = static_cast<SetupMenu*>(top->getEntry(3)); // horizon
+	if ( screen_gmeter.get() == SCREEN_PRIMARY ) {
+		tmp_menu->setBuzzword(ENABLE_MODE[0].data());
+		tmp_menu->lock();
+	}
+	else if ( ! gflags.ahrsKeyValid ) {
+		tmp_menu->setBuzzword("no license");
+		tmp_menu->lock();
+	}
+	else {
+		tmp_menu->setBuzzword(ENABLE_MODE[screen_horizon.get()].data());
+		tmp_menu->unlock();
 	}
 }
 
@@ -1280,7 +1316,6 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 			"Display style in more digital airliner stype or retro mode with classic vario meter needle");
 	disty->addEntry("Airliner");
 	disty->addEntry("Retro");
-	disty->addEntry("UL");
 
 	SetupMenuSelect *disva = new SetupMenuSelect("Color Variant", RST_NONE, nullptr, &display_variant);
 	top->addEntry(disva);
@@ -1296,14 +1331,6 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	diso->addEntry( "NORMAL");
 	diso->addEntry( "TOPDOWN");
 	diso->addEntry( "NINETY");
-
-	//
-	SetupMenuSelect *drawp = new SetupMenuSelect("Needle Alignment", RST_NONE, nullptr, &drawing_prio);
-	top->addEntry(drawp);
-	drawp->setHelp(
-			"Alignment of the variometer needle either in front of the displayed info, or in background");
-	drawp->addEntry("Front");
-	drawp->addEntry("Back");
 
 	SetupMenuSelect *dtest = new SetupMenuSelect("Display Test", RST_NONE, do_display_test, &display_test);
 	top->addEntry(dtest);
@@ -1365,10 +1392,10 @@ void system_menu_create_ahrs_calib(SetupMenu *top) {
 	top->addEntry(ahrs_ground_aa);
 }
 
-static const char  lkeys[][4] { "0", "1", "2", "3", "4", "5", "6", "7",
+static const std::string_view lkeys[] { "0", "1", "2", "3", "4", "5", "6", "7",
 		"8", "9", ":", ";", "<", "=", ">", "?", "@", "A", "B", "C", "D", "E",
 		"F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
-		"T", "U", "V", "W", "X", "Y", "Z" };
+		"T", "U", "V", "W", "X", "Y", "Z", "" };
 
 void system_menu_create_hardware_ahrs_lc(SetupMenu *top) {
 	SetupMenuSelect *ahrslc1 = new SetupMenuSelect("First    Letter", RST_NONE, add_key, &ahrs_licence_dig1);
@@ -1379,10 +1406,10 @@ void system_menu_create_hardware_ahrs_lc(SetupMenu *top) {
 	top->addEntry(ahrslc2);
 	top->addEntry(ahrslc3);
 	top->addEntry(ahrslc4);
-	ahrslc1->addEntryList(lkeys, sizeof(lkeys) / 4);
-	ahrslc2->addEntryList(lkeys, sizeof(lkeys) / 4);
-	ahrslc3->addEntryList(lkeys, sizeof(lkeys) / 4);
-	ahrslc4->addEntryList(lkeys, sizeof(lkeys) / 4);
+	ahrslc1->addEntryList(lkeys);
+	ahrslc2->addEntryList(lkeys);
+	ahrslc3->addEntryList(lkeys);
+	ahrslc4->addEntryList(lkeys);
 }
 
 void system_menu_create_hardware_ahrs_parameter(SetupMenu *top) {
@@ -1602,6 +1629,7 @@ void setup_create_root(SetupMenu *top) {
 		// Glider Setup
 		SetupMenu *po = new SetupMenu("Glider Details", glider_menu_create);
 		po->setBuzzword(Polars::getGliderType());
+		po->setHelp("Polar, weight and all attributes of the glider");
 		top->addEntry(po);
 
 		// Options Setup

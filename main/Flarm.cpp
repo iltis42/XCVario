@@ -3,7 +3,7 @@
 #include "Colors.h"
 #include "ESPAudio.h"
 #include "IpsDisplay.h"
-#include "math/Quaternion.h"
+#include "math/Trigenometry.h"
 #include "sensor.h"
 #include "wind/CircleWind.h"
 #include <cmath>
@@ -76,8 +76,8 @@ void Flarm::drawClearVerticalTriangle( int x, int y, int rb, int dist, int size,
 }
 
 void Flarm::drawTriangle( int x, int y, int rb, int dist, int size, int factor, bool erase ) {
-	float s = sin( deg2rad(rb) );
-	float c = cos( deg2rad(rb) );
+	float s = fast_sin_deg(rb);
+	float c = fast_cos_deg(rb);
 	int tipx = (int)(x + s*dist );
 	int tipy = (int)(y - c*dist );
 	float mx =  x + s*(dist+size);

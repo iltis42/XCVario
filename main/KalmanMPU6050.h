@@ -102,7 +102,7 @@ public:
   // Gets the acceleration along the earth g-vector in [times g]
   static float getVerticalAcceleration();
 
-  // Gets the rotation rate in [red/sec] of the glider around a vertical circling axes
+  // Gets the rotation rate in [rad/sec] of the glider around a vertical circling axes
   static float getVerticalOmega();
 
   // Gyro reading in glider reference and in DPS

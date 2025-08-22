@@ -1,15 +1,16 @@
 #pragma once
 
-#include "AnalogInput.h"
+#include <cstdint>
+#include <string_view>
 
-class AdaptUGC;
+class AnalogInput;
 class SetupMenu;
 class SetupMenuSelect;
 class SetupMenuValFloat;
 
+extern const std::string_view flap_labels[];
+
 int select_flap_sens_pin(SetupMenuSelect *p);
-int flap_speed_act(SetupMenuValFloat *p);
-int flap_lab_act(SetupMenuSelect *p);
 int flap_pos_act(SetupMenuValFloat *p);
 int flap_cal_act(SetupMenuSelect *p);
 
@@ -20,13 +21,11 @@ int flap_cal_act(SetupMenuSelect *p);
 
 class Flap {
 private:
-    Flap(AdaptUGC *theUcg);
+    Flap();
 public:
     ~Flap();
-	static Flap* theFlap(AdaptUGC *ucg);
+	static Flap* theFlap();
 	void  progress();
-	// inline float getLever() { return lever; }
-	// inline void setLever( float l ) { lever = l; }
 	// recommendations
 	float getOptimum( float wks, int& wki );
 	float getFlapPosition() { return lever; };
@@ -40,24 +39,22 @@ public:
 	void redraw() { sensorOldY = -1000; dirty=true; };
 	static void setupMenue(SetupMenu *parent);
 	unsigned int getSensorRaw(int oversampling=1);
+	void  initSpeeds();
+    void  initLabels();
+	int getPosMax() const { return flap_pos_max; }
+	int getNegMax() const { return flap_neg_max; }
     static inline Flap* FLAP() { return _instance; }
     static const int MAX_NR_POS = 9;
     static const int ZERO_INDEX = 4;
 
 private: // helper
     friend int select_flap_sens_pin(SetupMenuSelect *p);
-    friend int flap_speed_act(SetupMenuValFloat *p);
-    friend int flap_lab_act(SetupMenuSelect *p);
     friend int flap_pos_act(SetupMenuValFloat *p);
     friend int flap_cal_act(SetupMenuSelect *p);
 	static void setupSensorMenueEntries(SetupMenu *wkm);
-    static void setupIndicatorMenueEntries(SetupMenu *wkm);
     static void position_labels_menu_create(SetupMenu* top);
-    static void speeds_setup_menu_create(SetupMenu* top);
 
 	bool sensorToLeverPosition( int sensorreading, float& lever);
-	void  initSpeeds();
-    void  initLabels();
 	void  initSensPos();
 	void  configureADC( int port );
 	int   getOptimumInt( float wks );
@@ -65,13 +62,14 @@ private: // helper
 
 private:
     static Flap* _instance;
-	AdaptUGC* ucg = nullptr;
 	AnalogInput *sensorAdc = nullptr;
 	float lever = -1.;
 	int   senspos[MAX_NR_POS];
 	int16_t leverold = -2.;
 	int   flapSpeeds[MAX_NR_POS];
-	char *flapLabels[MAX_NR_POS];
+	const char *flapLabels[MAX_NR_POS];
+	int flap_pos_max = 0; // defined through speeds available or not (set to 0)
+	int flap_neg_max = 0;
 	bool  dirty = true;
 	int16_t optPosOldY = 0;
 	int16_t sensorOldY = 0;

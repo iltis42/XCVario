@@ -121,7 +121,7 @@ public:
 
     // XCVario transmitter routines
     void sendStdXCVario(float baro, float dp, float te, float temp, float ias, float tas,
-        float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp, 
+        float mc, int bugs, float aballast, bool cruise, float alt, bool validTemp,
         float acc_x, float acc_y, float acc_z, float gx, float gy, float gz);
     void sendXcvRPYL(float roll, float pitch, float yaw, float acc_z);
     void sendXcvAPENV1(float ias, float alt, float te);
@@ -135,6 +135,7 @@ public:
     void sendXCVVersion(int v);
     void sendXCVNmeaHDM(float heading);
     void sendXCVNmeaHDT(float heading);
+    void sendXCVNmeaMWV(float angle, float speed);
     void sendXCV(const char *str) const;
 
     // MagSens transmitter
@@ -145,7 +146,7 @@ public:
     bool prepareUpdate(int len, int pack);
     bool firmwarePacket(const char *buf, int len);
     int waitConfirmation();
-    
+
     // JumboCmd transmitter
     bool sendJPConnect();
     bool sendJPGetConfig(const int index);
@@ -156,7 +157,7 @@ public:
     bool sendJPShortPress(const int side);
     bool sendJPHoldPressed(const int side);
     bool sendJPReleasePressed(const int side);
-    
+
 private:
     const ProtocolType _ptyp;   // a protocol id different per instance
     ParserMap _parsmap;
@@ -168,4 +169,3 @@ private:
 };
 
 extern NmeaPrtcl *ToyNmeaPrtcl;
-

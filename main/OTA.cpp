@@ -10,6 +10,7 @@
 
  #include "OTA.h"
 
+#include "IpsDisplay.h"
 #include "comm/WifiApSta.h"
 #include "setup/SetupNG.h"
 #include "Webserver.h"

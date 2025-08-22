@@ -6,15 +6,19 @@
  ***       Copyright (C) Rohs Engineering Design         ***
  ***********************************************************/
 
+#pragma once
 
-float fast_sin_deg(float angle);
-float fast_cos_deg(float angle);
-float fast_sin_rad(float rad);
-float fast_cos_rad(float rad);
+#include "ScreenElement.h"
 
-float fast_log2f(float x);
-
-float fast_atan(float x);
-float fast_atan2(float y, float x);
-float fast_tan_deg(float deg);
-float fast_tan_rad(float rad);
+// a related prominent figure to the gauge visual indicator
+class LargeFigure : public ScreenElement
+{
+public:
+    LargeFigure(int16_t x, int16_t y);
+    void setPos(int16_t x, int16_t y) { _ref_x = x; _ref_y = y+_yoff; }
+    void draw(float a);
+private:
+    static constexpr const char* _format[2] = {"%2.1f","%2.0f"};
+    int16_t _value = 0;
+    int16_t _yoff;
+};

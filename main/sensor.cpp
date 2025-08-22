@@ -14,6 +14,7 @@
 #include "comm/BTspp.h"
 #include "BLESender.h"
 #include "setup/SetupNG.h"
+#include "setup/CruiseMode.h"
 #include "ESPAudio.h"
 #include "ESPRotary.h"
 #include "AnalogInput.h"
@@ -55,9 +56,9 @@
 #include "comm/DeviceMgr.h"
 #include "protocol/TestQuery.h"
 #include "AdaptUGC.h"
-#include "CenterAid.h"
 #include "OneWireESP32.h"
 #include "logdef.h"
+#include "math/Trigenometry.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -115,7 +116,6 @@ PressureSensor *baroSensor = nullptr;
 PressureSensor *teSensor = nullptr;
 
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
-IpsDisplay *Display = 0;
 SetupRoot  *Menu = nullptr;
 WatchDog_C *uiMonitor = nullptr;
 
@@ -261,7 +261,7 @@ static void toyFeed()
 		}
 		switch( nmea_protocol.get() ) {
 		case BORGELT_P:
-			ToyNmeaPrtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), gflags.validTemperature );
+			ToyNmeaPrtcl->sendBorgelt(te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), VCMode.getCMode(), gflags.validTemperature );
 			ToyNmeaPrtcl->sendXcvGeneric(te_vario.get(), altSTD, tas);
 			break;
 		case OPENVARIO_P:
@@ -271,7 +271,7 @@ static void toyFeed()
 			ToyNmeaPrtcl->sendCambridge(te_vario.get(), tas, MC.get(), bugs.get(), altitude.get());
 			break;
 		case XCVARIO_P:
-			ToyNmeaPrtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), cruise_mode.get(), altitude.get(), gflags.validTemperature,
+			ToyNmeaPrtcl->sendStdXCVario(baroP, dynamicP, te_vario.get(), OAT.get(), ias.get(), tas, MC.get(), bugs.get(), ballast.get(), VCMode.getCMode(), altitude.get(), gflags.validTemperature,
 				IMU::getGliderAccelX(), IMU::getGliderAccelY(), IMU::getGliderAccelZ(), IMU::getGliderGyroX(), IMU::getGliderGyroY(), IMU::getGliderGyroZ() );
 			break;
 		default:
@@ -481,7 +481,7 @@ void readSensors(void *pvParameters){
 			}else if( (fl_auto_transition.get() == 1) && ((int)Units::meters2FL( altSTD ) + (int)(gflags.standard_setting) > transition_alt.get() ) ) { // above transition altitude
 				new_alt = altSTD;
 				gflags.standard_setting = true;
-				ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, gflags.standard_setting, transition_alt.get() );
+				// ESP_LOGI(FNAME,"auto:%d alts:%f ss:%d ta:%f", fl_auto_transition.get(), altSTD, gflags.standard_setting, transition_alt.get() );
 			}
 			else {
 				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
@@ -492,10 +492,10 @@ void readSensors(void *pvParameters){
 				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, gflags.standard_setting  );
 			}
 		}
-		if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
+		// if( (int( new_alt +0.5 ) != int( altitude.get() +0.5 )) || !(count%20) ){
 			// ESP_LOGI(FNAME,"New Altitude: %.1f", new_alt );
 			altitude.set( new_alt );
-		}
+		// }
 
 		aTE = bmpVario.readAVGTE();
 
@@ -886,10 +886,8 @@ void system_startup(void *args){
 		Cipher crypt;
 		gflags.ahrsKeyValid = crypt.checkKeyAHRS();
 		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
-		if ( ! gflags.ahrsKeyValid ) {
-			// make sure the AHRS screen is not set
-			screen_horizon.set(false);
-		}
+		// make sure the AHRS screen is not set
+		screen_horizon.set( screen_horizon.get() && gflags.ahrsKeyValid );
 	}
 	boot_screen->finish(0);
 
@@ -1273,7 +1271,7 @@ void system_startup(void *args){
 
 		// remove logo immidiately
 		sleep(1);
-		delete boot_screen;
+		BootUpScreen::terminate();
 
 		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias.get() );
 		// QNH autosetup
@@ -1310,12 +1308,12 @@ void system_startup(void *args){
 		}
 		Display->clear();
 
-		int modeEvent = ModeEvent(ModeEvent::MODE_QNHADJ).raw;
+		int screenEvent = ScreenEvent(ScreenEvent::QNH_ADJUST).raw;
 		if ( NEED_VOLTAGE_ADJUST ) {
 			ESP_LOGI(FNAME,"Do Factory Voltmeter adj");
-			modeEvent = ModeEvent(ModeEvent::MODE_VOLTADJ).raw;
+			screenEvent = ScreenEvent(ScreenEvent::VOLT_ADJUST).raw;
 		}
-		xQueueSend(uiEventQueue, &modeEvent, 0);
+		xQueueSend(uiEventQueue, &screenEvent, 0);
 	}
 	else {
 		if ( SetupCommon::isClient() ) {
@@ -1334,7 +1332,7 @@ void system_startup(void *args){
 			}
 		}
 
-		delete boot_screen;
+		BootUpScreen::terminate();
 		Display->clear();
 		gflags.inSetup = false;
 	}
@@ -1346,7 +1344,7 @@ void system_startup(void *args){
 	SetupRoot::initScreens();
 
 	if ( flap_enable.get() ) {
-		FLAP = Flap::theFlap(MYUCG);
+		FLAP = Flap::theFlap();
 	}
 	if( hardwareRevision.get() != XCVARIO_20 ){
 		gpio_pullup_en( GPIO_NUM_34 );
@@ -1357,13 +1355,8 @@ void system_startup(void *args){
 			gflags.mpu_pwm_initalized = true;
 		}
 	}
-	if( screen_centeraid.get() ){
-		CenterAid::create();
-	}
 
 	// enter normal operation
-
-
 	if( SetupCommon::isClient() ){
 		xTaskCreate(&clientLoop, "clientLoop", 4096, NULL, 11, &bpid);
 	}
@@ -1374,6 +1367,25 @@ void system_startup(void *args){
 
 	AUDIO->startAudio();
 }
+
+// #include <xtensa/core-macros.h>  // for XTHAL_GET_CCOUNT
+
+// uint32_t IRAM_ATTR cycle_count() {
+// 	float a, b = rand() % 400 - 200;
+// 	int idx = b*2;
+// 	a = deg2rad(b);
+// 	int16_t b1 = 50;
+//     uint32_t start = XTHAL_GET_CCOUNT();
+//     // asm volatile("add a4, a1, a2");
+// 	idx = ((std::signbit(idx) ? -1 : 1));
+// 	// b1 = fast_roundf_to_int(b);
+// 	uint32_t end = XTHAL_GET_CCOUNT();
+// 	audio_volume.set(idx);
+// 	// for(b=0.; b<400.; b+=My_PIf)
+// 	ESP_LOGI(FNAME,"CMP %f %d", b, b1);
+//     return end - start;
+// }
+
 
 extern "C" void  app_main(void)
 {
@@ -1399,6 +1411,8 @@ extern "C" void  app_main(void)
 	}
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();
+
+	// ESP_LOGI(FNAME,"Measure add %ucount", (unsigned int)cycle_count());
 
 	// Instance to a simple esp timer based clock
 	MY_CLOCK = new Clock();

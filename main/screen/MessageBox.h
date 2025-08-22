@@ -66,6 +66,7 @@ private:
     int _start_scroll = 0;
     int _nr_scroll = 0;
     int _msg_to = 0;
+    bool _msg_queued = false;
 };
 
 // exposed pointer to the message box

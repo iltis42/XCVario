@@ -7,9 +7,10 @@
 
 #include "setup/SetupMenuSelect.h"
 #include "setup/SetupMenu.h"
-
 #include "logdefnone.h"
 
+
+const std::string_view ENABLE_MODE[4] = { "Disable", "Enable", "Dynamic", "Primary" };
 
 SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuSelect *p),
 									SetupNG<int> *anvs, bool ext_handler, bool end_menu ) :
@@ -158,11 +159,10 @@ void SetupMenuSelect::addEntry(const char* ent)
 	_values.push_back(ITEM_t(ent, _values.size()));
 }
 
-void SetupMenuSelect::addEntryList( const char ent[][4], int size )
+void SetupMenuSelect::addEntryList( const std::string_view ent[] )
 {
-	// ESP_LOGI(FNAME,"addEntryList() char ent[][4]");
-	for( int i=0; i<size; i++ ) {
-		_values.push_back(ITEM_t((char *)ent[i], _values.size()));
+	for( int i=0; *ent[i].data() != '\0'; i++ ) {
+		_values.push_back(ITEM_t(ent[i].data(), _values.size()));
 #ifdef DEBUG_MAX_ENTRIES
 		if( num_max < _values.size() ){
 			ESP_LOGI(FNAME,"addEntryList:%s  num:%d", (char *)ent[i], _values.size() );
@@ -196,8 +196,8 @@ void SetupMenuSelect::mkEnable(const char *what)
 {
 	// precondition: _values is empty
 	// val can be read out to know "what" to en/disable
-	addEntry("Disable");
-	addEntry(what? what : "Enable");
+	addEntry(ENABLE_MODE[0].data());
+	addEntry(what? what : ENABLE_MODE[1].data());
 }
 
 void SetupMenuSelect::mkConfirm()

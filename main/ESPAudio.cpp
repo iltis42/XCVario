@@ -12,7 +12,7 @@
 #include "S2fSwitch.h"
 #include "I2Cbus.hpp"
 #include "sensor.h"
-#include "setup/SetupNG.h"
+#include "setup/CruiseMode.h"
 #include "protocol/Clock.h"
 #include "logdefnone.h"
 
@@ -436,7 +436,8 @@ void Audio::startAudio(){
 void Audio::calcS2Fmode( bool recalc ){
 	if( _alarm_mode )
 		return;
-	bool mode = cruise_mode.get();
+
+	bool mode = VCMode.getCMode();
 	if( mode != _s2f_mode ){
 		ESP_LOGI(FNAME, "S2Fmode changed to %d", mode );
 		_s2f_mode = mode;             // do this first, as...
@@ -863,20 +864,17 @@ bool Audio::tick()
 {
 	polar_sink = Speed2Fly.sink( ias.get() );
 	float netto = te_vario.get() - polar_sink;
-	as2f = Speed2Fly.speed( netto, !cruise_mode.get() );
+	as2f = Speed2Fly.speed( netto, !VCMode.getCMode() );
 	s2f_ideal.set(static_cast<int>(std::round(as2f)));
 	s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10)); // low pass damping moved to the correct place
 	// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
-	if( vario_mode.get() == VARIO_NETTO || (cruise_mode.get() &&  (vario_mode.get() == CRUISE_NETTO)) ){
-		if( netto_mode.get() == NETTO_RELATIVE ) {
-			setValues( te_vario.get() - polar_sink + Speed2Fly.circlingSink( ias.get() ), s2f_delta );
-		}
-		else if( netto_mode.get() == NETTO_NORMAL ) {
-			setValues( te_vario.get() - polar_sink, s2f_delta );
-		}
+	float tmp = te_vario.get();
+	if ( VCMode.isNetto() ) {
+		tmp -= polar_sink;
 	}
-	else {
-		setValues( te_vario.get(), s2f_delta );
+	if ( VCMode.getVMode() == CruiseMode::MODE_REL_NETTO ) {
+		tmp += Speed2Fly.circlingSink( ias.get() );
 	}
+	setValues( tmp, s2f_delta );
 	return false;
 }

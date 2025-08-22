@@ -269,18 +269,4 @@ void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
 		cmenu->lock();
 		cmenu->setBuzzword("n/a");
 	}
-	// anemoi option only available with a connected anemoi
-    std::string_view anemoi_name = DeviceManager::getDevName(ANEMOI_DEV);
-    SetupMenuSelect *windcal = static_cast<SetupMenuSelect*>(top->getEntry(1));
-	if ( DEVMAN->getDevice(ANEMOI_DEV) != nullptr ) {
-        if ( ! windcal->existsEntry(anemoi_name.data()) ) {
-            windcal->addEntry(anemoi_name.data(), WA_EXT_ANEMOI);
-        }
-    }
-    else {
-        if ( windcal->existsEntry(anemoi_name.data()) ) {
-            windcal->delEntry(anemoi_name.data());
-        }
-    }
-
 }

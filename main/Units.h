@@ -17,7 +17,6 @@ public:
 	static float TemperatureUnit(float t);
 	static const char* TemperatureUnitStr(int idx = -1);
 	static const char* AirspeedUnitStr(int u = -1);
-	static const char* AirspeedModeStr();
 	static float Vario(const float te);
 	static float Qnh(float qnh);
 	static int QnhRounded(float qnh);

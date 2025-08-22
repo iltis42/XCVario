@@ -21,6 +21,7 @@ public:
     static constexpr int DIVIDER = 4;
 
     static BootUpScreen *create();
+    static void terminate();
     ~BootUpScreen();
 
     // this will fill the logo completely

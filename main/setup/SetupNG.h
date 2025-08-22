@@ -48,8 +48,7 @@ typedef enum display_type { UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, IL
 typedef enum chopping_mode { NO_CHOP, VARIO_CHOP, S2F_CHOP, BOTH_CHOP } chopping_mode_t;
 typedef enum ext_device_protocol  { DEV_DISABLE, DEV_FLARM, DEV_KRT2_RADIO, DEV_BECKER_RADIO, DEV_GNSS_UBX, DEV_ANEMOI } ext_device_proto_t;
 typedef enum airspeed_mode  { MODE_IAS, MODE_TAS, MODE_CAS } airspeed_mode_t;
-typedef enum altitude_display_mode  { MODE_QNH, MODE_QFE } altitude_display_mode_t;
-typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO, DISPLAY_UL } display_style_t;
+typedef enum e_display_style  { DISPLAY_AIRLINER, DISPLAY_RETRO } display_style_t;
 typedef enum e_display_variant { DISPLAY_WHITE_ON_BLACK, DISPLAY_BLACK_ON_WHITE } display_variant_t;
 typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON, S2F_HW_SWITCH_INVERTED, S2F_SWITCH_DISABLE } e_s2f_type;
 typedef enum e_wireless_type { WL_DISABLE, WL_BLUETOOTH, WL_WLAN_MASTER, WL_WLAN_CLIENT, WL_WLAN_STANDALONE, WL_BLUETOOTH_LE } e_wireless_t;
@@ -62,12 +61,11 @@ typedef enum e_audio_mute_gen { AUDIO_ON, AUDIO_ALARMS, AUDIO_OFF } e_audio_mute
 typedef enum e_amp_shutdown { AMP_STAY_ON, AMP_SHUTDOWN, AMP_SHUTDOWN_5S } e_amp_shutdown_t;
 typedef enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_GPIO_2, FLAP_SENSOR_GPIO_34, FLAP_SENSOR_GPIO_26 } e_flap_sensor_t;
 typedef enum e_cruise_audio { AUDIO_S2F, AUDIO_VARIO } e_cruise_audio_2;
-typedef enum e_vario_mode { VARIO_BRUTTO, VARIO_NETTO, CRUISE_NETTO } e_vario_mode_t;
+typedef enum e_vario_mode { VARIO_BRUTTO, VARIO_NETTO, CRUISE_ONLY_NETTO } e_vario_mode_t;
 typedef enum e_airspeed_sensor_type { PS_ABPMRR, PS_TE4525, PS_MP3V5004, PS_MCPH21, PS_NONE } e_airspeed_sensor_type_t;
 typedef enum e_netto_mode { NETTO_NORMAL, NETTO_RELATIVE } e_netto_mode_t;
-typedef enum e_gload_mode { GLOAD_OFF=0, GLOAD_DYNAMIC=1, GLOAD_ALWAYS_ON=2 } e_gload_mode_t;
-typedef enum { WA_OFF=0, WA_STRAIGHT=1, WA_CIRCLING=2, WA_BOTH=3, WA_EXT_ANEMOI=4 } e_windanalyser_mode_t; // do nto change (bitmask)
-typedef enum e_battery_display { BAT_PERCENTAGE, BAT_VOLTAGE, BAT_VOLTAGE_BIG } e_battery_display_t;
+typedef enum e_screen_mode { SCREEN_OFF, SCREEN_DYNAMIC, SCREEN_ON, SCREEN_PRIMARY } e_screen_mode_t;
+typedef enum { WA_OFF=0, WA_STRAIGHT=1, WA_CIRCLING=2, WA_BOTH=3 } e_windanalyser_mode_t; // do nto change (bitmask)
 typedef enum e_wind_display { WD_NONE, WD_DIGITS, WD_ARROW, WD_BOTH, WD_COMPASS } e_wind_display_t;
 typedef enum e_wind_reference { WR_NORTH, WR_HEADING, WR_GPS_COURSE } e_wind_reference_t;
 typedef enum e_wind_logging { WLOG_DISABLE, WLOG_WIND, WLOG_GYRO_MAG, WLOG_BOTH } e_wind_logging_t;
@@ -79,8 +77,7 @@ typedef enum e_speed_unit { SPEED_UNIT_KMH, SPEED_UNIT_MPH, SPEED_UNIT_KNOTS } e
 typedef enum e_vario_unit { VARIO_UNIT_MS, VARIO_UNIT_FPM, VARIO_UNIT_KNOTS } e_vario_unit_t;
 typedef enum e_qnh_unit { QNH_HPA, QNH_INHG } e_qnh_unit_t;
 typedef enum e_compasss_sensor_type { CS_DISABLE=0, CS_I2C=1, CS_CAN=3 } e_compasss_sensor_type_t;
-typedef enum e_alt_quantisation { ALT_QUANT_DISABLE, ALT_QUANT_2, ALT_QUANT_5, ALT_QUANT_10, ALT_QUANT_20 } e_alt_quantisation_t;
-enum gauge_definition_t { GAUGE_NONE, GAUGE_SPEED, GAUGE_ALT, GAUGE_SLIP, GAUGE_S2F, GAUGE_HEADING };
+enum gauge_definition_t { GAUGE_NONE, GAUGE_SPEED, GAUGE_ALT, GAUGE_SLIP, GAUGE_S2F, NETTO_VARIO, GAUGE_HEADING, GAUGE_WIND };
 typedef enum e_sync { SYNC_NONE, SYNC_FROM_MASTER, SYNC_FROM_CLIENT, SYNC_BIDIR } e_sync_t;       // determines if data is synched from/to client. BIDIR means sync at commit from both sides
 typedef enum e_reset { RESET_NO, RESET_YES } e_reset_t;   // determines if data is reset to defaults on factory reset
 typedef enum e_volatility { VOLATILE, PERSISTENT, SEMI_VOLATILE } e_volatility_t;  // stored in RAM, FLASH, or into FLASH after a while
@@ -100,7 +97,6 @@ typedef enum e_hardware_rev {
 	XCVARIO_23=5,  // 2 x RS232, AHRS MPU6500, CAN Bus, AHRS temperature control
 	XCVARIO_25=7   // 2 x RS232, AHRS ICM-20602, CAN Bus, AHRS temperature control
 } e_hardware_rev_t;        // XCVario-Num = hardware revision + 18
-typedef enum e_drawing_prio { DP_NEEDLE, DP_BACKGROUND } e_drawing_prio_t;
 typedef enum e_equalizer_type {  AUDIO_EQ_DISABLE, AUDIO_EQ_LS4, AUDIO_EQ_LS8, AUDIO_EQ_LSEXT } e_equalizer_type_t;
 typedef enum e_tek_compensation { TE_TEK_PROBE, TE_TEK_EPOT, TE_TEK_PRESSURE } e_tek_compensation_t;
 
@@ -147,7 +143,7 @@ public:
 			void (* action)()=nullptr, e_quantity_t quant = QUANT_NONE, const limits_t *l = nullptr) :
 		SetupCommon(akey),
 		_default(adefault),
-		_limt(l)
+		_limt(l)    
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		// if( strlen( akey ) > 15 ) {
@@ -337,7 +333,6 @@ extern SetupNG<int>  		fl_auto_transition;
 extern SetupNG<int>  		alt_display_mode;
 extern SetupNG<float>  		transition_alt;
 extern SetupNG<int>  		glider_type_index;
-extern SetupNG<int>  		ps_display;
 
 extern SetupNG<float>  		as_offset;
 extern SetupNG<float>  		bat_low_volt;
@@ -366,10 +361,10 @@ extern SetupNG<float>  		swind_speed;
 extern SetupNG<float>  		swind_sideslip_lim;
 extern SetupNG<float>  		cwind_dir;   // cirling wind direction
 extern SetupNG<float>  		cwind_speed;
-extern SetupNG<float>  		extwind_sptc_dir; // synoptic and
-extern SetupNG<float>  		extwind_sptc_speed;
-extern SetupNG<float>  		extwind_inst_dir; // instant external wind
-extern SetupNG<float>  		extwind_inst_speed;
+extern SetupNG<int>  		extwind_sptc_dir; // synoptic and
+extern SetupNG<int>  		extwind_sptc_speed;
+extern SetupNG<int>  		extwind_inst_dir; // instant external wind
+extern SetupNG<int>  		extwind_inst_speed;
 extern SetupNG<int>  		extwind_status;
 extern SetupNG<float>  		mag_hdm;
 extern SetupNG<float>  		mag_hdt;
@@ -459,8 +454,6 @@ extern SetupNG<int>       	flarm_warning;
 extern SetupNG<float>     	flarm_volume;
 extern SetupNG<float>       flarm_alarm_time;
 extern SetupNG<int>       	flap_sensor;
-extern SetupNG<float>     	flap_pos_max;
-extern SetupNG<float>     	flap_neg_max;
 extern SetupNG<int>       	compass_dev_auto;
 extern SetupNG<float>       compass_dev_0;
 extern SetupNG<float>       compass_dev_45;
@@ -502,7 +495,6 @@ extern SetupNG<int>			airspeed_sensor_type;
 extern SetupNG<int>			cruise_audio_mode;
 extern SetupNG<int>			netto_mode;
 extern SetupNG<float>		v_max;
-extern SetupNG<int>			gload_mode;
 extern SetupNG<float>		gload_pos_thresh;
 extern SetupNG<float>		gload_neg_thresh;
 extern SetupNG<float>		gload_pos_limit_low;
@@ -514,6 +506,7 @@ extern SetupNG<float>		gload_neg_max;
 extern SetupNG<float>		gload_alarm_volume;
 extern SetupNG<float>		airspeed_max;
 extern SetupNG<int> 		wind_enable;
+extern SetupNG<int> 		wind_northup;
 extern SetupNG<int> 		wind_logging;
 extern SetupNG<float> 		wind_as_calibration;
 extern SetupNG<float> 		wind_filter_lowpass;
@@ -534,13 +527,13 @@ extern SetupNG<float> 		master_xcvario;
 extern SetupNG<int> 		menu_long_press;
 extern SetupNG<int> 		screen_gmeter;
 extern SetupNG<int> 		screen_horizon;
-extern SetupNG<int> 		screen_centeraid;
-extern SetupNG<int> 		screen_gauge_top;
-extern SetupNG<int> 		screen_gauge_bottom;
+extern SetupNG<int> 		vario_centeraid;
+extern SetupNG<int> 		vario_upper_gauge;
+extern SetupNG<int> 		vario_lower_gauge;
+extern SetupNG<int> 		vario_mc_gauge;
 extern SetupNG<bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;
 extern SetupNG<t_tenchar_id>  custom_wireless_id;
-extern SetupNG<int> 		drawing_prio;
 extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
 extern SetupNG<int> 		logging;

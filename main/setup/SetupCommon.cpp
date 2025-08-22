@@ -26,7 +26,7 @@
 #include <string>
 #include <sstream>
 
-char SetupCommon::_ID[16] = { 0 };
+char SetupCommon::_ID[18] = { 0 };
 char SetupCommon::default_id[6] = { 0 };
 std::vector<SetupCommon *> SetupCommon::instances;
 XCVSyncMsg *SetupCommon::syncProto = nullptr;
@@ -290,7 +290,7 @@ bool SetupCommon::initSetup()
 
 char * SetupCommon::getID()
 {
-	snprintf( _ID, 16, "%s%s", getFixedID(), custom_wireless_id.get().id );
+	snprintf( _ID, 18, "%s%s", getFixedID(), custom_wireless_id.get().id );
 	_ID[15] = '\0';
 	return _ID;
 }

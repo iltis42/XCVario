@@ -8,6 +8,8 @@
 
 #include "DrawDisplay.h"
 
+#include "CenterAid.h"
+#include "IpsDisplay.h"
 #include "UiEvents.h"
 #include "SetupRoot.h"
 #include "MessageBox.h"
@@ -17,6 +19,7 @@
 #include "setup/SetupMenuDisplay.h"
 #include "setup/SetupMenu.h"
 #include "setup/SetupNG.h"
+#include "setup/CruiseMode.h"
 #include "ESPRotary.h"
 #include "OneWireESP32.h"
 #include "KalmanMPU6050.h"
@@ -88,19 +91,19 @@ void drawDisplay(void *arg)
                 }
                 // else if ( detail == ScreenEvent::FLARM_ALARM ) {
                 // }
-            }
-            else if (UiEvent(event).isModeEvent()) {
-                if ( detail == ModeEvent::MODE_SV_TOGGLE ) {
-                    cruise_mode.set(!cruise_mode.get());
-                }
-                else if ( detail == ModeEvent::MODE_VARIO || detail == ModeEvent::MODE_S2F ) {
-                    cruise_mode.set(detail == ModeEvent::MODE_VARIO);
-                }
-                else if ( detail == ModeEvent::MODE_QNHADJ) {
+                else if ( detail == ScreenEvent::QNH_ADJUST) {
                     Menu->begin(SetupMenu::createQNHMenu());
                 }
-                else if ( detail == ModeEvent::MODE_VOLTADJ) {
+                else if ( detail == ScreenEvent::VOLT_ADJUST) {
                     Menu->begin(SetupMenu::createVoltmeterAdjustMenu());
+                }
+			}
+            else if (UiEvent(event).isModeEvent()) {
+                if ( detail == ModeEvent::MODE_TOGGLE ) {
+                    VCMode.setCMode(!VCMode.getCMode());
+                }
+                else if ( detail == ModeEvent::MODE_VARIO || detail == ModeEvent::MODE_S2F ) {
+                    VCMode.setCMode(detail == ModeEvent::MODE_S2F);
                 }
             }
             else {
@@ -131,7 +134,7 @@ void drawDisplay(void *arg)
             }
 
             // Stall Warning Screen
-			if( stall_warning.get() && gload_mode.get() != GLOAD_ALWAYS_ON ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
+			if( stall_warning.get() && screen_gmeter.get() != SCREEN_PRIMARY ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
 				if( gflags.stall_warning_armed ){
 					float acceleration=IMU::getGliderAccelZ();
 					if( acceleration < 0.3 )
@@ -227,8 +230,8 @@ void drawDisplay(void *arg)
 				Flarm::drawFlarmWarning();
 			// G-Load Display
 			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
-			if( ((IMU::getGliderAccelZ() > gload_pos_thresh.get() || IMU::getGliderAccelZ() < gload_neg_thresh.get()) && gload_mode.get() == GLOAD_DYNAMIC ) ||
-					( gload_mode.get() == GLOAD_ALWAYS_ON ) || (Menu->getActiveScreen() == SCREEN_GMETER)  )
+			if( ((IMU::getGliderAccelZ() > gload_pos_thresh.get() || IMU::getGliderAccelZ() < gload_neg_thresh.get()) && screen_gmeter.get() == SCREEN_DYNAMIC ) ||
+					( screen_gmeter.get() == SCREEN_PRIMARY ) || (Menu->getActiveScreen() == SCREEN_GMETER)  )
 			{
 				if( !gflags.gLoadDisplay ){
 					gflags.gLoadDisplay = true;
@@ -252,7 +255,7 @@ void drawDisplay(void *arg)
 				gflags.horizon = false;
 			}
 			// G-Load Alarm when limits reached
-			if( gload_mode.get() != GLOAD_OFF  ){
+			if( screen_gmeter.get() != SCREEN_OFF  ){
 				if( IMU::getGliderAccelZ() > gload_pos_limit.get() || IMU::getGliderAccelZ() < gload_neg_limit.get()  ){
 					if( !gflags.gload_alarm ) {
 						AUDIO->alarm( true, gload_alarm_volume.get() );
@@ -269,12 +272,10 @@ void drawDisplay(void *arg)
 			// Vario Screen
 			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon )  ) {
 				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
-				Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), t, batteryVoltage, s2f_delta, as2f, average_climb.get(), cruise_mode.get(), gflags.standard_setting, flap_pos.get() );
+				Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), t, batteryVoltage, s2f_delta, as2f, average_climb.get(), VCMode.getCMode(), gflags.standard_setting, flap_pos.get() );
 			}
-			if( screen_centeraid.get() ){
-				if( theCenteraid ){
-					theCenteraid->tick();
-				}
+			if( theCenteraid ){
+				theCenteraid->tick();
 			}
 		}
 		// esp_task_wdt_reset();

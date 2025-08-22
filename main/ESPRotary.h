@@ -58,8 +58,8 @@ public:
 	void sendEscape() const;
 	// gpio's
 	bool readSwitch() const; // safe to call in rotary callback
-	bool readBootupStatus() const { return gpio_get_level(sw) == 0; }
-	gpio_num_t getSw() const { return sw; };
+	bool readBootupStatus() const { return gpio_get_level(_sw) == 0; }
+	gpio_num_t getSw() const { return _sw; };
 	gpio_num_t getClk() const { return clk; };
 	gpio_num_t getDt() const { return dt; };
 
@@ -67,7 +67,7 @@ public:
 	bool tick() override;
 
 private:
-	gpio_num_t clk, dt, sw; // actually used pins
+	gpio_num_t clk, dt, _sw; // actually used pins
 	pcnt_unit_handle_t pcnt_unit = nullptr;
 	pcnt_channel_handle_t pcnt_chan = nullptr;
 	int lp_duration = DEFAULT_LONG_PRESS_THRESHOLD/10; // default 400msec

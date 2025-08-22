@@ -8,6 +8,7 @@
 
 #include "GpsMsg.h"
 #include "Flarm.h"
+#include "wind/CircleWind.h"
 #include "wind/WindCalcTask.h"
 #include "sensor.h"
 #include "logdefnone.h"

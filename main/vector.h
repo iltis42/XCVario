@@ -36,15 +36,6 @@
  * \date 2002-2015
  */
 
-#define PI2 2*M_PI
-#define M_PIf 3.1415927f
-
-#ifndef D2R
-// degree to rad conversion
-#define D2R(x) ((x)*(M_PIf/180.0f))
-#define R2D(x) ((x)*(180.0f/M_PIf))
-#endif
-
 typedef struct bitfield_vector {
 	   bool dirtyXY  :1;   // True if X and/or Y have been set, and speed and direction need to be recalculated
        bool dirtyDR  :1;
@@ -62,7 +53,7 @@ public:
     ~Vector();
 
     static float polar(float y, float x);
-    static float normalize(float angle);
+    static float normalizePI2(float angle);
     static float normalizePI(float angle);
     static float normalizeDeg(float angle);
     static float normalizeDeg180(float angle);
@@ -70,7 +61,7 @@ public:
     static float angleDiff(float ang1, float ang2);    // RAD
     static float angleDiffDeg(float ang1, float ang2);    // DEG
 
-    static float reverse( float angle );
+    static float reverseBearing( float angle );
     /**
      * Get angle in degrees.
      */

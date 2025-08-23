@@ -23,40 +23,38 @@ public:
 	Audio();
 	virtual ~Audio();
 
-	void begin( dac_channel_t ch=DAC_CHAN_0 );
-	void unmute();
-	void startAudio();
-
-	void setValues( float te, float s2fd );
-	void setFrequency( float f );
-	void setup();
-	void setVolume( float vol );
-	void alarm( bool enable, float volume=100, e_audio_alarm_type_t alarmType=AUDIO_ALARM_STALL );
-	bool selfTest();
-	inline void setTestmode( bool mode ) { _testmode = mode; }
-	void mute();
-	void evaluateChopping();
-	void dacEnable();
-	void dacDisable();
-	inline bool haveCAT5171(){ return _haveCAT5171; };
-
-	bool tick() override;
+	void begin( dac_channel_t ch=DAC_CHAN_0 ); // general initialisations and equalizer setup
+	void unmute();  // unmutes the tone generator
+	void startAudio(); // starts cyclic task to control the tone generator
+	void setValues( float te, float s2fd ); // this provides vario TE or S2F delta to the tone-generator via member _te; 10 km/h S2F too much creates same sound as 1 m/s climb
+	void setFrequency( float f );   // sets the two dividers divisor/step of the HW generator to adjust the tone frequency according to 'f' in Hz. Below 800 Hz a lookup table is used
+	void setup(); // setup of member variables like range and more depending on settings
+	void setVolume( float vol );    // vol: 0.0 .. 100.0 (%) sets the variable 'speaker_volume', which enables a smooth adjustment of volume without crackling
+	void alarm( bool enable, float volume=100, e_audio_alarm_type_t alarmType=AUDIO_ALARM_STALL );  // outputs various alarm tones according to alarmType and volume
+	bool selfTest();   // performs a self-test
+	inline void setTestmode( bool mode ) { _testmode = mode; } // during selftest, most setings and inputs are ignored
+	void mute(); // mute the audio
+	void evaluateChopping();  // determines if chopping is to be done depending on setting chopping_mode for S2F and climb mode and sets member _chopping
+	void dacEnable();  // enables HW function generator output
+	void dacDisable(); // disables ""
+	inline bool haveCAT5171(){ return _haveCAT5171; }; // returns if this type of poti has been detected
+	bool tick() override;  // calculates TE and S2F delta depending on mode e.g. netto mode
 
 private:
-	void dac_cosine_enable(dac_channel_t channel, bool enable=true);
-	void dac_frequency_set(int clk_8m_div, int frequency_step);
-	void dac_scale_set(dac_channel_t channel, int scale);
-	void dac_offset_set(dac_channel_t channel, int offset);
-	void dac_invert_set(dac_channel_t channel, int invert);
-	static void dactask_starter(void* arg);
-	void dactask();
-	void calcS2Fmode( bool recalc=false );
-	bool inDeadBand( float te );
-	bool lookup( float f, int& div, int &step );
+	void dac_cosine_enable(dac_channel_t channel, bool enable=true);  // enables HW sine generator
+	void dac_frequency_set(int clk_8m_div, int frequency_step);       // set divisor an step in HW sine generator
+	void dac_scale_set(dac_channel_t channel, int scale);             // sets amplitude of HW generator
+	void dac_offset_set(dac_channel_t channel, int offset);           // sets offset of HW generator
+	void dac_invert_set(dac_channel_t channel, int invert);           // inverts signal of HW generator
+	static void dactask_starter(void* arg);                           // start task to control HW generator
+	void dactask();                                                   // task for control of HW generator
+	void calcS2Fmode( bool recalc=false );                            // S2F mode
+	bool inDeadBand( float te );                                      // check if mute is needed within deadband
+	bool lookup( float f, int& div, int &step );  // depending on f [Hz], lookup divisor and step in table
 	void enableAmplifier(bool enable); // frue ON, false OFF
-	float equal_volume( float volume );
-	void  calculateFrequency();
-	void writeVolume( float volume );
+	float equal_volume( float volume ); // returns volume determined by equalizer
+	void  calculateFrequency();    // determine frequency to be generated depending on TE value and tone mode (ILEC, dual tone or normal)
+	void writeVolume( float volume ); // set digital poti
 	// static void doAudio();
     
 	bool _s2f_mode_back = false;

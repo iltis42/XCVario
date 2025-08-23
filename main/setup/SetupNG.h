@@ -143,7 +143,7 @@ public:
 			void (* action)()=nullptr, e_quantity_t quant = QUANT_NONE, const limits_t *l = nullptr) :
 		SetupCommon(akey),
 		_default(adefault),
-		_limt(l)    
+		_limt(l)
 	{
 		// ESP_LOGI(FNAME,"SetupNG(%s)", akey );
 		// if( strlen( akey ) > 15 ) {
@@ -321,8 +321,6 @@ extern SetupNG<float>  		s2f_auto_lag;
 
 extern SetupNG<int>  		audio_variable_frequency;
 extern SetupNG<int>  		chopping_mode;
-extern SetupNG<int>  		chopping_style;
-extern SetupNG<int>  		amplifier_shutdown;
 extern SetupNG<int>         audio_equalizer;
 
 extern SetupNG<float>  		wifi_max_power;

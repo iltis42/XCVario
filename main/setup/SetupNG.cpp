@@ -255,8 +255,6 @@ SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change
 SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0 );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
-SetupNG<int>  			chopping_style( "CHOP_STYLE",  AUDIO_CHOP_SOFT );
-SetupNG<int>  			amplifier_shutdown( "AMP_DIS", AMP_STAY_ON );
 SetupNG<int>            audio_equalizer( "AUD_EQ", AUDIO_EQ_DISABLE, false );
 
 SetupNG<float>  		wifi_max_power( "WIFI_MP" , 50, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(10.0, 100.0, 5.0));

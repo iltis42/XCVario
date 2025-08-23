@@ -1147,7 +1147,7 @@ void system_startup(void *args){
 	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
 	bmpVario.setup();
 	ESP_LOGI(FNAME,"Audio begin");
-	AUDIO->begin( DAC_CHAN_0 );
+	AUDIO->begin( 0 );
 	ESP_LOGI(FNAME,"Poti and Audio test");
 	logged_tests += "Digi. Audio Poti test: ";
 	if( !AUDIO->selfTest() ) {
@@ -1394,7 +1394,6 @@ extern "C" void  app_main(void)
 
 	// Mute audio
 	AUDIO = new Audio();
-	AUDIO->mute();
 
 	// Access to the non volatile setup
 	ESP_LOGI(FNAME,"app_main" );

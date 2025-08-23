@@ -7,26 +7,22 @@
 
 #include "ESPAudio.h"
 
+#include "driver/dac_continuous.h"
 #include "mcp4018.h"
 #include "cat5171.h"
 #include "S2fSwitch.h"
 #include "I2Cbus.hpp"
-#include "sensor.h"
+#include "spline.h"
 #include "setup/CruiseMode.h"
 #include "protocol/Clock.h"
+#include "sensor.h"
 #include "logdefnone.h"
 
 #include <esp_system.h>
 #include <esp_task_wdt.h>
-#include <driver/dac.h>
-#include <soc/rtc_io_reg.h>
-#include <soc/rtc_cntl_reg.h>
-#include <soc/sens_reg.h>
+
 #include <soc/rtc.h>
 
-#include <array>
-#include <algorithm>
-#include <string>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -34,25 +30,75 @@
 
 Audio *AUDIO = nullptr;
 
+#define SAMPLE_RATE     120000 // Hz
+#define BUF_LEN         1024   // DMA-Buffer pro Push
+#define TABLE_SIZE      512
+constexpr const int TABLE_BITS = 9; // log2((double)TABLE_SIZE);
 
-const int clk_8m_div = 7;    // RTC 8M clock divider (division is by clk_8m_div+1, i.e. 0 means 8MHz frequency)
-const float freq_step = RTC_FAST_CLK_FREQ_APPROX / (65536 * 8 );  // div = 0x07
-typedef struct {  uint8_t div; uint8_t step; } t_lookup_entry;
+static uint8_t sine_table[TABLE_SIZE];
+static uint32_t voice_list[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-#define FADING_STEPS 6  // steps used for fade in/out at chopping
-#define FADING_TIME  3  // factor for volume changes fade over smoothing
+static void init_sine_table(void)
+{
+    // for (int i = 0; i < TABLE_SIZE; i++) {
+    //     sine_table[i] = (int8_t)round(127 * sin(2.0 * M_PI * i / TABLE_SIZE));
+    // }
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        sine_table[i] = (uint8_t)(64. * (sin(2. * M_PI * i / TABLE_SIZE) + 1.));
+    }
+}
 
 static Poti *DigitalPoti = nullptr;
+
+
+// DAM callback
+static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_data_t *e, void *user_data)
+{
+    uint8_t *buf = (uint8_t *)e->buf;
+    uint32_t *list = (uint32_t *)user_data;
+
+    int all = 0;
+    while ( list[2*all+1] != 0 ) all++;
+
+    if ( all == 0 ) {
+        memset(buf, 64, e->buf_size);
+    }
+    else {
+        // for (int i = 0; i < e->buf_size; i++) {
+        //     int32_t mix =0;
+        //     for ( int voice=0; voice<all; voice++ ) {
+        //         uint32_t *phase = &list[voice*2];
+        //         mix += sine_table[*phase >> (32 - TABLE_BITS)];
+        //         *phase += list[voice*2+1];
+        //     }
+        //     mix /= all;
+        //     buf[i] = (uint8_t)(mix + 128);
+        // }
+        static uint32_t phase = 0;
+        uint32_t step = list[1];
+        for (int i = 0; i < e->buf_size; i++) {
+            phase += step;
+            uint16_t idx = phase >> (32 - TABLE_BITS);
+            buf[i] = sine_table[idx];
+        }
+    }
+    return false;
+}
 
 Audio::Audio() :
 	Clock_I(10)
 {
-	_ch = DAC_CHAN_0;
+    init_sine_table();
 }
 
 Audio::~Audio()
 {
-	// fixme
+    if ( _dac_chan ) {
+        mute();
+        ESP_ERROR_CHECK(dac_continuous_disable(_dac_chan));
+        ESP_ERROR_CHECK(dac_continuous_del_channels(_dac_chan));
+    }
+
 	Clock::stop(this);
 	if( equalizerSpline ) {
 		delete equalizerSpline;
@@ -68,58 +114,6 @@ Audio::~Audio()
 	}
 }
 
-// Keep the table in flash memory
-constexpr std::array lftab = std::to_array<std::pair<uint16_t, t_lookup_entry>>({
-	{ 18,{ 6,1}},   { 21,{5,1} },	{ 25,{4,1} },	{ 32,{3,1} },	{ 37,{6,2} },	{ 43,{5,2} },	{ 51,{4,2} },	{ 55,{6,3} },
-	{ 64,{5,3}},    { 74,{6,4} },	{ 77,{4,3} },	{ 86,{5,4} },	{ 92,{6,5} },	{ 97,{3,3} },	{ 103,{4,4} },	{ 108,{5,5} },
-	{ 111,{6,6}},	{ 129,{6,7} },	{ 148,{6,8} },	{ 151,{5,7} },	{ 155,{4,6} },	{ 162,{3,5} },	{ 166,{6,9} },	{ 172,{5,8} },
-	{ 181,{4,7}},	{ 185,{6,10} },	{ 194,{5,9} },	{ 203,{6,11} },	{ 207,{4,8} },	{ 216,{5,10} },	{ 222,{6,12} },	{ 226,{3,7} },
-	{ 233,{4,9}},	{ 237,{5,11} },	{ 240,{6,13} },	{ 259,{6,14} },	{ 277,{6,15} },	{ 281,{5,13} },	{ 285,{4,11} },	{ 291,{3,9} },
-	{ 296,{6,16}},	{ 302,{5,14} },	{ 311,{4,12} },	{ 314,{6,17} },	{ 324,{5,15} },	{ 333,{6,18} },	{ 337,{4,13} },	{ 345,{5,16} },
-	{ 352,{6,19}},	{ 356,{3,11} },	{ 363,{4,14} },	{ 367,{5,17} },	{ 370,{6,20} },	{ 389,{6,21} },	{ 407,{6,22} },	{ 410,{5,19} },
-	{ 415,{4,16}},	{ 421,{3,13} },	{ 426,{6,23} },	{ 432,{5,20} },	{ 440,{4,17} },	{ 444,{6,24} },	{ 453,{5,21} },	{ 463,{6,25} },
-	{ 466,{4,18}},	{ 475,{5,22} },	{ 481,{6,26} },	{ 486,{3,15} },	{ 492,{4,19} },	{ 497,{5,23} },	{ 500,{6,27} },	{ 518,{6,28} },
-	{ 537,{6,29}},	{ 540,{5,25} },	{ 544,{4,21} },	{ 551,{3,17} },	{ 555,{6,30} },	{ 562,{5,26} },	{ 570,{4,22} },	{ 574,{6,31} },
-	{ 583,{5,27}},	{ 592,{6,32} },	{ 596,{4,23} },	{ 605,{5,28} },	{ 611,{6,33} },	{ 616,{3,19} },	{ 622,{4,24} },	{ 626,{5,29} },
-	{ 629,{6,34}},	{ 648,{6,35} },	{ 667,{6,36} },	{ 670,{5,31} },	{ 674,{4,26} },	{ 680,{3,21} },	{ 685,{6,37} },	{ 691,{5,32} },
-	{ 700,{4,27}},	{ 704,{6,38} },	{ 713,{5,33} },	{ 722,{6,39} },	{ 726,{4,28} },	{ 734,{5,34} },	{ 741,{6,40} },	{ 745,{3,23} },
-	{ 752,{4,29}},	{ 756,{5,35} },	{ 759,{6,41} },	{ 778,{6,42} },	{ 796,{6,43} },	{ 799,{5,37} },	{ 804,{4,31} },	{ 810,{3,25} },
-	{ 815,{6,44}},	{ 821,{5,38} },	{ 830,{4,32} },	{ 833,{6,45} },	{ 843,{5,39} },	{ 852,{6,46} },	{ 856,{4,33} },	{ 864,{5,40} },
-	{ 870,{6,47}},	{ 875,{3,27} },	{ 881,{4,34} },	{ 886,{5,41} },	{ 889,{6,48} },	{ 907,{6,49} },	{ 926,{6,50} },	{ 929,{5,43} },
-	{ 933,{4,36}},	{ 940,{3,29} },	{ 944,{6,51} },	{ 951,{5,44} },	{ 959,{4,37} },	{ 963,{6,52} },	{ 972,{5,45} },	{ 982,{6,53} },
-	{ 985,{4,38}},	{ 994,{5,46} },	{ 1000,{6,54} }
-});
-
-/*
- * Enable cosine waveform generator on a DAC channel
- */
-void Audio::dac_cosine_enable(dac_channel_t channel, bool enable)
-{
-	// Enable tone generator common to both channels
-	ESP_LOGD(FNAME,"Audio::dac_cosine_enable ch: %d", channel);
-	SET_PERI_REG_MASK(SENS_SAR_DAC_CTRL1_REG, SENS_SW_TONE_EN);
-	switch(channel) {
-	case DAC_CHAN_0:
-		// Enable / connect tone tone generator on / to this channel
-		if( enable )
-			SET_PERI_REG_MASK(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_CW_EN1_M);
-		else
-			CLEAR_PERI_REG_MASK(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_CW_EN1_M);
-		// Invert MSB, otherwise part of waveform will have inverted
-		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_INV1, 2, SENS_DAC_INV1_S);
-		break;
-	case DAC_CHAN_1:
-		if( enable )
-			SET_PERI_REG_MASK(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_CW_EN2_M);
-		else
-			CLEAR_PERI_REG_MASK(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_CW_EN2_M);
-		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_INV2, 2, SENS_DAC_INV2_S);
-		break;
-	default :
-		ESP_LOGD(FNAME,"Channel %d", channel);
-	}
-}
-
 // 4 Ohms Type
 static const std::vector<double> F1{   50,  175, 350, 542, 885, 1236,  1380, 2100, 3000, 4000, 10000    };
 static const std::vector<double> VOL2{ 0.1, 0.2, 0.3, 1.2, 0.8,  1.5,   2.1,  1.7,  1.5,  1.4,   1.4    };
@@ -132,16 +126,40 @@ static const std::vector<double> VOL1{ 0.1, 0.2, 0.3, 2.3, 0.6,  2.1,   2.2,  1.
 static const std::vector<double> F3{   50,  175, 490,  700, 1000, 1380, 2100, 2400, 3000, 4000, 10000   };
 static const std::vector<double> VOL3{ 1.3, 1.2, 0.9, 0.20,  1.2,  2.1,  1.8,  1.3,  1.9,  2.0,   2.0   };
 
-
-void Audio::begin( dac_channel_t ch  )
+void Audio::begin( int16_t ch  )
 {
 	ESP_LOGI(FNAME,"begin");
 	if ( ! S2FSWITCH ) {
 		S2FSWITCH = new S2fSwitch( GPIO_NUM_12 );
 	}
 	setup();
-	_ch = ch;
+
+    _dac_cfg = {
+        .chan_mask = (dac_channel_mask_t)BIT(ch), // which channel to enable
+        .desc_num = 4,
+        .buf_size = BUF_LEN,
+        .freq_hz = SAMPLE_RATE,
+        .offset = 0,
+        .clk_src =  DAC_DIGI_CLK_SRC_APLL,
+        // .clk_src = DAC_DIGI_CLK_SRC_DEFAULT,     // If the frequency is out of range, try 'DAC_DIGI_CLK_SRC_APLL'
+        .chan_mode = DAC_CHANNEL_MODE_SIMUL,
+    };
+
+    ESP_ERROR_CHECK(dac_continuous_new_channels(&_dac_cfg, &_dac_chan));
+    // register callback
+    dac_event_callbacks_t callbacks = {
+        .on_convert_done = dacdma_done,
+        .on_stop = nullptr
+    };
+    ESP_ERROR_CHECK(dac_continuous_register_event_callback(_dac_chan, &callbacks, voice_list));
+
+    // dacEnable();
+    ESP_ERROR_CHECK(dac_continuous_enable(_dac_chan));
+    ESP_LOGI(FNAME, "DAC initialized success, DAC DMA is ready");
+
 	unmute();
+    enableAmplifier(true);
+
 	_testmode = true;
 	if( audio_equalizer.get() == AUDIO_EQ_LS4 ) {
 		equalizerSpline  = new tk::spline(F1,VOL1, tk::spline::cspline_hermite );
@@ -205,106 +223,33 @@ bool Audio::selfTest(){
 	}
 	ESP_LOGI(FNAME,"readWiper: OK");
 
-	bool fadein=false;
 	_alarm_mode = false;
 
 	setvolume = default_volume.get();
 	speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
 	ESP_LOGI(FNAME,"default volume: %f", speaker_volume );
+    unmute();
 	writeVolume( setvolume );
-	//	while(1){    // uncomment for continuous self test
+	// while(1){    // uncomment for continuous self test
 	ESP_LOGI(FNAME,"Min F %f, Max F %f", minf, maxf );
 	for( float f=minf; f<maxf*1.25; f=f*1.03){
 		ESP_LOGV(FNAME,"f=%f",f);
 		setFrequency( f );
-		current_frequency = f;
-		if( !fadein ){
-			float volume = 3;
-			for( int i=0; i<FADING_STEPS && volume <= setvolume; i++ ) {
-				writeVolume( volume );
-				volume = volume*1.75;
-				vTaskDelay(pdMS_TO_TICKS(1));
-				fadein = true;
-			}
-		}
-		writeVolume( setvolume );
-		vTaskDelay(pdMS_TO_TICKS(20));
+        // writeVolume( audio_volume.get() );
+		vTaskDelay(pdMS_TO_TICKS(40));
 	}
-	//	}
-	vTaskDelay(pdMS_TO_TICKS(200));
+    // vTaskDelay(pdMS_TO_TICKS(200));
+	// }
 	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
-	writeVolume( 0 );
-	dacDisable();
-	_testmode=true;
-	return ret;
+	// writeVolume( 0 );
+    mute();
+    return ret;
 }
 
-/*
-
-  freq = dig_clk_rtc_freq x SENS_SAR_SW_FSTEP / 65536
-
-  frequency = ( (RTC_FAST_CLK_FREQ_APPROX / (1 + clk_8m_div) ) *  frequency_step) / 65536;
-
-  frequency_step =  (frequency * 65536) * (1 + clk_8m_div) ) / RTC_FAST_CLK_FREQ_APPROX
-
-   RTC_FAST_CLK_FREQ_APPROX = 8500000
-
-   frequency_step =  (frequency * 65536) * (1 + clk_8m_div) ) / 8500000
-
-   GPIO_NUM_19 as input programmed will enable the PAM amplifier.
-   We do not use enable/disable from amplifier as this creates some pop noise
-   Mute will be realized by putting down the wiper from digital poti to zero what works like a charm.
-
- */
-
-void Audio::dac_frequency_set(int adiv, int frequency_step)
-{
-	ESP_LOGD(FNAME,"Audio::dac_frequency_set( div:%d step:%d )", adiv, frequency_step );
-	REG_SET_FIELD(RTC_CNTL_CLK_CONF_REG, RTC_CNTL_CK8M_DIV_SEL, adiv);
-	SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL1_REG, SENS_SW_FSTEP, frequency_step, SENS_SW_FSTEP_S);
-}
 
 void Audio::setFrequency( float f ){
-	int step;
-	int div;
-	if( f < 800.0 ) {
-		lookup( f, div, step );
-	}
-	else {
-		step = int( (f/freq_step) + 0.5);
-		div = clk_8m_div;
-	}
-	if ( prev_div != div || prev_step != step ) {
-		prev_div = div;
-		prev_step = step;
-		dac_frequency_set(div, step);
-	}
-}
-
-/*
- * Scale output of a DAC channel using two bit pattern:
- *
- * - 00: no scale
- * - 01: scale to 1/2
- * - 10: scale to 1/4
- * - 11: scale to 1/8
- *
- */
-void Audio::dac_scale_set(dac_channel_t channel, int scale)
-{
-	if( scale != prev_scale ) {
-		switch(channel) {
-		case DAC_CHAN_0:
-			SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_SCALE1, scale, SENS_DAC_SCALE1_S);
-			break;
-		case DAC_CHAN_1:
-			SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_SCALE2, scale, SENS_DAC_SCALE2_S);
-			break;
-		default :
-			ESP_LOGD(FNAME,"Channel %d", channel);
-		}
-		prev_scale = scale;
-	}
+    voice_list[1] = (uint32_t)((f/2. * (1ULL << 32)) / SAMPLE_RATE);
+    ESP_LOGI(FNAME,"freq set %f step %u", f, (unsigned)voice_list[1]);
 }
 
 void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // non blocking
@@ -359,55 +304,9 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 	}
 }
 
-/*
- * Offset output of a DAC channel
- *
- * Range 0x00 - 0xFF
- *
- */
-void Audio::dac_offset_set(dac_channel_t channel, int offset)
-{
-	switch(channel) {
-	case DAC_CHAN_0:
-		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_DC1, offset, SENS_DAC_DC1_S);
-		break;
-	case DAC_CHAN_1:
-		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_DC2, offset, SENS_DAC_DC2_S);
-		break;
-	default :
-		ESP_LOGD(FNAME,"Channel %d", channel);
-	}
-}
-
-/*
- * Invert output pattern of a DAC channel
- *
- * - 00: does not invert any bits,
- * - 01: inverts all bits,
- * - 10: inverts MSB,
- * - 11: inverts all bits except for MSB
- *
- */
-void Audio::dac_invert_set(dac_channel_t channel, int invert)
-{
-	ESP_LOGD(FNAME,"DAC invert: channel %d, invert: %d", channel, invert);
-	switch(channel) {
-	case DAC_CHAN_0:
-		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_INV1, invert, SENS_DAC_INV1_S);
-		break;
-	case DAC_CHAN_1:
-		SET_PERI_REG_BITS(SENS_SAR_DAC_CTRL2_REG, SENS_DAC_INV2, invert, SENS_DAC_INV2_S);
-		break;
-	default :
-		ESP_LOGD(FNAME,"Channel %d", channel);
-	}
-}
-
-
 void Audio::setVolume( float vol ) {
 	if( vol > max_volume.get() )
 		vol = max_volume.get();
-	volume_change = (vol != speaker_volume) ? 100 : 0;
 	speaker_volume = vol;
 	// also copy the new volume into the cruise-mode specific variables so that
 	// calcS2Fmode() will later restore the correct volume when mode changes:
@@ -451,15 +350,15 @@ void Audio::calcS2Fmode( bool recalc ){
 		else
 			speaker_volume = vario_mode_volume;
 		if ( speaker_volume != audio_volume.get() ) {  // due to audio_split_vol
-			ESP_LOGI(FNAME, "... changing volume %f -> %f",
-			audio_volume.get(), speaker_volume );
+			ESP_LOGI(FNAME, "... changing volume %f -> %f", audio_volume.get(), speaker_volume );
+
 			audio_volume.set( speaker_volume );  // this too needs _stf_mode
 			// this is to keep the current volume shown (or implied) in the menus
 			// in step with the actual speaker volume, in case volume is changed
 			// after the CruiseState has changed.  Calling audio_volume.set() here
 			// will call the action change_volume() which calls Audio::setVolume()
 			// which will write it back into speaker_volume and the mode-specific
-			// variable, and will also set volume_change=100, but all that is OK.
+			// variable, but all that is OK.
 		}
 	}
 }
@@ -515,11 +414,14 @@ void Audio::dactask_starter(void *arg)
 void Audio::dactask()
 {
 	int tick = 0;
+    bool sound = false;
+    int delay = 100;
 	esp_task_wdt_add(NULL);
 
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
+
 		// Chopping or dual tone modulation
 		if( millis() > next_scedule ){
 			if ( _te > 0 ){
@@ -537,23 +439,23 @@ void Audio::dactask()
 
 				float period_ms = 1000.0/f;
 				if ( hightone ){  // duration of break (or second tone)
-					_delay = int(period_ms * 0.1)+40;  // 1Hz: 100 mS; 10Hz: 50 mS
+					delay = int(period_ms * 0.1)+40;  // 1Hz: 100 mS; 10Hz: 50 mS
 					// ESP_LOGI(FNAME, "Break: %d period:%4.2f %4.1f", _delay, period_ms, f );
 				}
 				else{  // duration of main tone 1Hz: 900 mS; 10Hz: 50 mS
-					_delay = int(period_ms * 0.9)-40;
+					delay = int(period_ms * 0.9)-40;
 					// ESP_LOGI(FNAME, "Tone: %d period:%4.2f %4.1f", _delay, period_ms, f );
 				}
 			}
 			else{
-				_delay = 100;
+				delay = 100;
 				hightone = false;
 			}
 			// Frequency Control
 			if( !audio_variable_frequency.get() ) {
 				calculateFrequency();
 			}
-			next_scedule = millis()+_delay;
+			next_scedule = millis()+delay;
 		}
 //		if( audio_variable_frequency.get() )
 //			calculateFrequency();
@@ -570,19 +472,14 @@ void Audio::dactask()
 				calcS2Fmode(false);     // if mode changed, affects volume and frequency
 			}
 
-			int shutdownamp = amplifier_shutdown.get();
-			bool disable_amp = false;
-
-			if( inDeadBand(_te) && !volume_change ){
+			if( inDeadBand(_te) ){
 				deadband_active = true;
 				sound = false;
-				disable_amp = true;
 				// ESP_LOGI(FNAME,"Audio in DeadBand true");
 			}
 			else{
 				deadband_active = false;
 				sound = true;
-				disable_amp = false;
 				if( _tonemode == ATM_SINGLE_TONE ){
 					if( hightone )
 						if( _chopping ) {
@@ -596,118 +493,37 @@ void Audio::dactask()
 					// Optionally disable vario audio when in Sink
 					if( audio_mute_sink.get() && _te < 0 ) {
 						sound = false;
-						disable_amp = true;
 					// Optionally disable vario audio when in setup menu
 					} else if( audio_mute_menu.get() && gflags.inSetup ) {
 						sound = false;
-						disable_amp = true;
 					// Optionally disable vario audio generally
 					} else if( audio_mute_gen.get() != AUDIO_ON ) {
 						sound = false;
-						disable_amp = true;
 					}
 				} else if( audio_mute_gen.get() == AUDIO_OFF ) {
 					// Optionally mute alarms too
 					sound = false;
-					disable_amp = true;
 				}
 			}
-			//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f vc:%d cw:%f ", sound, hightone, _te, volume_change, current_volume );
-			if( sound ){
-				if( shutdownamp ){
-					enableAmplifier( true );
-				}
-				disable_amp = false;
-				// Blend over gracefully volume changes
-				if( (current_volume != speaker_volume) && volume_change ){
-					// ESP_LOGI(FNAME, "volume change, new volume: %f, current_volume %f", speaker_volume, current_volume );
-					// change volume logarithmically
-					if (current_volume < 3.0) {
-						current_volume = 3.0;   // avoid division by zero
-					}
-					float g = speaker_volume / current_volume;
-					if (g < 0.25)
-						g = 0.25;
-					g = 1.0 + (g-1.0) / (g + (float)FADING_TIME);
-					// This works for decreasing volume too, e.g.:
-					// if decreasing by 50%, g = 1+(0.5-1)/(0.5+3) = 0.857
-					// This formula is specifically fitted to FADING_TIME=3 though.
-					float f = current_volume;
-					dacEnable();
-					for( int i=0; i<FADING_TIME; i++ ) {
-						f = f * g;
-						if (f > max_volume.get())  f = max_volume.get();
-						writeVolume( f );
-						// ESP_LOGI(FNAME, "new volume: %f", f );
-						vTaskDelay(pdMS_TO_TICKS(1));
-					}
-					writeVolume( speaker_volume );
-					if( speaker_volume == 0 ) {
-						dacDisable();
-					}
-					// ESP_LOGI(FNAME, "volume change, new volume: %d", current_volume );
-					// ESP_LOGI(FNAME, "have sound");
-				}
-				// Fade in volume
-				if( current_volume != speaker_volume ){
-					dacEnable();
-					if( chopping_style.get() == AUDIO_CHOP_HARD ){
-						writeVolume( speaker_volume );
-					}
-					else{
-						float volume=3;
-						for( int i=0; i<FADING_STEPS && volume <= speaker_volume; i++ ) {
-							// ESP_LOGI(FNAME, "fade in sound, volume: %3.1f", volume );
-							writeVolume( volume );
-							volume = volume*1.75;
-							vTaskDelay(pdMS_TO_TICKS(1));
-						}
-						if(  current_volume != speaker_volume ){
-							// ESP_LOGI(FNAME, "fade in sound, volume: %d", speaker_volume );
-							writeVolume( speaker_volume );
-						}
-					}
-				}
-				if( !(tick%10) ){
-					writeVolume( speaker_volume );   // <<< why?
-				}
-			}
-			else{
-				// Fade out volume
-				if( current_volume != 0 ){
-					if( chopping_style.get() == AUDIO_CHOP_HARD ){
-						writeVolume( 0 );
-					}else{
-						float volume = current_volume;
-						ESP_LOGI(FNAME, "fade out sound, volume: %3.1f", volume );
-						for( int i=0; i<FADING_STEPS && volume > 0; i++ ) {
-							//ESP_LOGI(FNAME, "fade out sound, volume: %3.1f", volume );
-							volume = volume*0.75;
-							writeVolume( volume );
-							if (volume < 3.0) {
-								volume = 0;
-							}
-							vTaskDelay(pdMS_TO_TICKS(1));
-						}
-						ESP_LOGI(FNAME, "fade out sound end");
-						writeVolume( 0 );
-						// ESP_LOGI(FNAME, "fade out sound, final volume: 0" );
-					}
-					dacDisable();
-				}
-				if( disable_amp ) {
-					enableAmplifier( false );
-				}
-			}
+			//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f cw:%f ", sound, hightone, _te, current_volume );
+			if ( !sound ) {
+                mute();
+            }
+            else {
+                unmute();
+            }
+            if ( current_volume != speaker_volume ){
+                // ESP_LOGI(FNAME, "volume change, new volume: %f, current_volume %f", speaker_volume, current_volume );
+                writeVolume( speaker_volume );
+                current_volume = speaker_volume;
+            }
+
 		}
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
 		}
-		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(20));
-		if( volume_change ) {
-			volume_change--;
-		}
+		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(40));
 		esp_task_wdt_reset();
 	}
 }
@@ -776,26 +592,23 @@ void Audio::setup()
 
 	maxf = center_freq.get() * tone_var.get();
 	minf = center_freq.get() / tone_var.get();
-	unmute();
 }
 
 void Audio::unmute()
 {
-	ESP_LOGD(FNAME,"Audio::restart");
-	dacDisable();
-	dac_cosine_enable(_ch);
-	dac_offset_set(_ch, -75 );
-	dac_scale_set(_ch, 2 );
-	enableAmplifier( true );
-	dacEnable();
+    if ( !_mute ) return;
+
+    ESP_LOGI(FNAME,"unmute");
+    ESP_ERROR_CHECK(dac_continuous_start_async_writing(_dac_chan));
+    _mute = false;
 }
 
 void Audio::mute(){
-	dacDisable();
-	gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
-	gpio_set_level(GPIO_NUM_19, 0 );
-    speaker_volume = 0;
-	ESP_LOGI(FNAME,"shutdown alarm volume set 0");
+    if ( _mute ) return;
+
+    ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
+    _mute = true;
+	ESP_LOGI(FNAME,"mute");
 }
 
 void Audio::enableAmplifier( bool enable )
@@ -804,61 +617,23 @@ void Audio::enableAmplifier( bool enable )
 	// enable Audio
 	if( enable )
 	{
-		if( !amplifier_enable ){
-			dacEnable();
+		if( !amp_is_on ){
 			ESP_LOGI(FNAME,"Audio::enableAmplifier");
 			gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
 			gpio_set_level(GPIO_NUM_19, 1 );
-			amplifier_enable = true;
+			amp_is_on = true;
 			vTaskDelay(pdMS_TO_TICKS(180));  // amplifier startup time ~175mS according to datasheet Fig. 21
 		}
 	}
 	else {
-		if( amplifier_enable ){
-			if( amplifier_shutdown.get() > AMP_STAY_ON ){
-				ESP_LOGI(FNAME,"Audio::disableAmplifier");
-				gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
-				gpio_set_level(GPIO_NUM_19, 0 );
-				amplifier_enable = false;
-				dacDisable();
-			}
+		if( amp_is_on ){
+            ESP_LOGI(FNAME,"Audio::disableAmplifier");
+            gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE
+            gpio_set_level(GPIO_NUM_19, 0 );
+            amp_is_on = false;
 		}
 	}
 }
-
-void Audio::dacEnable(){
-	if( !dac_enable ){
-		// ESP_LOGI(FNAME,"Audio::dacEnable");
-		dac_output_enable(_ch);
-		dac_enable = true;
-	}
-}
-
-void Audio::dacDisable(){
-	if( dac_enable ){
-		// ESP_LOGI(FNAME,"Audio::dacDisable");
-		dac_output_disable(_ch);
-		dac_enable = false;
-	}
-}
-
-bool Audio::lookup( float f, int& div, int &step ){
-	uint16_t fi = (uint16_t)(f + 0.5);
-
-	auto low = std::lower_bound(
-		lftab.begin(), lftab.end(), fi,
-		[](const auto &entry, uint16_t k) { return entry.first < k; });
-
-	if (low != lftab.end()) {
-		div =  low->second.div;
-		step = low->second.step;
-		// ESP_LOGI(FNAME, "found div:%d step:%d for F:%d", div, step, fi );
-		return true;
-	}
-	ESP_LOGI(FNAME,"F: %d not found in map", fi );
-	return false;
-}
-
 
 bool Audio::tick()
 {

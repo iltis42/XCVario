@@ -792,13 +792,6 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	tch->addEntry("Vario and S2F");        // 3  default
 	top->addEntry(tch);
 
-	SetupMenuSelect *tchs = new SetupMenuSelect("Chopping Style", RST_NONE, nullptr, &chopping_style);
-	tchs->setHelp(
-			"Select style of tone chopping either hard, or soft with fadein/fadeout");
-	tchs->addEntry("Soft");              // 0  default
-	tchs->addEntry("Hard");              // 1
-	top->addEntry(tchs);
-
 	SetupMenuSelect *advarto = new SetupMenuSelect("Variable Tone", RST_NONE, nullptr, &audio_variable_frequency);
 	advarto->setHelp(
 			"Enable audio frequency updates within climbing tone intervals, disable keeps frequency constant");
@@ -882,13 +875,6 @@ void audio_menu_create_mute(SetupMenu *top) {
 	ageda->addEntry("Alarms On");     // 1 = AUDIO_ALARMS
 	ageda->addEntry("Audio Off");     // 2 = AUDIO_OFF
 	top->addEntry(ageda);
-
-	SetupMenuSelect *amps = new SetupMenuSelect("Amplifier", RST_NONE, nullptr, &amplifier_shutdown);
-	amps->setHelp(
-			"Select whether amplifier is shutdown during silences, or always stays on");
-	amps->addEntry("Stay On");   // 0 = AMP_STAY_ON
-	amps->addEntry("Shutdown");  // 1 = AMP_SHUTDOWN
-	top->addEntry(amps);
 }
 
 void audio_menu_create(SetupMenu *audio) {

@@ -48,9 +48,6 @@ static void init_sine_table(void)
     }
 }
 
-static Poti *DigitalPoti = nullptr;
-
-
 // DAM callback
 static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_data_t *e, void *user_data)
 {
@@ -104,9 +101,9 @@ Audio::~Audio()
 		delete equalizerSpline;
 		equalizerSpline = nullptr;
 	}
-	if ( DigitalPoti ) {
-		delete DigitalPoti;
-		DigitalPoti = nullptr;
+	if ( _poti ) {
+		delete _poti;
+		_poti = nullptr;
 	}
 	if ( dactid ) {
 		vTaskDelete(dactid);
@@ -126,7 +123,7 @@ static const std::vector<double> VOL1{ 0.1, 0.2, 0.3, 2.3, 0.6,  2.1,   2.2,  1.
 static const std::vector<double> F3{   50,  175, 490,  700, 1000, 1380, 2100, 2400, 3000, 4000, 10000   };
 static const std::vector<double> VOL3{ 1.3, 1.2, 0.9, 0.20,  1.2,  2.1,  1.8,  1.3,  1.9,  2.0,   2.0   };
 
-void Audio::begin( int16_t ch  )
+bool Audio::begin( int16_t ch  )
 {
 	ESP_LOGI(FNAME,"begin");
 	if ( ! S2FSWITCH ) {
@@ -140,25 +137,53 @@ void Audio::begin( int16_t ch  )
         .buf_size = BUF_LEN,
         .freq_hz = SAMPLE_RATE,
         .offset = 0,
-        .clk_src =  DAC_DIGI_CLK_SRC_APLL,
-        // .clk_src = DAC_DIGI_CLK_SRC_DEFAULT,     // If the frequency is out of range, try 'DAC_DIGI_CLK_SRC_APLL'
+        //.clk_src =  DAC_DIGI_CLK_SRC_APLL,
+        .clk_src = DAC_DIGI_CLK_SRC_DEFAULT,     // If the frequency is out of range, try 'DAC_DIGI_CLK_SRC_APLL'
         .chan_mode = DAC_CHANNEL_MODE_SIMUL,
     };
 
-    ESP_ERROR_CHECK(dac_continuous_new_channels(&_dac_cfg, &_dac_chan));
+    esp_err_t err = dac_continuous_new_channels(&_dac_cfg, &_dac_chan);
     // register callback
     dac_event_callbacks_t callbacks = {
         .on_convert_done = dacdma_done,
         .on_stop = nullptr
     };
-    ESP_ERROR_CHECK(dac_continuous_register_event_callback(_dac_chan, &callbacks, voice_list));
+    err |= dac_continuous_register_event_callback(_dac_chan, &callbacks, voice_list);
 
-    // dacEnable();
-    ESP_ERROR_CHECK(dac_continuous_enable(_dac_chan));
+    err |= dac_continuous_enable(_dac_chan);
     ESP_LOGI(FNAME, "DAC initialized success, DAC DMA is ready");
 
-	unmute();
-    enableAmplifier(true);
+    ESP_LOGI(FNAME,"Find digital poti");
+	_poti = new MCP4018();
+	_poti->setBus( &i2c1 );
+	_poti->begin();
+    if (_poti->haveDevice()) {
+        ESP_LOGI(FNAME, "MCP4018 digital Poti found");
+    } else {
+        ESP_LOGI(FNAME, "Try CAT5171 digital Poti");
+        delete _poti;
+        _poti = new CAT5171();
+        _poti->setBus(&i2c1);
+        _poti->begin();
+        if (_poti->haveDevice()) {
+            ESP_LOGI(FNAME, "CAT5171 digital Poti found");
+            _haveCAT5171 = true;
+        } else {
+            ESP_LOGW(FNAME, "NO digital Poti found !");
+            delete _poti;
+            _poti = nullptr;
+        }
+    }
+    if ( _poti ) {
+        _alarm_mode = true;
+        if( _poti->writeWiper( 5, true ) ) {
+            ESP_LOGI(FNAME,"writeWiper(5) returned Ok");
+        } else {
+            ESP_LOGI(FNAME,"readWiper returned error");
+        }
+        _alarm_mode = false;
+    }
+    err |= _poti == nullptr;
 
 	_testmode = true;
 	if( audio_equalizer.get() == AUDIO_EQ_LS4 ) {
@@ -168,7 +193,14 @@ void Audio::begin( int16_t ch  )
 	} else if( audio_equalizer.get() == AUDIO_EQ_LSEXT ) {
 		equalizerSpline  = new tk::spline(F3,VOL3, tk::spline::cspline_hermite );
 	}
-	Clock::start(this);
+
+    if ( err == ESP_OK ) {
+        enableAmplifier(true);
+        unmute();
+        Clock::start(this);
+        return true;
+    }
+    return false;
 }
 
 float Audio::equal_volume( float volume ){
@@ -187,45 +219,9 @@ float Audio::equal_volume( float volume ){
 	return new_vol;
 }
 
-bool Audio::selfTest(){
-	ESP_LOGI(FNAME,"Audio::selfTest");
-	DigitalPoti = new MCP4018();
-	DigitalPoti->setBus( &i2c1 );
-	DigitalPoti->begin();
-	if( !DigitalPoti->haveDevice() )
-	{
-		ESP_LOGI(FNAME,"Try CAT5171 digital Poti");
-		delete DigitalPoti;
-		DigitalPoti = new CAT5171();
-		DigitalPoti->setBus( &i2c1 );
-		DigitalPoti->begin();
-		if( DigitalPoti->haveDevice() ){
-			ESP_LOGI(FNAME,"CAT5171 digital Poti found");
-			_haveCAT5171 = true;
-		}
-		else{
-			ESP_LOGW(FNAME,"NO digital Poti found !");
-			return false;
-		}
-	}
-	else
-	{
-		ESP_LOGI(FNAME,"MCP4018 digital Poti found");
-	}
-	float setvolume = 0;
-
-	_alarm_mode = true;
-	bool ret = DigitalPoti->writeWiper( 5, true );
-	ESP_LOGI(FNAME,"writeWiper(5) returned okay: %d", ret );
-	if( ret == false ) {
-		ESP_LOGI(FNAME,"readWiper returned error");
-		return false;
-	}
-	ESP_LOGI(FNAME,"readWiper: OK");
-
-	_alarm_mode = false;
-
-	setvolume = default_volume.get();
+void Audio::soundCheck(){
+    ESP_LOGI(FNAME,"Audio::selfTest");
+	float setvolume = default_volume.get();
 	speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
 	ESP_LOGI(FNAME,"default volume: %f", speaker_volume );
     unmute();
@@ -236,14 +232,13 @@ bool Audio::selfTest(){
 		ESP_LOGV(FNAME,"f=%f",f);
 		setFrequency( f );
         // writeVolume( audio_volume.get() );
-		vTaskDelay(pdMS_TO_TICKS(40));
+		vTaskDelay(pdMS_TO_TICKS(30));
 	}
     // vTaskDelay(pdMS_TO_TICKS(200));
 	// }
 	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
 	// writeVolume( 0 );
     mute();
-    return ret;
 }
 
 
@@ -399,11 +394,13 @@ void  Audio::calculateFrequency(){
 
 void Audio::writeVolume( float volume ){
 	// ESP_LOGI(FNAME, "set volume: %f", volume);
-	if( _alarm_mode )
-		DigitalPoti->writeVolume( volume );  // max volume
-	else
-		DigitalPoti->writeVolume( equal_volume(volume) ); // take care frequency response
-	current_volume = volume;
+    if ( _poti ) {
+        if( _alarm_mode )
+            _poti->writeVolume( volume );  // max volume
+        else
+            _poti->writeVolume( equal_volume(volume) ); // take care frequency response
+        current_volume = volume;
+    }
 }
 
 void Audio::dactask_starter(void *arg)
@@ -523,7 +520,7 @@ void Audio::dactask()
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
 		}
-		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(40));
+		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(20));
 		esp_task_wdt_reset();
 	}
 }

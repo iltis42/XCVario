@@ -1147,16 +1147,15 @@ void system_startup(void *args){
 	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
 	bmpVario.setup();
 	ESP_LOGI(FNAME,"Audio begin");
-	AUDIO->begin( 0 );
-	ESP_LOGI(FNAME,"Poti and Audio test");
 	logged_tests += "Digi. Audio Poti test: ";
-	if( !AUDIO->selfTest() ) {
+	if( !AUDIO->begin( 0 ) ) {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
 		MBOX->newMessage(1, "Digital Poti: Failure");
 		selftestPassed = false;
 		logged_tests += failed_text;
 	}
-	else{
+	else {
+        AUDIO->soundCheck();
 		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 		logged_tests += passed_text;
 	}

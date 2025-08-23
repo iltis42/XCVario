@@ -1,16 +1,16 @@
-#ifndef POTI_H
-#define POTI_H
+#pragma once
 
-#include "I2Cbus.hpp"
+namespace i2cbus {
+    class I2C;
+}
 
-// Template for digital Poti Interface
-
+// digital poti interface
 class Poti
 {
 public:
   virtual ~Poti() {};
   virtual bool begin() = 0;
-  virtual void setBus( I2C_t *theBus ) = 0;
+  virtual void setBus( i2cbus::I2C *theBus ) = 0;
   virtual bool readVolume( float& val ) = 0;
   virtual bool writeVolume( float val ) = 0;
   virtual bool haveDevice() = 0;
@@ -22,5 +22,3 @@ private:
   virtual bool readWiper( int& val ) = 0;
   virtual int  getStep() = 0;
 };
-
-#endif

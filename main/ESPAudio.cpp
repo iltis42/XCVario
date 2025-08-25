@@ -30,40 +30,84 @@
 
 Audio *AUDIO = nullptr;
 
-#define SAMPLE_RATE     120000 // Hz
-#define BUF_LEN         1024   // DMA-Buffer pro Push
-#define TABLE_SIZE      512
-constexpr const int TABLE_BITS = 9; // log2((double)TABLE_SIZE);
+constexpr const int SAMPLE_RATE = 120000; // Hz
+constexpr const int BUF_LEN     = 1024;   // DMA-Buffer pro Ppush
+constexpr const int TABLE_SIZE  = 512;
+constexpr const int TABLE_BITS  = 9; // log2((double)TABLE_SIZE);
+constexpr const int DAC_CENTER  = 127;
+constexpr const int DAC_HLF_AMPL = 32;
 
-static uint8_t sine_table[TABLE_SIZE];
-static uint32_t voice_list[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+struct dma_cmd {
+    uint32_t phase;
+    uint32_t step;
+    uint8_t cmd;
+};
 
-static void init_sine_table(void)
-{
-    // for (int i = 0; i < TABLE_SIZE; i++) {
-    //     sine_table[i] = (int8_t)round(127 * sin(2.0 * M_PI * i / TABLE_SIZE));
-    // }
+static int8_t sine_table[TABLE_SIZE];
+static dma_cmd* voice_list[4] = {nullptr, nullptr, nullptr, nullptr};
+static dma_cmd default_voice;
+static int8_t hann_ramp[TABLE_SIZE];
+
+static void init_sine_table() {
     for (int i = 0; i < TABLE_SIZE; i++) {
-        sine_table[i] = (uint8_t)(64. * (sin(2. * M_PI * i / TABLE_SIZE) + 1.));
+        sine_table[i] = (int8_t)((DAC_HLF_AMPL-.25) * sin(2. * M_PI * i / TABLE_SIZE));
+        if ( !(i%2) ) printf("%4d, ", sine_table[i]);
+    }
+    // for (int i = 0; i < TABLE_SIZE; i++) {
+    //     sine_table[i] = (uint8_t)((sin(2. * M_PI * i / TABLE_SIZE) + 1.) * DAC_CENTER);
+    // }
+}
+static void init_hann_ramp() {
+    for (int n = 0; n < TABLE_SIZE; n++) {
+        // hann_ramp[n] = 1. - sin((M_PI * n) / (2.0f * RAMP_SIZE));
+        hann_ramp[n] = (uint8_t)(0.5 * (1.0 + cos(M_PI * n / (TABLE_SIZE-1))) * DAC_HLF_AMPL);
+        printf("%d ", hann_ramp[n]);
     }
 }
 
-static Poti *DigitalPoti = nullptr;
 
-
-// DAM callback
+// DMA callback
 static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_data_t *e, void *user_data)
 {
+    dma_cmd **list = (dma_cmd **)user_data;
     uint8_t *buf = (uint8_t *)e->buf;
-    uint32_t *list = (uint32_t *)user_data;
 
-    int all = 0;
-    while ( list[2*all+1] != 0 ) all++;
-
-    if ( all == 0 ) {
-        memset(buf, 64, e->buf_size);
+    int i = 0;
+    if (list[0]!=nullptr) {
+        uint32_t phase = list[0]->phase;
+        uint32_t step = list[0]->step;
+        if (list[0]->cmd == 1) {
+            // phase in
+            i = e->buf_size - TABLE_SIZE;
+            int revidx = TABLE_SIZE-1;
+            for (; i < e->buf_size; i++) {
+                uint16_t idx = phase >> (32 - TABLE_BITS);
+                buf[i] = (((int)hann_ramp[revidx--] * sine_table[idx]) >> 5) + DAC_CENTER;
+                phase += step;
+            }
+            list[0]->phase = phase;
+            list[0]->cmd = 2;
+        }
+        else if (list[0]->cmd == 2 ) {
+            for (; i < e->buf_size; i++) {
+                buf[i] = sine_table[phase >> (32 - TABLE_BITS)] + DAC_CENTER;
+                phase += step;
+            }
+            list[0]->phase = phase;
+        }
+        else if (list[0]->cmd == 3 ) {
+            // phase out
+            for (; i < TABLE_SIZE; i++) {
+                uint16_t idx = phase >> (32 - TABLE_BITS);
+                buf[i] = (((int)hann_ramp[i] * sine_table[idx]) >> 5) + DAC_CENTER;
+                phase += step;
+            }
+            list[0]->phase = 0;
+            list[0]->cmd = 0;
+        }
     }
-    else {
+
+    // if ( list[1] > 0 ) {
         // for (int i = 0; i < e->buf_size; i++) {
         //     int32_t mix =0;
         //     for ( int voice=0; voice<all; voice++ ) {
@@ -74,14 +118,23 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
         //     mix /= all;
         //     buf[i] = (uint8_t)(mix + 128);
         // }
-        static uint32_t phase = 0;
-        uint32_t step = list[1];
-        for (int i = 0; i < e->buf_size; i++) {
-            phase += step;
-            uint16_t idx = phase >> (32 - TABLE_BITS);
-            buf[i] = sine_table[idx];
-        }
+        // for (int i = 0; i < e->buf_size; i++) {
+        //     uint16_t idx = phase >> (32 - TABLE_BITS);
+        //     phase += step;
+        //     buf[i] = sine_table[idx];
+        // }
+    //     int32_t mix;
+    //     for (int i = 0; i < e->buf_size; i++) {
+    //         uint16_t idx = phase >> (32 - TABLE_BITS);
+    //         mix = sine_table[idx];
+    //         buf[i] = mix + DAC_CENTER;
+    //         phase += step;
+    //     }
+    // }
+    if ( i < e->buf_size ) {
+        memset(buf+i, DAC_CENTER, e->buf_size-i);
     }
+
     return false;
 }
 
@@ -89,12 +142,15 @@ Audio::Audio() :
 	Clock_I(10)
 {
     init_sine_table();
+    init_hann_ramp();
+    voice_list[0] = &default_voice;
 }
 
 Audio::~Audio()
 {
     if ( _dac_chan ) {
         mute();
+        ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
         ESP_ERROR_CHECK(dac_continuous_disable(_dac_chan));
         ESP_ERROR_CHECK(dac_continuous_del_channels(_dac_chan));
     }
@@ -104,9 +160,9 @@ Audio::~Audio()
 		delete equalizerSpline;
 		equalizerSpline = nullptr;
 	}
-	if ( DigitalPoti ) {
-		delete DigitalPoti;
-		DigitalPoti = nullptr;
+	if ( _poti ) {
+		delete _poti;
+		_poti = nullptr;
 	}
 	if ( dactid ) {
 		vTaskDelete(dactid);
@@ -126,7 +182,7 @@ static const std::vector<double> VOL1{ 0.1, 0.2, 0.3, 2.3, 0.6,  2.1,   2.2,  1.
 static const std::vector<double> F3{   50,  175, 490,  700, 1000, 1380, 2100, 2400, 3000, 4000, 10000   };
 static const std::vector<double> VOL3{ 1.3, 1.2, 0.9, 0.20,  1.2,  2.1,  1.8,  1.3,  1.9,  2.0,   2.0   };
 
-void Audio::begin( int16_t ch  )
+bool Audio::begin( int16_t ch  )
 {
 	ESP_LOGI(FNAME,"begin");
 	if ( ! S2FSWITCH ) {
@@ -140,25 +196,53 @@ void Audio::begin( int16_t ch  )
         .buf_size = BUF_LEN,
         .freq_hz = SAMPLE_RATE,
         .offset = 0,
-        .clk_src =  DAC_DIGI_CLK_SRC_APLL,
-        // .clk_src = DAC_DIGI_CLK_SRC_DEFAULT,     // If the frequency is out of range, try 'DAC_DIGI_CLK_SRC_APLL'
+        //.clk_src =  DAC_DIGI_CLK_SRC_APLL,
+        .clk_src = DAC_DIGI_CLK_SRC_DEFAULT,     // If the frequency is out of range, try 'DAC_DIGI_CLK_SRC_APLL'
         .chan_mode = DAC_CHANNEL_MODE_SIMUL,
     };
 
-    ESP_ERROR_CHECK(dac_continuous_new_channels(&_dac_cfg, &_dac_chan));
+    esp_err_t err = dac_continuous_new_channels(&_dac_cfg, &_dac_chan);
     // register callback
     dac_event_callbacks_t callbacks = {
         .on_convert_done = dacdma_done,
         .on_stop = nullptr
     };
-    ESP_ERROR_CHECK(dac_continuous_register_event_callback(_dac_chan, &callbacks, voice_list));
+    err |= dac_continuous_register_event_callback(_dac_chan, &callbacks, voice_list);
 
-    // dacEnable();
-    ESP_ERROR_CHECK(dac_continuous_enable(_dac_chan));
+    err |= dac_continuous_enable(_dac_chan);
     ESP_LOGI(FNAME, "DAC initialized success, DAC DMA is ready");
 
-	unmute();
-    enableAmplifier(true);
+    ESP_LOGI(FNAME,"Find digital poti");
+	_poti = new MCP4018();
+	_poti->setBus( &i2c1 );
+	_poti->begin();
+    if (_poti->haveDevice()) {
+        ESP_LOGI(FNAME, "MCP4018 digital Poti found");
+    } else {
+        ESP_LOGI(FNAME, "Try CAT5171 digital Poti");
+        delete _poti;
+        _poti = new CAT5171();
+        _poti->setBus(&i2c1);
+        _poti->begin();
+        if (_poti->haveDevice()) {
+            ESP_LOGI(FNAME, "CAT5171 digital Poti found");
+            _haveCAT5171 = true;
+        } else {
+            ESP_LOGW(FNAME, "NO digital Poti found !");
+            delete _poti;
+            _poti = nullptr;
+        }
+    }
+    if ( _poti ) {
+        _alarm_mode = true;
+        if( _poti->writeWiper( 5, true ) ) {
+            ESP_LOGI(FNAME,"writeWiper(5) returned Ok");
+        } else {
+            ESP_LOGI(FNAME,"readWiper returned error");
+        }
+        _alarm_mode = false;
+    }
+    err |= _poti == nullptr;
 
 	_testmode = true;
 	if( audio_equalizer.get() == AUDIO_EQ_LS4 ) {
@@ -168,7 +252,15 @@ void Audio::begin( int16_t ch  )
 	} else if( audio_equalizer.get() == AUDIO_EQ_LSEXT ) {
 		equalizerSpline  = new tk::spline(F3,VOL3, tk::spline::cspline_hermite );
 	}
-	Clock::start(this);
+
+    if ( err == ESP_OK ) {
+        enableAmplifier(true);
+        ESP_ERROR_CHECK(dac_continuous_start_async_writing(_dac_chan));
+        // unmute();
+        Clock::start(this);
+        return true;
+    }
+    return false;
 }
 
 float Audio::equal_volume( float volume ){
@@ -187,68 +279,32 @@ float Audio::equal_volume( float volume ){
 	return new_vol;
 }
 
-bool Audio::selfTest(){
-	ESP_LOGI(FNAME,"Audio::selfTest");
-	DigitalPoti = new MCP4018();
-	DigitalPoti->setBus( &i2c1 );
-	DigitalPoti->begin();
-	if( !DigitalPoti->haveDevice() )
-	{
-		ESP_LOGI(FNAME,"Try CAT5171 digital Poti");
-		delete DigitalPoti;
-		DigitalPoti = new CAT5171();
-		DigitalPoti->setBus( &i2c1 );
-		DigitalPoti->begin();
-		if( DigitalPoti->haveDevice() ){
-			ESP_LOGI(FNAME,"CAT5171 digital Poti found");
-			_haveCAT5171 = true;
-		}
-		else{
-			ESP_LOGW(FNAME,"NO digital Poti found !");
-			return false;
-		}
-	}
-	else
-	{
-		ESP_LOGI(FNAME,"MCP4018 digital Poti found");
-	}
-	float setvolume = 0;
-
-	_alarm_mode = true;
-	bool ret = DigitalPoti->writeWiper( 5, true );
-	ESP_LOGI(FNAME,"writeWiper(5) returned okay: %d", ret );
-	if( ret == false ) {
-		ESP_LOGI(FNAME,"readWiper returned error");
-		return false;
-	}
-	ESP_LOGI(FNAME,"readWiper: OK");
-
-	_alarm_mode = false;
-
-	setvolume = default_volume.get();
+void Audio::soundCheck(){
+    ESP_LOGI(FNAME,"Audio::selfTest");
+	float setvolume = default_volume.get();
 	speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
 	ESP_LOGI(FNAME,"default volume: %f", speaker_volume );
-    unmute();
-	writeVolume( setvolume );
+	writeVolume( 80. );
 	// while(1){    // uncomment for continuous self test
+    setFrequency( minf );
+    unmute();
 	ESP_LOGI(FNAME,"Min F %f, Max F %f", minf, maxf );
 	for( float f=minf; f<maxf*1.25; f=f*1.03){
 		ESP_LOGV(FNAME,"f=%f",f);
 		setFrequency( f );
         // writeVolume( audio_volume.get() );
-		vTaskDelay(pdMS_TO_TICKS(40));
+		vTaskDelay(pdMS_TO_TICKS(30));
 	}
     // vTaskDelay(pdMS_TO_TICKS(200));
 	// }
 	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
-	// writeVolume( 0 );
+	writeVolume( setvolume );
     mute();
-    return ret;
 }
 
 
 void Audio::setFrequency( float f ){
-    voice_list[1] = (uint32_t)((f/2. * (1ULL << 32)) / SAMPLE_RATE);
+    default_voice.step = (uint32_t)((f/2. * (1ULL << 32)) / SAMPLE_RATE);
     ESP_LOGI(FNAME,"freq set %f step %u", f, (unsigned)voice_list[1]);
 }
 
@@ -399,11 +455,13 @@ void  Audio::calculateFrequency(){
 
 void Audio::writeVolume( float volume ){
 	// ESP_LOGI(FNAME, "set volume: %f", volume);
-	if( _alarm_mode )
-		DigitalPoti->writeVolume( volume );  // max volume
-	else
-		DigitalPoti->writeVolume( equal_volume(volume) ); // take care frequency response
-	current_volume = volume;
+    if ( _poti ) {
+        if( _alarm_mode )
+            _poti->writeVolume( volume );  // max volume
+        else
+            _poti->writeVolume( equal_volume(volume) ); // take care frequency response
+        current_volume = volume;
+    }
 }
 
 void Audio::dactask_starter(void *arg)
@@ -457,13 +515,12 @@ void Audio::dactask()
 			}
 			next_scedule = millis()+delay;
 		}
-//		if( audio_variable_frequency.get() )
-//			calculateFrequency();
-		// Amplifier and Volume control
+
+        // Amplifier and Volume control
 		if( !_testmode && !(tick%2) ) {
 			// ESP_LOGI(FNAME, "sound dactask tick:%d volume:%f  te:%f db:%d", tick, speaker_volume, _te, inDeadBand(_te) );
 
-			// moved here to call calculateFrequency() less often:
+			// continuous variable tone
 			if( audio_variable_frequency.get() ) {
 				calculateFrequency();
 			}
@@ -523,7 +580,7 @@ void Audio::dactask()
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
 		}
-		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(40));
+		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(20));
 		esp_task_wdt_reset();
 	}
 }
@@ -598,15 +655,19 @@ void Audio::unmute()
 {
     if ( !_mute ) return;
 
+    default_voice.phase = 0;
+    default_voice.cmd = 1; // phase in
+
     ESP_LOGI(FNAME,"unmute");
-    ESP_ERROR_CHECK(dac_continuous_start_async_writing(_dac_chan));
+    // ESP_ERROR_CHECK(dac_continuous_start_async_writing(_dac_chan));
     _mute = false;
 }
 
 void Audio::mute(){
     if ( _mute ) return;
 
-    ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
+    // ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
+    default_voice.cmd = 3; // phase out
     _mute = true;
 	ESP_LOGI(FNAME,"mute");
 }

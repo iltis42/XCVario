@@ -19,6 +19,7 @@
 namespace tk {
     class spline;
 }
+class Poti;
 
 
 typedef enum e_audio_alarm_type { AUDIO_ALARM_OFF, AUDIO_ALARM_STALL, AUDIO_ALARM_FLARM_1, AUDIO_ALARM_FLARM_2, AUDIO_ALARM_FLARM_3, AUDIO_ALARM_GEAR } e_audio_alarm_type_t;
@@ -29,7 +30,7 @@ public:
 	Audio();
 	virtual ~Audio();
 
-	void begin( int16_t ch=0 ); // general initialisations and equalizer setup
+	bool begin( int16_t ch=0 ); // general initialisations and equalizer setup
 	void setup(); // setup of member variables like range and more depending on settings
 	void mute(); // mute the audio
 	void unmute();  // unmutes the tone generator
@@ -38,7 +39,7 @@ public:
 	void setVolume( float vol );    // vol: 0.0 .. 100.0 (%) sets the variable 'speaker_volume', which enables a smooth adjustment of volume without crackling
 	void evaluateChopping();  // determines if chopping is to be done depending on setting chopping_mode for S2F and climb mode and sets member _chopping
 	void alarm( bool enable, float volume=100, e_audio_alarm_type_t alarmType=AUDIO_ALARM_STALL );  // outputs various alarm tones according to alarmType and volume
-	bool selfTest();   // performs a self-test
+	void soundCheck();   // performs a self-test
 	inline bool haveCAT5171() const { return _haveCAT5171; }; // returns if this type of poti has been detected
 	bool tick() override;  // calculates TE and S2F delta depending on mode e.g. netto mode
 
@@ -64,6 +65,7 @@ private:
 	float current_volume = 63.f;
 	dac_continuous_handle_t _dac_chan = nullptr;
     dac_continuous_config_t _dac_cfg;
+    Poti *_poti = nullptr;
 
 	bool _chopping = false;
 	float _range = 5.f;

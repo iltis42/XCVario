@@ -31,6 +31,7 @@ public:
 	virtual ~Audio();
 
 	bool begin( int16_t ch=0 ); // general initialisations and equalizer setup
+    void stop(); // terminate any sound output
 	void setup(); // setup of member variables like range and more depending on settings
 	void mute(); // mute the audio
 	void unmute();  // unmutes the tone generator

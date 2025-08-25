@@ -31,7 +31,7 @@
 Audio *AUDIO = nullptr;
 
 constexpr const int SAMPLE_RATE = 120000; // Hz
-constexpr const int BUF_LEN     = 1024;   // DMA-Buffer pro Ppush
+constexpr const int BUF_LEN     = 2048;   // DMA-Buffer pro Ppush
 constexpr const int TABLE_SIZE  = 512;
 constexpr const int TABLE_BITS  = 9; // log2((double)TABLE_SIZE);
 constexpr const int DAC_CENTER  = 127;
@@ -192,7 +192,7 @@ bool Audio::begin( int16_t ch  )
 
     _dac_cfg = {
         .chan_mask = (dac_channel_mask_t)BIT(ch), // which channel to enable
-        .desc_num = 4,
+        .desc_num = 2,
         .buf_size = BUF_LEN,
         .freq_hz = SAMPLE_RATE,
         .offset = 0,
@@ -261,6 +261,13 @@ bool Audio::begin( int16_t ch  )
         return true;
     }
     return false;
+}
+
+void Audio::stop() {
+    mute();
+    vTaskDelay(pdMS_TO_TICKS(10)); // no cracks ..
+    enableAmplifier(false);
+    ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
 }
 
 float Audio::equal_volume( float volume ){

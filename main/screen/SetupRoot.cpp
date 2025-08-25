@@ -124,15 +124,15 @@ void SetupRoot::rot(int count)
     else {
         // Volume
         float vol = audio_volume.get();
-        if (vol < 1.5) {
-            vol = 1.5;
+        if (vol < 0.) {
+            vol = 0.;
         }
         vol = vol * std::powf(1.33f, count);
         if (vol > max_volume.get()) {
             vol = max_volume.get();
         }
-        else if (vol < 1.5) {
-            vol = 1.5;
+        else if (vol < 0.) {
+            vol = 0.;
         }
         audio_volume.set(vol);
     }

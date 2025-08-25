@@ -61,12 +61,12 @@ void MenuEntry::menuPrintLn(const char* str, int ln, int x) const {
 }
 
 void MenuEntry::reBoot(){
-	AUDIO->mute();
+	AUDIO->stop();
 	clear();
 	MYUCG->setPrintPos( 10, 50 );
 	MYUCG->print("...rebooting now" );
 	SetupCommon::commitDirty();
-	delay(1000);
+	delay(800);
 	esp_restart();
 }
 
@@ -95,7 +95,7 @@ void MenuEntry::enter()
 	if (bits._locked) {
 		return;
 	}
-	
+
 	// enter a level of setup menu
 	attach(); // set rotary focus
 	if ( isLeaf() && canInline() ) {
@@ -199,7 +199,7 @@ int MenuEntry::nrOfHelpLines() const
 }
 
 // In case inline is requested: Try to squeeze the help under
-// the parents menu lines, 
+// the parents menu lines,
 // returns true when inlining
 bool MenuEntry::showhelp(bool inln)
 {

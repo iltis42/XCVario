@@ -123,19 +123,19 @@ void SetupRoot::rot(int count)
     }
     else {
         // Volume
-	float vol_db = 20.0f * log10f(audio_volume.get()); 
-	// z. B. 3 dB per raster
-	vol_db += count * 3.0f;  
+        float vol_db = 20.0f * log10f(audio_volume.get()); 
+        // z. B. 3 dB per raster
+        vol_db += count * 3.0f;  
 
-	// linits in db 
-	float max_db = 20.0f * log10f(max_volume.get());
-	if (vol_db > max_db) vol_db = max_db;
-	if (vol_db < -8.0f) vol_db = -8.0f; // this is smallest possible value the poti can do
+        // linits in db 
+        float max_db = 20.0f * log10f(max_volume.get());
+        if (vol_db > max_db) vol_db = max_db;
+        if (vol_db < -8.0f) vol_db = -8.0f; // this is smallest possible value the poti can do
 
-	// back to linear
-	float vol = powf(10.0f, vol_db / 20.0f);
-        ESP_LOGI(FNAME,"volume %.2f lin (%.2f) db", vol, vol_db);
-	audio_volume.set(vol);
+        // back to linear
+        float vol = powf(10.0f, vol_db / 20.0f);
+              ESP_LOGI(FNAME,"volume %.2f lin (%.2f) db", vol, vol_db);
+        audio_volume.set(vol);
     }
 }
 

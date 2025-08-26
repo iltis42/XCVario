@@ -524,7 +524,7 @@ void Audio::dactask()
 		}
 
         // Amplifier and Volume control
-		if( !_testmode && !(tick%2) ) {
+		if( !_testmode && !(tick%4) ) {
 			// ESP_LOGI(FNAME, "sound dactask tick:%d volume:%f  te:%f db:%d", tick, speaker_volume, _te, inDeadBand(_te) );
 
 			// continuous variable tone
@@ -576,18 +576,27 @@ void Audio::dactask()
             else {
                 unmute();
             }
-            if ( current_volume != speaker_volume ){
-                // ESP_LOGI(FNAME, "volume change, new volume: %f, current_volume %f", speaker_volume, current_volume );
-                writeVolume( speaker_volume );
-                current_volume = speaker_volume;
-            }
 
+		}
+		if ( !_testmode && (current_volume != speaker_volume) ){
+			// ESP_LOGI(FNAME, "volume change, new volume: %f, current_volume %f", speaker_volume, current_volume );
+			if( current_volume < speaker_volume ){
+				current_volume+=2;
+				if (current_volume > speaker_volume)
+					current_volume = speaker_volume;
+			}
+			else if( current_volume > speaker_volume ){
+				current_volume-=2;
+				if (current_volume < speaker_volume)
+					current_volume = speaker_volume;
+			}
+			writeVolume( current_volume );
 		}
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
 		}
-		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(20));
+		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
 		esp_task_wdt_reset();
 	}
 }

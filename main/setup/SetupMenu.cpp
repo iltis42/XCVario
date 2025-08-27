@@ -342,6 +342,7 @@ int factv_adj(SetupMenuValFloat *p) {
 	getBattery()->redoAdjust();
 	float bat = getBattery()->get(true);
 	MYUCG->setPrintPos(1, 100);
+	MYUCG->setColor( COLOR_WHITE );
 	MYUCG->printf("%0.2f Volt", bat);
 	return 0;
 }

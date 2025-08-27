@@ -102,7 +102,7 @@ void RotaryObserver::detach() {
 		return;
 	}
 	observers.pop();
-	_rot_dynamic = 2.0;
+	_rot_dynamic = 1.4;
 }
 
 // The rotary knob

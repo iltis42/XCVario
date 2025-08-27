@@ -106,11 +106,6 @@ int vario_setup(SetupMenuValFloat *p) {
 	return 0;
 }
 
-static int set_rotary_direction(SetupMenuSelect *p) {
-	Rotary->updateRotDir();
-	return 0;
-}
-
 static int set_rotary_increment(SetupMenuSelect *p) {
 	Rotary->updateIncrement(p->getSelect());
 	return 0;
@@ -1362,20 +1357,13 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 }
 
 void system_menu_create_hardware_rotary(SetupMenu *top) {
-	SetupMenuSelect *rotype;
-	rotype = new SetupMenuSelect("Direction", RST_NONE, set_rotary_direction, &rotary_dir);
-	top->addEntry(rotype);
-	rotype->setHelp("Choose the direction of the rotary knob");
-	rotype->addEntry("Clockwise");
-	rotype->addEntry("Counterclockwise");
-
 	SetupMenuSelect *roinc = new SetupMenuSelect("Sensitivity", RST_NONE, set_rotary_increment, &rotary_inc);
 	top->addEntry(roinc);
 	roinc->setHelp(
 			"Select rotary sensitivity in number of tick's for one increment, to your personal preference, 1 tick is most sensitive");
-	roinc->addEntry("1 tick");
-	roinc->addEntry("2 tick");
-	roinc->addEntry("3 tick");
+	roinc->addEntry("1 indent");
+	roinc->addEntry("2 indent");
+	roinc->addEntry("3 indent");
 
 	// Rotary Default
 	SetupMenuSelect *rd = new SetupMenuSelect("Rotation", RST_ON_EXIT, nullptr, &rot_default);

@@ -321,7 +321,7 @@ SetupNG<float>		    audio_factor( "AUDIO_FACTOR", 1, true, SYNC_NONE, PERSISTENT
 SetupNG<float>		    te_comp_adjust ( "TECOMP_ADJ", 0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-100, 100, 0.1));
 SetupNG<int>		    te_comp_enable( "TECOMP_ENA", TE_TEK_PROBE );
 SetupNG<int>		    rotary_dir( "ROTARY_DIR", 0 );
-SetupNG<int>		    rotary_inc( "ROTARY_INC", 1 );
+SetupNG<int>		    rotary_inc( "ROTARY_INC", 0 );
 SetupNG<int>		    student_mode( "STUD_MOD", 0 );
 SetupNG<float>		    password( "PASSWORD", 0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 1000, 1));
 SetupNG<int>		    autozero( "AUTOZERO", 1 );  // AS autozero at factory

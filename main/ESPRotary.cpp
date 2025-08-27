@@ -118,8 +118,6 @@ ESPRotary::ESPRotary(gpio_num_t aclk, gpio_num_t adt, gpio_num_t asw) :
 	// Rotary Encoder
 	gpio_set_direction(clk, GPIO_MODE_INPUT);
 	gpio_set_direction(dt, GPIO_MODE_INPUT);
-	gpio_pulldown_en(clk);
-	gpio_pulldown_en(dt);
 }
 
 ESPRotary::~ESPRotary()
@@ -160,7 +158,7 @@ void ESPRotary::begin()
 	ESP_ERROR_CHECK(pcnt_channel_set_level_action(pcnt_chan, PCNT_CHANNEL_LEVEL_ACTION_INVERSE, PCNT_CHANNEL_LEVEL_ACTION_KEEP));
 
 	pcnt_glitch_filter_config_t filter_config = {
-		.max_glitch_ns = 1000 // Ignore pulses shorter than
+		.max_glitch_ns = 1000 // Ignore pulses shorter than 1000 nS
 	};
 	ESP_ERROR_CHECK(pcnt_unit_set_glitch_filter(pcnt_unit, &filter_config));
 
@@ -197,29 +195,17 @@ void ESPRotary::stop()
 
 esp_err_t ESPRotary::updateRotDir()
 {
-	pcnt_channel_edge_action_t rot_action = PCNT_CHANNEL_EDGE_ACTION_INCREASE;
-	if( hardwareRevision.get() <= XCVARIO_21 ) {
-		rot_action = PCNT_CHANNEL_EDGE_ACTION_DECREASE;
-	}
-	if ( rotary_dir.get() == 1 ) {
-		// flip the knob sens
-		rot_action = (rot_action == PCNT_CHANNEL_EDGE_ACTION_INCREASE) ? PCNT_CHANNEL_EDGE_ACTION_DECREASE : PCNT_CHANNEL_EDGE_ACTION_INCREASE;
-	}
-	return pcnt_channel_set_edge_action(pcnt_chan, PCNT_CHANNEL_EDGE_ACTION_HOLD, rot_action);
+	return pcnt_channel_set_edge_action(pcnt_chan, PCNT_CHANNEL_EDGE_ACTION_HOLD, PCNT_CHANNEL_EDGE_ACTION_INCREASE);
 }
 
 // Increment setup is stored with values 0,1,2 and here used with values 1,2,3
 void ESPRotary::updateIncrement(int inc)
 {
-	inc += 1;
-	if ( inc > 0 && inc < 4 && inc != increment ) {
-		ESP_LOGI(FNAME, "Update rot inc %d->%d", increment, inc);
-		increment = inc;
-		stop();
-		vTaskDelay(pdMS_TO_TICKS(10));
-		begin();
-	}
-	
+	ESP_LOGI(FNAME, "Update rot inc %d->%d", increment, inc);
+	increment = inc+1;
+	stop();
+	vTaskDelay(pdMS_TO_TICKS(10));
+	begin();
 }
 
 void ESPRotary::sendRot( int diff ) const

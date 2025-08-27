@@ -268,6 +268,7 @@ SetupNG<int>  			glider_type_index( "GLIDER_TYPE_IDX", 1000, true, SYNC_FROM_MAS
 
 SetupNG<float>  		as_offset( "AS_OFFSET" , -1 );
 static const limits_t bat_limits = {0.0, 28.0, 0.1};
+SetupNG<int>  			bat_type( "BAT_TYPE", BATTERY_USER );
 SetupNG<float>  		bat_low_volt( "BAT_LOW_VOLT" , 11.5, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &bat_limits);
 SetupNG<float>  		bat_red_volt( "BAT_RED_VOLT", 11.75, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &bat_limits);
 SetupNG<float>  		bat_yellow_volt( "BAT_YELLOW_VOLT" , 12.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &bat_limits);

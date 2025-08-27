@@ -99,6 +99,7 @@ typedef enum e_hardware_rev {
 } e_hardware_rev_t;        // XCVario-Num = hardware revision + 18
 typedef enum e_equalizer_type {  AUDIO_EQ_DISABLE, AUDIO_EQ_LS4, AUDIO_EQ_LS8, AUDIO_EQ_LSEXT } e_equalizer_type_t;
 typedef enum e_tek_compensation { TE_TEK_PROBE, TE_TEK_EPOT, TE_TEK_PRESSURE } e_tek_compensation_t;
+typedef enum e_battery_type { BATTERY_USER, BATTERY_LEADACID, BATTERY_LIFEPO4 } e_battery_type_t;
 
 constexpr int NOTSET_ELEVATION = -1;
 
@@ -333,6 +334,7 @@ extern SetupNG<float>  		transition_alt;
 extern SetupNG<int>  		glider_type_index;
 
 extern SetupNG<float>  		as_offset;
+extern SetupNG<int>  		bat_type;
 extern SetupNG<float>  		bat_low_volt;
 extern SetupNG<float>  		bat_red_volt;
 extern SetupNG<float>  		bat_yellow_volt;

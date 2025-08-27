@@ -197,6 +197,26 @@ int do_display_test(SetupMenuSelect *p) {
 	return 0;
 }
 
+int select_battery_type(SetupMenuSelect *p) {
+	switch ( bat_type.get() ){
+		case BATTERY_USER:
+		break;
+		case BATTERY_LEADACID:
+			bat_low_volt.set(11.5);
+			bat_red_volt.set(11.75);
+			bat_yellow_volt.set(12.0);
+			bat_full_volt.set(12.8);
+			break;
+		case BATTERY_LIFEPO4:
+			bat_low_volt.set(12.0);
+			bat_red_volt.set(12.8);
+			bat_yellow_volt.set(12.9);
+			bat_full_volt.set(13.4);
+		break;
+	}
+	return 0;
+}
+
 static char rentry0[32];
 static char rentry1[32];
 static char rentry2[32];
@@ -1267,6 +1287,13 @@ void system_menu_create_software(SetupMenu *top) {
 }
 
 void system_menu_create_battery(SetupMenu *top) {
+	SetupMenuSelect *btype = new SetupMenuSelect("Battery Type", RST_NONE, select_battery_type, &bat_type);
+	btype->setHelp("Factory setup for corresponding display type used");
+	btype->addEntry("UserType");
+	btype->addEntry("LeadAcid");
+	btype->addEntry("LiFePo4");
+	top->addEntry(btype);
+
 	SetupMenuValFloat *blow = new SetupMenuValFloat("Battery Low", "Volt ", nullptr, false, &bat_low_volt);
 	SetupMenuValFloat *bred = new SetupMenuValFloat("Battery Red", "Volt ", nullptr, false, &bat_red_volt);
 	SetupMenuValFloat *byellow = new SetupMenuValFloat("Battery Yellow", "Volt ", nullptr, false, &bat_yellow_volt);
@@ -1285,6 +1312,9 @@ void system_menu_create_battery(SetupMenu *top) {
 	top->addEntry(bfull);
 	top->addEntry(batv);
 }
+
+
+
 
 void system_menu_create_hardware_type(SetupMenu *top) {
 	// UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P

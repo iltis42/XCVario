@@ -31,10 +31,11 @@ const std::string_view flap_labels[] = { "-9", "-8", "-7", "-6", "-5", "-4", "-3
 		" N", " L", " S", "3a", "3b", " A", "21", "22", "23", "24", "25", "26", "27", "" };  // L=41  S=42
 // Action Routines
 int select_flap_sens_pin(SetupMenuSelect *p){
-	//ESP_LOGI(FNAME,"select_flap_sens_pin");
+	ESP_LOGI(FNAME,"select_flap_sens_pin");
 	p->clear();
+	FLAP = Flap::theFlap();
 	if( FLAP ) {
-		// ESP_LOGI(FNAME,"select_flap_sens_pin, have flap");
+		ESP_LOGI(FNAME,"select_flap_sens_pin, have flap");
 		FLAP->configureADC( p->getSelect() );
 		if ( FLAP->haveSensor() ) {
 			// ESP_LOGI(FNAME,"select_flap_sens_pin, have sensor");
@@ -50,6 +51,8 @@ int select_flap_sens_pin(SetupMenuSelect *p){
 				delay(100);
 			}
 		}
+	}else{
+		ESP_LOGI(FNAME,"NO flap");
 	}
 	MYUCG->setPrintPos(5,280);
 	MYUCG->printf("Saved");
@@ -152,9 +155,7 @@ void Flap::setupSensorMenueEntries(SetupMenu *wkm)
 {
 	SetupMenuSelect *wkes = new SetupMenuSelect( "Flap Sensor", RST_NONE, select_flap_sens_pin, &flap_sensor );
 	wkes->addEntry( "Disable");
-	wkes->addEntry( "Enable IO-2");
-	wkes->addEntry( "Enable IO-34");
-	wkes->addEntry( "Enable IO-26");
+	wkes->addEntry( "Enable");
 	wkes->setHelp("Option to enable Flap sensor on corresponding IO pin, hardware may differ: check where you get a valid reading");
 	wkm->addEntry( wkes );
 
@@ -415,14 +416,10 @@ void Flap::configureADC( int port ){
 		ESP_LOGI( FNAME, "Client role: Abort");
 		return; // no analog pin config for the client
 	}
-	if( port == FLAP_SENSOR_GPIO_2 ) {
-		sensorAdc = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_2, ADC_UNIT_2, true );
-	}
-	else if( flap_sensor.get() == FLAP_SENSOR_GPIO_34 ) {
+	if( flap_sensor.get() != FLAP_SENSOR_DISABLE ) // migration from old settings with multiple IO's
+		flap_sensor.set( FLAP_SENSOR_ENABLE );
+	if( flap_sensor.get() == FLAP_SENSOR_ENABLE ) { // nonzero -> configured, only one port needed for XCV23+ HW
 		sensorAdc = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_6, ADC_UNIT_1, true );
-	}
-	else if( flap_sensor.get() == FLAP_SENSOR_GPIO_26 ) {
-		sensorAdc = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_9, ADC_UNIT_2, true );
 	}
 	if( sensorAdc != 0 ) {
 		ESP_LOGI( FNAME, "Flap sensor properly configured");

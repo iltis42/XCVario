@@ -846,11 +846,6 @@ void audio_menu_create_equalizer(SetupMenu *top) {
 }
 
 void audio_menu_create_volume(SetupMenu *top) {
-
-	SetupMenuValFloat *vol = new SetupMenuValFloat("Current Volume", "%", nullptr, false, &audio_volume);
-	vol->lock();
-	top->addEntry(vol);
-
 	SetupMenuValFloat *dv = new SetupMenuValFloat("Default Volume", "%", nullptr, false, &default_volume);
 	top->addEntry(dv);
 	dv->setHelp("Default volume for Audio when device is switched on");

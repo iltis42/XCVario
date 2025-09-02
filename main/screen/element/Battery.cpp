@@ -14,6 +14,8 @@
 #include "AdaptUGC.h"
 
 #include <cstdio>
+#include "logdef.h"
+
 
 extern AdaptUGC *MYUCG;
 
@@ -56,6 +58,7 @@ void Battery::draw(float volt)
     _dirty = false;
 
     int chargep = (int)((volt - bat_low_volt.get())*100)/( bat_full_volt.get() - bat_low_volt.get());
+    ESP_LOGI(FNAME,"Charge: %d , Volt: %.1f V, Delta %.1f V", chargep, volt, (bat_full_volt.get() - bat_low_volt.get()) );
     if(chargep < 0)
         chargep = 0;
     if( chargep > 100 )

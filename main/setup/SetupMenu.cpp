@@ -197,16 +197,16 @@ int select_battery_type(SetupMenuSelect *p) {
 		case BATTERY_USER:
 		break;
 		case BATTERY_LEADACID:
-			bat_low_volt.set(11.5);
-			bat_red_volt.set(11.75);
-			bat_yellow_volt.set(12.0);
-			bat_full_volt.set(12.8);
+			bat_low_volt.set(11.5);  // its about 20% but LeadAcid already deep discharged -> 0%
+			bat_red_volt.set(11.75); // 30% of charge  -> 20%
+			bat_yellow_volt.set(12.0); // 50% of charge -> 40%
+			bat_full_volt.set(12.8);   // 100% 
 			break;
 		case BATTERY_LIFEPO4:
-			bat_low_volt.set(12.0);
-			bat_red_volt.set(12.8);
-			bat_yellow_volt.set(12.9);
-			bat_full_volt.set(13.4);
+			bat_low_volt.set(12.8);  // is about 20% of charge, recommended minimum for LiFePo4  -> display 0%
+			bat_red_volt.set(12.9);    // 20% charge 
+			bat_yellow_volt.set(13.0); // 25% charge
+			bat_full_volt.set(13.6); // 100% charge
 		break;
 	}
 	return 0;

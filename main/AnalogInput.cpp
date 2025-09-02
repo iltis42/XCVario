@@ -36,16 +36,12 @@ AnalogInput::AnalogInput( float multiplier, adc_atten_t attenuation, adc_channel
 	_adc_ch(ch),
 	_multiplier(multiplier),
 	_attenuation(attenuation),
-	_correct(multiplier * ((100.0 + factory_volt_adjust.get()) / 100.0)),
+	_correct(1.f),
 	_cal(calibration)
 {
-	if ( _correct == 0.f ) {
-		_correct = 1.f;
-	}
 	for( int i=0; i<RAWBUF; i++ ) {
 		raw[i] = 0;
 	}
-
 }
 
 AnalogInput::~AnalogInput()
@@ -80,7 +76,7 @@ void AnalogInput::begin()
 			ESP_LOGI(FNAME,"ESP32 ADC Default");
 		}
 	}
-
+	redoAdjust();
 	Clock::start(this);
 }
 
@@ -115,13 +111,15 @@ float AnalogInput::get( bool nofilter, int loops ){
 	int voltage;
 
 	if( _cal ) {
+		ESP_LOGI(FNAME,"ADC have cal");
 		voltage = esp_adc_cal_raw_to_voltage(adc, &adc_chars);
 	}
 	else {
+		ESP_LOGI(FNAME,"ADC no cal");
 		voltage = adc;
 	}
 	float corrected = _correct * voltage +  DIODE_VOLTAGE_DROP;
-	ESP_LOGI(FNAME,"ADC raw unit:%d ch:%d raw %d cal:%d  corr: %f", _unit, _adc_ch, adc, voltage, corrected );
+	ESP_LOGI(FNAME,"ADC raw unit:%d ch:%d raw %d cal-volt:%d  corr-volt: %f, diode-volt: %f  _correct: %f ADJ: %f", _unit, _adc_ch, adc, voltage, _correct * voltage, corrected, _correct, factory_volt_adjust.get() );
 
 	if( nofilter )
 		_value = corrected;

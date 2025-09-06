@@ -668,7 +668,6 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	s2fmod->addEntry("AutoTurn", AM_AHRS);
 	s2fmod->addEntry("Vario fix", AM_VARIO);
 	s2fmod->addEntry("Cruise fix", AM_S2F);
-	s2fmod->addEntry("Master/Second", AM_EXTERNAL);
 	top->addEntry(s2fmod);
 
 	SetupMenuSelect *s2fsw = new SetupMenuSelect("S2F Switch", RST_NONE, s2fModeChange, &s2f_switch_type);

@@ -168,12 +168,7 @@ static bool mode_dirty = false;
 
 #define WKBARMID (AMIDY-15)
 
-float polar_sink_prev = 0;
-float te_prev = 0;
 bool flarm_connected=false;
-typedef enum e_bow_color { BC_GREEN, BC_BLUE, BC_RED, BC_ORANGE } t_bow_color;
-const static ucg_color_t bowcolor[4] = { {COLOR_GREEN}, {COLOR_BBLUE}, {COLOR_RED}, {COLOR_ORANGE} };
-
 
 static void initRefs()
 {
@@ -564,7 +559,6 @@ void IpsDisplay::redrawValues()
 
 	wkoptalt = -100;
 	tyalt = -1000;
-	polar_sink_prev = 0.1;
 	if ( FLAP ) FLAP->redraw();
 	old_vario_bar_val = 0;
 	old_sink_bar_val = 0;
@@ -910,7 +904,7 @@ void IpsDisplay::initRetroDisplay(){
 
     MAINgauge->setFigOffset(AVGOFFX, 0);
 	if ( ! WNDgauge ) {
-		WNDgauge = new PolarGauge(AMIDX+AVGOFFX, AMIDY, 360, 49, PolarGauge::COMPASS);
+		WNDgauge = new PolarGauge(AMIDX+AVGOFFX, AMIDY, 360, 50, PolarGauge::COMPASS);
 	}
     WNDgauge->setNorthUp(wind_northup.get());
     WNDgauge->setColor(needle_color.get());
@@ -920,7 +914,7 @@ void IpsDisplay::initRetroDisplay(){
     else {
         CenterAid::remove();
     }
-    STATgauge->useSymbol(true);
+    VCSTATgauge->useSymbol(true);
     if (vario_mc_gauge.get()) { MCgauge->setLarge(true); }
     else {
 		delete MCgauge;

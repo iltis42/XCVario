@@ -23,7 +23,7 @@ float getHeading(); // fixme
 
 extern AdaptUGC *MYUCG;
 static const ucg_color_t ndl_color[3] = {{COLOR_WHITE}, {COLOR_ORANGE}, {COLOR_RED}};
-static constexpr const ucg_color_t bow_color[4] = {{COLOR_GREEN}, {COLOR_BBLUE}, {COLOR_ORANGE}, {COLOR_RED}};
+static constexpr const ucg_color_t bow_color[4] = {{COLOR_DGREEN}, {COLOR_BLUE}, {COLOR_ORANGE}, {COLOR_RED}};
 static const ucg_color_t lne_color[3] = {{COLOR_LGREY}, {COLOR_MGREY}, {COLOR_WHITE}};
 
 
@@ -63,7 +63,7 @@ PolarGauge::PolarGauge(int16_t refx, int16_t refy, int16_t scale_end, int16_t ra
 {
     func = new GaugeFunc(1.,0.);
     if ( flavor != COMPASS ) {
-        _arrow = new ArrowIndicator(*this, 0, 20, 9);
+        _arrow = new ArrowIndicator(*this, _radius-4, 22, 10);
     }
     else {
         _wind_avg = new WindIndicator(*this, false);
@@ -159,7 +159,7 @@ void PolarGauge::draw(float a)
         // Draw colored bow
         int16_t bar_val = (val > 0) ? val : 0;
         // draw green vario bar
-        drawBow(bar_val, _old_bow_idx, 3, 0, GREEN);
+        drawBow(bar_val, _old_bow_idx, 5, 1, GREEN);
     }
     _dirty = false;
 }
@@ -175,7 +175,7 @@ void PolarGauge::drawPolarSink(float a)
     a *= _unit_fac;
     int16_t val = dice_up(clipValue(a));
     // ESP_LOGI(FNAME,"sink  a:%f - %d", a, val);
-    drawBow(val, _old_polar_sink, 3, 0, BLUE);
+    drawBow(val, _old_polar_sink, 5, 1, BLUE);
 }
 
 void PolarGauge::drawFigure(float a)
@@ -245,7 +245,7 @@ void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t off, int1
 
     // potentially clean first
     if (std::abs(idx) < std::abs(old) || idx * old < 0) {
-        MYUCG->setColor(DARK_GREY);
+        MYUCG->setColor(COLOR_WGREY);
     }
     else {
         if (cidx>=0) {
@@ -262,12 +262,9 @@ void PolarGauge::drawBow(int16_t idx, int16_t &old, int16_t w, int16_t off, int1
         l1 += w;
     }
     int inc = (idx - old > 0) ? 1 : -1;
-    if ( std::abs(w) > 4 && std::abs(old - idx) > 4)
+    if ( std::abs(w) > 5 && std::abs(old - idx) > 8)
     {
-        inc *= 4;
-        if ( std::abs(idx-old)>160 ) {
-            inc *= 2;
-        }
+        inc *= 2;
     }
     int16_t step = std::abs(inc) * ((old<0||idx<0)?-1:1);
     for (int i = old; i != idx; i += inc)
@@ -418,15 +415,15 @@ void PolarGauge::drawScale(int16_t at)
             draw_label = false;
         }
     }
-    int16_t prev = dice_up(start/10.) +6; // overdraw a bit
-    int16_t to = dice_up(stop/10.) -6;
+    int16_t prev = dice_up(start/10.) +12; // overdraw a bit
+    int16_t to = dice_up(stop/10.) -12;
     if (start > 0)
     {
         drawBow(to, prev, _radius - _arrow->getBase(), 0);
     }
     else
     {
-        // draw bow towards zero to get the dark grey (background color)
+        // draw bow towards zero to get the background color
         drawBow(prev, to, _radius - _arrow->getBase(), 0);
     }
     MYUCG->setFontPosBottom();

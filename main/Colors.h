@@ -19,6 +19,7 @@ extern uint8_t g_col_header_light_b;
 #define COLOR_WHITE g_col_highlight, g_col_highlight, g_col_highlight
 #define COLOR_BLACK g_col_background, g_col_background, g_col_background
 #define COLOR_GREEN 255, 30, 255
+#define COLOR_DGREEN 255, 138, 255
 #define COLOR_RED   0,255,255
 #define COLOR_ORANGE 0,125,255
 #define LIGHT_GREEN 127,0,255
@@ -27,6 +28,7 @@ extern uint8_t g_col_header_light_b;
 #define DARK_DGREY   242, 242, 242
 #define COLOR_MGREY  180, 180, 180
 #define COLOR_LGREY  120, 120, 120
+#define COLOR_WGREY  95, 95, 95
 #define COLOR_BLUE   255, 255, 0
 #define COLOR_LBLUE  200, 200, 0
 #define COLOR_BBLUE  170, 160, 0

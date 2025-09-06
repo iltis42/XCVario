@@ -64,7 +64,7 @@ PolarGauge* IpsDisplay::WNDgauge = nullptr;
 McCready*   IpsDisplay::MCgauge = nullptr;
 Battery*    IpsDisplay::BATgauge = nullptr;
 Altimeter*	IpsDisplay::ALTgauge = nullptr;
-CruiseStatus* IpsDisplay::STATgauge = nullptr;
+CruiseStatus* IpsDisplay::VCSTATgauge = nullptr;
 
 int16_t DISPLAY_H;
 int16_t DISPLAY_W;
@@ -341,8 +341,8 @@ void IpsDisplay::initDisplay() {
     if (!ALTgauge) {
         ALTgauge = new Altimeter(INNER_RIGHT_ALIGN, 0.8 * DISPLAY_H);
     }
-    if ( !STATgauge ) {
-        STATgauge = new CruiseStatus(DISPLAY_W - (DISPLAY_W - INNER_RIGHT_ALIGN + 8) * ((display_orientation.get() == DISPLAY_NINETY) + 1), 18);
+    if ( !VCSTATgauge ) {
+        VCSTATgauge = new CruiseStatus(DISPLAY_W - (DISPLAY_W - INNER_RIGHT_ALIGN + 8) * ((display_orientation.get() == DISPLAY_NINETY) + 1), 18);
     }
 
     if( display_style.get() != DISPLAY_AIRLINER ) {
@@ -1518,12 +1518,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Cruise mode or circling
 	if( mode_dirty ) {
-        STATgauge->draw();
-        if (vario_centeraid.get()) {
+        VCSTATgauge->draw();
+        if (vario_centeraid.get() && !VCMode.getCMode()) {
             WNDgauge->clearGauge();
-            if (VCMode.getCMode()) {
-                WNDgauge->drawRose();
-            }
+        }
+        else {
+            WNDgauge->drawRose();
         }
         mode_dirty = false;
     }
@@ -1580,7 +1580,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		ate_ms += Speed2Fly.circlingSink( ias.get() );
 	}
 	if ( mode_dirty ){
-        STATgauge->draw();
+        VCSTATgauge->draw();
         mode_dirty = false;
     }
 

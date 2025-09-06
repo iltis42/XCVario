@@ -100,7 +100,7 @@ private:
 	static McCready*   MCgauge;
 	static Battery*    BATgauge;
 	static Altimeter*  ALTgauge;
-    static CruiseStatus* STATgauge;
+    static CruiseStatus* VCSTATgauge;
 	static temp_status_t siliconTempStatusOld;
 
 	static void setArrowColor( bool upper );

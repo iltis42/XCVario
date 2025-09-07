@@ -120,10 +120,10 @@ void S2fSwitch::updateSwitchSetup()
     case AM_VARIO:
     case AM_S2F:
         VCMode.lockTo(s2f_switch_mode.get()==AM_S2F);
-    case AM_EXTERNAL:
+        [[fallthrough]];
     case AM_SWITCH:
     default:
-        auto_plug = nullptr; // alias "external"
+        auto_plug = nullptr; // alias "external", event propagation is intrinsic
         break;
     }
 }

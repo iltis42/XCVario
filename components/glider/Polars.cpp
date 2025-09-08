@@ -32,6 +32,7 @@ struct compressed_polar {
 	int16_t  sink3;			// 1/100x m/s
 	uint8_t  max_ballast;	// 2x kg
 	uint16_t wingarea;		// 1/100x mxm
+	uint8_t  flags;                 // bit 0 = 0x01 -> has flaps
 };
 
 
@@ -53,6 +54,7 @@ t_polar::t_polar(const compressed_polar *cp)
 	sink3 = (float)(cp->sink3) / 100.f;
 	max_ballast = (float)(cp->max_ballast) * 2.f;
 	wingarea = (float)(cp->wingarea) / 100.f;
+	flags = (int)(cp->flags);
 }
 
 
@@ -94,5 +96,9 @@ const char *Polars::getGliderType()
 int Polars::getGliderEnumPos()
 {
     return my_polar;
+}
+
+bool Polars::hasFlaps(){
+    return polars_default_arr[my_polar].flags & 0x01;
 }
 

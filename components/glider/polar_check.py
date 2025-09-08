@@ -45,8 +45,9 @@ def process_line(line, line_num):
         ballast =  int(numbers[6]/2) # half of the max. ballast.
         wingarea = int(round(100 * numbers[7]))
         wingerr = 100 * numbers[7] - wingarea
+        flaps = numbers[8]
 
-        output += "%3d, %5d }," % (ballast, wingarea)
+        output += "%3d, %5d, %1d }," % (ballast, wingarea, flaps)
         errout += "\tW %.4f" % wingerr
 
         #print()

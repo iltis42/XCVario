@@ -132,9 +132,13 @@ void glider_menu_create(SetupMenu *top) {
 	vmax->setHelp("Configure maximum speed for corresponding aircraft type");
 	top->addEntry(vmax);
 
-	SetupMenu *flaps = new SetupMenu("Flap Speeds", flap_speeds_menu_create);
-	flaps->setHelp("Transition speed for flap settings at ref wingload. Set to 0, if not aplicable");
-	top->addEntry( flaps );
+	ESP_LOGI(FNAME,"glider-index %d", Polars::getGliderEnumPos());
+
+	if( Polars::hasFlaps() ){
+	   SetupMenu *flaps = new SetupMenu("Flap Speeds", flap_speeds_menu_create);
+	   flaps->setHelp("Transition speed for flap settings at ref wingload. Set to 0, if not aplicable");
+	   top->addEntry( flaps );
+	}
 
 
 }

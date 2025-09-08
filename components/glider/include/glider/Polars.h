@@ -22,6 +22,7 @@ struct t_polar {
 	float    sink3;			// m/s
 	float    max_ballast;	// in liters or kg
 	float    wingarea;		// mxm
+	int      flags;
 };
 
 
@@ -33,4 +34,5 @@ namespace Polars {
 	void extract(int glider_index);
 	const char *getGliderType();
 	int getGliderEnumPos();
+	bool hasFlaps();
 };

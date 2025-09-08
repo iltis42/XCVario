@@ -1629,6 +1629,7 @@ void setup_create_root(SetupMenu *top) {
 		SetupMenu *po = new SetupMenu("Glider Details", glider_menu_create);
 		po->setBuzzword(Polars::getGliderType());
 		po->setHelp("Polar, weight and all attributes of the glider");
+		po->setDynContent();
 		top->addEntry(po);
 
 		// Options Setup

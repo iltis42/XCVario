@@ -102,6 +102,7 @@ static void flap_speeds_menu_create(SetupMenu* top){
 }
 
 void glider_menu_create(SetupMenu *top) {
+
 	SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type_index);
 	top->addEntry(glt);
 	ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
@@ -133,11 +134,14 @@ void glider_menu_create(SetupMenu *top) {
 	top->addEntry(vmax);
 
 	ESP_LOGI(FNAME,"glider-index %d", Polars::getGliderEnumPos());
+	SetupMenu *flaps = new SetupMenu("Flap Speeds", flap_speeds_menu_create);
+	flaps->setHelp("Transition speed for flap settings at ref wingload. Set to 0, if not aplicable");
+	top->addEntry( flaps );
 
 	if( Polars::hasFlaps() ){
-	   SetupMenu *flaps = new SetupMenu("Flap Speeds", flap_speeds_menu_create);
-	   flaps->setHelp("Transition speed for flap settings at ref wingload. Set to 0, if not aplicable");
-	   top->addEntry( flaps );
+		flaps->unlock();
+	}else{
+		flaps->lock();
 	}
 
 

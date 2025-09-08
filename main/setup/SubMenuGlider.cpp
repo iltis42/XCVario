@@ -14,6 +14,7 @@ static int polar_select(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"glider-index %d", p->getValue());
 	glider_type_index.set(p->getValue());
 	p->getParent()->setBuzzword(p->value());
+	p->getParent()->setDirty();
 	return 0;
 }
 
@@ -102,7 +103,7 @@ static void flap_speeds_menu_create(SetupMenu* top){
 }
 
 void glider_menu_create(SetupMenu *top) {
-
+	ESP_LOGI(FNAME, "glider_menu_create");
 	if ( top->getNrChilds() == 0 ) {
 		SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type_index);
 		top->addEntry(glt);
@@ -143,9 +144,9 @@ void glider_menu_create(SetupMenu *top) {
 	SetupMenu *tmp_menu = static_cast<SetupMenu*>(top->getEntry(6)); // flap speeds
 	if( Polars::hasFlaps() ){
 		tmp_menu->unlock();
+		tmp_menu->setBuzzword("");
 	}else{
 		tmp_menu->lock();
-		// tmp_menu->hide();  tbd
 		tmp_menu->setBuzzword("No flaps");
 	}
 

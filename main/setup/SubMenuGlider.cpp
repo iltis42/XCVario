@@ -103,45 +103,50 @@ static void flap_speeds_menu_create(SetupMenu* top){
 
 void glider_menu_create(SetupMenu *top) {
 
-	SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type_index);
-	top->addEntry(glt);
-	ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
-	for (int x = 0; x < Polars::numPolars(); x++) {
-		ESP_LOGI(FNAME, "P: %s - %d", Polars::getPolarName(x), Polars::getPolarIndex(x));
-		glt->addEntry(Polars::getPolarName(x), Polars::getPolarIndex(x));
+	if ( top->getNrChilds() == 0 ) {
+		SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type_index);
+		top->addEntry(glt);
+		ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
+		for (int x = 0; x < Polars::numPolars(); x++) {
+			ESP_LOGI(FNAME, "P: %s - %d", Polars::getPolarName(x), Polars::getPolarIndex(x));
+			glt->addEntry(Polars::getPolarName(x), Polars::getPolarIndex(x));
+		}
+		glt->setSelect(Polars::getGliderEnumPos()); // glider type nvs variable contains the magic index value
+		ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
+
+		SetupMenu *pa = new SetupMenu("Polar Points", glider_menu_create_polarpoints);
+		pa->setHelp("Adjust the polar at 3 points, in the commonly used metric system");
+		top->addEntry(pa);
+
+		SetupMenuValFloat *maxbal = new SetupMenuValFloat("Max Ballast", "liters", nullptr, false, &polar_max_ballast);
+		top->addEntry(maxbal);
+
+		SetupMenuValFloat *wingarea = new SetupMenuValFloat("Wing Area", "m2", nullptr, false, &polar_wingarea);
+		top->addEntry(wingarea);
+
+		SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", start_weight_adj, false, &empty_weight);
+		fixball->setPrecision(0);
+		fixball->setHelp("Net rigged weight of the glider, according to the weight and balance plan");
+		fixball->setNeverInline();
+		top->addEntry(fixball);
+
+		SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", nullptr, false, &v_max);
+		vmax->setHelp("Configure maximum speed for corresponding aircraft type");
+		top->addEntry(vmax);
+
+		ESP_LOGI(FNAME,"glider-index %d", Polars::getGliderEnumPos());
+		SetupMenu *flaps = new SetupMenu("Flap Speeds", flap_speeds_menu_create);
+		flaps->setHelp("Transition speed for flap settings at ref wingload. Set to 0, if not aplicable");
+		top->addEntry( flaps );
 	}
-	glt->setSelect(Polars::getGliderEnumPos()); // glider type nvs variable contains the magic index value
-	ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
 
-	SetupMenu *pa = new SetupMenu("Polar Points", glider_menu_create_polarpoints);
-	pa->setHelp("Adjust the polar at 3 points, in the commonly used metric system");
-	top->addEntry(pa);
-
-	SetupMenuValFloat *maxbal = new SetupMenuValFloat("Max Ballast", "liters", nullptr, false, &polar_max_ballast);
-	top->addEntry(maxbal);
-
-	SetupMenuValFloat *wingarea = new SetupMenuValFloat("Wing Area", "m2", nullptr, false, &polar_wingarea);
-	top->addEntry(wingarea);
-
-	SetupMenuValFloat *fixball = new SetupMenuValFloat("Empty Weight", "kg", start_weight_adj, false, &empty_weight);
-	fixball->setPrecision(0);
-	fixball->setHelp("Net rigged weight of the glider, according to the weight and balance plan");
-	fixball->setNeverInline();
-	top->addEntry(fixball);
-
-	SetupMenuValFloat *vmax = new SetupMenuValFloat("Maximum Speed", "", nullptr, false, &v_max);
-	vmax->setHelp("Configure maximum speed for corresponding aircraft type");
-	top->addEntry(vmax);
-
-	ESP_LOGI(FNAME,"glider-index %d", Polars::getGliderEnumPos());
-	SetupMenu *flaps = new SetupMenu("Flap Speeds", flap_speeds_menu_create);
-	flaps->setHelp("Transition speed for flap settings at ref wingload. Set to 0, if not aplicable");
-	top->addEntry( flaps );
-
+	SetupMenu *tmp_menu = static_cast<SetupMenu*>(top->getEntry(6)); // flap speeds
 	if( Polars::hasFlaps() ){
-		flaps->unlock();
+		tmp_menu->unlock();
 	}else{
-		flaps->lock();
+		tmp_menu->lock();
+		// tmp_menu->hide();  tbd
+		tmp_menu->setBuzzword("No flaps");
 	}
 
 

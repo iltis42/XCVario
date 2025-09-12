@@ -11,7 +11,7 @@
 #include <cinttypes>
 #include <atomic>
 
-typedef enum { BAUD_4800, BAUD_9600, BAUD_19200, BAUD_38400, BAUD_57600, BAUD_115200 } e_baud;
+typedef enum { BAUD_2400, BAUD_4800, BAUD_9600, BAUD_19200, BAUD_38400, BAUD_57600, BAUD_115200 } e_baud; // stay compatible with baudrates in existing setup
 typedef enum { SM_FLARM, SM_RADIO, SM_XCTNAV_S3, SM_OPENVARIO, NR_OF_SER_PROFILES } e_profile;
 typedef enum { RS232_NORMAL, RS232_TTL } rs232lm_t;
 

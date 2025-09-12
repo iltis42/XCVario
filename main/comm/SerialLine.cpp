@@ -14,7 +14,7 @@ constexpr int UARTRXFIFO_LEN = 256;
 constexpr int UARTTXFIFO_LEN = 1024;
 constexpr int UARTEVENTQ_LEN = 10;
 
-static constexpr std::array<int, 6> baud_rate_table = { 4800, 9600, 19200, 38400, 57600, 115200 };
+static constexpr std::array<int, 7> baud_rate_table = { 2400, 4800, 9600, 19200, 38400, 57600, 115200 };  // stay compatible with existing setup's
 
 // enumeration is: SM_FLARM, SM_RADIO, SM_XCTNAV_S3, SM_OPENVARIO
 static constexpr std::array<t_serial_cfg, NR_OF_SER_PROFILES>  sm_serial_config = {{

@@ -175,7 +175,7 @@ static void connected_devices_menu_create_bluetooth(SetupMenu *top)
 static int update_s1_baud(SetupMenuSelect *p)
 {
     ESP_LOGI(FNAME, "Select baudrate: %d", p->getSelect());
-    S1->setBaud((e_baud)(p->getSelect())); // 0: 4800, 1:9600, etc
+    S1->setBaud((e_baud)(p->getSelect())); // 0: 2400, 1:4800, etc
     return 0;
 }
 
@@ -202,7 +202,8 @@ static int update_s1_txena(SetupMenuSelect *p)
 
 static void connected_devices_menu_create_interfaceS1(SetupMenu *top)
 {
-    SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s1_baud, &serial1_speed);
+    SetupMenuSelect *s1sp2 = new SetupMenuSelect("Baudrate", RST_NONE, update_s1_baud, &serial1_speed);
+    s1sp2->addEntry("2400 baud");
     s1sp2->addEntry("4800 baud");
     s1sp2->addEntry("9600 baud");
     s1sp2->addEntry("19200 baud");
@@ -260,7 +261,8 @@ static int update_s2_txena(SetupMenuSelect *p)
 
 void connected_devices_menu_create_interfaceS2(SetupMenu *top)
 {
-    SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudraute", RST_NONE, update_s2_baud, &serial2_speed);
+    SetupMenuSelect *s2sp2 = new SetupMenuSelect("Baudrate", RST_NONE, update_s2_baud, &serial2_speed);
+    s2sp2->addEntry("2400 baud");
     s2sp2->addEntry("4800 baud");
     s2sp2->addEntry("9600 baud");
     s2sp2->addEntry("19200 baud");

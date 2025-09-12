@@ -128,7 +128,9 @@ ESPRotary::~ESPRotary()
 void ESPRotary::begin()
 {
 	// Init pulse counter unit
-	int increment = rotary_inc.get() + 1;
+	int increment = rotary_inc.get();
+	if( increment == 0 )
+		increment = 1;
 	ESP_LOGI(FNAME, "new inc %d", increment);
 	pcnt_unit_config_t unit_config = {
 		.low_limit = -increment, // enforce an event trigger on every tick and an auto reset of the pulse counter
@@ -202,7 +204,9 @@ esp_err_t ESPRotary::updateRotDir()
 void ESPRotary::updateIncrement(int inc)
 {
 	ESP_LOGI(FNAME, "Update rot inc %d->%d", increment, inc);
-	increment = inc+1;
+	increment = inc;
+	if(increment == 0)
+		increment = 1;
 	stop();
 	vTaskDelay(pdMS_TO_TICKS(10));
 	begin();

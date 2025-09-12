@@ -1356,9 +1356,8 @@ void system_menu_create_hardware_rotary(SetupMenu *top) {
 	top->addEntry(roinc);
 	roinc->setHelp(
 			"Select rotary sensitivity in number of tick's for one increment, to your personal preference, 1 tick is most sensitive");
-	roinc->addEntry("1 indent");
-	roinc->addEntry("2 indent");
-	roinc->addEntry("3 indent");
+	roinc->addEntry("1 indent", 1);
+	roinc->addEntry("2 indent", 2);
 
 	// Rotary Default
 	SetupMenuSelect *rd = new SetupMenuSelect("Rotation", RST_ON_EXIT, nullptr, &rot_default);

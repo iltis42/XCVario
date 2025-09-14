@@ -12,6 +12,7 @@
 #include "UiEvents.h"
 #include "setup/SubMenuDevices.h"
 #include "IpsDisplay.h"
+#include "ESPAudio.h"
 
 #include "sensor.h"
 #include "logdef.h"
@@ -128,7 +129,7 @@ void SetupRoot::rot(int count)
         vol_db += count * 3.0f;  
 
         // linits in db 
-        float max_db = 20.0f * log10f(max_volume.get());
+        float max_db = 20.0f * log10f(MAX_AUDIO_VOLUME);
         if (vol_db > max_db) vol_db = max_db;
         if (vol_db < -8.0f) vol_db = -8.0f; // this is smallest possible value the poti can do
 

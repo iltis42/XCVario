@@ -276,8 +276,8 @@ float Audio::equal_volume( float volume ){
 	if( equalizerSpline ) {
 		new_vol = new_vol * (float)(*equalizerSpline)( (double)current_frequency );
 	}
-	if( new_vol >= max_volume.get() ) {
-		new_vol = max_volume.get();
+	if( new_vol >= MAX_AUDIO_VOLUME ) {
+		new_vol = MAX_AUDIO_VOLUME;
 	}
 	if( new_vol <= 0 ) {
 		new_vol = 0;
@@ -368,8 +368,8 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 }
 
 void Audio::setVolume( float vol ) {
-	if( vol > max_volume.get() )
-		vol = max_volume.get();
+	if( vol > MAX_AUDIO_VOLUME )
+		vol = MAX_AUDIO_VOLUME;
 	speaker_volume = vol;
 	// also copy the new volume into the cruise-mode specific variables so that
 	// calcS2Fmode() will later restore the correct volume when mode changes:

@@ -849,10 +849,6 @@ void audio_menu_create_volume(SetupMenu *top) {
 	top->addEntry(dv);
 	dv->setHelp("Default volume for Audio when device is switched on");
 
-	SetupMenuValFloat *mv = new SetupMenuValFloat("Max Volume", "%", nullptr, false, &max_volume);
-	top->addEntry(mv);
-	mv->setHelp("Maximum audio volume setting allowed");
-
 	SetupMenu *audeq = new SetupMenu("Equalizer", audio_menu_create_equalizer);
 	top->addEntry(audeq);
 	audeq->setHelp("Equalization parameters for a constant perceived volume over a wide frequency range", 220);
@@ -1571,7 +1567,7 @@ void setup_create_root(SetupMenu *top) {
 	} else {
 		SetupMenuValFloat *vol = new SetupMenuValFloat("Audio Volume", "%", nullptr, true, &audio_volume);
 		vol->setHelp("Audio volume level for variometer tone on internal and external speaker");
-		vol->setMax(max_volume.get());
+		vol->setMax(MAX_AUDIO_VOLUME);
 		top->addEntry(vol);
 	}
 

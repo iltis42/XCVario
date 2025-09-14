@@ -349,7 +349,6 @@ extern SetupNG<float>  		audio_volume;
 extern SetupNG<int>  		audio_split_vol;
 extern SetupNG<float>  		default_volume;
 extern SetupNG<float>  		frequency_response;
-extern SetupNG<float>  		max_volume;
 extern SetupNG<float>  		s2f_deadband;
 extern SetupNG<float>  		s2f_deadband_neg;
 extern SetupNG<float>  		s2f_delay;

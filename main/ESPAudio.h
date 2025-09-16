@@ -20,6 +20,7 @@ namespace tk {
     class spline;
 }
 class Poti;
+class TestSequence;
 
 #define MAX_AUDIO_VOLUME 60.0
 
@@ -27,11 +28,13 @@ typedef enum e_audio_alarm_type { AUDIO_ALARM_OFF, AUDIO_ALARM_STALL, AUDIO_ALAR
 
 class Audio : public Clock_I
 {
+	friend class TestSequence;
 public:
 	Audio();
 	virtual ~Audio();
 
 	bool begin( int16_t ch=0 ); // general initialisations and equalizer setup
+	bool isOk() const { return _dac_inited; }
     void stop(); // terminate any sound output
 	void setup(); // setup of member variables like range and more depending on settings
 	void mute(); // mute the audio
@@ -73,7 +76,6 @@ private:
 	float _range = 5.f;
 	float _high_tone_var;
 	bool _s2f_mode = false;
-    bool _testmode = false;
 	bool deadband_active = false;
 	bool hightone = false;
 	int mtick = 0;
@@ -93,8 +95,9 @@ private:
 	int prev_scale = -1;
 	int _tonemode_back = 0;
 
+	bool _test_done = false;
     bool _mute = true;
-	bool dac_enable = false;
+	bool _dac_inited = false;
 	bool amp_is_on = false;
 	bool _haveCAT5171 = false;
 	tk::spline *equalizerSpline = nullptr;

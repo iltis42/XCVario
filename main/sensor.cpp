@@ -105,7 +105,7 @@ SemaphoreHandle_t spiMutex=NULL;
 
 S2F Speed2Fly;
 
-AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
+AnalogInput *BatVoltage = nullptr;
 
 TaskHandle_t apid = NULL;
 TaskHandle_t bpid = NULL;
@@ -185,8 +185,6 @@ const float glider_min_ias = 50.f; // todo replace with speed derived from glide
 int IRAM_ATTR sign(int num) {
     return (num > 0) - (num < 0);
 }
-
-AnalogInput* getBattery() { return &Battery;}
 
 float getTAS() { return tas; }
 
@@ -581,7 +579,7 @@ void readTemp(void *pvParameters)
 	esp_task_wdt_add(NULL);
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		batteryVoltage = Battery.get();
+		batteryVoltage = BatVoltage->get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
 		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
 			if( !t_devices ){
@@ -711,7 +709,9 @@ void system_startup(void *args){
 
 	AverageVario::begin();
 
-	Battery.begin();  // for battery voltage
+	BatVoltage = new AnalogInput((22.0+1.2)/1200, ADC_CHANNEL_7);
+	BatVoltage->begin(ADC_ATTEN_DB_0);  // for battery voltage
+	BatVoltage->setAdjust(factory_volt_adjust.get());
 	xMutex=xSemaphoreCreateMutex();
 	ccp = (int)(core_climb_period.get()*10);
 	spi_bus_config_t buscfg = {
@@ -1206,7 +1206,7 @@ void system_startup(void *args){
 		}
 	}
 
-	float bat = Battery.get(true);
+	float bat = BatVoltage->get(false);
 	logged_tests += "Battery Voltage Sensor: ";
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );

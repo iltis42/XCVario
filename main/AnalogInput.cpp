@@ -6,12 +6,11 @@
  */
 
 #include "AnalogInput.h"
-#include "sensor.h"
+
+#include <esp_adc/adc_cali.h>
 #include "protocol/Clock.h"
 #include "logdefnone.h"
 
-
-#define DIODE_VOLTAGE_DROP 0        // New Vario now measures behind Diode
 
 // ADC_ATTEN_DB_0 No : Input attenumation, ADC can measure up to approx. 800 mV.
 // ADC_ATTEN_DB_2_5  : The input voltage of ADC will be attenuated, extending the range of measurement to up to approx. 1100 mV.
@@ -22,22 +21,15 @@
 //  ADC_CHANNEL_6,     /*!< ADC1 channel 6 is GPIO_NUM_34 */
 //  ADC_CHANNEL_2,     /*!< ADC2 channel 2 is GPIO_NUM_2 */
 
-#define DEFAULT_VREF    1100
+constexpr const unsigned DEFAULT_VREF = 1100;
 
-
-void AnalogInput::redoAdjust(){
-	_correct = _multiplier * ((100.0 + factory_volt_adjust.get()) / 100.0);
-}
+adc_oneshot_unit_handle_t AnalogInput::_adc_handle = nullptr;
 
 // multiplier - Uin(Umeasured) := ? ; including 1/1000, because adc measures in mV
-AnalogInput::AnalogInput( float multiplier, adc_atten_t attenuation, adc_channel_t ch, adc_unit_t unit, bool calibration ) :
-	Clock_I(10),
-	_unit(unit),
+AnalogInput::AnalogInput( float multiplier, adc_channel_t ch) :
+	Clock_I(7),
 	_adc_ch(ch),
-	_multiplier(multiplier),
-	_attenuation(attenuation),
-	_correct(1.f),
-	_cal(calibration)
+	_multiplier(multiplier)
 {
 	for( int i=0; i<RAWBUF; i++ ) {
 		raw[i] = 0;
@@ -49,39 +41,46 @@ AnalogInput::~AnalogInput()
 	Clock::stop(this);
 }
 
-void AnalogInput::begin()
+// can handle only one unit, but multiple channels on it
+void AnalogInput::begin(adc_atten_t attenuation, adc_unit_t unit, bool calibration)
 {
-	ESP_LOGI(FNAME,"begin() unit: %d ch:%d cal:%d att: %d", _unit, _adc_ch, _cal, _attenuation  );
+	ESP_LOGI(FNAME,"begin() unit: %d ch:%d cal:%d att: %d", unit, _adc_ch, calibration, attenuation  );
 
-	if( _unit == ADC_UNIT_1 ) {
-		adc1_config_width(ADC_WIDTH_BIT_12);
-		adc1_config_channel_atten((adc1_channel_t)_adc_ch,_attenuation);
-	}
-	else if( _unit == ADC_UNIT_2 ) {
-		adc2_config_channel_atten((adc2_channel_t)_adc_ch,_attenuation);
-	}else {
-		 ESP_LOGE(FNAME,"ADC unit %d illegal", _unit );
+	if ( ! _adc_handle ) {
+		adc_oneshot_unit_init_cfg_t init_config = {
+			.unit_id = unit,
+			.clk_src = (adc_oneshot_clk_src_t)0,
+			.ulp_mode = ADC_ULP_MODE_DISABLE,
+		};
+		ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config, &_adc_handle));
 	}
 
-	if ( _cal ) {
-		ESP_LOGI(FNAME,"ADC chars: unit:%d atten:%d", _unit, _attenuation );
-		esp_adc_cal_value_t val_type = esp_adc_cal_characterize(_unit, _attenuation, ADC_WIDTH_BIT_12, DEFAULT_VREF, &adc_chars);
+	adc_oneshot_chan_cfg_t config = {
+        .atten = attenuation,
+        .bitwidth = ADC_BITWIDTH_12,
+    };
+    ESP_ERROR_CHECK(adc_oneshot_config_channel(_adc_handle, _adc_ch, &config));
 
-		//Check type of calibration value used to characterize ADC
-		if (val_type == ESP_ADC_CAL_VAL_EFUSE_VREF) {
-			ESP_LOGI(FNAME,"ESP32 ADC eFuse Vref");
-		} else if (val_type == ESP_ADC_CAL_VAL_EFUSE_TP) {
-			ESP_LOGI(FNAME,"ESP32 ADC Two Point");
-		} else {
-			ESP_LOGI(FNAME,"ESP32 ADC Default");
-		}
+	if ( calibration ) {
+        adc_cali_line_fitting_config_t cali_config = {
+            .unit_id = unit,
+            .atten = attenuation,
+            .bitwidth = ADC_BITWIDTH_12,
+			.default_vref = DEFAULT_VREF,
+        };
+        esp_err_t ret = adc_cali_create_scheme_line_fitting(&cali_config, &_adc_cali);
+        if (ret == ESP_OK && _adc_cali) {
+			ESP_LOGI(FNAME, "calibration scheme version is %s", "Line Fitting");
+        }
 	}
-	redoAdjust();
 	Clock::start(this);
 }
 
+void AnalogInput::setAdjust(float adj){
+	_adjust_factor = _multiplier * ((100.0 + adj) / 100.0);
+}
 
-unsigned int AnalogInput::getRaw( int loops ) {
+unsigned int AnalogInput::getRaw() {
 	int adc = 0;
 	for( int i=0; i<RAWBUF; i++ ) {
 		adc += raw[i];
@@ -91,14 +90,11 @@ unsigned int AnalogInput::getRaw( int loops ) {
 }
 bool AnalogInput::tick()
 {
-	constexpr int BATCH = 5;
+	constexpr int BATCH = 3;
 	int adc = 0;
 	for( int i=0; i<BATCH; i++ ) {
 		int rawadc = 0;
-		if( _unit == ADC_UNIT_1 )
-			rawadc =  adc1_get_raw((adc1_channel_t)_adc_ch);
-		else if( _unit == ADC_UNIT_2 )
-			adc2_get_raw((adc2_channel_t)_adc_ch, ADC_WIDTH_BIT_12, &rawadc );
+		adc_oneshot_read(_adc_handle, _adc_ch, &rawadc);
 		adc += rawadc;
 	}
 	raw[rawidx++] = adc/BATCH;
@@ -106,25 +102,26 @@ bool AnalogInput::tick()
 	return false;
 }
 
-float AnalogInput::get( bool nofilter, int loops ){
+
+float AnalogInput::get(bool damp) {
 	int adc = getRaw();
 	int voltage;
 
-	if( _cal ) {
+	if ( _adc_cali ) {
 		ESP_LOGI(FNAME,"ADC have cal");
-		voltage = esp_adc_cal_raw_to_voltage(adc, &adc_chars);
+		adc_cali_raw_to_voltage(_adc_cali, adc, &voltage);
 	}
 	else {
 		ESP_LOGI(FNAME,"ADC no cal");
 		voltage = adc;
 	}
-	float corrected = _correct * voltage +  DIODE_VOLTAGE_DROP;
-	ESP_LOGI(FNAME,"ADC raw unit:%d ch:%d raw %d cal-volt:%d  corr-volt: %f, diode-volt: %f  _correct: %f ADJ: %f", _unit, _adc_ch, adc, voltage, _correct * voltage, corrected, _correct, factory_volt_adjust.get() );
+	ESP_LOGI(FNAME,"ADC raw ch:%d raw %d cal-volt: %d  corr-volt: %f, _adjust_factor: %f", _adc_ch, adc, voltage, _adjust_factor * voltage, _adjust_factor);
 
-	if( nofilter )
-		_value = corrected;
-	else
-		_value += ( corrected - _value ) * 0.35;
-
-	return _value;
+	if ( damp ) {
+		_damped_value += ( voltage - _damped_value ) * 0.35;
+		return _adjust_factor * _damped_value;
+	}
+	else {
+		return _adjust_factor * voltage;
+	}
 }

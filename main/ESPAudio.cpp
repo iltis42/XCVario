@@ -30,8 +30,8 @@
 
 Audio *AUDIO = nullptr;
 
-constexpr const int SAMPLE_RATE = 42000; // Hz
-constexpr const int BUF_LEN     = 2048;   // DMA buffer per push
+constexpr const int SAMPLE_RATE = 44100; // Hz
+constexpr const int BUF_LEN     = 1024;   // DMA buffer per push
 constexpr const int TABLE_SIZE  = 512;
 constexpr const int TABLE_BITS  = 9; // log2((double)TABLE_SIZE);
 constexpr const int DAC_CENTER  = 127;
@@ -43,36 +43,52 @@ struct dma_cmd {
     uint8_t cmd;
 };
 
-static int8_t sine_table[TABLE_SIZE];
+const std::array<int8_t, TABLE_SIZE> sine_table = {
+	 0, 0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 14, 15, 16, 16, 17, 18, 18, 
+	 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25, 25, 25, 26, 26, 27, 27, 28, 28, 28, 29, 29, 29, 29, 
+	 30, 30, 30, 30, 30, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 30, 30, 
+	 30, 30, 30, 29, 29, 29, 29, 28, 28, 28, 27, 27, 26, 26, 25, 25, 25, 24, 24, 23, 22, 22, 21, 21, 
+	 20, 20, 19, 18, 18, 17, 16, 16, 15, 14, 14, 13, 12, 12, 11, 10, 9, 9, 8, 7, 6, 6, 5, 4, 3, 3, 2, 
+	 1, 0, 0, 0, -1, -2, -3, -3, -4, -5, -6, -6, -7, -8, -9, -9, -10, -11, -12, -12, -13, -14, -14, 
+	 -15, -16, -16, -17, -18, -18, -19, -20, -20, -21, -21, -22, -22, -23, -24, -24, -25, -25, -25, 
+	 -26, -26, -27, -27, -28, -28, -28, -29, -29, -29, -29, -30, -30, -30, -30, -30, -31, -31, -31, 
+	 -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -30, -30, -30, -30, -30, 
+	 -29, -29, -29, -29, -28, -28, -28, -27, -27, -26, -26, -25, -25, -25, -24, -24, -23, -22, -22, 
+	 -21, -21, -20, -20, -19, -18, -18, -17, -16, -16, -15, -14, -14, -13, -12, -12, -11, -10, -9, -9, 
+	 -8, -7, -6, -6, -5, -4, -3, -3, -2, -1, 0 };
 static volatile dma_cmd* voice_list[4] = {nullptr, nullptr, nullptr, nullptr};
 static __attribute__((aligned(4))) volatile dma_cmd default_voice;
-static int8_t hann_ramp[TABLE_SIZE];
+const std::array<int8_t, TABLE_SIZE> hann_ramp = {
+	32, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 
+	31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 
+	31, 31, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 
+	30, 30, 30, 30, 30, 30, 30, 30, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 
+	29, 29, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 27, 27, 27, 27, 27, 27, 27, 
+	27, 27, 27, 27, 27, 27, 27, 27, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 25, 25, 25, 25, 
+	25, 25, 25, 25, 25, 25, 25, 25, 25, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 23, 23, 23, 23, 
+	23, 23, 23, 23, 23, 23, 23, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 21, 21, 21, 21, 21, 21, 21, 
+	21, 21, 21, 21, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 
+	18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 16, 16, 16, 16, 
+	16, 16, 16, 16, 16, 16, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 14, 14, 14, 14, 14, 14, 14, 14, 14, 
+	14, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 11, 11, 11, 
+	11, 11, 11, 11, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9, 9, 9, 9, 9, 9, 9, 
+	9, 9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 
+	6, 6, 6, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-static void init_sine_table() {
-    for (int i = 0; i < TABLE_SIZE; i++) {
-        sine_table[i] = (int8_t)((DAC_HLF_AMPL-.25) * sin(2. * M_PI * i / TABLE_SIZE));
-        if ( !(i%2) ) printf("%4d, ", sine_table[i]);
-    }
-    // for (int i = 0; i < TABLE_SIZE; i++) {
-    //     sine_table[i] = (uint8_t)((sin(2. * M_PI * i / TABLE_SIZE) + 1.) * DAC_CENTER);
-    // }
-}
-static void init_hann_ramp() {
-    for (int n = 0; n < TABLE_SIZE; n++) {
-        // hann_ramp[n] = 1. - sin((M_PI * n) / (2.0f * RAMP_SIZE));
-        hann_ramp[n] = (uint8_t)(0.5 * (1.0 + cos(M_PI * n / (TABLE_SIZE-1))) * DAC_HLF_AMPL);
-        printf("%d ", hann_ramp[n]);
-    }
-}
+// Benchmark
+int64_t total_us = 0, busy_irs = 0;
 
-int IRAM_ATTR core[2];
 // DMA callback
 static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_data_t *e, void *user_data)
 {
     dma_cmd **list = (dma_cmd **)user_data;
     uint8_t *buf = (uint8_t *)e->buf;
-	int16_t cc = xPortGetCoreID();
-	core[cc]++;
+
+	int64_t t_busy0 = esp_timer_get_time();
 
     int i = 0;
     if (list[0]!=nullptr) {
@@ -148,17 +164,16 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
     //     memset(buf+i, DAC_CENTER, e->buf_size-i);
     // }
 
+    int64_t t_busy1 = esp_timer_get_time();
+    busy_irs += (t_busy1 - t_busy0);
+
     return false;
 }
 
 Audio::Audio() :
 	Clock_I(10) // every 100msec 
 {
-    init_sine_table();
-    init_hann_ramp();
     voice_list[0] = &default_voice;
-	core[0] = 0;
-	core[1] = 0;
 }
 
 Audio::~Audio()
@@ -207,14 +222,12 @@ bool Audio::begin( int16_t ch  )
 	ESP_LOGI(FNAME, "Starting Audio on core %d", xPortGetCoreID());
 
     _dac_cfg = {
-		// DAC_CHANNEL_MASK_ALL, // 
         .chan_mask = (dac_channel_mask_t)BIT(ch), // which channel to enable
-        .desc_num = 16,
+        .desc_num = 4,
         .buf_size = BUF_LEN,
         .freq_hz = SAMPLE_RATE,
         .offset = 0,
-        .clk_src =  DAC_DIGI_CLK_SRC_APLL,
-        // .clk_src = DAC_DIGI_CLK_SRC_DEFAULT,     // If the frequency is out of range, try 'DAC_DIGI_CLK_SRC_APLL'
+        .clk_src = DAC_DIGI_CLK_SRC_DEFAULT,     // If the frequency is out of range, try 'DAC_DIGI_CLK_SRC_APLL'
         .chan_mode = DAC_CHANNEL_MODE_SIMUL,
     };
 
@@ -342,7 +355,6 @@ void Audio::soundCheck(){
 void Audio::setFrequency( float f ){
     default_voice.step = (uint32_t)((f/2 * (1ULL << 32)) / SAMPLE_RATE);
     // ESP_LOGI(FNAME,"freq set %f step %u phase %u", f, (unsigned)default_voice.step, (unsigned)default_voice.phase);
-	ESP_LOGI(FNAME, "IRQ on core %d/%d", core[0], core[1]);
 }
 
 void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // non blocking
@@ -513,6 +525,7 @@ void Audio::dactask()
 	int tick = 0;
     bool sound = false;
     int delay = 100;
+	int64_t t0 = esp_timer_get_time();
 	esp_task_wdt_add(NULL);
 
 	while(1){
@@ -627,6 +640,13 @@ void Audio::dactask()
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
+		}
+		if ( !(tick%1000) ) {
+			int64_t t1 = esp_timer_get_time();
+            total_us += (t1 - t0);
+            float load = 100.0 * (float)(busy_irs) / (float)total_us;
+            ESP_LOGI(FNAME, "DAC load: %.2f%% (Fs=%d)", load, SAMPLE_RATE);
+            t0 = t1;
 		}
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
 		esp_task_wdt_reset();

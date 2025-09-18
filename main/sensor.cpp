@@ -105,7 +105,7 @@ SemaphoreHandle_t spiMutex=NULL;
 
 S2F Speed2Fly;
 
-AnalogInput Battery( (22.0+1.2)/1200, ADC_ATTEN_DB_0, ADC_CHANNEL_7, ADC_UNIT_1 );
+AnalogInput *BatVoltage = nullptr;
 
 TaskHandle_t apid = NULL;
 TaskHandle_t bpid = NULL;
@@ -185,8 +185,6 @@ const float glider_min_ias = 50.f; // todo replace with speed derived from glide
 int IRAM_ATTR sign(int num) {
     return (num > 0) - (num < 0);
 }
-
-AnalogInput* getBattery() { return &Battery;}
 
 float getTAS() { return tas; }
 
@@ -581,7 +579,7 @@ void readTemp(void *pvParameters)
 	esp_task_wdt_add(NULL);
 	while (1) {
 		TickType_t xLastWakeTime = xTaskGetTickCount();
-		batteryVoltage = Battery.get();
+		batteryVoltage = BatVoltage->get();
 		// ESP_LOGI(FNAME,"Battery=%f V", battery );
 		if( !SetupCommon::isClient() ) {  // client Vario will get Temperature info from main Vario
 			if( !t_devices ){
@@ -673,12 +671,19 @@ void register_coredump() {
 	}
 }
 
+void pin_audio_irq( void *arg ) {
+	AUDIO->begin(0); // core does inherit towards the dac irq resources
+	xTaskNotifyGive((TaskHandle_t)arg);
+	vTaskDelete(NULL);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // Sensor board init method. Herein all functions that make the XCVario are launched and tested.
 void system_startup(void *args){
 
 	bool selftestPassed=true;
+	ESP_LOGI(FNAME, "startup on core %d", xPortGetCoreID());
 
 	MCP = new MCP3221();
 	MCP->setBus( &i2c );
@@ -704,7 +709,9 @@ void system_startup(void *args){
 
 	AverageVario::begin();
 
-	Battery.begin();  // for battery voltage
+	BatVoltage = new AnalogInput((22.0+1.2)/1200, ADC_CHANNEL_7);
+	BatVoltage->begin(ADC_ATTEN_DB_0);  // for battery voltage
+	BatVoltage->setAdjust(factory_volt_adjust.get());
 	xMutex=xSemaphoreCreateMutex();
 	ccp = (int)(core_climb_period.get()*10);
 	spi_bus_config_t buscfg = {
@@ -1019,6 +1026,7 @@ void system_startup(void *args){
 		selftestPassed = false;
 		asSensor = 0;
 	}
+
 	ESP_LOGI(FNAME,"Now start T sensor test");
 	// Temp Sensor test
 	if( !SetupCommon::isClient()  ) {
@@ -1144,22 +1152,26 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
 	}
 
-	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
-	bmpVario.setup();
 	ESP_LOGI(FNAME,"Audio begin");
 	logged_tests += "Digi. Audio Poti test: ";
-	if( !AUDIO->begin( 0 ) ) {
+	TaskHandle_t main_task = xTaskGetCurrentTaskHandle();
+    xTaskCreatePinnedToCore(pin_audio_irq, "pinaudio", 4096, (void*)main_task, 5, NULL, 1);
+	ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+	if( AUDIO->isOk() ) {
+        AUDIO->soundCheck();
+		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
+		logged_tests += passed_text;
+	}
+	else {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
 		MBOX->newMessage(1, "Digital Poti: Failure");
 		selftestPassed = false;
 		logged_tests += failed_text;
 	}
-	else {
-        AUDIO->soundCheck();
-		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
-		logged_tests += passed_text;
-	}
-	audio_volume.set(default_volume.get());
+
+	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );
+	bmpVario.setup();
 
 	// 2021 series 3, or 2022 model with new digital poti CAT5171 also features CAN bus
 	// do not move the check unless you know the sequence of HW detection
@@ -1194,7 +1206,7 @@ void system_startup(void *args){
 		}
 	}
 
-	float bat = Battery.get(true);
+	float bat = BatVoltage->get(false);
 	logged_tests += "Battery Voltage Sensor: ";
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
@@ -1364,6 +1376,7 @@ void system_startup(void *args){
 	}
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid); // increase stack by 500 byte
 
+	audio_volume.set(default_volume.get());
 	AUDIO->startAudio();
 }
 
@@ -1390,6 +1403,8 @@ extern "C" void  app_main(void)
 {
 	// global log level
 	esp_log_level_set("*", ESP_LOG_INFO);
+
+	ESP_LOGI(FNAME, "app main on core %d", xPortGetCoreID());
 
 	// Mute audio
 	AUDIO = new Audio();
@@ -1455,6 +1470,7 @@ extern "C" void  app_main(void)
 		WMM_Model::geomag_test();
 #endif
 	system_startup( 0 );
+
 	Rotary->updateRotDir();   // Update Rotary direction after XCVario hardware has been detected
 	vTaskDelete( NULL );
 }

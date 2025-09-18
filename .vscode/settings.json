@@ -175,5 +175,6 @@
         "IDF_TARGET": "esp32"
     },
     "idf.pythonInstallPath": "/usr/bin/python3",
-    "idf.flashType": "UART"
+    "idf.flashType": "UART",
+    "C_Cpp.default.compilerPath": "/usr/bin/g++"
 }

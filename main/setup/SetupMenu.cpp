@@ -339,8 +339,8 @@ int qnh_adj(SetupMenuValFloat *p) {
 // Battery Voltage Meter Calibration
 int factv_adj(SetupMenuValFloat *p) {
 	ESP_LOGI(FNAME,"factv_adj");
-	getBattery()->redoAdjust();
-	float bat = getBattery()->get(true);
+	BatVoltage->setAdjust(factory_volt_adjust.get());
+	float bat = BatVoltage->get();
 	MYUCG->setPrintPos(1, 100);
 	MYUCG->setColor( COLOR_WHITE );
 	MYUCG->printf("%0.2f Volt", bat);

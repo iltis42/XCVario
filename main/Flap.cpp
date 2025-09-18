@@ -46,7 +46,7 @@ int select_flap_sens_pin(SetupMenuSelect *p){
 			while( !Rotary->readSwitch() ){
 				// ESP_LOGI(FNAME,"SW wait loop");
 				MYUCG->setPrintPos(5,120);
-				MYUCG->printf("Sensor: %d       ", FLAP->getSensorRaw(256) );
+				MYUCG->printf("Sensor: %d       ", FLAP->getSensorRaw() );
 				delay(100);
 			}
 		}
@@ -60,8 +60,8 @@ int select_flap_sens_pin(SetupMenuSelect *p){
 	return 0;
 }
 
-unsigned int Flap::getSensorRaw(int oversampling) {
-	return haveSensor() ? sensorAdc->getRaw(oversampling) : 0;
+unsigned int Flap::getSensorRaw() {
+	return haveSensor() ? sensorAdc->getRaw() : 0;
 }
 
 int wk_cal_show( SetupMenuSelect *p, int wk, Average<25> &filter){
@@ -72,7 +72,7 @@ int wk_cal_show( SetupMenuSelect *p, int wk, Average<25> &filter){
 	int i=0;
 	while( !Rotary->readSwitch() && FLAP ){
 		i++;
-		flap = filter( (int)(FLAP->getSensorRaw(64)) );
+		flap = filter( (int)(FLAP->getSensorRaw()) );
 		if( !(i%10) ){
 			MYUCG->setPrintPos(1,140);
 			MYUCG->printf("Sensor: %d      ", flap );
@@ -418,11 +418,11 @@ void Flap::configureADC( int port ){
 	if( flap_sensor.get() != FLAP_SENSOR_DISABLE ) // migration from old settings with multiple IO's
 		flap_sensor.set( FLAP_SENSOR_ENABLE );
 	if( flap_sensor.get() == FLAP_SENSOR_ENABLE ) { // nonzero -> configured, only one port needed for XCV23+ HW
-		sensorAdc = new AnalogInput( -1, ADC_ATTEN_DB_0, ADC_CHANNEL_6, ADC_UNIT_1, true );
+		sensorAdc = new AnalogInput(-1, ADC_CHANNEL_6);
 	}
 	if( sensorAdc != 0 ) {
 		ESP_LOGI( FNAME, "Flap sensor properly configured");
-		sensorAdc->begin();
+		sensorAdc->begin(ADC_ATTEN_DB_0, ADC_UNIT_1, false);
 		delay(10);
 		uint32_t read =  sensorAdc->getRaw();
 		if( read == 0  || read >= 4096 ) { // try GPIO pin 34, series 2021-2
@@ -501,7 +501,7 @@ bool Flap::sensorToLeverPosition( int wks, float&lever ){
 
 void  Flap::progress(){
 	if( haveSensor() ) {
-		int wkraw = getSensorRaw(16);
+		int wkraw = getSensorRaw();
 		if( wkraw > 4096 )
 			wkraw = 4096;
 		if( wkraw < 0 )  { // drop erratic negative readings

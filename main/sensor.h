@@ -54,8 +54,6 @@ class PressureSensor;
 class SetupRoot;
 class WatchDog_C;
 
-AnalogInput* getBattery();
-
 extern t_global_flags gflags;
 extern BMPVario bmpVario;
 extern CANbus* CAN;
@@ -66,6 +64,7 @@ extern AirspeedSensor *asSensor;
 extern PressureSensor *baroSensor;
 extern SetupRoot *Menu;
 extern WatchDog_C *uiMonitor;
+extern AnalogInput *BatVoltage;
 
 extern std::string logged_tests;
 

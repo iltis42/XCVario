@@ -10,6 +10,7 @@
 #include <esp_bt.h>
 #include <esp_bt_main.h>
 #include <esp_bt_device.h>
+#include <esp_spp_api.h>
 #include <esp_gap_bt_api.h>
 
 
@@ -149,8 +150,7 @@ bool BTSender::start()
 		}
 
 		// Set the Bluetooth device name
-		// ret = esp_bt_gap_set_device_name("XCVario");
-		ret = esp_bt_dev_set_device_name( SetupCommon::getID() );
+		ret = esp_bt_gap_set_device_name(SetupCommon::getID());
 		if (ret != ESP_OK)
 		{
 			ESP_LOGE(FNAME, "Failed to set device name: %s", esp_err_to_name(ret));
@@ -165,7 +165,12 @@ bool BTSender::start()
 	}
 
 	// Initialize SPP
-	if ( esp_spp_init(ESP_SPP_MODE_CB) ) {
+	esp_spp_cfg_t spp_cfg = {
+    	.mode = ESP_SPP_MODE_CB,
+    	.enable_l2cap_ertm = false,
+		.tx_buffer_size = 0 // only for VFS mode
+	};
+	if ( esp_spp_enhanced_init(&spp_cfg) != ESP_OK ) {
 		ESP_LOGE(FNAME, "SPP initialization failed");
 		return false;
 	}

@@ -16,7 +16,7 @@
 #include "setup/CruiseMode.h"
 #include "protocol/Clock.h"
 #include "sensor.h"
-#include "logdefnone.h"
+#include "logdef.h"
 
 #include <esp_system.h>
 #include <esp_task_wdt.h>
@@ -30,8 +30,8 @@
 
 Audio *AUDIO = nullptr;
 
-constexpr const int SAMPLE_RATE = 120000; // Hz
-constexpr const int BUF_LEN     = 2048;   // DMA-Buffer pro Ppush
+constexpr const int SAMPLE_RATE = 44100; // Hz
+constexpr const int BUF_LEN     = 1024;   // DMA buffer per push
 constexpr const int TABLE_SIZE  = 512;
 constexpr const int TABLE_BITS  = 9; // log2((double)TABLE_SIZE);
 constexpr const int DAC_CENTER  = 127;
@@ -43,28 +43,44 @@ struct dma_cmd {
     uint8_t cmd;
 };
 
-static int8_t sine_table[TABLE_SIZE];
-static dma_cmd* voice_list[4] = {nullptr, nullptr, nullptr, nullptr};
-static dma_cmd default_voice;
-static int8_t hann_ramp[TABLE_SIZE];
+const std::array<int8_t, TABLE_SIZE> sine_table = {
+	 0, 0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 14, 15, 16, 16, 17, 18, 18, 
+	 19, 20, 20, 21, 21, 22, 22, 23, 24, 24, 25, 25, 25, 26, 26, 27, 27, 28, 28, 28, 29, 29, 29, 29, 
+	 30, 30, 30, 30, 30, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 30, 30, 
+	 30, 30, 30, 29, 29, 29, 29, 28, 28, 28, 27, 27, 26, 26, 25, 25, 25, 24, 24, 23, 22, 22, 21, 21, 
+	 20, 20, 19, 18, 18, 17, 16, 16, 15, 14, 14, 13, 12, 12, 11, 10, 9, 9, 8, 7, 6, 6, 5, 4, 3, 3, 2, 
+	 1, 0, 0, 0, -1, -2, -3, -3, -4, -5, -6, -6, -7, -8, -9, -9, -10, -11, -12, -12, -13, -14, -14, 
+	 -15, -16, -16, -17, -18, -18, -19, -20, -20, -21, -21, -22, -22, -23, -24, -24, -25, -25, -25, 
+	 -26, -26, -27, -27, -28, -28, -28, -29, -29, -29, -29, -30, -30, -30, -30, -30, -31, -31, -31, 
+	 -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -30, -30, -30, -30, -30, 
+	 -29, -29, -29, -29, -28, -28, -28, -27, -27, -26, -26, -25, -25, -25, -24, -24, -23, -22, -22, 
+	 -21, -21, -20, -20, -19, -18, -18, -17, -16, -16, -15, -14, -14, -13, -12, -12, -11, -10, -9, -9, 
+	 -8, -7, -6, -6, -5, -4, -3, -3, -2, -1, 0 };
+static volatile dma_cmd* voice_list[4] = {nullptr, nullptr, nullptr, nullptr};
+static __attribute__((aligned(4))) volatile dma_cmd default_voice;
+const std::array<int8_t, TABLE_SIZE> hann_ramp = {
+	32, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 
+	31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 31, 
+	31, 31, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 
+	30, 30, 30, 30, 30, 30, 30, 30, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 29, 
+	29, 29, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 28, 27, 27, 27, 27, 27, 27, 27, 
+	27, 27, 27, 27, 27, 27, 27, 27, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 25, 25, 25, 25, 
+	25, 25, 25, 25, 25, 25, 25, 25, 25, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 24, 23, 23, 23, 23, 
+	23, 23, 23, 23, 23, 23, 23, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 21, 21, 21, 21, 21, 21, 21, 
+	21, 21, 21, 21, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 19, 19, 19, 19, 19, 19, 19, 19, 19, 19, 
+	18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 16, 16, 16, 16, 
+	16, 16, 16, 16, 16, 16, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 14, 14, 14, 14, 14, 14, 14, 14, 14, 
+	14, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 11, 11, 11, 
+	11, 11, 11, 11, 11, 11, 11, 11, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 9, 9, 9, 9, 9, 9, 9, 9, 
+	9, 9, 9, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6, 6, 
+	6, 6, 6, 6, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 
+	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 
+	1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-static void init_sine_table() {
-    for (int i = 0; i < TABLE_SIZE; i++) {
-        sine_table[i] = (int8_t)((DAC_HLF_AMPL-.25) * sin(2. * M_PI * i / TABLE_SIZE));
-        if ( !(i%2) ) printf("%4d, ", sine_table[i]);
-    }
-    // for (int i = 0; i < TABLE_SIZE; i++) {
-    //     sine_table[i] = (uint8_t)((sin(2. * M_PI * i / TABLE_SIZE) + 1.) * DAC_CENTER);
-    // }
-}
-static void init_hann_ramp() {
-    for (int n = 0; n < TABLE_SIZE; n++) {
-        // hann_ramp[n] = 1. - sin((M_PI * n) / (2.0f * RAMP_SIZE));
-        hann_ramp[n] = (uint8_t)(0.5 * (1.0 + cos(M_PI * n / (TABLE_SIZE-1))) * DAC_HLF_AMPL);
-        printf("%d ", hann_ramp[n]);
-    }
-}
-
+// Benchmark
+int64_t total_us = 0, busy_irs = 0;
 
 // DMA callback
 static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_data_t *e, void *user_data)
@@ -72,17 +88,25 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
     dma_cmd **list = (dma_cmd **)user_data;
     uint8_t *buf = (uint8_t *)e->buf;
 
+	int64_t t_busy0 = esp_timer_get_time();
+
     int i = 0;
     if (list[0]!=nullptr) {
         uint32_t phase = list[0]->phase;
         uint32_t step = list[0]->step;
-        if (list[0]->cmd == 1) {
+        if (list[0]->cmd == 0) {
+			memset(buf, DAC_CENTER, e->buf_size);
+		}
+        else if (list[0]->cmd == 1) {
             // phase in
             i = e->buf_size - TABLE_SIZE;
+			memset(buf, DAC_CENTER, i);
             int revidx = TABLE_SIZE-1;
             for (; i < e->buf_size; i++) {
                 uint16_t idx = phase >> (32 - TABLE_BITS);
                 buf[i] = (((int)hann_ramp[revidx--] * sine_table[idx]) >> 5) + DAC_CENTER;
+				// buf[i+1] = buf[i]; i++;
+				// buf[++i] = DAC_CENTER; // not used channel
                 phase += step;
             }
             list[0]->phase = phase;
@@ -91,6 +115,8 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
         else if (list[0]->cmd == 2 ) {
             for (; i < e->buf_size; i++) {
                 buf[i] = sine_table[phase >> (32 - TABLE_BITS)] + DAC_CENTER;
+				// buf[++i] = DAC_CENTER; // not used channel
+				// buf[i+1] = buf[i]; i++;
                 phase += step;
             }
             list[0]->phase = phase;
@@ -100,8 +126,11 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
             for (; i < TABLE_SIZE; i++) {
                 uint16_t idx = phase >> (32 - TABLE_BITS);
                 buf[i] = (((int)hann_ramp[i] * sine_table[idx]) >> 5) + DAC_CENTER;
+				// buf[++i] = DAC_CENTER; // not used channel
+				// buf[2*i+1] = buf[2*i];
                 phase += step;
             }
+			memset(buf+i, DAC_CENTER, e->buf_size-i);
             list[0]->phase = 0;
             list[0]->cmd = 0;
         }
@@ -131,18 +160,19 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
     //         phase += step;
     //     }
     // }
-    if ( i < e->buf_size ) {
-        memset(buf+i, DAC_CENTER, e->buf_size-i);
-    }
+    // if ( i < e->buf_size ) {
+    //     memset(buf+i, DAC_CENTER, e->buf_size-i);
+    // }
+
+    int64_t t_busy1 = esp_timer_get_time();
+    busy_irs += (t_busy1 - t_busy0);
 
     return false;
 }
 
 Audio::Audio() :
-	Clock_I(10)
+	Clock_I(10) // every 100msec 
 {
-    init_sine_table();
-    init_hann_ramp();
     voice_list[0] = &default_voice;
 }
 
@@ -189,14 +219,14 @@ bool Audio::begin( int16_t ch  )
 		S2FSWITCH = new S2fSwitch( GPIO_NUM_12 );
 	}
 	setup();
+	ESP_LOGI(FNAME, "Starting Audio on core %d", xPortGetCoreID());
 
     _dac_cfg = {
         .chan_mask = (dac_channel_mask_t)BIT(ch), // which channel to enable
-        .desc_num = 2,
+        .desc_num = 4,
         .buf_size = BUF_LEN,
         .freq_hz = SAMPLE_RATE,
         .offset = 0,
-        //.clk_src =  DAC_DIGI_CLK_SRC_APLL,
         .clk_src = DAC_DIGI_CLK_SRC_DEFAULT,     // If the frequency is out of range, try 'DAC_DIGI_CLK_SRC_APLL'
         .chan_mode = DAC_CHANNEL_MODE_SIMUL,
     };
@@ -244,7 +274,6 @@ bool Audio::begin( int16_t ch  )
     }
     err |= _poti == nullptr;
 
-	_testmode = true;
 	if( audio_equalizer.get() == AUDIO_EQ_LS4 ) {
 		equalizerSpline  = new tk::spline(F1,VOL1, tk::spline::cspline_hermite );
 	} else if( audio_equalizer.get() == AUDIO_EQ_LS8 ) {
@@ -256,8 +285,8 @@ bool Audio::begin( int16_t ch  )
     if ( err == ESP_OK ) {
         enableAmplifier(true);
         ESP_ERROR_CHECK(dac_continuous_start_async_writing(_dac_chan));
-        // unmute();
         Clock::start(this);
+		_dac_inited = true;
         return true;
     }
     return false;
@@ -282,37 +311,50 @@ float Audio::equal_volume( float volume ){
 	if( new_vol <= 0 ) {
 		new_vol = 0;
 	}
-	// ESP_LOGI(FNAME,"Vol: %d Scaled: %f  F: %.0f spline: %.3f", volume, new_vol, current_frequency, (float)(*equalizerSpline)( (double)current_frequency ));
+	ESP_LOGI(FNAME,"Vol: %.0f Scaled: %.0f  F: %.1f", volume, new_vol, current_frequency ); //, (float)(*equalizerSpline)( (double)current_frequency ));
 	return new_vol;
 }
 
+// do the sound check, when the audio task is not yet running
+class TestSequence : public Clock_I
+{
+public:
+	TestSequence(float freq, float maxfreq) : Clock_I(3), f(freq), maxf(maxfreq) {
+		AUDIO->setFrequency(f);
+		AUDIO->writeVolume(5.);
+	    AUDIO->unmute();
+		Clock::start(this);
+	}
+	~TestSequence() {
+		AUDIO->_test_done = true;
+	}
+	bool tick() override {
+		// Example: log a message and return false
+		ESP_LOGI(FNAME, "f=%f", f);
+		if ( f<maxf ) {
+			AUDIO->setFrequency(f);
+			f *= 1.03;
+			return false;
+		}
+		else {
+		    AUDIO->mute();
+			delete this;
+			return true;
+		}
+	}
+private:
+	float f;
+	float maxf;
+};
 void Audio::soundCheck(){
     ESP_LOGI(FNAME,"Audio::selfTest");
-	float setvolume = default_volume.get();
-	speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
-	ESP_LOGI(FNAME,"default volume: %f", speaker_volume );
-	writeVolume( 80. );
-	// while(1){    // uncomment for continuous self test
-    setFrequency( minf );
-    unmute();
-	ESP_LOGI(FNAME,"Min F %f, Max F %f", minf, maxf );
-	for( float f=minf; f<maxf*1.25; f=f*1.03){
-		ESP_LOGV(FNAME,"f=%f",f);
-		setFrequency( f );
-        // writeVolume( audio_volume.get() );
-		vTaskDelay(pdMS_TO_TICKS(30));
-	}
-    // vTaskDelay(pdMS_TO_TICKS(200));
-	// }
-	ESP_LOGI(FNAME, "selfTest wiper: %d", 0 );
-	writeVolume( setvolume );
-    mute();
+	new TestSequence(minf, maxf*1.25);
 }
 
 
 void Audio::setFrequency( float f ){
-    default_voice.step = (uint32_t)((f/2. * (1ULL << 32)) / SAMPLE_RATE);
-    ESP_LOGI(FNAME,"freq set %f step %u", f, (unsigned)voice_list[1]);
+    default_voice.step = (uint32_t)((f/2 * (1ULL << 32)) / SAMPLE_RATE);
+    // ESP_LOGI(FNAME,"freq set %f step %u phase %u", f, (unsigned)default_voice.step, (unsigned)default_voice.phase);
 }
 
 void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // non blocking
@@ -389,9 +431,11 @@ void Audio::setVolume( float vol ) {
 
 void Audio::startAudio(){
 	ESP_LOGI(FNAME,"startAudio");
-	_testmode = false;
 	evaluateChopping();
-	speaker_volume = vario_mode_volume;
+	while ( ! _test_done ) ; // wait until sound check finished
+	float setvolume = default_volume.get();
+	speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
+	writeVolume( setvolume );
 	xTaskCreate(&dactask_starter, "dactask", 2400, this, 24, &dactid);
 }
 
@@ -461,7 +505,7 @@ void  Audio::calculateFrequency(){
 }
 
 void Audio::writeVolume( float volume ){
-	// ESP_LOGI(FNAME, "set volume: %f", volume);
+	ESP_LOGI(FNAME, "set volume: %f", volume);
     if ( _poti ) {
         if( _alarm_mode )
             _poti->writeVolume( volume );  // max volume
@@ -481,6 +525,7 @@ void Audio::dactask()
 	int tick = 0;
     bool sound = false;
     int delay = 100;
+	int64_t t0 = esp_timer_get_time();
 	esp_task_wdt_add(NULL);
 
 	while(1){
@@ -524,7 +569,7 @@ void Audio::dactask()
 		}
 
         // Amplifier and Volume control
-		if( !_testmode && !(tick%4) ) {
+		if( !(tick%4) ) {
 			// ESP_LOGI(FNAME, "sound dactask tick:%d volume:%f  te:%f db:%d", tick, speaker_volume, _te, inDeadBand(_te) );
 
 			// continuous variable tone
@@ -578,7 +623,7 @@ void Audio::dactask()
             }
 
 		}
-		if ( !_testmode && (current_volume != speaker_volume) ){
+		if ( current_volume != speaker_volume ) {
 			// ESP_LOGI(FNAME, "volume change, new volume: %f, current_volume %f", speaker_volume, current_volume );
 			if( current_volume < speaker_volume ){
 				current_volume+=2;
@@ -595,6 +640,13 @@ void Audio::dactask()
 		// ESP_LOGI(FNAME, "Audio delay %d", _delay );
 		if( uxTaskGetStackHighWaterMark( dactid ) < 256 ) {
 			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
+		}
+		if ( !(tick%1000) ) {
+			int64_t t1 = esp_timer_get_time();
+            total_us += (t1 - t0);
+            float load = 100.0 * (float)(busy_irs) / (float)total_us;
+            ESP_LOGI(FNAME, "DAC load: %.2f%% (Fs=%d)", load, SAMPLE_RATE);
+            t0 = t1;
 		}
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
 		esp_task_wdt_reset();
@@ -653,7 +705,6 @@ void Audio::setup()
 {
 	ESP_LOGD(FNAME,"Audio::setup");
 	_te = 0.0;
-	_testmode = false;
 	if( audio_range.get() == AUDIO_RANGE_5_MS )
 		_range = 5.0;
 	else if( audio_range.get() == AUDIO_RANGE_10_MS )
@@ -665,6 +716,7 @@ void Audio::setup()
 
 	maxf = center_freq.get() * tone_var.get();
 	minf = center_freq.get() / tone_var.get();
+	current_frequency = (minf+maxf)/2.;
 }
 
 void Audio::unmute()

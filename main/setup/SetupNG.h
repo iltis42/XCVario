@@ -268,6 +268,20 @@ public:
 		return true;
 	}
 
+	bool setCheckRange( T aval, bool dosync=true, bool doAct=true ) {
+		if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
+			if( hasLimits() ){
+				if( aval < getMin() ) {
+					return set( getMin(), dosync, doAct );
+				}
+				if ( aval > getMax() ){
+					return set( getMax(), dosync, doAct );
+				}
+			}
+		}
+		return set( aval, dosync, doAct );
+	}
+
 	e_quantity_t quantityType() {
 		return (e_quantity_t)flags._quant;
 	}

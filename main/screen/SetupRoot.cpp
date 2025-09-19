@@ -111,32 +111,12 @@ void SetupRoot::rot(int count)
     // ESP_LOGI(FNAME,"root: rot");
     if (rot_default.get() == 1) {
         // MC Value
-        float mc = MC.get();
         float step = Units::Vario2ms(0.1);
-        mc += step * count;
-        if (mc > 9.9) {
-            mc = 9.9;
-        }
-        else if (mc < 0.0) {
-            mc = 0.0;
-        }
-        MC.set(mc);
+        MC.setCheckRange(MC.get() + step * count);
     }
     else {
         // Volume
-        float vol_db = 20.0f * log10f(audio_volume.get()); 
-        // z. B. 3 dB per raster
-        vol_db += count * 3.0f;  
-
-        // linits in db 
-        float max_db = 20.0f * log10f(MAX_AUDIO_VOLUME);
-        if (vol_db > max_db) vol_db = max_db;
-        if (vol_db < -8.0f) vol_db = -8.0f; // this is smallest possible value the poti can do
-
-        // back to linear
-        float vol = powf(10.0f, vol_db / 20.0f);
-              ESP_LOGI(FNAME,"volume %.2f lin (%.2f) db", vol, vol_db);
-        audio_volume.set(vol);
+        audio_volume.setCheckRange(audio_volume.get() + 2*count);
     }
 }
 

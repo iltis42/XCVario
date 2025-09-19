@@ -1567,7 +1567,6 @@ void setup_create_root(SetupMenu *top) {
 	} else {
 		SetupMenuValFloat *vol = new SetupMenuValFloat("Audio Volume", "%", nullptr, true, &audio_volume);
 		vol->setHelp("Audio volume level for variometer tone on internal and external speaker");
-		vol->setMax(MAX_AUDIO_VOLUME);
 		top->addEntry(vol);
 	}
 

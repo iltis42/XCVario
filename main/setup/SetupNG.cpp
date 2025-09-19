@@ -341,8 +341,7 @@ SetupNG<int>		    wk_sens_pos_minus_3("WKSM3", 4000);
 SetupNG<int>            stall_warning( "STALL_WARN", 0 );
 SetupNG<float>			stall_speed( "STALL_SPEED", 70, true, SYNC_FROM_MASTER, PERSISTENT, 0, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<int>            flarm_warning( "FLARM_LEVEL", 1 );
-static const limits_t volume_limits = {0, 100, 1};
-SetupNG<float>          flarm_volume( "FLARM_VOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &volume_limits);
+SetupNG<float>          flarm_volume( "FLARM_VOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
 SetupNG<float>          flarm_alarm_time( "FLARM_ALM", 5, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1, 15, 1));
 SetupNG<int>            flap_sensor( "FLAP_SENS", 0, false, SYNC_FROM_MASTER, PERSISTENT, flap_act); // fixme synch logic broken
 SetupNG<float>          compass_dev_0( "CP_DEV_0", 0 );
@@ -409,7 +408,7 @@ SetupNG<float>			gload_neg_limit("GLOADNL", -3, true, SYNC_NONE, PERSISTENT, nul
 SetupNG<float>			gload_pos_max("GLOADPM", 1);
 SetupNG<float>			gload_neg_max("GLOADNM", 0);
 SetupNG<float>			airspeed_max("ASMAX", 0 );
-SetupNG<float>		    gload_alarm_volume("GLOADAVOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &volume_limits);
+SetupNG<float>		    gload_alarm_volume("GLOADAVOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
 SetupNG<int>        	display_variant("DISPLAY_VARIANT", 0 );
 SetupNG<int>        	compass_dev_auto("COMPASS_DEV", 0 );
 SetupNG<float>       	max_circle_wind_diff("CI_WINDDM", 60.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 90.0, 1.0));

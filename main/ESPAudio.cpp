@@ -324,7 +324,7 @@ float Audio::equal_volume( float volume ){
 	if( new_vol <= 0 ) {
 		new_vol = 0;
 	}
-	ESP_LOGI(FNAME,"Vol: %.0f Scaled: %.0f  F: %.1f", volume, new_vol, current_frequency ); //, (float)(*equalizerSpline)( (double)current_frequency ));
+	ESP_LOGI(FNAME,"Vol: %.0f Scaled: %.0f  F: %.1f", volume, new_vol, current_frequency );
 	return new_vol;
 }
 
@@ -516,7 +516,7 @@ void  Audio::calculateFrequency(){
 		setFrequency( current_frequency*_high_tone_var );
 	else
 		setFrequency( current_frequency );
-	ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", current_frequency, _te, mult );
+	// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", current_frequency, _te, mult );
 }
 
 void Audio::writeVolume( float volume ){
@@ -733,6 +733,7 @@ void Audio::setup()
 
 	maxf = center_freq.get() * tone_var.get();
 	minf = center_freq.get() / tone_var.get();
+    ESP_LOGI(FNAME,"min/max freq. %.1f/%.1f", minf, maxf);
 	current_frequency = (minf+maxf)/2.;
 }
 

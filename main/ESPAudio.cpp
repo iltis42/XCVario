@@ -258,16 +258,14 @@ bool Audio::begin( int16_t ch  )
     ESP_LOGI(FNAME, "DAC initialized success, DAC DMA is ready");
 
     ESP_LOGI(FNAME,"Find digital poti");
-	_poti = new MCP4018();
-	_poti->setBus( &i2c1 );
+	_poti = new MCP4018(&i2c1);
 	_poti->begin();
     if (_poti->haveDevice()) {
         ESP_LOGI(FNAME, "MCP4018 digital Poti found");
     } else {
         ESP_LOGI(FNAME, "Try CAT5171 digital Poti");
         delete _poti;
-        _poti = new CAT5171();
-        _poti->setBus(&i2c1);
+        _poti = new CAT5171(&i2c1);
         _poti->begin();
         if (_poti->haveDevice()) {
             ESP_LOGI(FNAME, "CAT5171 digital Poti found");
@@ -320,8 +318,8 @@ float Audio::equal_volume( float volume ){
 	if( equalizerSpline ) {
 		new_vol = new_vol * (float)(*equalizerSpline)( (double)current_frequency );
 	}
-	if( new_vol >= MAX_AUDIO_VOLUME ) {
-		new_vol = MAX_AUDIO_VOLUME;
+	if( new_vol >= audio_volume.getMax() ) {
+		new_vol = audio_volume.getMax();
 	}
 	if( new_vol <= 0 ) {
 		new_vol = 0;
@@ -336,7 +334,7 @@ class TestSequence : public Clock_I
 public:
 	TestSequence(float freq, float maxfreq) : Clock_I(3), f(freq), maxf(maxfreq) {
 		AUDIO->setFrequency(f);
-		AUDIO->writeVolume(5.);
+		AUDIO->writeVolume(20.);
 	    AUDIO->unmute();
 		Clock::start(this);
 	}
@@ -424,9 +422,11 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 	}
 }
 
+// [%]
 void Audio::setVolume( float vol ) {
-	if( vol > MAX_AUDIO_VOLUME )
-		vol = MAX_AUDIO_VOLUME;
+	// if( vol > MAX_AUDIO_VOLUME ) {
+	// 	vol = MAX_AUDIO_VOLUME;
+    // }
 	speaker_volume = vol;
 	// also copy the new volume into the cruise-mode specific variables so that
 	// calcS2Fmode() will later restore the correct volume when mode changes:
@@ -516,7 +516,7 @@ void  Audio::calculateFrequency(){
 		setFrequency( current_frequency*_high_tone_var );
 	else
 		setFrequency( current_frequency );
-	// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", current_frequency, _te, mult );
+	ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", current_frequency, _te, mult );
 }
 
 void Audio::writeVolume( float volume ){

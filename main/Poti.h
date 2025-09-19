@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cinttypes>
+
 namespace i2cbus {
     class I2C;
 }
@@ -8,17 +10,22 @@ namespace i2cbus {
 class Poti
 {
 public:
-  virtual ~Poti() {};
-  virtual bool begin() = 0;
-  virtual void setBus( i2cbus::I2C *theBus ) = 0;
-  virtual bool readVolume( float& val ) = 0;
-  virtual bool writeVolume( float val ) = 0;
-  virtual bool haveDevice() = 0;
-  virtual void setHalfScale() = 0;
-  virtual bool writeWiper( int val, bool validatet=false ) = 0;
+    explicit Poti(i2cbus::I2C *i2cbus, uint8_t addr) : bus(i2cbus), I2C_ADDR(addr) {};
+    Poti() = delete;
+    virtual ~Poti() {};
+    bool begin();
+    virtual bool reset() = 0;
+    bool haveDevice();
+    // virtual bool readVolume( float& val );
+    bool writeVolume(float val); // 0..100 %
+    virtual bool writeWiper(int val, bool validatet = false) = 0;
+
 private:
-  virtual int  getRange() = 0;
-  virtual float getInvRange() = 0;
-  virtual bool readWiper( int& val ) = 0;
-  virtual int  getStep() = 0;
+    virtual int getRange() = 0;
+    virtual bool readWiper(int &val) = 0;
+    
+protected:
+	i2cbus::I2C *bus = 0;
+    const uint8_t I2C_ADDR;
+    int errorcount = 0;
 };

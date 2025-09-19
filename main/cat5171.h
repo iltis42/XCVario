@@ -1,51 +1,24 @@
-#ifndef CAT5171_H
-#define CAT5171_H
+#pragma once
 
-// #include "I2C.h"
-#include "esp_system.h"
-#include "I2Cbus.hpp"
 #include "Poti.h"
 
-#define  CAT5171_I2C_ADDR  0b0101100     // AD0 = 0  0x2C
+constexpr uint8_t CAT5171_I2C_ADDR = 0x2C; // 0b0101100
 
-//Library for the CAT5171 7 bit digital potentiometer.
+// CAT5171 7 bit digital potentiometer.
 
-class CAT5171: public Poti
+class CAT5171 : public Poti
 {
 public:
-  /*
-  Creates instance
-  Connect module using I2C port pins sda and scl.
+    // Connect module using I2C port
+    explicit CAT5171(i2cbus::I2C *i2cbus) : Poti(i2cbus, CAT5171_I2C_ADDR) {};
+    CAT5171() = delete;
+    virtual ~CAT5171() {}
 
-  */
-  CAT5171();
-
-  bool begin();
-  void setBus( I2C_t *theBus ) {  bus = theBus; };
-
-  /*
-  Destroys instance.
-  */
-  ~CAT5171();
-
-  bool readVolume( float& val );
-  bool writeVolume( float val );
-  bool reset();
-  bool haveDevice();
-  void setHalfScale() { _scale = 200; };
-  bool writeWiper( int val, bool validate=false );
+    bool reset() override;
+    bool writeWiper(int val, bool validate = false) override;
 
 private:
-  bool readWiper( int& val );
-#define CAT5171RANGE 255
-  inline int  getRange() { return CAT5171RANGE; };
-  inline float getInvRange() { return (1.0/CAT5171RANGE); };
-  inline int  getStep() { return 3; };
-  I2C_t *bus;
-  int  errorcount;
-  bool  _noDevice;
-  int wiper;  // only bit 0..7 supported
-  int _scale;
+    bool readWiper(int &val) override;
+    static constexpr int CAT5171RANGE = 180; // do not use the full range of 255
+    int getRange() override { return CAT5171RANGE; };
 };
-
-#endif

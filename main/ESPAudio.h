@@ -22,8 +22,6 @@ namespace tk {
 class Poti;
 class TestSequence;
 
-#define MAX_AUDIO_VOLUME 60.0
-
 typedef enum e_audio_alarm_type { AUDIO_ALARM_OFF, AUDIO_ALARM_STALL, AUDIO_ALARM_FLARM_1, AUDIO_ALARM_FLARM_2, AUDIO_ALARM_FLARM_3, AUDIO_ALARM_GEAR } e_audio_alarm_type_t;
 
 class Audio : public Clock_I

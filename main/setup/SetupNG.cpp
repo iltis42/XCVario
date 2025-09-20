@@ -247,7 +247,6 @@ SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change
 SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0 );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
-SetupNG<int>            audio_equalizer( "AUD_EQ", AUDIO_EQ_DISABLE, false );
 
 SetupNG<float>  		wifi_max_power( "WIFI_MP" , 50, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(10.0, 100.0, 5.0));
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
@@ -271,7 +270,6 @@ SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45, true, SYNC_FROM_MA
 SetupNG<float>  		mean_climb_major_change( "MEAN_CLMC", 0.5, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.1, 5.0, 0.1));
 SetupNG<float>  		elevation( "ELEVATION", NOTSET_ELEVATION, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_ALT, LIMITS(NOTSET_ELEVATION, 3000, 1));
 SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
-SetupNG<float>  		frequency_response( "FREQ_RES", 30.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-70.0, 70.0, 1.0));
 SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(.0, 25.0, 1));
 SetupNG<float>  		s2f_deadband_neg( "DB_S2F_NEG", -10.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(-25.0, .0, 1));
 SetupNG<float>  		s2f_delay( "S2F_DELAY", 5.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.10001, 10.0, 0.1));

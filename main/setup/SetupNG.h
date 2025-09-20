@@ -337,7 +337,6 @@ extern SetupNG<float>  		s2f_auto_lag;
 
 extern SetupNG<int>  		audio_variable_frequency;
 extern SetupNG<int>  		chopping_mode;
-extern SetupNG<int>         audio_equalizer;
 
 extern SetupNG<float>  		wifi_max_power;
 extern SetupNG<int>  		factory_reset;
@@ -362,7 +361,6 @@ extern SetupNG<float>  		elevation;
 extern SetupNG<float>  		audio_volume;
 extern SetupNG<int>  		audio_split_vol;
 extern SetupNG<float>  		default_volume;
-extern SetupNG<float>  		frequency_response;
 extern SetupNG<float>  		s2f_deadband;
 extern SetupNG<float>  		s2f_deadband_neg;
 extern SetupNG<float>  		s2f_delay;

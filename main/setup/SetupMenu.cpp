@@ -828,30 +828,10 @@ void audio_menu_create_deadbands(SetupMenu *top) {
 	top->addEntry(dbmaxls2f);
 }
 
-void audio_menu_create_equalizer(SetupMenu *top) {
-	SetupMenuSelect *audeqt = new SetupMenuSelect("Equalizer", RST_ON_EXIT, nullptr, &audio_equalizer);
-	audeqt->setHelp(
-			"Select the equalizer according to the type of loudspeaker used");
-	audeqt->addEntry("Disable");
-	audeqt->addEntry("Speaker 8 Ohms");
-	audeqt->addEntry("Speaker 4 Ohms");
-	audeqt->addEntry("Speaker External");
-	top->addEntry(audeqt);
-
-	SetupMenuValFloat *frqr = new SetupMenuValFloat("Frequency Response", "%", 0, false, &frequency_response);
-	frqr->setHelp(
-			"Setup frequency response, double frequency will be attenuated by the factor given, half frequency will be amplified");
-	top->addEntry(frqr);
-}
-
 void audio_menu_create_volume(SetupMenu *top) {
 	SetupMenuValFloat *dv = new SetupMenuValFloat("Default Volume", "%", nullptr, false, &default_volume);
 	top->addEntry(dv);
 	dv->setHelp("Default volume for Audio when device is switched on");
-
-	SetupMenu *audeq = new SetupMenu("Equalizer", audio_menu_create_equalizer);
-	top->addEntry(audeq);
-	audeq->setHelp("Equalization parameters for a constant perceived volume over a wide frequency range", 220);
 
 	SetupMenuSelect *amspvol = new SetupMenuSelect("S2F Volume", RST_NONE, nullptr, &audio_split_vol);
 	amspvol->setHelp(

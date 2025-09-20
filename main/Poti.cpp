@@ -8,7 +8,7 @@
 
 #include "Poti.h"
 #include "I2Cbus.hpp"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <esp_system.h>
 #include <cmath>
@@ -26,7 +26,6 @@ bool Poti::begin()
 }
 
 bool Poti::haveDevice() {
-	ESP_LOGI(FNAME,"haveDevice");
 	esp_err_t err = bus->testConnection(I2C_ADDR);
 	if( err == ESP_OK ) {
 		ESP_LOGI(FNAME,"haveDevice: OK");

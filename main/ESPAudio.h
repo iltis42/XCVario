@@ -9,16 +9,12 @@
 
 #include "protocol/ClockIntf.h"
 
-
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include "driver/dac_continuous.h"
+#include <driver/dac_continuous.h>
 
 #include <cinttypes>
 
-namespace tk {
-    class spline;
-}
 class Poti;
 class TestSequence;
 
@@ -43,7 +39,7 @@ public:
 	void evaluateChopping();  // determines if chopping is to be done depending on setting chopping_mode for S2F and climb mode and sets member _chopping
 	void alarm( bool enable, float volume=100, e_audio_alarm_type_t alarmType=AUDIO_ALARM_STALL );  // outputs various alarm tones according to alarmType and volume
 	void soundCheck();   // performs a self-test
-	inline bool haveCAT5171() const { return _haveCAT5171; }; // returns if this type of poti has been detected
+	bool haveCAT5171() const { return _haveCAT5171; }; // returns if this type of poti has been detected
 	bool tick() override;  // calculates TE and S2F delta depending on mode e.g. netto mode
 
 private:
@@ -52,9 +48,8 @@ private:
 	void dactask();                                                   // task for control of HW generator
 	void calcS2Fmode( bool recalc=false );                            // S2F mode
 	bool inDeadBand( float te );                                      // check if mute is needed within deadband
-	bool lookup( float f, int& div, int &step );  // depending on f [Hz], lookup divisor and step in table
+	// bool lookup( float f, int& div, int &step );  // depending on f [Hz], lookup divisor and step in table
 	void enableAmplifier(bool enable); // true ON, false OFF
-	float equal_volume( float volume ); // returns volume determined by equalizer
 	void calculateFrequency();    // determine frequency to be generated depending on TE value and tone mode (ILEC, dual tone or normal)
 	void writeVolume( float volume ); // set digital poti
 
@@ -98,9 +93,7 @@ private:
 	bool _dac_inited = false;
 	bool amp_is_on = false;
 	bool _haveCAT5171 = false;
-	tk::spline *equalizerSpline = nullptr;
 	TaskHandle_t dactid = nullptr;
-    // QueueHandle_t _queue = nullptr;
 };
 
 extern Audio *AUDIO;

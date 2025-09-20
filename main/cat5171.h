@@ -19,6 +19,6 @@ public:
 
 private:
     bool readWiper(int &val) override;
-    static constexpr int CAT5171RANGE = 180; // do not use the full range of 255
+    static constexpr int CAT5171RANGE = 160; // do not use the full range of 255
     int getRange() override { return CAT5171RANGE; };
 };

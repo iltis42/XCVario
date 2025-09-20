@@ -41,7 +41,7 @@ bool Poti::haveDevice() {
 // ...
 // }
 
-// 0 .. 50
+// 0 .. 100%
 bool Poti::writeVolume( float val )
 {
     float db = (powf(1. + 9., val/100.) - 1.) / 9.;

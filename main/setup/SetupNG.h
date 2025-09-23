@@ -317,7 +317,6 @@ extern SetupNG<float>  		vario_av_delay;
 extern SetupNG<float>  		center_freq;
 extern SetupNG<float>  		tone_var;
 extern SetupNG<int>  		dual_tone;
-extern SetupNG<float>  		high_tone_var;
 extern SetupNG<float>  		deadband;
 extern SetupNG<float>  		deadband_neg;
 extern SetupNG<float>  		scale_range;

@@ -198,7 +198,6 @@ SetupNG<float>  		vario_av_delay( "VARIO_AV_DELAY", 20.0, true, SYNC_NONE, PERSI
 SetupNG<float>  		center_freq( "AUDIO_CENTER_F", 500.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(200.0, 2000.0, 10.0));
 SetupNG<float>  		tone_var( "OCTAVES", 2.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1.2, 4, 0.05));
 SetupNG<int>  			dual_tone( "DUAL_TONE", 0, true, SYNC_BIDIR );
-SetupNG<float>  		high_tone_var( "HIGH_TONE_VAR", 12.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 50, 1.0));
 SetupNG<float>  		deadband( "DEADBAND", 0.3, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_VSPEED, LIMITS(.0, 5.0, 0.1));
 SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_VSPEED, LIMITS(-5.0, .0, 0.1));
 SetupNG<float>  		scale_range( "VARIO_RANGE", 5.0, true, SYNC_NONE, PERSISTENT, 0, QUANT_VSPEED, LIMITS(1.0, 30.0, 1));

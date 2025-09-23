@@ -497,10 +497,13 @@ void  Audio::calculateFrequency(){
 	}
 	current_frequency = center_freq.get() + ((mult*_te)/range )  * (max_var/exponent_max);
 
-	if( hightone && (_tonemode == ATM_DUAL_TONE ) )
-		setFrequency( current_frequency*_high_tone_var );
-	else
-		setFrequency( current_frequency );
+    if (hightone && (_tonemode == ATM_DUAL_TONE))
+    {
+        default_voice.setFrequency(current_frequency * _high_tone_var);
+    }
+    else {
+        default_voice.setFrequency(current_frequency);
+    }
 	// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", current_frequency, _te, mult );
 }
 
@@ -551,7 +554,7 @@ void Audio::dactask()
 					delay = int(period_ms * 0.1)+40;  // 1Hz: 100 mS; 10Hz: 50 mS
 					// ESP_LOGI(FNAME, "Break: %d period:%4.2f %4.1f", _delay, period_ms, f );
 				}
-				else{  // duration of main tone 1Hz: 900 mS; 10Hz: 50 mS
+				else {  // duration of main tone 1Hz: 900 mS; 10Hz: 50 mS
 					delay = int(period_ms * 0.9)-40;
 					// ESP_LOGI(FNAME, "Tone: %d period:%4.2f %4.1f", _delay, period_ms, f );
 				}
@@ -701,7 +704,7 @@ void Audio::setup()
 	else
 		_range = scale_range.get();
 	_tonemode = dual_tone.get();
-	_high_tone_var = ((high_tone_var.get() + 100.0)/100);
+	_high_tone_var = powf(2.0, 4./12.0); // major third
 
 	maxf = center_freq.get() * tone_var.get();
 	minf = center_freq.get() / tone_var.get();

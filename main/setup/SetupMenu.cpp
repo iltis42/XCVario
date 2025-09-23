@@ -793,11 +793,6 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	dt->mkEnable();
 	top->addEntry(dt);
 
-	SetupMenuValFloat *htv = new SetupMenuValFloat("Dual Tone Pitch", "%", audio_setup_f, false, &high_tone_var);
-	htv->setHelp(
-			"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
-	top->addEntry(htv);
-
 	SetupMenuSelect *tch = new SetupMenuSelect("Chopping", RST_NONE, eval_chop, &chopping_mode);
 	tch->setHelp(
 			"Select tone chopping option on positive values for Vario and or S2F");

@@ -203,7 +203,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
 }
 
 Audio::Audio() :
-	Clock_I(10) // every 100msec 
+	Clock_I(8) // every 80msec
 {
 	// init_sine_table();
     // init_triangle_table();

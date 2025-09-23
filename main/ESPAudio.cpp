@@ -583,9 +583,6 @@ void Audio::dactask()
 					// Optionally disable vario audio when in Sink
 					if( audio_mute_sink.get() && _te < 0 ) {
 						sound = false;
-					// Optionally disable vario audio when in setup menu
-					} else if( audio_mute_menu.get() && gflags.inSetup ) {
-						sound = false;
 					// Optionally disable vario audio generally
 					} else if( audio_mute_gen.get() != AUDIO_ON ) {
 						sound = false;

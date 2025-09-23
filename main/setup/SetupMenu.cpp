@@ -847,13 +847,6 @@ void audio_menu_create_mute(SetupMenu *top) {
 	asida->addEntry("Mute");     // 1
 	top->addEntry(asida);
 
-	SetupMenuSelect *ameda = new SetupMenuSelect("In Setup", RST_NONE, nullptr, &audio_mute_menu);
-	ameda->setHelp(
-			"Select whether vario audio will be muted while Setup Menu is open");
-	ameda->addEntry("Stay On");  // 0
-	ameda->addEntry("Mute");     // 1
-	top->addEntry(ameda);
-
 	SetupMenuSelect *ageda = new SetupMenuSelect("Generally", RST_NONE, nullptr, &audio_mute_gen);
 	ageda->setHelp(
 			"Select audio on, or vario audio muted, or all audio muted including alarms");

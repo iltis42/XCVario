@@ -88,7 +88,7 @@ private:
 	int prev_scale = -1;
 	int _tonemode_back = 0;
 
-	bool _test_done = false;
+	volatile bool _test_done = false;
     bool _mute = true;
 	bool _dac_inited = false;
 	bool amp_is_on = false;

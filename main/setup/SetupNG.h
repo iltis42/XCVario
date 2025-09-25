@@ -268,6 +268,20 @@ public:
 		return true;
 	}
 
+	bool setCheckRange( T aval, bool dosync=true, bool doAct=true ) {
+		if constexpr (std::is_same_v<T, float> || std::is_same_v<T, int>) {
+			if( hasLimits() ){
+				if( aval < getMin() ) {
+					return set( getMin(), dosync, doAct );
+				}
+				if ( aval > getMax() ){
+					return set( getMax(), dosync, doAct );
+				}
+			}
+		}
+		return set( aval, dosync, doAct );
+	}
+
 	e_quantity_t quantityType() {
 		return (e_quantity_t)flags._quant;
 	}
@@ -303,7 +317,6 @@ extern SetupNG<float>  		vario_av_delay;
 extern SetupNG<float>  		center_freq;
 extern SetupNG<float>  		tone_var;
 extern SetupNG<int>  		dual_tone;
-extern SetupNG<float>  		high_tone_var;
 extern SetupNG<float>  		deadband;
 extern SetupNG<float>  		deadband_neg;
 extern SetupNG<float>  		scale_range;
@@ -323,7 +336,6 @@ extern SetupNG<float>  		s2f_auto_lag;
 
 extern SetupNG<int>  		audio_variable_frequency;
 extern SetupNG<int>  		chopping_mode;
-extern SetupNG<int>         audio_equalizer;
 
 extern SetupNG<float>  		wifi_max_power;
 extern SetupNG<int>  		factory_reset;
@@ -348,7 +360,6 @@ extern SetupNG<float>  		elevation;
 extern SetupNG<float>  		audio_volume;
 extern SetupNG<int>  		audio_split_vol;
 extern SetupNG<float>  		default_volume;
-extern SetupNG<float>  		frequency_response;
 extern SetupNG<float>  		s2f_deadband;
 extern SetupNG<float>  		s2f_deadband_neg;
 extern SetupNG<float>  		s2f_delay;
@@ -487,7 +498,6 @@ extern SetupNG<int> 		wk_label_minus_1;
 extern SetupNG<int> 		wk_label_minus_2;
 extern SetupNG<int> 		wk_label_minus_3;
 extern SetupNG<float>       flap_takeoff;
-extern SetupNG<int> 		audio_mute_menu;  // replaced audio_disable (same key)
 extern SetupNG<int> 		audio_mute_sink;
 extern SetupNG<int> 		audio_mute_gen;
 extern SetupNG<int>			vario_mode;

@@ -14,7 +14,6 @@ CruiseMode::CruiseMode()
 {
     _cmode = cruise_mode.get();
     updateCache();
-    // mutex = xSemaphoreCreateMutex();
 }
 
 void CruiseMode::setCMode(bool cruise)

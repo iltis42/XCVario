@@ -29,9 +29,9 @@ class CruiseMode
 public:
     using VarioModeBits = enum { MODE_BRUTTO=0, MODE_NORMAL_NETTO=1, MODE_REL_NETTO=3 }; // vario mode bits
     CruiseMode();
-    inline bool getCMode() const { return _cmode; };
-    inline bool isNetto() const { return _vmode != MODE_BRUTTO; }
-    inline int16_t getVMode() const { return _vmode; }
+    bool getCMode() const { return _cmode; };
+    bool isNetto() const { return _vmode != MODE_BRUTTO; }
+    int16_t getVMode() const { return _vmode; }
 
     // setter
     void setCMode(bool cruise);

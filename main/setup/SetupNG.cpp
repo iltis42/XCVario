@@ -198,7 +198,6 @@ SetupNG<float>  		vario_av_delay( "VARIO_AV_DELAY", 20.0, true, SYNC_NONE, PERSI
 SetupNG<float>  		center_freq( "AUDIO_CENTER_F", 500.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(200.0, 2000.0, 10.0));
 SetupNG<float>  		tone_var( "OCTAVES", 2.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1.2, 4, 0.05));
 SetupNG<int>  			dual_tone( "DUAL_TONE", 0, true, SYNC_BIDIR );
-SetupNG<float>  		high_tone_var( "HIGH_TONE_VAR", 12.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 50, 1.0));
 SetupNG<float>  		deadband( "DEADBAND", 0.3, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_VSPEED, LIMITS(.0, 5.0, 0.1));
 SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_VSPEED, LIMITS(-5.0, .0, 0.1));
 SetupNG<float>  		scale_range( "VARIO_RANGE", 5.0, true, SYNC_NONE, PERSISTENT, 0, QUANT_VSPEED, LIMITS(1.0, 30.0, 1));
@@ -210,7 +209,7 @@ SetupNG<float>			crew_weight( "CREW_WGT", 80, true, SYNC_BIDIR, PERSISTENT, chan
 SetupNG<float>			gross_weight( "GROSS_WGT", 350, true, SYNC_NONE, VOLATILE ); // derived from above
 SetupNG<float>  		bugs( "BUGS", 0.0, true, SYNC_BIDIR, VOLATILE, modifyPolar, QUANT_NONE, LIMITS(0.0, 50, 1));
 
-SetupNG<int>  			cruise_mode( "CRUISE", AUDIO_VARIO, false, SYNC_BIDIR, VOLATILE, change_cruise ); // use the CruiseMode wrapper to access and modify
+SetupNG<int>  			cruise_mode( "CRUISE", 0, false, SYNC_BIDIR, VOLATILE, change_cruise ); // use the CruiseMode wrapper to access and modify
 SetupNG<float>  		OAT( "OAT", DEVICE_DISCONNECTED_C, true, SYNC_FROM_MASTER, VOLATILE );   // outside temperature
 SetupNG<float>  		swind_dir( "SWDD", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
 SetupNG<float>  		swind_speed( "SWDS", 0.0, true, SYNC_FROM_MASTER, VOLATILE, resetSWindAge );
@@ -247,7 +246,6 @@ SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change
 SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0 );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
-SetupNG<int>            audio_equalizer( "AUD_EQ", AUDIO_EQ_DISABLE, false );
 
 SetupNG<float>  		wifi_max_power( "WIFI_MP" , 50, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(10.0, 100.0, 5.0));
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
@@ -271,7 +269,6 @@ SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45, true, SYNC_FROM_MA
 SetupNG<float>  		mean_climb_major_change( "MEAN_CLMC", 0.5, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.1, 5.0, 0.1));
 SetupNG<float>  		elevation( "ELEVATION", NOTSET_ELEVATION, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_ALT, LIMITS(NOTSET_ELEVATION, 3000, 1));
 SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
-SetupNG<float>  		frequency_response( "FREQ_RES", 30.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-70.0, 70.0, 1.0));
 SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(.0, 25.0, 1));
 SetupNG<float>  		s2f_deadband_neg( "DB_S2F_NEG", -10.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(-25.0, .0, 1));
 SetupNG<float>  		s2f_delay( "S2F_DELAY", 5.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.10001, 10.0, 0.1));
@@ -341,8 +338,7 @@ SetupNG<int>		    wk_sens_pos_minus_3("WKSM3", 4000);
 SetupNG<int>            stall_warning( "STALL_WARN", 0 );
 SetupNG<float>			stall_speed( "STALL_SPEED", 70, true, SYNC_FROM_MASTER, PERSISTENT, 0, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<int>            flarm_warning( "FLARM_LEVEL", 1 );
-static const limits_t volume_limits = {0, 100, 1};
-SetupNG<float>          flarm_volume( "FLARM_VOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &volume_limits);
+SetupNG<float>          flarm_volume( "FLARM_VOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
 SetupNG<float>          flarm_alarm_time( "FLARM_ALM", 5, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1, 15, 1));
 SetupNG<int>            flap_sensor( "FLAP_SENS", 0, false, SYNC_FROM_MASTER, PERSISTENT, flap_act); // fixme synch logic broken
 SetupNG<float>          compass_dev_0( "CP_DEV_0", 0 );
@@ -390,7 +386,6 @@ SetupNG<int> 			wk_label_minus_1( "WKLM1", 8,  true, SYNC_BIDIR, PERSISTENT, fla
 SetupNG<int> 			wk_label_minus_2( "WKLM2", 7,  true, SYNC_BIDIR, PERSISTENT, flap_label_act);  // -2
 SetupNG<int> 			wk_label_minus_3( "WKLM3", 42,  true, SYNC_BIDIR, PERSISTENT, flap_label_act); //  S
 SetupNG<float>       	flap_takeoff("FLAPTO", 1,  true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-3, 3, 1));
-SetupNG<int> 			audio_mute_menu( "AUDIS", 0 );
 SetupNG<int> 			audio_mute_sink( "AUDISS", 0 );
 SetupNG<int> 			audio_mute_gen( "AUDISG", AUDIO_ON );
 SetupNG<int>			vario_mode("VAMOD", CRUISE_ONLY_NETTO, true, SYNC_NONE, PERSISTENT, change_cruise);  // switch to netto mode when cruising
@@ -409,7 +404,7 @@ SetupNG<float>			gload_neg_limit("GLOADNL", -3, true, SYNC_NONE, PERSISTENT, nul
 SetupNG<float>			gload_pos_max("GLOADPM", 1);
 SetupNG<float>			gload_neg_max("GLOADNM", 0);
 SetupNG<float>			airspeed_max("ASMAX", 0 );
-SetupNG<float>		    gload_alarm_volume("GLOADAVOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &volume_limits);
+SetupNG<float>		    gload_alarm_volume("GLOADAVOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
 SetupNG<int>        	display_variant("DISPLAY_VARIANT", 0 );
 SetupNG<int>        	compass_dev_auto("COMPASS_DEV", 0 );
 SetupNG<float>       	max_circle_wind_diff("CI_WINDDM", 60.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 90.0, 1.0));

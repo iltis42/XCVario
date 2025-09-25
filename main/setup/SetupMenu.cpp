@@ -793,11 +793,6 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	dt->mkEnable();
 	top->addEntry(dt);
 
-	SetupMenuValFloat *htv = new SetupMenuValFloat("Dual Tone Pitch", "%", audio_setup_f, false, &high_tone_var);
-	htv->setHelp(
-			"Tone variation in Dual Tone mode, percent of frequency pitch up for second tone");
-	top->addEntry(htv);
-
 	SetupMenuSelect *tch = new SetupMenuSelect("Chopping", RST_NONE, eval_chop, &chopping_mode);
 	tch->setHelp(
 			"Select tone chopping option on positive values for Vario and or S2F");
@@ -828,30 +823,10 @@ void audio_menu_create_deadbands(SetupMenu *top) {
 	top->addEntry(dbmaxls2f);
 }
 
-void audio_menu_create_equalizer(SetupMenu *top) {
-	SetupMenuSelect *audeqt = new SetupMenuSelect("Equalizer", RST_ON_EXIT, nullptr, &audio_equalizer);
-	audeqt->setHelp(
-			"Select the equalizer according to the type of loudspeaker used");
-	audeqt->addEntry("Disable");
-	audeqt->addEntry("Speaker 8 Ohms");
-	audeqt->addEntry("Speaker 4 Ohms");
-	audeqt->addEntry("Speaker External");
-	top->addEntry(audeqt);
-
-	SetupMenuValFloat *frqr = new SetupMenuValFloat("Frequency Response", "%", 0, false, &frequency_response);
-	frqr->setHelp(
-			"Setup frequency response, double frequency will be attenuated by the factor given, half frequency will be amplified");
-	top->addEntry(frqr);
-}
-
 void audio_menu_create_volume(SetupMenu *top) {
 	SetupMenuValFloat *dv = new SetupMenuValFloat("Default Volume", "%", nullptr, false, &default_volume);
 	top->addEntry(dv);
 	dv->setHelp("Default volume for Audio when device is switched on");
-
-	SetupMenu *audeq = new SetupMenu("Equalizer", audio_menu_create_equalizer);
-	top->addEntry(audeq);
-	audeq->setHelp("Equalization parameters for a constant perceived volume over a wide frequency range", 220);
 
 	SetupMenuSelect *amspvol = new SetupMenuSelect("S2F Volume", RST_NONE, nullptr, &audio_split_vol);
 	amspvol->setHelp(
@@ -866,13 +841,6 @@ void audio_menu_create_mute(SetupMenu *top) {
 	asida->addEntry("Stay On");  // 0
 	asida->addEntry("Mute");     // 1
 	top->addEntry(asida);
-
-	SetupMenuSelect *ameda = new SetupMenuSelect("In Setup", RST_NONE, nullptr, &audio_mute_menu);
-	ameda->setHelp(
-			"Select whether vario audio will be muted while Setup Menu is open");
-	ameda->addEntry("Stay On");  // 0
-	ameda->addEntry("Mute");     // 1
-	top->addEntry(ameda);
 
 	SetupMenuSelect *ageda = new SetupMenuSelect("Generally", RST_NONE, nullptr, &audio_mute_gen);
 	ageda->setHelp(
@@ -1567,7 +1535,6 @@ void setup_create_root(SetupMenu *top) {
 	} else {
 		SetupMenuValFloat *vol = new SetupMenuValFloat("Audio Volume", "%", nullptr, true, &audio_volume);
 		vol->setHelp("Audio volume level for variometer tone on internal and external speaker");
-		vol->setMax(MAX_AUDIO_VOLUME);
 		top->addEntry(vol);
 	}
 

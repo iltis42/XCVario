@@ -142,7 +142,7 @@ void drawDisplay(void *arg)
 					float acc_stall= stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
 					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
 						if( !gflags.stall_warning_active ){
-							AUDIO->alarm( true, MAX_AUDIO_VOLUME );
+							AUDIO->alarm( true, flarm_volume.get() );
 							Display->drawWarning( "! STALL !", true );
 							gflags.stall_warning_active = true;
 						}
@@ -191,7 +191,7 @@ void drawDisplay(void *arg)
 							gflags.gear_warning_active = false;
 						}
 						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
-							AUDIO->alarm( true, MAX_AUDIO_VOLUME );
+							AUDIO->alarm( true, flarm_volume.get() );
 							Display->drawWarning( "! GEAR !", false );
 							gflags.gear_warning_active = true;
 						}

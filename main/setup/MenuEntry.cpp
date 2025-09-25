@@ -62,7 +62,7 @@ void MenuEntry::menuPrintLn(const char* str, int ln, int x) const {
 }
 
 void MenuEntry::reBoot(){
-	AUDIO->stop();
+	delete AUDIO;
 	clear();
 	MYUCG->setPrintPos( 10, 50 );
 	MYUCG->print("...rebooting now" );

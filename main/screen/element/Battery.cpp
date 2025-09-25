@@ -14,7 +14,7 @@
 #include "AdaptUGC.h"
 
 #include <cstdio>
-#include "logdef.h"
+#include "logdefnone.h"
 
 
 extern AdaptUGC *MYUCG;

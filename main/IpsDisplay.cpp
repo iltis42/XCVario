@@ -35,7 +35,7 @@
 #include "CenterAid.h"
 #include "Rotate.h"
 #include "AdaptUGC.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>

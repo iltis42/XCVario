@@ -1,27 +1,26 @@
-/* DAC Cosine Generator Example
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
- */
+/***********************************************************
+ ***   THIS DOCUMENT CONTAINS PROPRIETARY INFORMATION.   ***
+ ***    IT IS THE EXCLUSIVE CONFIDENTIAL PROPERTY OF     ***
+ ***     Rohs Engineering Design AND ITS AFFILIATES.     ***
+ ***                                                     ***
+ ***       Copyright (C) Rohs Engineering Design         ***
+ ***********************************************************/
 
 #include "ESPAudio.h"
 
-#include "driver/dac_continuous.h"
 #include "mcp4018.h"
 #include "cat5171.h"
 #include "S2fSwitch.h"
 #include "I2Cbus.hpp"
-#include "spline.h"
 #include "setup/CruiseMode.h"
 #include "protocol/Clock.h"
 #include "sensor.h"
 #include "logdef.h"
 
+#include <freertos/queue.h>
+
 #include <esp_system.h>
 #include <esp_task_wdt.h>
-
-#include <soc/rtc.h>
 
 #include <cstdio>
 #include <cstring>
@@ -30,108 +29,121 @@
 
 Audio *AUDIO = nullptr;
 
+// Internal queue to handle audio sequences and multi voice
+static QueueHandle_t AudioQueue = nullptr;
+
+// DAC setup
 constexpr const int SAMPLE_RATE = 44100; // Hz
-constexpr const int BUF_LEN     = 1300;  // DMA buffer per push
-constexpr const int TABLE_SIZE  = 256;
-constexpr const int RAMP_SIZE   = 64;
-constexpr const int TABLE_BITS  = 8; // log2((double)TABLE_SIZE);
+constexpr const int BUF_LEN     = 1024;  // DMA buffer per push
+constexpr const int TABLE_SIZE  = 128;
+constexpr const int TABLE_BITS  = 7; // log2((double)TABLE_SIZE);
 constexpr const int DAC_CENTER  = 127;
 constexpr const int DAC_HLF_AMPL = 32;
 
-enum DAC_Cmds {
-    CMD_SILENT = 0,
-    CMD_PHASEIN,
-    CMD_SING,
-    // CMD_DUO,
-    CMD_PHASEOUT,
-};
 // helper struct for DMA commands
 struct DMACMD
 {
     void init(int8_t *t, uint8_t b);
+    static uint32_t calcStep(float f) { return (uint32_t)((f * (1ULL << 32)) / SAMPLE_RATE); }
+    void setFrequencyAndGain(float f);
     void setFrequency(float f);
-    inline uint8_t getCmd() const {return cmd & 0xf;}
-    inline uint8_t getNrVoice() const {return cmd >> 4;}
-    inline void setCmd(uint8_t c) {cmd = (cmd & 0xf0) | (c & 0xf);}
-    inline void addVoice() {cmd += 0x10;}
-    inline void setNrVoice(uint8_t v) {cmd = (v<<4) | (cmd & 0xf);}
+    float getFrequency() const;
+    int16_t getMaxGain(float f) const;
+    void setGain(int16_t g) { gain_target = g; }
+    inline void start() { phase = 0; gain = 0; active = true; }
+    inline void stop() { gain_target = 0; }
     uint32_t phase; 
     uint32_t step;
     int8_t *table;
     uint8_t shift;
 	int16_t gain;
-    uint8_t cmd;
-    DMACMD *next = nullptr;
+	int16_t gain_target;
+	uint16_t count;
+    bool active = false;
+    // DMACMD *next = nullptr;
 };
 void DMACMD::init(int8_t *t, uint8_t b) {
     phase = 0;
     table = t;
     shift = 32 - b;
-    gain = 128;
-    cmd = CMD_SILENT;
-    next = nullptr;
+    gain = 0;
+    gain_target = 128;
+    count = 0;
+    active = false;
 }
-void DMACMD::setFrequency(float f) {
-    step = (uint32_t)((f * (1ULL << 32)) / SAMPLE_RATE);
-	gain = (f<=center_freq.get()) ? 128 : 128 - 38 *(f-center_freq.get()) / 1500.0; // -3dB at 1500Hz above center
+void DMACMD::setFrequencyAndGain(float f) {
+    step = calcStep(f);
+	gain_target = getMaxGain(f);
+}
+void DMACMD::setFrequency(float f)
+{
+    step = calcStep(f);
+}
+float DMACMD::getFrequency() const
+{
+    return (float)(step * SAMPLE_RATE) / (1ULL << 32);
+}
+int16_t DMACMD::getMaxGain(float f) const
+{
+    return (f<=center_freq.get()) ? 128 : 128 - 47 *(f-center_freq.get()) / 1500.0; // -4dB at 1500Hz above center
 }
 
-
-// static std::array<int8_t, TABLE_SIZE> sine_table;
+// predefined sine wave table
 const std::array<int8_t, TABLE_SIZE> sine_table = {
-    // triangular
-    // 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13, 14, 14, 15, 15, 16, 16, 
-    // 17, 17, 18, 18, 19, 19, 20, 20, 21, 21, 22, 22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 28, 28, 29, 29, 30, 30, 31, 
-    // 31, 32, 31, 31, 30, 30, 29, 29, 28, 28, 27, 27, 26, 26, 25, 25, 24, 24, 23, 23, 22, 22, 21, 21, 20, 20, 19, 19, 18, 
-    // 18, 17, 17, 16, 16, 15, 15, 14, 14, 13, 13, 12, 12, 11, 11, 10, 10, 9, 9, 8, 8, 7, 7, 6, 6, 5, 5, 4, 4, 3, 3, 2, 2, 
-    // 1, 1, 0, 0, 0, -1, -1, -2, -2, -3, -3, -4, -4, -5, -5, -6, -6, -7, -7, -8, -8, -9, -9, -10, -10, -11, -11, -12, -12, 
-    // -13, -13, -14, -14, -15, -15, -16, -16, -17, -17, -18, -18, -19, -19, -20, -20, -21, -21, -22, -22, -23, -23, -24, 
-    // -24, -25, -25, -26, -26, -27, -27, -28, -28, -29, -29, -30, -30, -31, -31, -32, -31, -31, -30, -30, -29, -29, -28, 
-    // -28, -27, -27, -26, -26, -25, -25, -24, -24, -23, -23, -22, -22, -21, -21, -20, -20, -19, -19, -18, -18, -17, -17, 
-    // -16, -16, -15, -15, -14, -14, -13, -13, -12, -12, -11, -11, -10, -10, -9, -9, -8, -8, -7, -7, -6, -6, -5, -5, -4, 
-    // -4, -3, -3, -2, -2, -1, -1, 0};
-    0, 1, 2, 2, 3, 4, 5, 5, 6, 7, 8, 8, 9, 10, 10, 11, 12, 13, 13, 14, 15, 15, 16, 17, 17, 18, 18, 19, 20, 20, 21, 21, 22, 
-    22, 23, 23, 24, 24, 25, 25, 26, 26, 27, 27, 27, 28, 28, 28, 29, 29, 29, 29, 30, 30, 30, 30, 30, 31, 31, 31, 31, 31, 31, 
-    31, 31, 31, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29, 29, 29, 29, 28, 28, 28, 27, 27, 27, 26, 26, 25, 25, 24, 24, 
-    23, 23, 22, 22, 21, 21, 20, 20, 19, 18, 18, 17, 17, 16, 15, 15, 14, 13, 13, 12, 11, 10, 10, 9, 8, 8, 7, 6, 5, 5, 4, 3, 
-    2, 2, 1, 0, -1, -2, -2, -3, -4, -5, -5, -6, -7, -8, -8, -9, -10, -10, -11, -12, -13, -13, -14, -15, -15, -16, -17, -17, 
-    -18, -18, -19, -20, -20, -21, -21, -22, -22, -23, -23, -24, -24, -25, -25, -26, -26, -27, -27, -27, -28, -28, -28, -29, 
-    -29, -29, -29, -30, -30, -30, -30, -30, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -31, -30, 
-    -30, -30, -30, -30, -29, -29, -29, -29, -28, -28, -28, -27, -27, -27, -26, -26, -25, -25, -24, -24, -23, -23, -22, -22, 
-    -21, -21, -20, -20, -19, -18, -18, -17, -17, -16, -15, -15, -14, -13, -13, -12, -11, -10, -10, -9, -8, -8, -7, -6, -5, 
-    -5, -4, -3, -2, -2, -1};
-static volatile DMACMD* voice_list;
-static __attribute__((aligned(4))) DMACMD default_voice;
-static __attribute__((aligned(4))) DMACMD second_voice;
-const std::array<int8_t, RAMP_SIZE> hann_ramp = {
-    32, 31, 31, 31, 31, 31, 31, 31, 30, 30, 30, 29, 29, 28, 28, 27, 27, 26, 25, 25, 24, 24, 23, 22, 21, 21, 20, 19, 18, 17, 
-    17, 16, 15, 14, 14, 13, 12, 11, 10, 10, 9, 8, 7, 7, 6, 6, 5, 4, 4, 3, 3, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
+    0, 2, 4, 5, 7, 8, 10, 11, 13, 14, 15, 17, 18, 19, 20, 21, 23, 24, 24, 25, 26, 27, 28, 28, 29, 29, 
+    30, 30, 31, 31, 31, 31, 31, 31, 31, 31, 30, 30, 29, 29, 28, 28, 27, 26, 25, 24, 24, 23, 21, 20, 19, 
+    18, 17, 15, 14, 13, 11, 10, 9, 7, 5, 4, 2, 0, 0, -2, -4, -6, -7, -8, -10, -11, -13, -14, -15, -16, 
+    -18, -19, -20, -21, -23, -24, -24, -25, -26, -27, -28, -28, -29, -29, -30, -30, -31, -31, -31, -31, 
+    -31, -31, -31, -30, -30, -30, -30, -29, -28, -28, -27, -26, -25, -24, -23, -22, -21, -20, -19, -18, 
+    -17, -15, -14, -12, -11, -10, -8, -7, -5, -4, -2, -1 };
+const std::array<int8_t, TABLE_SIZE> sawtooth_table = {
+    0,   18,   21,   31,   26,   29,   26,   27,   25,   26,   24,   25,   23,   24,   22,   23, 
+    22,   22,   21,   21,   20,   20,   19,   19,   18,   18,   17,   17,   16,   16,   15,   15, 
+    14,   14,   14,   13,   13,   12,   12,   12,   11,   11,   10,   10,    9,    9,    8,    8, 
+    7,    7,    6,    6,    5,    5,    5,    4,    4,    3,    3,    2,    2,    1,    1,    0, 
+    0,    0,   -1,   -1,   -2,   -2,   -3,   -3,   -4,   -4,   -5,   -5,   -5,   -6,   -6,   -7, 
+    -7,   -8,   -8,   -9,   -9,  -10,  -10,  -11,  -11,  -12,  -12,  -12,  -13,  -13,  -14,  -14, 
+    -14,  -15,  -15,  -16,  -16,  -17,  -17,  -18,  -18,  -19,  -19,  -20,  -20,  -21,  -21,  -22, 
+    -22,  -23,  -22,  -24,  -23,  -25,  -24,  -26,  -25,  -27,  -26,  -29,  -26,  -31,  -21,  -18 };
 
-// static void init_sine_table() {
-//     for (int i = 0; i < TABLE_SIZE; i++) {
-//         sine_table[i] = (int8_t)((DAC_HLF_AMPL-.25) * sin(2. * M_PI * i / TABLE_SIZE));
-//         printf("%d, ", sine_table[i]);
-//     }
-// }
-// static void init_triangle_table() {
-//     for (int i = 0; i < TABLE_SIZE; i++) {
-//         // normalized position in [0,1)
-//         float t = (float)i / TABLE_SIZE;
-//         // triangle wave in range [-1, 1]
-//         float tri = 4.0f * fabsf(t + 0.25 - roundf(t + 0.25f)) - 1.0f;
-//         // scale to DAC amplitude
-//         sine_table[i] = (int8_t)(DAC_HLF_AMPL * tri);
-//         printf("%d, ", sine_table[i]);
-//     }
-// }
+constexpr int MAX_VOICES = 4;
+static __attribute__((aligned(4))) DMACMD voice_list[MAX_VOICES];
+static constexpr DMACMD& default_voice = voice_list[0];
+static constexpr DMACMD& second_voice = voice_list[1];
+static constexpr DMACMD& third_voice = voice_list[2];
+static constexpr DMACMD& fourth_voice = voice_list[3];
 
-// static void init_hann_ramp() {
-//     for (int n = 0; n < RAMP_SIZE; n++) {
-//         // hann_ramp[n] = 1. - sin((M_PI * n) / (2.0f * RAMP_SIZE));
-//         hann_ramp[n] = (uint8_t)(0.5 * (1.0 + cos(M_PI * n / (RAMP_SIZE-1))) * DAC_HLF_AMPL);
-//         printf("%d, ", hann_ramp[n]);
-//     }
-// }
+// Sequence control
+
+// start a sequence of DMACMD commands
+void alertSequence(int id) {
+    // Kick a predefined sequence
+
+
+}
+
+// Overlay one or more voices onto the default voice
+void setVoice(int idx, int duration_ms, float frequency, int8_t *table, int size_bits) {
+    DMACMD &v = voice_list[idx];
+    v.init(table, size_bits);
+    if ( frequency > 0 ) {
+        v.setFrequencyAndGain(frequency);
+    } else {
+        v.step = default_voice.step * -frequency;
+    }
+    v.count = std::max((duration_ms * SAMPLE_RATE) / (1000 * BUF_LEN/2), 1);
+    v.start();
+}
+
+// predefined voice control sequences
+// alarm 1: 1400Hz & 2097Hz
+// DMACMD  alarm1_5 = {0, 0, (int8_t *)sine_table.data(), 32-TABLE_BITS, 0, 7, CMD_SILENT, nullptr};
+// DMACMD  alarm1_4 = {0, 204291425, (int8_t *)sine_table.data(), 32-TABLE_BITS, 128, 0, CMD_SING, (DMACMD*)&alarm1_5};
+// DMACMD  alarm1_3 = {0, 136348168, (int8_t *)sine_table.data(), 32-TABLE_BITS, 128, 11, 0x10 | CMD_SING, (DMACMD*)&alarm1_4};
+// DMACMD  alarm1_2 = {0, 0, (int8_t *)sine_table.data(), 32-TABLE_BITS, 0, 7, CMD_SILENT, (DMACMD*)&alarm1_3};
+// DMACMD  alarm1_1 = {0, 204291425, (int8_t *)sine_table.data(), 32-TABLE_BITS, 128, 0, CMD_SING, (DMACMD*)&alarm1_2};
+// DMACMD  alarm1   = {0, 136348168, (int8_t *)sine_table.data(), 32-TABLE_BITS, 128, 11, 0x10 | CMD_SING, (DMACMD*)&alarm1_1};
+
 
 // Benchmark
 int64_t total_us = 0, busy_irs = 0;
@@ -141,116 +153,61 @@ int irq_counter = 0;
 // DMA callback
 static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_data_t *e, void *user_data)
 {
-    DMACMD *list = *(DMACMD **)user_data;
+    DMACMD *vl = (DMACMD *)user_data;
     uint8_t *buf = (uint8_t *)e->buf;
 
-    int64_t t_busy0 = esp_timer_get_time();
+    int64_t t_busy0 = esp_timer_get_time(); // benchmark
     irq_counter++;
 
-    if (list == nullptr) list = &default_voice;
+    int numVoices = 0;
+    for (int j = 0; j < MAX_VOICES; j++) {
+        if ( vl[j].active ) numVoices++;
+    }
+    numVoices = std::max(1, numVoices - 1);
 
-    uint32_t phase = list->phase;
-    uint32_t step  = list->step;
-    int8_t *table  = list->table;
-    uint8_t shift  = list->shift;
-    int gain = list->gain;
-    if (list->getCmd() == CMD_SILENT)
+    if (numVoices == 0)
     {
+        // silent
         memset(buf, DAC_CENTER, e->buf_size);
     }
-    else if (list->getCmd() == CMD_PHASEIN)
+    else
     {
-        // phase in
-        int i = e->buf_size - 2*RAMP_SIZE;
-        memset(buf, DAC_CENTER, i);
-        int revidx = RAMP_SIZE - 1;
-        for (; i < e->buf_size; i+=2)
-        {
-            int idx = phase >> shift;
-            buf[i] = (((int)hann_ramp[revidx--] * table[idx] * gain) >> 12) + DAC_CENTER;
-            buf[i+1] = buf[i];
-            phase += step;
-        }
-        list->phase = phase;
-        list->cmd = CMD_SING; // + list->getNrVoice();
-    }
-    else if (list->getCmd() == CMD_SING)
-    {
-        if (list->getNrVoice() == 0) {
-            // single tone
-            for (int i=0; i < e->buf_size; i+=2)
-            {
-                int idx = phase >> shift;
-                buf[i] = (((int)table[idx]) * gain >> 7) + DAC_CENTER;
-                buf[i+1] = buf[i];
-                phase += step;
-            }
-            list->phase = phase;
-        }
-        else
-        {
-            // multi tone
-            int numVoices = list->getNrVoice()+1;
-            for (int i = 0; i < e->buf_size; i += 2) {
-                int sum = 0;
-                DMACMD *v = list;
-                while (v) {
-                    sum += ((int)v->table[v->phase >> v->shift] * v->gain) >> 7;
-                    v->phase += v->step;
-                    v = v->next;
+        // multi tone
+        for (int i=0; i < e->buf_size; i += 2) {
+            int sum = 0;
+            for (int j = 0; j < MAX_VOICES; j++) {
+                DMACMD& v = vl[j];
+                if (!v.active) continue;
+                if ( v.gain != v.gain_target ) {
+                    if ( v.gain < v.gain_target ) v.gain++;
+                    else                          v.gain--;
+                    if ( v.gain == 0 ) {
+                        v.active = false;
+                        numVoices = std::max(1, numVoices - 1);
+                    }
                 }
-                sum /= numVoices;
-                sum += DAC_CENTER;
-
-                buf[i]   = (int8_t)sum;
-                buf[i+1] = (int8_t)sum;
+                sum += ((int)v.table[v.phase >> v.shift] * v.gain) >> 7;
+                v.phase += v.step;
             }
+            sum /= numVoices;
+            if ( sum >  DAC_HLF_AMPL ) sum =  DAC_HLF_AMPL;
+            if ( sum < -DAC_HLF_AMPL ) sum = -DAC_HLF_AMPL;
+            sum += DAC_CENTER;
+
+            buf[i]   = (int8_t)sum;
+            buf[i+1] = (int8_t)sum;
         }
     }
-    else if (list->getCmd()== CMD_PHASEOUT)
-    {
-        // phase out
-        int i = 0;
-        for (int hannidx=0; hannidx<RAMP_SIZE; hannidx++, i+=2)
-        {
-            int idx = phase >> shift;
-            buf[i] = (((int)hann_ramp[hannidx] * table[idx] * gain) >> 12) + DAC_CENTER;
-            buf[i+1] = buf[i];
-            phase += step;
+        
+    for (int j = 0; j < MAX_VOICES; j++) {
+        if ( vl[j].count > 0 ) {
+            vl[j].count--;
+            if ( vl[j].count == 0 ) vl[j].stop();
         }
-        memset(buf + i, DAC_CENTER, e->buf_size - i);
-        list->phase = 0;
-        list->cmd = 0;
     }
 
-    // if ( list[1] > 0 ) {
-    // for (int i = 0; i < e->buf_size; i++) {
-    //     int32_t mix =0;
-    //     for ( int voice=0; voice<all; voice++ ) {
-    //         uint32_t *phase = &list[voice*2];
-    //         mix += sine_table[*phase >> (32 - TABLE_BITS)];
-    //         *phase += list[voice*2+1];
-    //     }
-    //     mix /= all;
-    //     buf[i] = (uint8_t)(mix + 128);
-    // }
-    // for (int i = 0; i < e->buf_size; i++) {
-    //     uint16_t idx = phase >> (32 - TABLE_BITS);
-    //     phase += step;
-    //     buf[i] = sine_table[idx];
-    // }
-    //     int32_t mix;
-    //     for (int i = 0; i < e->buf_size; i++) {
-    //         uint16_t idx = phase >> (32 - TABLE_BITS);
-    //         mix = sine_table[idx];
-    //         buf[i] = mix + DAC_CENTER;
-    //         phase += step;
-    //     }
-    // }
-    // if ( i < e->buf_size ) {
-    //     memset(buf+i, DAC_CENTER, e->buf_size-i);
-    // }
 
+    // benchmark
     int64_t t_busy1 = esp_timer_get_time();
     busy_irs += (t_busy1 - t_busy0);
 
@@ -260,19 +217,22 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
 Audio::Audio() :
 	Clock_I(8) // every 80msec
 {
-	// init_sine_table();
-    // init_triangle_table();
-    // init_hann_ramp();
     default_voice.init((int8_t*)sine_table.data(), TABLE_BITS);
     second_voice.init((int8_t*)sine_table.data(), TABLE_BITS);
-    voice_list = &default_voice;
-    // default_voice.next = &second_voice;
+    third_voice.init((int8_t*)sine_table.data(), TABLE_BITS);
+    fourth_voice.init((int8_t*)sine_table.data(), TABLE_BITS);
+
+    if ( ! AudioQueue ) {
+        AudioQueue = xQueueCreate(5, sizeof(uint32_t));
+    }
 }
 
 Audio::~Audio()
 {
     if ( _dac_chan ) {
         mute();
+        vTaskDelay(pdMS_TO_TICKS(10)); // no cracks ..
+        enableAmplifier(false);
         ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
         ESP_ERROR_CHECK(dac_continuous_disable(_dac_chan));
         ESP_ERROR_CHECK(dac_continuous_del_channels(_dac_chan));
@@ -314,7 +274,7 @@ bool Audio::begin( int16_t ch  )
         .on_convert_done = dacdma_done,
         .on_stop = nullptr
     };
-    err |= dac_continuous_register_event_callback(_dac_chan, &callbacks, &voice_list);
+    err |= dac_continuous_register_event_callback(_dac_chan, &callbacks, voice_list);
 
     err |= dac_continuous_enable(_dac_chan);
     ESP_LOGI(FNAME, "DAC initialized success, DAC DMA is ready");
@@ -372,10 +332,9 @@ class TestSequence : public Clock_I
 public:
     TestSequence(float freq, float maxfreq) : Clock_I(15), f(freq), maxf(maxfreq)
     {
-        default_voice.setFrequency(f);
-        second.init((int8_t*)sine_table.data(), TABLE_BITS);
-        third.init((int8_t*)sine_table.data(), TABLE_BITS);
-        AUDIO->writeVolume(20.);
+        default_voice.setFrequencyAndGain(f);
+        default_voice.start();
+        AUDIO->writeVolume(25.);
         AUDIO->unmute();
         Clock::start(this);
     }
@@ -390,36 +349,51 @@ public:
         ESP_LOGI(FNAME, "iter %d %f", i, freq);
         if (i < 4) // major third
         {
-            default_voice.setFrequency(freq);
+            default_voice.setFrequencyAndGain(freq);
         }
         else if (i < 8) // fifth
         {
-            second.setFrequency(f);
-            default_voice.setFrequency(freq);
-            default_voice.next = &second;
-            default_voice.setNrVoice(1);
+            second_voice.setFrequencyAndGain(f);
+            if ( ! second_voice.active ) {
+                second_voice.start();
+            }
+            default_voice.setFrequencyAndGain(freq);
             ESP_LOGI(FNAME, "s=%f", f);
+        }
+        else if (i < 12) // octave - 1
+        {
+            default_voice.setFrequencyAndGain(freq);
+            freq = f * pow(2.0, (4 - (i-8)) / 12.0);
+            second_voice.setFrequencyAndGain(freq);
+            ESP_LOGI(FNAME, "s=%f", freq);
         }
         else if (i < 13) // octave
         {
-            default_voice.setFrequency(freq);
-            freq = f * pow(2.0, (i - 2*(i-8) - 4) / 12.0);
-            second.setFrequency(freq);
-            ESP_LOGI(FNAME, "s=%f", freq);
+            default_voice.setFrequencyAndGain(freq);
+            second_voice.setFrequencyAndGain(f);
+            ESP_LOGI(FNAME, "s=%f", f);
+            freq = f * pow(2.0, 4./12.0);
+            third_voice.setFrequency(freq);
+            third_voice.start();
+            ESP_LOGI(FNAME, "t=%f", freq);
+            freq = f * pow(2.0, 7./12.0);
+            fourth_voice.setFrequency(freq);
+            fourth_voice.start();
+            ESP_LOGI(FNAME, "f=%f", freq);
         }
         else if (i < 17)
         {
-            second.next = &third;
-            third.setFrequency(f/2.);
-            third.gain = 180;
-            default_voice.setNrVoice(2);
+            second_voice.setFrequency(f/2.);
+            second_voice.setGain(200);
         }
         else if (i < 21) {
         }
         else
         {
-            default_voice.setNrVoice(0);
-            default_voice.next = nullptr;
+            default_voice.stop();
+            second_voice.stop();
+            third_voice.stop();
+            fourth_voice.stop();
             AUDIO->mute();
             delete this;
             return true;
@@ -428,7 +402,6 @@ public:
     }
 
 private:
-    DMACMD second, third;
     float f;
     float maxf;
     int i = 0;
@@ -443,11 +416,6 @@ void Audio::soundCheck()
     new TestSequence(633, maxf * 1.25);
 }
 
-void Audio::setFrequency( float f ){
-    default_voice.setFrequency(f);
-    // ESP_LOGI(FNAME,"freq set %f step %u phase %u", f, (unsigned)default_voice.step, (unsigned)default_voice.phase);
-}
-
 void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // non blocking
 	if( enable && !_alarm_mode ){ // Begin of alarm
 		_vol_back_s2f = s2f_mode_volume;
@@ -456,7 +424,7 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 		_s2f_mode = false;
 		_tonemode_back = _tonemode;
 		_alarm_mode=true;
-		enableAmplifier( true );
+		// enableAmplifier( true );
 	}
 	if( !enable && _alarm_mode ){ // End of alarm
 		_alarm_mode = false;
@@ -474,8 +442,7 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 			_tonemode = ATM_DUAL_TONE;
 		}
 		else if( style == AUDIO_ALARM_FLARM_1 ){  // lowest
-			_te = 3.0;
-			_tonemode = ATM_SINGLE_TONE;
+			// startSequence(&alarm1);
 		}
 		else if( style == AUDIO_ALARM_FLARM_2 ){
 			_te = 4.0;
@@ -525,7 +492,7 @@ void Audio::startAudio(){
     }
 	while ( ! _test_done ) { vTaskDelay(100); }; // wait until sound check finished
 	ESP_LOGI(FNAME,"startAudio");
-    default_voice.next = &second_voice;
+    // default_voice.next = &second_voice;
 	evaluateChopping();
 	float setvolume = default_volume.get();
 	speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
@@ -577,6 +544,14 @@ void  Audio::evaluateChopping(){
 	}
 }
 
+void Audio::indicateCenter(bool open)
+{
+    const float frq1 = 880.0;
+    setVoice(1, 1000, frq1, (int8_t*)sawtooth_table.data(), TABLE_BITS);
+    // a quint down or a major third up
+    setVoice(2, 1000, frq1* (open ? 2./3. : 5./4.), (int8_t*)sawtooth_table.data(), TABLE_BITS);
+}
+
 void  Audio::calculateFrequency(){
 	float max_var = center_freq.get()-minf;
 	if ( _te > 0 )
@@ -593,10 +568,10 @@ void  Audio::calculateFrequency(){
 
     if (hightone && (_tonemode == ATM_DUAL_TONE))
     {
-        default_voice.setFrequency(current_frequency * _high_tone_var);
+        default_voice.setFrequencyAndGain(current_frequency * _high_tone_var);
     }
     else {
-        default_voice.setFrequency(current_frequency);
+        default_voice.setFrequencyAndGain(current_frequency);
     }
 	// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", current_frequency, _te, mult );
 }
@@ -622,12 +597,20 @@ void Audio::dactask()
     bool sound = false;
     int delay = 100;
 	int64_t t0 = esp_timer_get_time();
+
+    xQueueReset(AudioQueue);
+
 	esp_task_wdt_add(NULL);
 
 	while(1){
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		tick++;
 
+		// uint32_t event;
+        // if (xQueueReceive(AudioQueue, &event, pdMS_TO_TICKS(delay)) == pdTRUE)
+        // {
+		// 	// Process audio events
+		// }
 		// Chopping or dual tone modulation
 		if( millis() > next_scedule ){
 			if ( _te > 0 ){
@@ -725,7 +708,7 @@ void Audio::dactask()
 		if ( !(tick%1000) ) {
 			int64_t t1 = esp_timer_get_time();
             total_us += (t1 - t0);
-            float load = (float)(busy_irs) * 1000.0 / total_us;
+            float load = (float)(busy_irs) / 10000.0;
             ESP_LOGI(FNAME, "DAC load: %.1fmsec/sec (x%d; Fs=%dHz)", load, irq_counter/10, SAMPLE_RATE);
 			irq_counter = 0;
 			busy_irs = 0;
@@ -741,8 +724,6 @@ void Audio::dactask()
 		esp_task_wdt_reset();
 	}
 }
-
-
 
 bool Audio::inDeadBand( float te )
 {
@@ -801,7 +782,6 @@ void Audio::setup()
 	else
 		_range = scale_range.get();
 	_tonemode = dual_tone.get();
-	_high_tone_var = powf(2.0, 4./12.0); // major third
 
 	maxf = center_freq.get() * tone_var.get();
 	minf = center_freq.get() / tone_var.get();
@@ -809,23 +789,20 @@ void Audio::setup()
 	current_frequency = (minf+maxf)/2.;
 }
 
+// unmute/mute the default voice
 void Audio::unmute()
 {
-    if ( !_mute ) return;
-
-    default_voice.phase = 0;
-    default_voice.cmd = CMD_PHASEIN;
+    if ( ! default_voice.active ) {
+        default_voice.start(); //setCmd(CMD_SING);
+    }
 
     // ESP_LOGI(FNAME,"unmute");
     // ESP_ERROR_CHECK(dac_continuous_start_async_writing(_dac_chan));
     _mute = false;
 }
-
 void Audio::mute(){
-    if ( _mute ) return;
-
     // ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
-    default_voice.cmd = CMD_PHASEOUT;
+    default_voice.stop();
     _mute = true;
 	// ESP_LOGI(FNAME,"mute");
 }

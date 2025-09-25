@@ -2,6 +2,7 @@
     "idf.adapterTargetName": "esp32",
     "idf.port": "/dev/ttyUSB0",
     "files.associations": {
+        "*.cpp": "cpp",
         "*.ipp": "cpp",
         "array": "cpp",
         "drawable": "cpp",
@@ -166,7 +167,8 @@
         "renderinfo": "cpp",
         "glextensions": "cpp",
         "stateattribute": "cpp",
-        "shader": "cpp"
+        "shader": "cpp",
+        "expected": "cpp"
     },
     "idf.espIdfPath": "/home/hjr/opt/esp-idf_5/",
     "idf.toolsPath": "/home/hjr/.espressif",
@@ -176,5 +178,5 @@
     },
     "idf.pythonInstallPath": "/usr/bin/python3",
     "idf.flashType": "UART",
-    "C_Cpp.default.compilerPath": "/usr/bin/g++"
+    "C_Cpp.default.compilerPath": "/usr/bin/clang++"
 }

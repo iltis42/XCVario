@@ -244,7 +244,7 @@ bool CANbus::begin()
     {
         driverInstall(TWAI_MODE_NORMAL);
         terminate_receiver = false;
-        xTaskCreate(&canRxTask, "canRxTask", 4096, this, 22, &rxTask);
+        xTaskCreate(&canRxTask, "canRxTask", 4096, this, 18, &rxTask);
     }
     if( _slope_support ){
     	gpio_set_direction(_slope_ctrl, GPIO_MODE_OUTPUT);

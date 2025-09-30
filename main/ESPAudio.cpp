@@ -494,27 +494,13 @@ void Audio::startAudio(){
     }
 	while ( ! _test_done ) { vTaskDelay(100); }; // wait until sound check finished
 	ESP_LOGI(FNAME,"startAudio");
-    // default_voice.next = &second_voice;
-	evaluateChopping();
-	float setvolume = default_volume.get();
+
+	// set the volume from nvs
+   	float setvolume = default_volume.get();
 	speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
-	writeVolume( setvolume );
-	xTaskCreate(&dactask_starter, "dactask", 2400, this, 24, &dactid);
-}
+	setVolume(setvolume);
 
-}
-
-void  Audio::evaluateChopping(){
-	if(
-			(chopping_mode.get() == BOTH_CHOP) ||
-			(_s2f_mode && (chopping_mode.get() == S2F_CHOP) ) ||
-			( _s2f_mode && (cruise_audio_mode.get() == AUDIO_VARIO) && (chopping_mode.get() != NO_CHOP) ) ||
-			(!_s2f_mode && (chopping_mode.get() == VARIO_CHOP) )
-	) {
-		_chopping = true;
-	} else {
-		_chopping = false;
-	}
+	xTaskCreate(&dactask_starter, "dactask", 2400, this, 22, &dactid);
 }
 
 void Audio::indicateCenter(bool open)

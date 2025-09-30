@@ -142,14 +142,13 @@ void drawDisplay(void *arg)
 					float acc_stall= stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
 					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
 						if( !gflags.stall_warning_active ){
-							AUDIO->alarm( true, flarm_volume.get() );
+							AUDIO->alarm(AUDIO_ALARM_STALL);
 							Display->drawWarning( "! STALL !", true );
 							gflags.stall_warning_active = true;
 						}
 					}
 					else{
 						if( gflags.stall_warning_active ){
-							AUDIO->alarm( false );
 							Display->clear();
 							gflags.stall_warning_active = false;
 						}
@@ -186,19 +185,19 @@ void drawDisplay(void *arg)
 					if( gw ){
 						if( Rotary->readBootupStatus() ){   // Acknowledge Warning -> Warning OFF
 							gear_warning_holdoff = 25000;  // ~500 sec
-							AUDIO->alarm( false );
+							// AUDIO->alarm( false );
 							Display->clear();
 							gflags.gear_warning_active = false;
 						}
 						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
-							AUDIO->alarm( true, flarm_volume.get() );
+							AUDIO->alarm(AUDIO_ALARM_STALL);
 							Display->drawWarning( "! GEAR !", false );
 							gflags.gear_warning_active = true;
 						}
 					}
 					else{
 						if( gflags.gear_warning_active ){
-							AUDIO->alarm( false );
+							// AUDIO->alarm( false );
 							Display->clear();
 							gflags.gear_warning_active = false;
 						}
@@ -223,7 +222,7 @@ void drawDisplay(void *arg)
 				if( gflags.flarmWarning && (millis() > flarm_alarm_holdtime) ){
 					gflags.flarmWarning = false;
 					Display->clear();
-					AUDIO->alarm( false );
+					// AUDIO->alarm( false );
 				}
 			}
 			if( gflags.flarmWarning )
@@ -258,13 +257,13 @@ void drawDisplay(void *arg)
 			if( screen_gmeter.get() != SCREEN_OFF  ){
 				if( IMU::getGliderAccelZ() > gload_pos_limit.get() || IMU::getGliderAccelZ() < gload_neg_limit.get()  ){
 					if( !gflags.gload_alarm ) {
-						AUDIO->alarm( true, gload_alarm_volume.get() );
+						AUDIO->alarm(AUDIO_ALARM_STALL);
 						gflags.gload_alarm = true;
 					}
 				}else
 				{
 					if( gflags.gload_alarm ) {
-						AUDIO->alarm( false );
+						// AUDIO->alarm( false );
 						gflags.gload_alarm = false;
 					}
 				}

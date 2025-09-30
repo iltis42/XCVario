@@ -112,12 +112,12 @@ static int set_rotary_increment(SetupMenuSelect *p) {
 }
 
 int audio_setup_s(SetupMenuSelect *p) {
-	AUDIO->setup();
+	AUDIO->updateSetup();
 	return 0;
 }
 
 int audio_setup_f(SetupMenuValFloat *p) {
-	AUDIO->setup();
+	AUDIO->updateSetup();
 	return 0;
 }
 
@@ -382,12 +382,6 @@ static int startFlarmSimulation(SetupMenuSelect *p) {
 	FlarmSim::StartSim();
 	return 0;
 }
-
-static int eval_chop(SetupMenuSelect *p) {
-	AUDIO->evaluateChopping();
-	return 0;
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // SetupMenu
@@ -793,7 +787,7 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	dt->mkEnable();
 	top->addEntry(dt);
 
-	SetupMenuSelect *tch = new SetupMenuSelect("Chopping", RST_NONE, eval_chop, &chopping_mode);
+	SetupMenuSelect *tch = new SetupMenuSelect("Chopping", RST_NONE, audio_setup_s, &chopping_mode);
 	tch->setHelp(
 			"Select tone chopping option on positive values for Vario and or S2F");
 	tch->addEntry("Disabled");             // 0
@@ -885,7 +879,7 @@ void audio_menu_create(SetupMenu *audio) {
 	audio->addEntry(db);
 	db->setHelp("Dead band limits within which audio remains silent.  1 m/s equals roughly 200 fpm or 2 knots");
 
-	SetupMenuValFloat *afac = new SetupMenuValFloat("Audio Exponent", "", nullptr, false, &audio_factor);
+	SetupMenuValFloat *afac = new SetupMenuValFloat("Audio Exponent", "", audio_setup_f, false, &audio_factor);
 	afac->setHelp(
 			"How the audio frequency responds to the climb rate: < 1 for logarithmic, and > 1 for exponential, response");
 	audio->addEntry(afac);

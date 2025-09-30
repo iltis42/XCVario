@@ -114,6 +114,7 @@ void modifyPolar() {
 void change_cruise() {
     VCMode.updateCache();
     Display->setCruiseChanged();
+	AUDIO->updateAudioMode();
 }
 
 void resetSWindAge() {

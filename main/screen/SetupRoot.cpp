@@ -117,12 +117,13 @@ void SetupRoot::rot(int count)
     else {
         // Volume
         AUDIO->setVolume(audio_volume.get() + 2*count);
+        // provide acoustic feedback on volume change fixme
         if (audio_volume.get()==30) {
             if (count > 0) {
-                AUDIO->indicateCenter(true);
+                AUDIO->alarm(AUDIO_CMD_CIRCLE_OUT);
             }
             else {
-                AUDIO->indicateCenter(false);
+                AUDIO->alarm(AUDIO_CMD_CIRCLE_IN);
             }
         }
     }

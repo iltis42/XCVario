@@ -133,7 +133,7 @@ void Flarm::initFlarmWarning(){
 	oldDist = 0;
 	oldVertical = 0;
 	oldBear = 0;
-	// AUDIO->alarm( true, 30, AUDIO_ALARM_FLARM_1 );
+	// AUDIO->alarm(AUDIO_ALARM_FLARM_1);
 }
 
 void Flarm::drawFlarmWarning(){
@@ -146,27 +146,26 @@ void Flarm::drawFlarmWarning(){
 	_tick++;
 	if( _tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec
 		AlarmLevel = 0;
-	float volume=0;
-	e_audio_alarm_type_t alarm = AUDIO_ALARM_FLARM_1;
+	// float volume=0;
+	e_audio_alarm_type alarm = AUDIO_ALARM_FLARM_1;
 	if( AlarmLevel == 3 ) { // highest, impact 0-8 seconds
-		volume = flarm_volume.get();
+		// volume = flarm_volume.get();
 		alarm = AUDIO_ALARM_FLARM_3;
 	}
 	else if( AlarmLevel == 2 ){
-		volume = flarm_volume.get()/4;
+		// volume = flarm_volume.get()/4;
 		alarm = AUDIO_ALARM_FLARM_2;
 	}
 	else if( AlarmLevel == 1 ){ // lowest
-		volume = flarm_volume.get()/8;
+		// volume = flarm_volume.get()/8;
 		alarm = AUDIO_ALARM_FLARM_1;
 	}else{
-		alarm = AUDIO_ALARM_OFF;
+		alarm = AUDIO_NO_ALARM;
 	}
 
-	if( alarm != AUDIO_ALARM_OFF )
-		AUDIO->alarm( true, volume, alarm );
-	else
-		AUDIO->alarm( false );
+	if( alarm != AUDIO_NO_ALARM ) {
+		AUDIO->alarm(alarm);
+	}
 
 	if( AlarmLevel != alarmOld ) {
 		ucg->setPrintPos(200, 25 );

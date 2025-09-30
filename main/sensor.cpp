@@ -1377,7 +1377,6 @@ void system_startup(void *args){
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid); // increase stack by 500 byte
 
 	VCMode.updateCache(); // correct initialization
-	audio_volume.set(default_volume.get());
 	AUDIO->startAudio();
 }
 
@@ -1393,7 +1392,6 @@ void system_startup(void *args){
 // 	idx = ((std::signbit(idx) ? -1 : 1));
 // 	// b1 = fast_roundf_to_int(b);
 // 	uint32_t end = XTHAL_GET_CCOUNT();
-// 	audio_volume.set(idx);
 // 	// for(b=0.; b<400.; b+=My_PIf)
 // 	ESP_LOGI(FNAME,"CMP %f %d", b, b1);
 //     return end - start;

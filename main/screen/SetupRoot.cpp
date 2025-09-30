@@ -116,7 +116,7 @@ void SetupRoot::rot(int count)
     }
     else {
         // Volume
-        audio_volume.setCheckRange(audio_volume.get() + 2*count);
+        AUDIO->setVolume(audio_volume.get() + 2*count);
         if (audio_volume.get()==30) {
             if (count > 0) {
                 AUDIO->indicateCenter(true);

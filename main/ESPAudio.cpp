@@ -321,7 +321,7 @@ bool Audio::begin( int16_t ch  )
 
 void Audio::stop() {
     mute();
-    vTaskDelay(pdMS_TO_TICKS(10)); // no cracks ..
+    vTaskDelay(pdMS_TO_TICKS(2)); // no cracks ..
     enableAmplifier(false);
     ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
 }
@@ -468,23 +468,25 @@ void Audio::alarm( bool enable, float volume, e_audio_alarm_type_t style ){  // 
 }
 
 // [%]
-void Audio::setVolume( float vol ) {
-	speaker_volume = vol;
-	// also copy the new volume into the cruise-mode specific variables so that
-	// calcS2Fmode() will later restore the correct volume when mode changes:
-	if( audio_split_vol.get() ) {
-		if( _s2f_mode )
+void Audio::setVolume(float vol) {
+    audio_volume.setCheckRange(vol, false, false);
+	speaker_volume = audio_volume.get();
+    if( audio_split_vol.get() ) {
+		if( VCMode.getCMode() ) {
 			s2f_mode_volume = speaker_volume;
-		else
+		} else {
 			vario_mode_volume = speaker_volume;
-		ESP_LOGI(FNAME, "setvolume() to %f, for %s", speaker_volume, _s2f_mode ? "s2f" : "vario" );
+		}
+		ESP_LOGI(FNAME, "setvolume() to %f, for %s", speaker_volume, VCMode.getCMode() ? "s2f" : "vario" );
 	} else {
 		// copy to both variables in case audio_split_vol enabled later
 		s2f_mode_volume = speaker_volume;
 		vario_mode_volume = speaker_volume;
 		ESP_LOGI(FNAME, "setvolume() to %f, joint mode", speaker_volume );
 	}
+    writeVolume(speaker_volume);
 }
+
 
 void Audio::startAudio(){
     if ( ! _dac_inited ) {
@@ -500,35 +502,6 @@ void Audio::startAudio(){
 	xTaskCreate(&dactask_starter, "dactask", 2400, this, 24, &dactid);
 }
 
-void Audio::calcS2Fmode( bool recalc ){
-	if( _alarm_mode )
-		return;
-
-	bool mode = VCMode.getCMode();
-	if( mode != _s2f_mode ){
-		ESP_LOGI(FNAME, "S2Fmode changed to %d", mode );
-		_s2f_mode = mode;             // do this first, as...
-		recalc = true;
-		evaluateChopping();
-	}
-	if( recalc ){
-		calculateFrequency();         // this needs the new _stf_mode
-		if( _s2f_mode )
-			speaker_volume = s2f_mode_volume;
-		else
-			speaker_volume = vario_mode_volume;
-		if ( speaker_volume != audio_volume.get() ) {  // due to audio_split_vol
-			ESP_LOGI(FNAME, "... changing volume %f -> %f", audio_volume.get(), speaker_volume );
-
-			audio_volume.set( speaker_volume );  // this too needs _stf_mode
-			// this is to keep the current volume shown (or implied) in the menus
-			// in step with the actual speaker volume, in case volume is changed
-			// after the CruiseState has changed.  Calling audio_volume.set() here
-			// will call the action change_volume() which calls Audio::setVolume()
-			// which will write it back into speaker_volume and the mode-specific
-			// variable, but all that is OK.
-		}
-	}
 }
 
 void  Audio::evaluateChopping(){
@@ -576,12 +549,12 @@ void  Audio::calculateFrequency(){
 	// ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", current_frequency, _te, mult );
 }
 
-void Audio::writeVolume( float volume ){
+void Audio::writeVolume(float volume) {
 	ESP_LOGI(FNAME, "set volume: %f", volume);
-    if ( _poti ) {
+    if (_poti) {
         // if( _alarm_mode )
         //  ...
-        _poti->writeVolume( volume );
+        _poti->writeVolume(volume);
         current_volume = volume;
     }
 }

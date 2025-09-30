@@ -31,6 +31,8 @@ public:
     CruiseMode();
     bool getCMode() const { return _cmode; };
     bool isNetto() const { return _vmode != MODE_BRUTTO; }
+    bool audioIsVario() const { return _audio_vario; }
+    bool audioIsChopping() const { return _audio_chopping; }
     int16_t getVMode() const { return _vmode; }
 
     // setter
@@ -41,6 +43,8 @@ public:
 
 private:
     bool _cmode = false; // cached cruise mode
+    bool _audio_vario = true; // cached audio mode; true == vario mode, false == s2f mode
+    bool _audio_chopping = true; // true for chopping mode (silent or dual)
     int16_t _vmode = 0; // cached vario mode
     bool _lock = false; // lock the cruise mode
 };

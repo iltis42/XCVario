@@ -53,7 +53,6 @@ dl_action_t XCNavMsg::parseDollar_g(NmeaPlugin *plg)
     {
         ESP_LOGI(FNAME, "Detected volume cmd");
         int steps = atoi(s + word->at(0) + 1);
-        float v = audio_volume.get() + steps;
         AUDIO->setVolume(audio_volume.get() + steps);
         ESP_LOGI(FNAME, "Volume change: %d steps, new volume: %.0f", steps, audio_volume.get());
         break;

@@ -55,6 +55,7 @@ public:
 	void soundCheck();   						// audible check of the audio
 	bool haveCAT5171() const { return _haveCAT5171; };
 	bool tick() override;  // calculates TE and S2F delta depending on mode
+	void dump();
 
 private:
 	static void dactask_starter(void* arg); 	// start task to control HW generator

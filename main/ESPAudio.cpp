@@ -26,9 +26,14 @@
 
 // forward
 struct TONE;
+struct DURATION;
+struct VOICECONF;
 
 // the global access to the audio functions
 Audio *AUDIO = nullptr;
+
+constexpr unsigned NIMBLE_AUDIO = 8; // frequency update every 80msec
+constexpr unsigned SLOW_AUDIO = 16; // frequency update every 160msec
 
 // Internal queue to handle audio sequences and multi voice
 static QueueHandle_t AudioQueue = nullptr;
@@ -74,7 +79,7 @@ const std::array<SNDTBL, 2> sound_table = {{
 
 // helper for DMA command stream and sequencer
 enum {
-    VOICE_DONE = 0,
+    VLOAD_DONE = 0,
     REQUEST_SOUND,
     START_SOUND,
     ENDOFF_SOUND,
@@ -95,7 +100,7 @@ union AudioEvent {
 struct VOICECMD
 {
     void init(uint8_t table_id);
-    void load(const TONE *t);
+    void load(const VOICECONF *vc, const TONE *t);
     void fastLoad(uint8_t i);
     static constexpr uint32_t calcStep(float f) {
         return (uint32_t)((f * (1ULL << 32)) / SAMPLE_RATE); }
@@ -104,26 +109,29 @@ struct VOICECMD
     float getFrequency() const;
     void setCount(int ms) {
         count = std::max((ms * SAMPLE_RATE) / (1000 * BUF_LEN/2), 1); }
+    void setCountFromSamples(int32_t spls) {
+        count = spls / (BUF_LEN/2); }
     static constexpr int16_t getMaxGain(float f) {
         return (f <= 600.f) ? 128 : 128 - 47 * (f - 600.f) / 1500.0; } // -4dB at 1500Hz above 600Hz
     void setMaxGain() {
-        gain_target = (step <= 58434929) ? 128 : 128 - (int16_t)(((uint32_t)47 * (step - 58434929)) / 146087322); }
-    void setGain(int16_t g) {
+        gain_target = (step <= 58434929) ? 128 : 128 - (uint16_t)(((uint32_t)47 * (step - 58434929)) / 146087322); }
+    void setGain(uint16_t g) {
         gain_target = g; }
-    inline void start() {
+    void start() {
         phase = 0; gain = 0; active = true; }
-    inline void stop() { gain_target = 0; }
+    void stop() { gain_target = 0; }
+    void dump();
     // r/w attributes for one note (one voice) at the DMA ISR
     uint32_t phase;
     uint32_t step;
     const int8_t *table;
     uint8_t shift;
-    int16_t gain;
-    int16_t gain_adjust;
-    int16_t gain_target;
+    uint16_t gain;
+    uint16_t gain_adjust;
+    uint16_t gain_target;
     uint16_t count;
     bool active = false;
-    uint32_t seq[MAX_SEQ_LEN+1]; // tone sequence precompiled into a step sequence
+    const TONE* seq; // tone sequence precompiled into a step sequence
 };
 void VOICECMD::init(uint8_t table_id)
 {
@@ -134,7 +142,7 @@ void VOICECMD::init(uint8_t table_id)
     gain_adjust = 128; // no adjustment
     gain_target = 128;
     count = 0;
-    seq[0] = 0;
+    seq = nullptr;
     active = false;
 }
 void VOICECMD::setFrequencyAndGain(float f)
@@ -154,39 +162,39 @@ float VOICECMD::getFrequency() const
 // Sequence control
 struct TONE {
     TONE() = delete;
-    // as first item in a sequence it is interpreted as table index, gain, and sequence length
-    constexpr TONE(uint16_t t, uint16_t g, uint16_t l) : step(t<<16 | g), duration(l) {}
-    // as following items it is read as frequency step and duration
-    constexpr TONE(float f, uint16_t d) : step(VOICECMD::calcStep(f)), duration(d) {}
-    void setFrequency(float f) { step = VOICECMD::calcStep(f); }
-    uint32_t getSamples() const { return (uint32_t)((duration * SAMPLE_RATE) / 1000); }
-    // only valid access on firste elements of a predefined sequence
-    uint16_t getTableId() const { return step >> 16; }
-    uint16_t getGain() const { return step & 0xffff; } // normalized to 128
-    uint16_t getLength() const { return duration; } // number of tones in sequence
-    void setLength(uint16_t l) { duration = l; }
-    // attributes
+    constexpr TONE(float f) : step(VOICECMD::calcStep(f)) {}
+    constexpr void setStep(float f) { step = VOICECMD::calcStep(f); }
     uint32_t step;
-    uint16_t duration; // in msec
+};
+struct DURATION {
+    DURATION() = delete;
+    constexpr DURATION(int d) : duration(calcSamples(d)) {}
+    static constexpr int32_t calcSamples(int ms)  { return (ms * SAMPLE_RATE) / 1000; }
+    constexpr void setSamples(int ms) { duration = calcSamples(ms); }
+    int32_t duration;
 };
 struct VOICECONF {
     uint8_t table_id;
     uint8_t gain_adjust; // 128 = no adjustment
 };
 constexpr int MAX_VOICES = 4;
+// the SOUND is the key data structure to store sounds in flash
+// it also does work with the default vario ESP_LOGI(FNAME, "tim012 %d, %sound that stays in ram
 struct SOUND {
-    bool hasV0() const { return toneseq[0] != nullptr; }
-    // uint32_t* timeseq; // time sequence for the tones
-    const TONE* toneseq[MAX_VOICES];
-    const uint8_t repetitions; // 0 = infinite
+    const DURATION* timeseq;    // time sequence for the tones in msec, terminated with a 0
+                                // nr defined here have to be found in the tone sequence
+    const TONE* toneseq[MAX_VOICES]; // nr of seq found here need to have a vconf
+    const VOICECONF* vconf;
+    const int8_t repetitions; // -1 = infinite
 };
 struct DMACMD {
     void init();
-    void loadSound(SOUND* s);
-    static constexpr int32_t calcNrSamples(int ms) {
-        return ((int32_t)(ms) * SAMPLE_RATE) / 1000; }
+    void loadSound(const SOUND* s);
+    void dump();
+    static constexpr uint32_t calcNrSamples(unsigned ms) {
+        return ((uint32_t)(ms) * SAMPLE_RATE) / 1000; }
     int32_t counter;    // number of samples to output for the next tone
-    int32_t timeseq[MAX_SEQ_LEN+1]; // sample precision timing for sequence, terminated with a 0
+    const DURATION* timeseq; // sample precision timing for sequence, terminated with a 0
     uint8_t idx;        // current index in the sound sequence
     uint8_t voicecount; // nr of voices used for this sequence
     int8_t  repcount;   // remaining repetitions
@@ -194,35 +202,41 @@ struct DMACMD {
 };
 static __attribute__((aligned(4))) DMACMD dma_cmd;
 // Vario tone
-// static std::array<uint32_t, 3> vario_tim = {{ 100, 50, 0 }};
-const std::array<TONE, 3> vario_seq = {{ { 0, 217, 2 }, { 500.0, 100 }, { 0., 50 } }};
-const std::array<TONE, 3> vario_extra = {{ { 1, 38, 2 }, { 500.0*pow(2.0, 3./2.), 100 }, { 0., 50 } }};
-static SOUND VarioSound = { { vario_seq.data(), nullptr, nullptr, nullptr }, 0 };
+static std::array<DURATION, 3> vario_tim = {{ {100}, {50}, {0} }};
+static std::array<TONE, 3> vario_seq = {{ {500.0}, {0.}, {0.} }};
+static std::array<TONE, 3> vario_extra = {{ { 500.0*pow(2.0, 3./2.) }, { 0.}, {0.} }};
+const std::array<VOICECONF, 2> vario_vconf = {{ {0, 217}, {1, 38} }};
+const SOUND VarioSound = { vario_tim.data(), { vario_seq.data(), vario_extra.data(), nullptr, nullptr }, vario_vconf.data(), -1 };
 
 // Flarm alarms
-const std::array<TONE, 3> flarm1_seq = {{ { 0, 128, 2 }, { 1100.0, 100 }, { 0., 50 } }};
-const std::array<TONE, 3> flarm1_extra = {{ { 0, 128, 2 }, { 1100.0*pow(2.0, 4./12.), 100 }, { 0, 50 } }};
-const SOUND Flarm1 = { { flarm1_seq.data(), flarm1_extra.data(), nullptr, nullptr }, 2 };
-const std::array<TONE, 3> flarm2_seq = {{ { 0, 128, 2 }, { 1100.0, 70 }, { 0., 50 } }};
-const std::array<TONE, 3> flarm2_extra = {{ { 0, 128, 2 }, { 1100.0*pow(2.0, 3./12.), 70 }, { 0., 50 } }};
-static SOUND Flarm2 = { { flarm2_seq.data(), flarm2_extra.data(), nullptr, nullptr }, 4 };
-const std::array<TONE, 3> flarm3_seq = {{ { 0, 128, 2 }, { 1100.0, 50 }, { 0., 50 } }};
-const std::array<TONE, 3> flarm3_extra = {{ { 0, 128, 2 }, { 1100.0*pow(2.0, 2./12.), 50 }, { 0., 50 } }};
-static SOUND Flarm3 = { { flarm3_seq.data(), flarm3_extra.data(), nullptr, nullptr }, 6 };
+const std::array<DURATION, 3> flarm1_tim = {{ {100}, {55}, {0} }};
+const std::array<TONE, 2> flarm1_seq = {{ {1100.0}, {0.} }};
+const std::array<TONE, 2> flarm1_extra = {{ {1100.0*pow(2.0, 4./12.)}, {0.} }};
+const std::array<VOICECONF, 2> flarm1_vconf = {{ {0, 128}, {1, 128} }};
+const SOUND Flarm1 = { flarm1_tim.data(), { flarm1_seq.data(), flarm1_extra.data(), nullptr, nullptr }, flarm1_vconf.data(), 2 };
+const std::array<DURATION, 3> flarm2_tim = {{ {70}, {52}, {0} }};
+const std::array<TONE, 2> flarm2_seq = {{ {1100.0}, {0.} }};
+const std::array<TONE, 2> flarm2_extra = {{ {1100.0*pow(2.0, 3./12.)}, {0.} }};
+const SOUND Flarm2 = { flarm2_tim.data(), { flarm2_seq.data(), flarm2_extra.data(), nullptr, nullptr }, flarm1_vconf.data(), 4 };
+const std::array<DURATION, 3> flarm3_tim = {{ {50}, {50}, {0} }};
+const std::array<TONE, 2> flarm3_seq = {{ {1100.0}, {0.} }};
+const std::array<TONE, 2> flarm3_extra = {{ {1100.0*pow(2.0, 2./12.)}, {0.} }};
+const SOUND Flarm3 = { flarm3_tim.data(), { flarm3_seq.data(), flarm3_extra.data(), nullptr, nullptr }, flarm1_vconf.data(), 6 };
 
 // Center aid sounds
-static std::array<uint32_t, 3> turn_tim = {{ 1000, 0 }};
-const std::array<TONE, 2> turn_seq = {{ { 0, 128, 2 }, { 888.0, 1000 } }};
-const std::array<TONE, 2> stretch_seq = {{ { 1, 128, 2 }, { 888.0*2./3., 1000 } }};
-const std::array<TONE, 2> turnmore_seq = {{ { 1, 128, 2 }, { 888.0*5./4., 1000 } }};
-const SOUND TurnOut = { { nullptr, nullptr, turn_seq.data(), stretch_seq.data() }, 0 };
-const SOUND TurnIn  = { { nullptr, nullptr, turn_seq.data(), turnmore_seq.data() }, 0 };
+const std::array<DURATION, 2> turn_tim = {{ {1000}, {0} }};
+const std::array<TONE, 2> turn_seq = {{ {888.0}, {0.} }};
+const std::array<TONE, 2> stretch_seq = {{ {888.0*2./3.}, {0.} }};
+const std::array<TONE, 2> turnmore_seq = {{ {888.0*5./4.}, {0.} }};
+const std::array<VOICECONF, 2> turn_vconf = {{ {1, 128}, {1, 128} }};
+const SOUND TurnOut = { turn_tim.data(), { nullptr, nullptr, turn_seq.data(), stretch_seq.data() }, turn_vconf.data(), 0 };
+const SOUND TurnIn  = { turn_tim.data(), { nullptr, nullptr, turn_seq.data(), turnmore_seq.data() }, turn_vconf.data(), 0 };
 // list of sounds
 const std::array<const SOUND*, 10> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &TurnOut, &TurnIn, &Flarm1, &Flarm2, &Flarm3, &Flarm1, &Flarm1 } };
 
 // To call from ISR context
 void IRAM_ATTR VOICECMD::fastLoad(uint8_t idx) {
-    uint32_t s = seq[idx];
+    uint32_t s = seq[idx].step;
     active = s != 0;
     if ( active ) {
         step = s;
@@ -233,17 +247,14 @@ void IRAM_ATTR VOICECMD::fastLoad(uint8_t idx) {
         gain_target = 0;
     }
 }
-void VOICECMD::load(const TONE *t) {
+void VOICECMD::load(const VOICECONF *vc, const TONE *t) {
     // prepare the tone type (table)
     phase = 0;
-    table = sound_table[t->getTableId()].table;
-    shift = 32 - sound_table[t->getTableId()].bits;
-    // compile the tone sequence into steps
-    int len = t->getLength();
-    for (int i=0; i < len; i++) {
-        seq[i] = t[i+1].step;
-    }
-    seq[len] = 0; // option to fade out a fraction of the DMA buffer length
+    table = sound_table[vc->table_id].table;
+    shift = 32 - sound_table[vc->table_id].bits;
+    // tone sequence steps, by reference
+    seq = t;
+    gain_adjust = vc->gain_adjust;
     // prepare the very first dma irq
     fastLoad(0);
     gain = 0; // phase in
@@ -256,32 +267,44 @@ void DMACMD::init() {
     for ( int i=0; i<MAX_VOICES; i++ ) {
         voice[i].init(0);
     }
-    timeseq[0] = 0;
+    timeseq = nullptr;
     counter = 0;
 }
 // Only call in synch with DAC DMA ISR event
-void DMACMD::loadSound(SOUND *s)
+void DMACMD::loadSound(const SOUND *s)
 {
     idx = 0;
     repcount = s->repetitions;
-    voicecount = 0;
+    uint8_t vc_tmp = 0;
     for (int j = 0; j < MAX_VOICES; j++) {
         if ( s->toneseq[j] ) {
-            voicecount++;
-            voice[j].load(s->toneseq[j]);
+            vc_tmp++;
+            voice[j].load(&s->vconf[j], s->toneseq[j]);
         }
         else {
             voice[j].active = false;
         }
     }
     // compile the timing sequence into nr samples
-    const TONE* t = s->toneseq[0];
-    int i = 0;
-    for (; i < t->getLength(); i++) {
-        timeseq[i] = t[i+1].getSamples();
+    timeseq = (const DURATION*)(s->timeseq);
+    counter = timeseq[0].duration; // kick sound sequence
+    voicecount = vc_tmp;
+}
+void VOICECMD::dump() {
+    ESP_LOGI(FNAME, "ac %d st %u c %u", active, (unsigned)step, (unsigned)count);
+    ESP_LOGI(FNAME, "gain %d %d>%d", (int)gain_adjust, (int)gain, (int)gain_target);
+    if ( seq ) ESP_LOGI(FNAME, "seq %u %u %u", (unsigned)seq[0].step, (unsigned)seq[1].step, (unsigned)seq[2].step);
+}
+void DMACMD::dump() {
+    ESP_LOGI(FNAME, "dmacmd dump");
+    ESP_LOGI(FNAME, "idx %d rep %d vc %d cnt %u", (int)idx, (int)repcount, (int)voicecount, (int)counter);
+    // if ( timeseq ) ESP_LOGI(FNAME, "tim012 %d, %d, %d", (int)timeseq[0].duration, (int)timeseq[1].duration, (int)timeseq[2].duration);
+    for (int j = 0; j < MAX_VOICES; j++) {
+        if ( voice[j].seq ) {
+            ESP_LOGI(FNAME, "Voice %d", j);
+            voice[j].dump();
+        }
     }
-    timeseq[i] = 0; // terminate sequence
-    counter = timeseq[0]; // kick sound sequence
 }
 
 // Benchmark
@@ -294,7 +317,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
     DMACMD& cmd = *(DMACMD *)user_data;
     VOICECMD *vl = (VOICECMD *)cmd.voice;
     uint8_t *buf = (uint8_t *)e->buf;
-    AudioEvent ev(VOICE_DONE, 0);
+    AudioEvent ev(VLOAD_DONE, 0);
     if ( request_synch_start ) {
         request_synch_start = false;
         ev.cmd = REQUEST_SOUND;
@@ -309,77 +332,76 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
         if ( vl[j].active ) numVoices++;
     }
 
-    if (numVoices == 0)
-    {
-        // silent
-        memset(buf, DAC_CENTER, e->buf_size);
-    }
-    else
-    {
-        // multi tone 
-        // numVoices = std::max(1, numVoices - 1);
-        int i = 0;
-        int z = (cmd.counter > 0 && cmd.counter < e->buf_size/2); // divide loop
-        int loop_end = (z==0) ? e->buf_size : (cmd.counter * 2);
-        for (; z>=0; z--) {
+    // multi tone 
+    // numVoices = std::max(1, numVoices - 1);
+    int i = 0;
+    int z = (cmd.counter > 0 && (cmd.counter*2) < e->buf_size) ? 2 : 1; // divide loop
+    int loop_end = (z==1) ? e->buf_size : (cmd.counter*2);
+    for (; z>0; z--) {
         
-            for (int j = 0; j < cmd.voicecount; j++) {
-                vl[j].fastLoad(cmd.idx);
-            }
+        // decrement the sample counter by the loop iterations
+        cmd.counter -= (loop_end-i)/2;
 
-            // fuse all voices
-            for (; i < loop_end; i += 2) {
-                int sum = 0;
-                for (int j = 0; j < MAX_VOICES; j++) {
-                    // all voices
-                    VOICECMD& v = vl[j];
-                    if (!v.active) continue; // a silent voice
-                    if ( v.gain != v.gain_target ) { // phase-in/out
-                        if ( v.gain < v.gain_target ) v.gain++;
-                        else                          v.gain--;
-                        if ( v.gain == 0 ) {
-                            v.active = false;
-                            numVoices = std::max(1, numVoices - 1);
-                        }
+        if (numVoices == 0) // fixme alerts need to come through
+        {
+            // silent
+            memset(buf+i, DAC_CENTER, loop_end-i);
+        }
+        else {
+        // fuse all voices
+        for (; i < loop_end; i += 2) {
+            int sum = 0;
+            for (int j = 0; j < MAX_VOICES; j++) {
+                // all voices
+                VOICECMD& v = vl[j];
+                if (!v.active) continue; // a silent voice
+                if ( v.gain != v.gain_target ) { // phase-in/out
+                    if ( v.gain < v.gain_target ) v.gain++;
+                    else                          v.gain--;
+                    if ( v.gain == 0 ) {
+                        v.active = false;
+                        numVoices = std::max(1, numVoices - 1);
                     }
-                    sum += ((int)v.table[v.phase >> v.shift] * v.gain) >> 7;
-                    v.phase += v.step;
                 }
-                sum /= numVoices;
-                if ( sum >  DAC_HLF_AMPL ) sum =  DAC_HLF_AMPL;
-                if ( sum < -DAC_HLF_AMPL ) sum = -DAC_HLF_AMPL;
-                sum += DAC_CENTER;
-
-                buf[i]   = (uint8_t)sum; // one sample
-                buf[i+1] = (uint8_t)sum;
+                sum += ((int)v.table[v.phase >> v.shift] * v.gain) >> 7;
+                v.phase += v.step;
             }
+            sum /= numVoices;
+            if ( sum >  DAC_HLF_AMPL ) sum =  DAC_HLF_AMPL;
+            if ( sum < -DAC_HLF_AMPL ) sum = -DAC_HLF_AMPL;
+            sum += DAC_CENTER;
 
-            // handle the sample precise timing
-            cmd.counter -= e->buf_size/2;
+            buf[i]   = (uint8_t)sum; // one sample
+            buf[i+1] = (uint8_t)sum;
+        }
+        }
+
+        if ( cmd.voicecount == 0 || cmd.counter > 0 ) break; // not the end of the tone, DMA buffer is complete
+
+        // move to the next tone in sequence
+        cmd.idx++;
+        if ( cmd.timeseq[cmd.idx].duration <= 0 ) {
             
-            if ( loop_end == e->buf_size ) break; // no split, DMA buffer is complete
-
-            // cmd.counter is now < 0
-            // move to the next tone in sequence
-            cmd.idx++;
-            if ( cmd.timeseq[cmd.idx] == 0 ) {
-                
-                if ( cmd.repcount > 0 ) {
-                    cmd.repcount--; // restart another cycle
-                    if ( cmd.repcount == 0 ) {
-                        // end of sound sequence
-                        ev.cmd = ENDOFF_SOUND;
-                    }
+            if ( cmd.repcount >= 0 ) {
+                cmd.repcount--; // restart another cycle
+                if ( cmd.repcount < 0 ) {
+                    // end of sound sequence
+                    ev.cmd = ENDOFF_SOUND;
+                    numVoices = 0;
                 }
-                cmd.idx = 0;
             }
-            cmd.counter += cmd.timeseq[cmd.idx];
-            loop_end = e->buf_size; // finish the remaining DMA buffer
+            cmd.idx = 0;
+        }
+        // the end+1 time slice needs to be zero, as well as the n+1 steps need tp be zero
+        cmd.counter = cmd.timeseq[cmd.idx].duration;
+        loop_end = e->buf_size; // finish the remaining DMA buffer
+        for (int j = 0; j < cmd.voicecount; j++) {
+            vl[j].fastLoad(cmd.idx);
         }
     }
 
     BaseType_t high_task_wakeup = pdFALSE;
-    if ( ev.cmd != VOICE_DONE ) {
+    if ( ev.cmd != VLOAD_DONE ) {
         xQueueSendFromISR(AudioQueue, &ev, &high_task_wakeup);
     }
     else {
@@ -413,7 +435,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
 }
 
 Audio::Audio() :
-	Clock_I(8) // every 80msec
+	Clock_I(NIMBLE_AUDIO)
 {
     dma_cmd.init();
     if ( ! AudioQueue ) {
@@ -442,7 +464,7 @@ Audio::~Audio()
 
 bool Audio::begin( int16_t ch  )
 {
-	ESP_LOGI(FNAME,"begin");
+	ESP_LOGI(FNAME,"begin size TONE %d", sizeof(TONE));
 	if ( ! S2FSWITCH ) {
 		S2FSWITCH = new S2fSwitch( GPIO_NUM_12 );
 	}
@@ -450,6 +472,7 @@ bool Audio::begin( int16_t ch  )
     gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT ); // use pullup 1 == SOUND 0 == SILENCE
 
 	updateSetup();
+    updateAudioMode();
 	ESP_LOGI(FNAME, "Starting Audio on core %d", xPortGetCoreID());
 
     _dac_cfg = {
@@ -610,9 +633,10 @@ void Audio::soundCheck()
 void Audio::alarm(e_audio_alarm_type style)
 {
     if ( style > AUDIO_NO_ALARM && style < sound_list.size() && ! _alarm_mode) {
-        AudioEvent ev(ADD_SOUND, style); // play complete sound
+        AudioEvent ev(ADD_SOUND, style); // overlay sound
         if ( style >= AUDIO_ALARM_FLARM_1 ) {
             ev.cmd = START_SOUND; // start an alarm sound 
+            _alarm_mode = true;
         }
         
         xQueueSend(AudioQueue, &ev, 0);
@@ -661,35 +685,33 @@ void  Audio::calculateFrequency(){
 	float range = (VCMode.audioIsVario()) ? _range : 5.0;
     float mult = std::pow( (abs(_audio_value)/range)+1, audio_factor.get());
 	float freq = center_freq.get() + ((mult*_audio_value)/range )  * (max_var/_exponent_max);
-    // frequencies
-    dma_cmd.voice[0].seq[0] = VOICECMD::calcStep(freq);
-    dma_cmd.voice[1].seq[0] = VOICECMD::calcStep(freq * 3.);
-    if ( dual_tone.get() ) dma_cmd.voice[0].seq[1] = VOICECMD::calcStep(freq * _high_tone_var);
-    if ( VCMode.audioIsChopping() && _audio_value > 0 ) {
+    if ( _audio_value > 0 ) {
         // durations
         float tmp = 1000. / (1+9*(_audio_value/range));
         // duration of main tone 1Hz: 900 ms; 10Hz: 50 ms
         int duration = (int)(tmp * 0.9) - 40;
-        dma_cmd.timeseq[0] = DMACMD::calcNrSamples(duration);
+        vario_tim[0].setSamples(duration);
 
         // duration of break (or second tone)
-        bool needs_kick = dma_cmd.timeseq[1] == 0;
-        int duration1 = (int)(tmp * 0.1) + 40; // 1Hz: 100 ms; 10Hz: 50 ms
-        dma_cmd.timeseq[1] = DMACMD::calcNrSamples(duration1);
-        ESP_LOGI(FNAME, "ChTiming %d/%d", duration, duration1);
-
-        // kick the sample counting if it was stopped
-        if ( needs_kick ) {
-            dma_cmd.idx = 0;
-            // start sample counting
-            dma_cmd.counter = dma_cmd.timeseq[0];
-        }
+        duration = (int)(tmp * 0.1) + 40; // 1Hz: 100 ms; 10Hz: 50 ms
+        vario_tim[1].setSamples(duration);
+        // ESP_LOGI(FNAME, "d0 %d d1 %d", (int)vario_tim[0].duration, (int)vario_tim[1].duration );
+    }
+    if ( inDeadBand() || _alarm_mode || speaker_volume < 1.0 ) {
+        vario_seq[0].step = vario_extra[0].step = vario_seq[1].step = vario_extra[1].step = 0;
     }
     else {
-        // continuous sound
-        dma_cmd.timeseq[1] = 0; // disable chopping
-        dma_cmd.idx = 0;
-        dma_cmd.counter = 0; // infinite
+        // frequencies
+        vario_seq[0].setStep(freq);
+        vario_extra[0].setStep(freq * 3.);
+        if ( VCMode.audioIsChopping() && _audio_value > 0 ) {
+            if ( dual_tone.get() ) vario_seq[1].setStep(freq * _high_tone_var);
+            else vario_seq[1].step = vario_extra[1].step = 0;
+        }
+        else {
+            vario_seq[1].step = vario_seq[0].step;
+            vario_extra[1].step = vario_extra[0].step;
+        }
     }
 
     // ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", freq, _audio_value, mult );
@@ -698,8 +720,6 @@ void  Audio::calculateFrequency(){
 void Audio::writeVolume(float volume) {
 	ESP_LOGI(FNAME, "set volume: %f", volume);
     if (_poti) {
-        // if( _alarm_mode )
-        //  ...
         _poti->writeVolume(volume);
         current_volume = volume;
     }
@@ -713,90 +733,91 @@ void Audio::dactask_starter(void *arg)
 void Audio::dactask()
 {
 	int64_t t0 = esp_timer_get_time();
-    SOUND *current_sound = nullptr;
-    const TONE *next_tone[MAX_VOICES];
+    SOUND *alarm = nullptr; // preempting the vario sound
+    const TONE* next_tone[MAX_VOICES]; // added to the vario sound
+    const DURATION* next_time = nullptr; // current sequence time line
     uint8_t curr_idx[MAX_VOICES] = {0};
     uint8_t repetitions[MAX_VOICES] = {0};
-    bool raise_volume = false;
 
     xQueueReset(AudioQueue);
 
     // load the vario sound
     dma_cmd.loadSound(&VarioSound);
+    dma_cmd.dump();
 
-	while(1){
-		// TickType_t xLastWakeTime = xTaskGetTickCount();
-
+	while(1)
+    {
 		AudioEvent event;
         if (xQueueReceive(AudioQueue, &event, pdMS_TO_TICKS(2000)) == pdTRUE)
         {
 			// Process audio events
             if ( event.cmd == START_SOUND ) {
                 if ( event.param < sound_list.size() ) {
-                    current_sound = (SOUND *)sound_list[event.param];
+                    alarm = (SOUND *)sound_list[event.param];
                     ESP_LOGI(FNAME, "Start sound %d", event.param );
                     request_synch_start = true;
                 }
             }
             else if ( event.cmd == REQUEST_SOUND ) {
-                dma_cmd.loadSound(current_sound);
-                raise_volume = (next_tone[0] != nullptr); // alarm sound on default voice
+                dma_cmd.loadSound(alarm);
+                writeVolume(80);
             }
             else if ( event.cmd == ADD_SOUND ) {
                 // Add sound to the queue, no synchronized start required
-                current_sound = (SOUND *)sound_list[event.param];
+                const SOUND* snd = sound_list[event.param];
+                next_time = snd->timeseq;
                 ESP_LOGI(FNAME, "Overlay sound %d", event.param );
                 for ( int i = 2; i < MAX_VOICES; i++ ) {
-                    next_tone[i] = current_sound->toneseq[i];
+                    next_tone[i] = snd->toneseq[i];
                     if ( next_tone[i] ) {
-                        dma_cmd.voice[i].load(next_tone[i]);
-                        dma_cmd.voice[i].setCount(next_tone[i][1].duration);
-                        repetitions[i] = current_sound->repetitions;
-                        curr_idx[i] = 1;
-                        ESP_LOGI(FNAME, "Add %d: step %u d %u count %u", i, (unsigned)dma_cmd.voice[i].step, (unsigned)next_tone[i][1].duration, (unsigned)dma_cmd.voice[i].count );
+                        dma_cmd.voice[i].load(&(snd->vconf[i-2]), next_tone[i]);
+                        dma_cmd.voice[i].setCountFromSamples(next_time[0].duration);
+                        repetitions[i] = snd->repetitions;
+                        curr_idx[i] = 0;
+                        ESP_LOGI(FNAME, "Add %d: step %u gain %u count %u", i, (unsigned)dma_cmd.voice[i].step, (unsigned)dma_cmd.voice[i].gain_target, (unsigned)dma_cmd.voice[i].count );
 
                     }
                 }
-
             }
-            else if ( event.cmd == VOICE_DONE ) {
+            else if ( event.cmd == VLOAD_DONE ) {
                 uint8_t vid = event.param;
                 ESP_LOGI(FNAME, "Event voice done %d", vid);
                             
                 curr_idx[vid]++;
-                if ( curr_idx[vid] > next_tone[vid]->getLength() ) {
+                if ( next_tone[vid][curr_idx[vid]].step == 0 ) {
                     if ( repetitions[vid] > 0 ) {
                         repetitions[vid]--;
-                        curr_idx[vid] = 1; // restart this voice
+                        curr_idx[vid] = 0; // restart this voice
                     }
                     else {
                         next_tone[vid] = nullptr; // end of this voice
-                        current_sound = nullptr;
                         // _alarm_mode = false;
                         // writeVolume(speaker_volume);
-                        ESP_LOGI(FNAME, "End of sound");
+                        ESP_LOGI(FNAME, "End of v-load");
                     }
                 }
                 if ( next_tone[vid] ) {
                     dma_cmd.voice[vid].fastLoad(curr_idx[vid]);
-                    dma_cmd.voice[vid].setCount(next_tone[vid][curr_idx[vid]].duration);
+                    dma_cmd.voice[vid].setCountFromSamples(next_time[curr_idx[vid]].duration);
 
-                    ESP_LOGI(FNAME, "Voice %d: step %u dur %u", vid, (unsigned)next_tone[vid][curr_idx[vid]].step, (unsigned)next_tone[vid][curr_idx[vid]].duration );
+                    // ESP_LOGI(FNAME, "Voice %d: step %u dur %u", vid, (unsigned)next_tone[vid][curr_idx[vid]].step, (unsigned)next_tone[vid][curr_idx[vid]].duration );
                 }
-                if ( raise_volume && (vid == 0) ) {
-                    raise_volume = false;
-                    writeVolume(80);
-                }
-            
             }
-            // continue; // event handling done
+            else if ( event.cmd == ENDOFF_SOUND ) {
+                writeVolume(speaker_volume);
+                alarm = nullptr;
+                _alarm_mode = false;
+                ESP_LOGI(FNAME, "End of sound");
+                dma_cmd.loadSound(&VarioSound);
+            }
+            continue; // event handling done
 		}
         
-        if ( ! _alarm_mode ) {
+        // if ( ! _alarm_mode ) {
             // normal vario sound operation
-            ESP_LOGI(FNAME, "No event time out");
+            // ESP_LOGI(FNAME, "No event time out");
         
-        }
+        // }
 
         // ISR benchmark
         int64_t t1 = esp_timer_get_time();
@@ -809,12 +830,8 @@ void Audio::dactask()
             total_us = 0;
             t0 = t1;
         }
-
-        if( uxTaskGetStackHighWaterMark( dactid ) < 256 ) {
-			ESP_LOGW(FNAME,"Warning Audio dac task stack low: %d bytes", uxTaskGetStackHighWaterMark( dactid ) );
-		}
-
 	}
+    // todo add termination of audio task
 }
 
 bool Audio::inDeadBand()
@@ -825,10 +842,10 @@ bool Audio::inDeadBand()
     return false;
 }
 
+// call when audio setup changes
 void Audio::updateSetup()
 {
 	ESP_LOGD(FNAME,"Audio::setup");
-	_audio_value = 0.0;
 	if( audio_range.get() == AUDIO_RANGE_5_MS ) {
 		_range = 5.0;
 	} else if( audio_range.get() == AUDIO_RANGE_10_MS ) {
@@ -838,48 +855,57 @@ void Audio::updateSetup()
 	}
     _exponent_max  = std::pow( 2, audio_factor.get());
 
-    if ( ! dual_tone.get() ) dma_cmd.voice[0].seq[1] = 0;
-    
 	maxf = center_freq.get() * tone_var.get();
 	minf = center_freq.get() / tone_var.get();
     ESP_LOGI(FNAME,"min/max freq. %.1f/%.1f", minf, maxf);
+    VCMode.updateCache(); // force re- evaluation of cruise and audio mode
+    updateAudioMode();
 }
 
-// called from VCMode when mode changes
+// call when cruise mode changes, setup changes
 void Audio::updateAudioMode()
 {
+    // adjust dead band doe S2F
+    // deadband also used to implement audio mute options
     if (VCMode.audioIsVario()) {
-        _deadband_p = deadband.get();
-        _deadband_n = (audio_mute_sink.get()) ? -_range-1 : deadband_neg.get();
+        _deadband_p = (audio_mute_gen.get()>=1) ? _range+1 : deadband.get();
+        _deadband_n = (audio_mute_sink.get() || audio_mute_gen.get()==1) ? -_range-1 : deadband_neg.get();
     }
     else {
-        _deadband_p = s2f_deadband.get() / 10;
-        _deadband_n = s2f_deadband_neg.get() / 10;
+        _deadband_p = s2f_deadband.get()/10;
+        _deadband_n = s2f_deadband_neg.get()/10;
+        if (audio_mute_gen.get()>=1) {
+            _deadband_p = 60.;
+            _deadband_n = -60.;
+        }
     }
-    if ((_deadband_p-_deadband_n) < 0.02) {
+    if (std::abs(_deadband_p-_deadband_n) < 0.02) {
         _deadband_n = 0.01;
         _deadband_p = -0.01;
     }
     ESP_LOGI(FNAME, "Deaband %f/%f", _deadband_p, _deadband_n);
+
+    // chopping is caches from VCMode
     ESP_LOGI(FNAME, "Vario chopping mode %d", VCMode.audioIsChopping());
-    tick(); // extra tick to make changes promptly effective
-    setVolume(VCMode.getCMode() ? s2f_mode_volume : vario_mode_volume); // change volume last
+
+    // variable tone
+    setMultiplier(audio_variable_frequency.get() ? NIMBLE_AUDIO : SLOW_AUDIO);
+
+    // extra tick to make changes promptly effective
+    tick();
+
+    // set volume according s2f mode, need to be the last action here last
+    setVolume(VCMode.getCMode() ? s2f_mode_volume : vario_mode_volume);
 }
 
 // unmute/mute the default voice
 void Audio::unmute()
 {
-    if ( ! dma_cmd.voice[0].active ) {
-        dma_cmd.voice[0].start();
-    }
-    if ( ! dma_cmd.voice[1].active ) {
-        dma_cmd.voice[1].start();
-    }
+    // _mute = false;
 }
 void Audio::mute()
 {
-    dma_cmd.voice[0].stop();
-    dma_cmd.voice[1].stop();
+    // _mute = true;
 }
 
 void Audio::enableAmplifier( bool enable )
@@ -908,9 +934,6 @@ void Audio::enableAmplifier( bool enable )
 
 bool Audio::tick()
 {
-    static int damper = 0; 
-    if ( ! audio_variable_frequency.get() && (damper++ & 1) ) return false; // fixme -> change clock properly
-
     polar_sink = Speed2Fly.sink( ias.get() ); // fixme variable scope !!!!
 	float netto = te_vario.get() - polar_sink;
 	as2f = Speed2Fly.speed( netto, !VCMode.getCMode() ); // fixme variable scope !!!!
@@ -945,13 +968,11 @@ bool Audio::tick()
         _audio_value = -max;
     }
 
-    if ( inDeadBand() ) {
-        mute();
-    }
-    else {
-        // if( audio_variable_frequency.get() ) {
-        calculateFrequency();
-        unmute();
-    }
+    calculateFrequency();
 	return false;
+}
+
+
+void Audio::dump() {
+    dma_cmd.dump();
 }

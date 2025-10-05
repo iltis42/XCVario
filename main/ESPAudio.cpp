@@ -477,7 +477,7 @@ bool Audio::begin( int16_t ch  )
 
     _dac_cfg = {
         .chan_mask = (dac_channel_mask_t)BIT(ch), // which channel to enable
-        .desc_num = 3,
+        .desc_num = 2,
         .buf_size = BUF_LEN,
         .freq_hz = SAMPLE_RATE,
         .offset = 0,

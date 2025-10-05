@@ -18,7 +18,8 @@ public:
 public:
     inline bool myTurn() { return (++_counter % MULTIPLIER) == 0; }
     virtual bool tick() = 0;
-    const unsigned MULTIPLIER;
+    void setMultiplier(unsigned m) { MULTIPLIER = m; }
+    unsigned MULTIPLIER;
 private:
     unsigned _counter = 0;
 };

@@ -114,6 +114,7 @@ void modifyPolar() {
 void change_cruise() {
     VCMode.updateCache();
     Display->setCruiseChanged();
+    AUDIO->updateAudioMode();
 }
 
 void resetSWindAge() {
@@ -242,14 +243,16 @@ static const limits_t percentage_limits = {0, 100, 1.0};
 SetupNG<float>  		s2f_gyro_deg( "S2F_GYRO", 10, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
 SetupNG<float>  		s2f_auto_lag( "S2F_HYST", 10, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(2, 20, 1));
 
+						// set audio volume exclusively through the Audio class
 SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume, QUANT_NONE, &percentage_limits);
+SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
 SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0 );
 SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
+SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS );
 
 SetupNG<float>  		wifi_max_power( "WIFI_MP" , 50, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(10.0, 100.0, 5.0));
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
-SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS );
 SetupNG<int>  			alt_select( "ALT_SELECT" , AS_BARO_SENSOR );
 SetupNG<int>  			fl_auto_transition( "FL_AUTO" , 0 );
 SetupNG<int>  			alt_display_mode( "ALT_DISP_MODE" , Altimeter::MODE_QNH );
@@ -268,7 +271,6 @@ SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5, true, SYNC_FROM_MASTER
 SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1, 300, 1));
 SetupNG<float>  		mean_climb_major_change( "MEAN_CLMC", 0.5, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.1, 5.0, 0.1));
 SetupNG<float>  		elevation( "ELEVATION", NOTSET_ELEVATION, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_ALT, LIMITS(NOTSET_ELEVATION, 3000, 1));
-SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
 SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(.0, 25.0, 1));
 SetupNG<float>  		s2f_deadband_neg( "DB_S2F_NEG", -10.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(-25.0, .0, 1));
 SetupNG<float>  		s2f_delay( "S2F_DELAY", 5.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.10001, 10.0, 0.1));

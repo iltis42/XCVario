@@ -12,7 +12,6 @@ CruiseMode VCMode; // a global variable
 
 CruiseMode::CruiseMode()
 {
-    _cmode = cruise_mode.get();
     updateCache();
 }
 
@@ -47,4 +46,11 @@ void CruiseMode::updateCache()
     } else {
         _vmode = MODE_BRUTTO;
     }
+
+    // set the audio mode cache
+    _audio_vario = ( ! _cmode || (cruise_audio_mode.get() != AUDIO_S2F) );
+    // set the audio chopping style cache
+    // breaks can be filled with silence or with dual tone
+    _audio_chopping = (_audio_vario && (chopping_mode.get() & VARIO_CHOP) ) ||
+            (!_audio_vario && (chopping_mode.get() & S2F_CHOP) );
 }

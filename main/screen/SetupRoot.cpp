@@ -116,13 +116,14 @@ void SetupRoot::rot(int count)
     }
     else {
         // Volume
-        audio_volume.setCheckRange(audio_volume.get() + 2*count);
+        AUDIO->setVolume(audio_volume.get() + 2*count);
+        // provide acoustic feedback on volume change fixme
         if (audio_volume.get()==30) {
             if (count > 0) {
-                AUDIO->indicateCenter(true);
+                AUDIO->alarm(AUDIO_CMD_CIRCLE_OUT);
             }
             else {
-                AUDIO->indicateCenter(false);
+                AUDIO->alarm(AUDIO_CMD_CIRCLE_IN);
             }
         }
     }
@@ -134,6 +135,9 @@ void SetupRoot::press()
     if ( active_screen == NO_SCREEN ) {
         active_screen = SCREEN_VARIO;
     }
+
+    // AUDIO->dump();
+    // return;
 
     // cycle through screens, incl. setup
     if (!gflags.inSetup)

@@ -55,9 +55,9 @@ void CruiseStatus::draw() {
     } else {
         MYUCG->setColor(COLOR_BLACK);
     }
-    const char *s = "   net";
+    const char *s = "  net";
     if (VCMode.getVMode() == CruiseMode::MODE_REL_NETTO) {
-        s = "s-net";
+        s = "snet";
     }
     ESP_LOGI(FNAME, "print netto stat %d - %s", VCMode.isNetto(), s);
     ESP_LOGI(FNAME, "print x/y %d/%d", _ref_x + SYMBOL_SIZE + 3 - MYUCG->getStrWidth(s), _ref_y + text_offset);

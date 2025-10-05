@@ -112,12 +112,11 @@ static int set_rotary_increment(SetupMenuSelect *p) {
 }
 
 int audio_setup_s(SetupMenuSelect *p) {
-	AUDIO->setup();
+	AUDIO->updateSetup();
 	return 0;
 }
-
 int audio_setup_f(SetupMenuValFloat *p) {
-	AUDIO->setup();
+	AUDIO->updateSetup();
 	return 0;
 }
 
@@ -382,12 +381,6 @@ static int startFlarmSimulation(SetupMenuSelect *p) {
 	FlarmSim::StartSim();
 	return 0;
 }
-
-static int eval_chop(SetupMenuSelect *p) {
-	AUDIO->evaluateChopping();
-	return 0;
-}
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 // SetupMenu
@@ -793,7 +786,7 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	dt->mkEnable();
 	top->addEntry(dt);
 
-	SetupMenuSelect *tch = new SetupMenuSelect("Chopping", RST_NONE, eval_chop, &chopping_mode);
+	SetupMenuSelect *tch = new SetupMenuSelect("Chopping", RST_NONE, audio_setup_s, &chopping_mode);
 	tch->setHelp(
 			"Select tone chopping option on positive values for Vario and or S2F");
 	tch->addEntry("Disabled");             // 0
@@ -802,7 +795,7 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	tch->addEntry("Vario and S2F");        // 3  default
 	top->addEntry(tch);
 
-	SetupMenuSelect *advarto = new SetupMenuSelect("Variable Tone", RST_NONE, nullptr, &audio_variable_frequency);
+	SetupMenuSelect *advarto = new SetupMenuSelect("Variable Tone", RST_NONE, audio_setup_s, &audio_variable_frequency);
 	advarto->setHelp(
 			"Enable audio frequency updates within climbing tone intervals, disable keeps frequency constant");
 	advarto->mkEnable();
@@ -810,16 +803,16 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 }
 
 void audio_menu_create_deadbands(SetupMenu *top) {
-	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", nullptr, false, &deadband_neg);
+	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", audio_setup_f, false, &deadband_neg);
 	top->addEntry(dbminlv);
 
-	SetupMenuValFloat *dbmaxlv = new SetupMenuValFloat("Upper Vario", "", nullptr, false, &deadband);
+	SetupMenuValFloat *dbmaxlv = new SetupMenuValFloat("Upper Vario", "", audio_setup_f, false, &deadband);
 	top->addEntry(dbmaxlv);
 
-	SetupMenuValFloat *dbmaxls2fn = new SetupMenuValFloat("Lower S2F", "", nullptr, false, &s2f_deadband_neg);
+	SetupMenuValFloat *dbmaxls2fn = new SetupMenuValFloat("Lower S2F", "", audio_setup_f, false, &s2f_deadband_neg);
 	top->addEntry(dbmaxls2fn);
 
-	SetupMenuValFloat *dbmaxls2f = new SetupMenuValFloat("Upper S2F", "", nullptr, false, &s2f_deadband);
+	SetupMenuValFloat *dbmaxls2f = new SetupMenuValFloat("Upper S2F", "", audio_setup_f, false, &s2f_deadband);
 	top->addEntry(dbmaxls2f);
 }
 
@@ -836,13 +829,13 @@ void audio_menu_create_volume(SetupMenu *top) {
 }
 
 void audio_menu_create_mute(SetupMenu *top) {
-	SetupMenuSelect *asida = new SetupMenuSelect("In Sink", RST_NONE, nullptr, &audio_mute_sink);
+	SetupMenuSelect *asida = new SetupMenuSelect("In Sink", RST_NONE, audio_setup_s, &audio_mute_sink);
 	asida->setHelp("Select whether vario audio will be muted while in sink");
 	asida->addEntry("Stay On");  // 0
 	asida->addEntry("Mute");     // 1
 	top->addEntry(asida);
 
-	SetupMenuSelect *ageda = new SetupMenuSelect("Generally", RST_NONE, nullptr, &audio_mute_gen);
+	SetupMenuSelect *ageda = new SetupMenuSelect("Generally", RST_NONE, audio_setup_s, &audio_mute_gen);
 	ageda->setHelp(
 			"Select audio on, or vario audio muted, or all audio muted including alarms");
 	ageda->addEntry("Audio On");      // 0 = AUDIO_ON
@@ -885,7 +878,7 @@ void audio_menu_create(SetupMenu *audio) {
 	audio->addEntry(db);
 	db->setHelp("Dead band limits within which audio remains silent.  1 m/s equals roughly 200 fpm or 2 knots");
 
-	SetupMenuValFloat *afac = new SetupMenuValFloat("Audio Exponent", "", nullptr, false, &audio_factor);
+	SetupMenuValFloat *afac = new SetupMenuValFloat("Audio Exponent", "", audio_setup_f, false, &audio_factor);
 	afac->setHelp(
 			"How the audio frequency responds to the climb rate: < 1 for logarithmic, and > 1 for exponential, response");
 	audio->addEntry(afac);

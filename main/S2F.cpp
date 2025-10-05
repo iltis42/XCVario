@@ -182,6 +182,7 @@ double S2F::speed( double netto_vario, bool circling )
 {
 	double stf = 0;
 	if( circling ){  // Optimum speed for a load factor of 1.4 g what corresponds 45° angle of bank and factor 1.2 speed increase; 3.6*1.2 = 4.32
+		// fixme, calculate to current g-load
 		stf = _circling_speed;
 	}else{
 		if( s2f_blockspeed.get() )

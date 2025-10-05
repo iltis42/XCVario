@@ -12,6 +12,7 @@
 #include "setup/SetupNG.h"
 #include "screen/UiEvents.h"
 #include "screen/DrawDisplay.h"
+#include "ESPAudio.h"
 #include "sensor.h"
 
 #include "logdefnone.h"
@@ -52,12 +53,8 @@ dl_action_t XCNavMsg::parseDollar_g(NmeaPlugin *plg)
     {
         ESP_LOGI(FNAME, "Detected volume cmd");
         int steps = atoi(s + word->at(0) + 1);
-        float v = audio_volume.get() + steps;
-        if (v <= 100.0 && v >= 0.0)
-        {
-            audio_volume.set(v);
-            ESP_LOGI(FNAME, "Volume change: %d steps, new volume: %.0f", steps, v);
-        }
+        AUDIO->setVolume(audio_volume.get() + steps);
+        ESP_LOGI(FNAME, "Volume change: %d steps, new volume: %.0f", steps, audio_volume.get());
         break;
     }
     case 'r': // nonstandard CAI 302 extension for Rotary Movement, e.g. for XCNav remote stick to navigate

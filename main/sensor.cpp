@@ -1158,7 +1158,7 @@ void system_startup(void *args){
 	ESP_LOGI(FNAME,"Audio begin");
 	logged_tests += "Digi. Audio Poti test: ";
 	TaskHandle_t main_task = xTaskGetCurrentTaskHandle();
-    xTaskCreatePinnedToCore(pin_audio_irq, "pinaudio", 4096, (void*)main_task, 5, NULL, 1);
+    xTaskCreatePinnedToCore(pin_audio_irq, "pinaudio", 4096, (void*)main_task, 10, NULL, 1);
 	ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
 	if( AUDIO->isOk() ) {

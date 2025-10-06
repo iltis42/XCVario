@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include "protocol/ClockIntf.h"
-
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <driver/dac_continuous.h>
@@ -34,7 +32,7 @@ enum e_audio_alarm_type
     AUDIO_ALARM_GEAR
 };
 
-class Audio : public Clock_I
+class Audio
 {
 	friend class TestSequence;
 public:
@@ -46,6 +44,7 @@ public:
     void stop(); 								// terminate any sound output
 	void updateSetup(); 						// incorporate setup changes
 	void updateAudioMode(); 					// call on cruise mode change
+	void updateTone(); 							// call after sensor update
 	void mute(); 								// mute the vario voice
 	void unmute();  							// unmutes the vario voice
 	void startAudio(); 							// starts task driving the sequencer
@@ -54,7 +53,6 @@ public:
 	void alarm(e_audio_alarm_type alarmType);  	// outputs various alarm sounds according to alarmType
 	void soundCheck();   						// audible check of the audio
 	bool haveCAT5171() const { return _haveCAT5171; };
-	bool tick() override;  // calculates TE and S2F delta depending on mode
 	void dump();
 
 private:

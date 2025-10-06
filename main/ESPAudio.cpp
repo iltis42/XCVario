@@ -83,7 +83,8 @@ enum {
     REQUEST_SOUND,
     START_SOUND,
     ENDOFF_SOUND,
-    ADD_SOUND
+    ADD_SOUND,
+    DO_VARIO
 };
 union AudioEvent {
     struct {
@@ -330,10 +331,15 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
     int numVoices = 0;
     for (int j = 0; j < MAX_VOICES; j++) {
         if ( vl[j].active ) numVoices++;
+
+        // if (j < cmd.voicecount) {
+        //     // always reload the frequencies, making the variometer responsive
+        //     vl[j].fastLoad(cmd.idx);
+        // }
     }
+    // numVoices = std::max(1, numVoices - 1);
 
     // multi tone 
-    // numVoices = std::max(1, numVoices - 1);
     int i = 0;
     int z = (cmd.counter > 0 && (cmd.counter*2) < e->buf_size) ? 2 : 1; // divide loop
     int loop_end = (z==1) ? e->buf_size : (cmd.counter*2);
@@ -348,32 +354,32 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
             memset(buf+i, DAC_CENTER, loop_end-i);
         }
         else {
-        // fuse all voices
-        for (; i < loop_end; i += 2) {
-            int sum = 0;
-            for (int j = 0; j < MAX_VOICES; j++) {
-                // all voices
-                VOICECMD& v = vl[j];
-                if (!v.active) continue; // a silent voice
-                if ( v.gain != v.gain_target ) { // phase-in/out
-                    if ( v.gain < v.gain_target ) v.gain++;
-                    else                          v.gain--;
-                    if ( v.gain == 0 ) {
-                        v.active = false;
-                        numVoices = std::max(1, numVoices - 1);
+            // fuse all voices
+            for (; i < loop_end; i += 2) {
+                int sum = 0;
+                for (int j = 0; j < MAX_VOICES; j++) {
+                    // all voices
+                    VOICECMD& v = vl[j];
+                    if (!v.active) continue; // a silent voice
+                    if ( v.gain != v.gain_target ) { // phase-in/out
+                        if ( v.gain < v.gain_target ) v.gain++;
+                        else                          v.gain--;
+                        if ( v.gain == 0 ) {
+                            v.active = false;
+                            numVoices = std::max(1, numVoices - 1);
+                        }
                     }
+                    sum += ((int)v.table[v.phase >> v.shift] * v.gain) >> 7;
+                    v.phase += v.step;
                 }
-                sum += ((int)v.table[v.phase >> v.shift] * v.gain) >> 7;
-                v.phase += v.step;
-            }
-            sum /= numVoices;
-            if ( sum >  DAC_HLF_AMPL ) sum =  DAC_HLF_AMPL;
-            if ( sum < -DAC_HLF_AMPL ) sum = -DAC_HLF_AMPL;
-            sum += DAC_CENTER;
+                sum /= numVoices;
+                if ( sum >  DAC_HLF_AMPL ) sum =  DAC_HLF_AMPL;
+                if ( sum < -DAC_HLF_AMPL ) sum = -DAC_HLF_AMPL;
+                sum += DAC_CENTER;
 
-            buf[i]   = (uint8_t)sum; // one sample
-            buf[i+1] = (uint8_t)sum;
-        }
+                buf[i]   = (uint8_t)sum; // one sample
+                buf[i+1] = (uint8_t)sum;
+            }
         }
 
         if ( cmd.voicecount == 0 || cmd.counter > 0 ) break; // not the end of the tone, DMA buffer is complete
@@ -434,8 +440,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
     return high_task_wakeup;
 }
 
-Audio::Audio() :
-	Clock_I(NIMBLE_AUDIO)
+Audio::Audio()
 {
     dma_cmd.init();
     if ( ! AudioQueue ) {
@@ -451,7 +456,6 @@ Audio::~Audio()
         ESP_ERROR_CHECK(dac_continuous_del_channels(_dac_chan));
     }
 
-	Clock::stop(this);
 	if ( _poti ) {
 		delete _poti;
 		_poti = nullptr;
@@ -527,8 +531,7 @@ bool Audio::begin( int16_t ch  )
     if ( err == ESP_OK ) {
         enableAmplifier(true);
         ESP_ERROR_CHECK(dac_continuous_start_async_writing(_dac_chan));
-        Clock::start(this);
-		_dac_inited = true;
+        _dac_inited = true;
         return true;
     }
     return false;
@@ -697,6 +700,10 @@ void  Audio::calculateFrequency(){
         vario_tim[1].setSamples(duration);
         // ESP_LOGI(FNAME, "d0 %d d1 %d", (int)vario_tim[0].duration, (int)vario_tim[1].duration );
     }
+    else {
+        vario_tim[0].setSamples(50);
+        vario_tim[1].setSamples(50);
+    }
     if ( inDeadBand() || _alarm_mode || speaker_volume < 1.0 ) {
         vario_seq[0].step = vario_extra[0].step = vario_seq[1].step = vario_extra[1].step = 0;
     }
@@ -810,6 +817,44 @@ void Audio::dactask()
                 ESP_LOGI(FNAME, "End of sound");
                 dma_cmd.loadSound(&VarioSound);
             }
+            else if ( event.cmd == DO_VARIO && ! _alarm_mode) {
+                // update vario sound
+                polar_sink = Speed2Fly.sink( ias.get() ); // fixme variable scope !!!!
+                float netto = te_vario.get() - polar_sink;
+                as2f = Speed2Fly.speed( netto, !VCMode.getCMode() ); // fixme variable scope !!!!
+                
+                s2f_ideal.set(static_cast<int>(std::round(as2f))); // fixme place code better
+                // low pass damping moved to the correct place
+                s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10)); // fixme variable scope
+                // ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
+
+                // pull the intput value from vario indicator, or speed respectively
+                float max = _range;
+                if( VCMode.audioIsVario() ) {
+                    // vario is the parameter for audio
+                    float tmp = te_vario.get();
+                    if ( VCMode.isNetto() ) {
+                        tmp -= polar_sink;
+                    }
+                    if ( VCMode.getVMode() == CruiseMode::MODE_REL_NETTO ) {
+                        tmp += Speed2Fly.circlingSink( ias.get() );
+                    }
+                    _audio_value = tmp;
+                }
+                else {
+                    // speed to fly is the parameter for audio
+                    // map s2f_delta to -5..+5, instead of heaving another set of min/max variables.
+                    _audio_value = -s2f_delta/10.0;
+                    max = 5.0; // +/- 50km/h range
+                }
+                if( _audio_value > max ) {
+                    _audio_value = max;
+                } else if( _audio_value < -max ) {
+                    _audio_value = -max;
+                }
+
+                calculateFrequency();
+            }
             continue; // event handling done
 		}
         
@@ -889,13 +934,20 @@ void Audio::updateAudioMode()
     ESP_LOGI(FNAME, "Vario chopping mode %d", VCMode.audioIsChopping());
 
     // variable tone
-    setMultiplier(audio_variable_frequency.get() ? NIMBLE_AUDIO : SLOW_AUDIO);
+    // setMultiplier(audio_variable_frequency.get() ? NIMBLE_AUDIO : SLOW_AUDIO);
 
     // extra tick to make changes promptly effective
-    tick();
+    // tick();
 
     // set volume according s2f mode, need to be the last action here last
     setVolume(VCMode.getCMode() ? s2f_mode_volume : vario_mode_volume);
+}
+
+void Audio::updateTone()
+{
+    AudioEvent ev(DO_VARIO, 0); // update vario sound
+    xQueueSend(AudioQueue, &ev, 0);
+
 }
 
 // unmute/mute the default voice
@@ -931,46 +983,7 @@ void Audio::enableAmplifier( bool enable )
 		}
 	}
 }
-
-bool Audio::tick()
-{
-    polar_sink = Speed2Fly.sink( ias.get() ); // fixme variable scope !!!!
-	float netto = te_vario.get() - polar_sink;
-	as2f = Speed2Fly.speed( netto, !VCMode.getCMode() ); // fixme variable scope !!!!
-    
-	s2f_ideal.set(static_cast<int>(std::round(as2f))); // fixme place code better
-    // low pass damping moved to the correct place
-    s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10)); // fixme variable scope
-    // ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
-
-    // pull the intput value from vario indicator, or speed respectively
-  	float max = _range;
-    if( VCMode.audioIsVario() ) {
-        // vario is the parameter for audio
-        float tmp = te_vario.get();
-        if ( VCMode.isNetto() ) {
-            tmp -= polar_sink;
-        }
-        if ( VCMode.getVMode() == CruiseMode::MODE_REL_NETTO ) {
-            tmp += Speed2Fly.circlingSink( ias.get() );
-        }
-        _audio_value = tmp;
-    }
-    else {
-        // speed to fly is the parameter for audio
-        // map s2f_delta to -5..+5, instead of heaving another set of min/max variables.
-        _audio_value = -s2f_delta/10.0;
-        max = 5.0; // +/- 50km/h range
-    }
-    if( _audio_value > max ) {
-        _audio_value = max;
-    } else if( _audio_value < -max ) {
-        _audio_value = -max;
-    }
-
-    calculateFrequency();
-	return false;
-}
+// }
 
 
 void Audio::dump() {

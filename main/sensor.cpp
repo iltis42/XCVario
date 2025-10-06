@@ -566,6 +566,9 @@ void readSensors(void *pvParameters){
 		if( uxTaskGetStackHighWaterMark( bpid ) < 512 ) {
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
 		}
+
+		AUDIO->updateTone();
+
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
 }

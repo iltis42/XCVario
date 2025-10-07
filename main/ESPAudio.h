@@ -49,7 +49,7 @@ public:
 	void unmute();  							// unmutes the vario voice
 	void startAudio(); 							// starts task driving the sequencer
 	// system wide the only point to set audio volume !!!
-	void setVolume(float vol, bool sync = true); // vol: 0.0 .. 100.0 
+	void setVolume(float vol, bool sync = true); // vol: 0.0 .. 100.0 logarythmic scale
 	void alarm(e_audio_alarm_type alarmType);  	// outputs various alarm sounds according to alarmType
 	void soundCheck();   						// audible check of the audio
 	bool haveCAT5171() const { return _haveCAT5171; };

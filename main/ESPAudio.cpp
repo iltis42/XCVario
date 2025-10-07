@@ -656,7 +656,7 @@ void Audio::alarm(e_audio_alarm_type style)
     }
 }
 
-// [%]
+// [%] - in a logarithmic db sense
 void Audio::setVolume(float vol, bool sync) {
     if ( _alarm_mode ) {
         return; // no volume change during alarm
@@ -738,9 +738,10 @@ void  Audio::calculateFrequency(){
 }
 
 void Audio::writeVolume(float volume) {
-	ESP_LOGI(FNAME, "set volume: %f", volume);
+    float vol = pow(10, (volume - 100.) * (1./110.)) * 114. - 14.;
+	ESP_LOGI(FNAME, "set volume: %f/%f", volume, vol);
     if (_poti) {
-        _poti->writeVolume(volume);
+        _poti->writeVolume(vol);
         current_volume = volume;
     }
 }
@@ -988,8 +989,6 @@ void Audio::enableAmplifier( bool enable )
 		}
 	}
 }
-// }
-
 
 void Audio::dump() {
     dma_cmd.dump();

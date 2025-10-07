@@ -657,8 +657,11 @@ void Audio::alarm(e_audio_alarm_type style)
 }
 
 // [%]
-void Audio::setVolume(float vol) {
-    audio_volume.setCheckRange(vol, false, false);
+void Audio::setVolume(float vol, bool sync) {
+    if ( _alarm_mode ) {
+        return; // no volume change during alarm
+    }
+    audio_volume.setCheckRange(vol, sync, false);
 	speaker_volume = audio_volume.get();
     if( audio_split_vol.get() ) {
 		if( VCMode.getCMode() ) {

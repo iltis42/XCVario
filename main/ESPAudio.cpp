@@ -209,8 +209,8 @@ static __attribute__((aligned(4))) DMACMD dma_cmd;
 // Vario tone
 static std::array<DURATION, 3> vario_tim = {{ {100}, {50}, {0} }};
 static std::array<TONE, 3> vario_seq = {{ {500.0}, {0.}, {0.} }};
-static std::array<TONE, 3> vario_extra = {{ { 500.0*pow(2.0, 3./2.) }, { 0.}, {0.} }};
-const std::array<VOICECONF, 2> vario_vconf = {{ {0, 217}, {1, 20} }};
+static std::array<TONE, 3> vario_extra = {{ { 500.0*pow(2.0, 3.) }, { 0.}, {0.} }};
+const std::array<VOICECONF, 2> vario_vconf = {{ {0, 220}, {0, 7} }};
 const SOUND VarioSound = { vario_tim.data(), { vario_seq.data(), vario_extra.data(), nullptr, nullptr }, vario_vconf.data(), -1 };
 
 // Flarm alarms
@@ -723,7 +723,7 @@ void  Audio::calculateFrequency(){
     else {
         // frequencies
         vario_seq[0].setStep(freq);
-        vario_extra[0].setStep(freq * 2.);
+        vario_extra[0].setStep(freq * 5.);
         if ( VCMode.audioIsChopping() && _audio_value > 0 ) {
             if ( dual_tone.get() ) vario_seq[1].setStep(freq * _high_tone_var);
             else vario_seq[1].step = vario_extra[1].step = 0;

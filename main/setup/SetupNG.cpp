@@ -130,7 +130,7 @@ void resetCWindAge() {
 
 void change_volume() {
 	float vol = audio_volume.get();
-	AUDIO->setVolume( vol );
+	AUDIO->setVolume(vol, false);
 	ESP_LOGI(FNAME,"change_volume -> %f", vol );
 }
 

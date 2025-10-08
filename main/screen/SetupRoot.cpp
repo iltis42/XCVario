@@ -28,6 +28,10 @@ SetupRoot::SetupRoot(IpsDisplay *display) :
     _display = display;
     ESP_LOGI(FNAME,"Init root menu");
     attach();
+    if ( rot_default.get() == 0) {
+        // volume needs rotary dynamics
+        setRotDynamic(2.5f);
+    }
 }
 
 SetupRoot::~SetupRoot()
@@ -104,6 +108,9 @@ void SetupRoot::exit(int levels)
     delete _childs.front(); // hook to the entire setup tree
     _childs.clear();
     gflags.inSetup = false;
+    if ( rot_default.get() == 0) {
+        setRotDynamic(2.5f);
+    }
 }
 
 void SetupRoot::rot(int count)
@@ -116,7 +123,7 @@ void SetupRoot::rot(int count)
     }
     else {
         // Volume
-        AUDIO->setVolume(audio_volume.get() + 2*count);
+        AUDIO->setVolume(audio_volume.get() + count);
         // provide acoustic feedback on volume change fixme
         if (audio_volume.get()==30) {
             if (count > 0) {

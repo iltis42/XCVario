@@ -108,10 +108,16 @@ struct VOICECMD
     void setFrequencyAndGain(float f);
     void setFrequency(float f);
     float getFrequency() const;
+    static inline constexpr uint16_t CountFromMs(int ms) {
+        return (ms * SAMPLE_RATE) / (1000 * BUF_LEN/2); }
     void setCount(int ms) {
-        count = std::max((ms * SAMPLE_RATE) / (1000 * BUF_LEN/2), 1); }
+        count = std::max(CountFromMs(ms), (uint16_t)1); }
+    static inline constexpr uint16_t CountFromSamples(int32_t spls) {
+        return spls / (BUF_LEN/2);
+    }
     void setCountFromSamples(int32_t spls) {
-        count = spls / (BUF_LEN/2); }
+        count = CountFromSamples(spls);
+    }
     static constexpr int16_t getMaxGain(float f) {
         return (f <= 600.f) ? 128 : 128 - 47 * (f - 600.f) / 1500.0; } // -4dB at 1500Hz above 600Hz
     void setMaxGain() {
@@ -192,7 +198,7 @@ struct DMACMD {
     void init();
     void loadSound(const SOUND* s);
     void dump();
-    static constexpr uint32_t calcNrSamples(unsigned ms) {
+    static inline constexpr uint32_t calcNrSamples(unsigned ms) {
         return ((uint32_t)(ms) * SAMPLE_RATE) / 1000; }
     int32_t counter;    // number of samples to output for the next tone
     const DURATION* timeseq; // sample precision timing for sequence, terminated with a 0
@@ -206,7 +212,7 @@ static __attribute__((aligned(4))) DMACMD dma_cmd;
 static std::array<DURATION, 3> vario_tim = {{ {100}, {50}, {0} }};
 static std::array<TONE, 3> vario_seq = {{ {500.0}, {0.}, {0.} }};
 static std::array<TONE, 3> vario_extra = {{ { 500.0*pow(2.0, 3./2.) }, { 0.}, {0.} }};
-const std::array<VOICECONF, 2> vario_vconf = {{ {0, 217}, {1, 38} }};
+const std::array<VOICECONF, 2> vario_vconf = {{ {0, 217}, {1, 20} }};
 const SOUND VarioSound = { vario_tim.data(), { vario_seq.data(), vario_extra.data(), nullptr, nullptr }, vario_vconf.data(), -1 };
 
 // Flarm alarms
@@ -315,6 +321,8 @@ int irq_counter = 0;
 // DMA callback
 static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_data_t *e, void *user_data)
 {
+    static uint16_t reload_count = 1000;
+    static uint16_t irqs = 0;
     DMACMD& cmd = *(DMACMD *)user_data;
     VOICECMD *vl = (VOICECMD *)cmd.voice;
     uint8_t *buf = (uint8_t *)e->buf;
@@ -329,13 +337,14 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
 
     // on the fly counting of active voices
     int numVoices = 0;
+    irqs++; 
     for (int j = 0; j < MAX_VOICES; j++) {
         if ( vl[j].active ) numVoices++;
 
-        // if (j < cmd.voicecount) {
-        //     // always reload the frequencies, making the variometer responsive
-        //     vl[j].fastLoad(cmd.idx);
-        // }
+        if (irqs == reload_count && j < cmd.voicecount) {
+            // reload the frequencies, making the variometer more responsive (even w/o sync to voice cycle)
+            vl[j].fastLoad(cmd.idx);
+        }
     }
     // numVoices = std::max(1, numVoices - 1);
 
@@ -400,6 +409,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
         }
         // the end+1 time slice needs to be zero, as well as the n+1 steps need tp be zero
         cmd.counter = cmd.timeseq[cmd.idx].duration;
+        reload_count = (cmd.counter > DMACMD::calcNrSamples(300)) ? VOICECMD::CountFromSamples(cmd.counter)/2 : VOICECMD::CountFromMs(1000);
         loop_end = e->buf_size; // finish the remaining DMA buffer
         for (int j = 0; j < cmd.voicecount; j++) {
             vl[j].fastLoad(cmd.idx);
@@ -552,7 +562,7 @@ public:
     {
         dma_cmd.voice[0].setFrequencyAndGain(f);
         dma_cmd.voice[0].start();
-        AUDIO->writeVolume(25.);
+        AUDIO->writeVolume(45.);
         Clock::start(this);
     }
     ~TestSequence()
@@ -646,9 +656,12 @@ void Audio::alarm(e_audio_alarm_type style)
     }
 }
 
-// [%]
-void Audio::setVolume(float vol) {
-    audio_volume.setCheckRange(vol, false, false);
+// [%] - in a logarithmic db sense
+void Audio::setVolume(float vol, bool sync) {
+    if ( _alarm_mode ) {
+        return; // no volume change during alarm
+    }
+    audio_volume.setCheckRange(vol, sync, false);
 	speaker_volume = audio_volume.get();
     if( audio_split_vol.get() ) {
 		if( VCMode.getCMode() ) {
@@ -661,7 +674,7 @@ void Audio::setVolume(float vol) {
 		// copy to both variables in case audio_split_vol enabled later
 		s2f_mode_volume = speaker_volume;
 		vario_mode_volume = speaker_volume;
-		ESP_LOGI(FNAME, "setvolume() to %f, joint mode", speaker_volume );
+		// ESP_LOGI(FNAME, "setvolume() to %f, joint mode", speaker_volume );
 	}
     writeVolume(speaker_volume);
 }
@@ -710,7 +723,7 @@ void  Audio::calculateFrequency(){
     else {
         // frequencies
         vario_seq[0].setStep(freq);
-        vario_extra[0].setStep(freq * 3.);
+        vario_extra[0].setStep(freq * 2.);
         if ( VCMode.audioIsChopping() && _audio_value > 0 ) {
             if ( dual_tone.get() ) vario_seq[1].setStep(freq * _high_tone_var);
             else vario_seq[1].step = vario_extra[1].step = 0;
@@ -725,9 +738,10 @@ void  Audio::calculateFrequency(){
 }
 
 void Audio::writeVolume(float volume) {
-	ESP_LOGI(FNAME, "set volume: %f", volume);
+    float vol = pow(10, (volume - 100.) * (1./110.)) * 114. - 14.;
+	ESP_LOGI(FNAME, "set volume: %f/%f", volume, vol);
     if (_poti) {
-        _poti->writeVolume(volume);
+        _poti->writeVolume(vol);
         current_volume = volume;
     }
 }
@@ -798,8 +812,6 @@ void Audio::dactask()
                     }
                     else {
                         next_tone[vid] = nullptr; // end of this voice
-                        // _alarm_mode = false;
-                        // writeVolume(speaker_volume);
                         ESP_LOGI(FNAME, "End of v-load");
                     }
                 }
@@ -855,14 +867,8 @@ void Audio::dactask()
 
                 calculateFrequency();
             }
-            continue; // event handling done
+            // continue; // event handling done
 		}
-        
-        // if ( ! _alarm_mode ) {
-            // normal vario sound operation
-            // ESP_LOGI(FNAME, "No event time out");
-        
-        // }
 
         // ISR benchmark
         int64_t t1 = esp_timer_get_time();
@@ -983,8 +989,6 @@ void Audio::enableAmplifier( bool enable )
 		}
 	}
 }
-// }
-
 
 void Audio::dump() {
     dma_cmd.dump();

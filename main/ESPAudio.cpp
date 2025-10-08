@@ -562,7 +562,7 @@ public:
     {
         dma_cmd.voice[0].setFrequencyAndGain(f);
         dma_cmd.voice[0].start();
-        AUDIO->writeVolume(25.);
+        AUDIO->writeVolume(45.);
         Clock::start(this);
     }
     ~TestSequence()
@@ -674,7 +674,7 @@ void Audio::setVolume(float vol, bool sync) {
 		// copy to both variables in case audio_split_vol enabled later
 		s2f_mode_volume = speaker_volume;
 		vario_mode_volume = speaker_volume;
-		ESP_LOGI(FNAME, "setvolume() to %f, joint mode", speaker_volume );
+		// ESP_LOGI(FNAME, "setvolume() to %f, joint mode", speaker_volume );
 	}
     writeVolume(speaker_volume);
 }

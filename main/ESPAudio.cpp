@@ -40,7 +40,7 @@ static QueueHandle_t AudioQueue = nullptr;
 static bool request_synch_start = false;
 
 // DAC setup
-constexpr const int SAMPLE_RATE = 44100;    // Hz
+constexpr const int SAMPLE_RATE = 88200;    // Hz
 constexpr const int BUF_LEN     = 2048;     // DMA buffer per push -> ~11,6msec chunks
 constexpr const dac_continuous_channel_mode_t DAC_MODE = DAC_CHANNEL_MODE_ALTER; // interleaved for 2 channels
 // samples per channel
@@ -57,6 +57,7 @@ const std::array<int8_t, TABLE_SIZE> sine_table = {
     21, 18, 15, 12, 9, 6, 3, 0, -3, -6, -9, -12, -15, -18, -21, -24, -27, -30, -32, -35, -37, -40, -42, -45, -47,
     -49, -51, -53, -54, -56, -57, -58, -60, -61, -61, -62, -63, -63, -63, -63, -63, -63, -63, -62, -61, -61, -60,
     -58, -57, -56, -54, -53, -51, -49, -47, -45, -42, -40, -37, -35, -32, -30, -27, -24, -21, -18, -15, -12, -9, -6, -3 };
+
 const std::array<int8_t, TABLE_SIZE> sawtooth_table = {
        0,   36,   43,   63,   53,   58,   52,   55,   51,   53,   49,   50,   47,   48,   46,   46, 
       44,   44,   42,   42,   40,   40,   39,   39,   37,   37,   35,   35,   33,   33,   31,   31, 
@@ -210,7 +211,7 @@ static __attribute__((aligned(4))) DMACMD dma_cmd;
 static std::array<DURATION, 3> vario_tim = {{ {100}, {50}, {0} }};
 static std::array<TONE, 3> vario_seq = {{ {500.0}, {0.}, {0.} }};
 static std::array<TONE, 3> vario_extra = {{ { 500.0*pow(2.0, 3.) }, { 0.}, {0.} }};
-const std::array<VOICECONF, 2> vario_vconf = {{ {0, 220}, {0, 7} }};
+const std::array<VOICECONF, 2> vario_vconf = {{ {0, 220}, {0, 21} }};
 const SOUND VarioSound = { vario_tim.data(), { vario_seq.data(), vario_extra.data(), nullptr, nullptr }, vario_vconf.data(), -1 };
 
 // Flarm alarms
@@ -335,7 +336,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
 
     // on the fly counting of active voices
     int numVoices = 0;
-    irqs++; 
+    irqs++;
     for (int j = 0; j < MAX_VOICES; j++) {
         if ( vl[j].active ) numVoices++;
 
@@ -346,13 +347,13 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
     }
     // numVoices = std::max(1, numVoices - 1);
 
-    // multi tone 
+    // multi tone
     constexpr int INC = (DAC_MODE == DAC_CHANNEL_MODE_ALTER ? 4 : 2); // 2 channels, 16 bit
     int i = 0;
     int z = (cmd.counter > 0 && (cmd.counter*INC) < e->buf_size) ? 2 : 1; // divide loop
     int loop_end = (z==1) ? e->buf_size : (cmd.counter*INC);
     for (; z>0; z--) {
-        
+
         // decrement the sample counter by the loop iterations
         cmd.counter -= (loop_end-i)/INC;
 
@@ -396,7 +397,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
         // move to the next tone in sequence
         cmd.idx++;
         if ( cmd.timeseq[cmd.idx].duration <= 0 ) {
-            
+
             if ( cmd.repcount >= 0 ) {
                 cmd.repcount--; // restart another cycle
                 if ( cmd.repcount < 0 ) {
@@ -612,7 +613,7 @@ public:
         }
         else if (i < 21)
         {
-            dma_cmd.voice[1].setFrequency(f/2.);
+            dma_cmd.voice[1].setFrequency(f/4.);
             dma_cmd.voice[1].setGain(200);
         }
         else

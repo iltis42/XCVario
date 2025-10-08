@@ -40,34 +40,32 @@ static QueueHandle_t AudioQueue = nullptr;
 static bool request_synch_start = false;
 
 // DAC setup
-constexpr const int SAMPLE_RATE = 44100; // Hz
-constexpr const int BUF_LEN     = 1024;  // DMA buffer per push -> ~15msec chunks
-constexpr const int BUF_BITMASK = (BUF_LEN/2 - 1);
-constexpr const int BUF_BITS    = 9;     // log2(BUF_LEN/2)
+constexpr const int SAMPLE_RATE = 44100;    // Hz
+constexpr const int BUF_LEN     = 2048;     // DMA buffer per push -> ~11,6msec chunks
+constexpr const dac_continuous_channel_mode_t DAC_MODE = DAC_CHANNEL_MODE_ALTER; // interleaved for 2 channels
+// samples per channel
+constexpr const int BUF_SAMPLES = BUF_LEN/(DAC_MODE == DAC_CHANNEL_MODE_ALTER ? 4 : 2);
 constexpr const int TABLE_SIZE  = 128;
-constexpr const int TABLE_BITS  = 7; // log2((double)TABLE_SIZE);
-constexpr const int DAC_CENTER  = 127;
-constexpr const int DAC_HLF_AMPL = 32;
-// sequencer max number of items
-constexpr const int MAX_SEQ_LEN = 12;
+constexpr const int TABLE_BITS  = 7;        // log2((double)TABLE_SIZE);
+constexpr const int DAC_CENTER  = 127;      // base to all wave table design
+constexpr const int DAC_HLF_AMPL = 64;
 
 // predefined sine wave table
 const std::array<int8_t, TABLE_SIZE> sine_table = {
-    0, 2, 4, 5, 7, 8, 10, 11, 13, 14, 15, 17, 18, 19, 20, 21, 23, 24, 24, 25, 26, 27, 28, 28, 29, 29, 
-    30, 30, 31, 31, 31, 31, 31, 31, 31, 31, 30, 30, 29, 29, 28, 28, 27, 26, 25, 24, 24, 23, 21, 20, 19, 
-    18, 17, 15, 14, 13, 11, 10, 9, 7, 5, 4, 2, 0, 0, -2, -4, -6, -7, -8, -10, -11, -13, -14, -15, -16, 
-    -18, -19, -20, -21, -23, -24, -24, -25, -26, -27, -28, -28, -29, -29, -30, -30, -31, -31, -31, -31, 
-    -31, -31, -31, -30, -30, -30, -30, -29, -28, -28, -27, -26, -25, -24, -23, -22, -21, -20, -19, -18, 
-    -17, -15, -14, -12, -11, -10, -8, -7, -5, -4, -2, -1 };
+    0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 32, 35, 37, 40, 42, 45, 47, 49, 51, 53, 54, 56, 57, 58, 60, 61, 61, 62,
+    63, 63, 63, 63, 63, 63, 63, 62, 61, 61, 60, 58, 57, 56, 54, 53, 51, 49, 47, 45, 42, 40, 37, 35, 32, 30, 27, 24,
+    21, 18, 15, 12, 9, 6, 3, 0, -3, -6, -9, -12, -15, -18, -21, -24, -27, -30, -32, -35, -37, -40, -42, -45, -47,
+    -49, -51, -53, -54, -56, -57, -58, -60, -61, -61, -62, -63, -63, -63, -63, -63, -63, -63, -62, -61, -61, -60,
+    -58, -57, -56, -54, -53, -51, -49, -47, -45, -42, -40, -37, -35, -32, -30, -27, -24, -21, -18, -15, -12, -9, -6, -3 };
 const std::array<int8_t, TABLE_SIZE> sawtooth_table = {
-    0,   18,   21,   31,   26,   29,   26,   27,   25,   26,   24,   25,   23,   24,   22,   23, 
-    22,   22,   21,   21,   20,   20,   19,   19,   18,   18,   17,   17,   16,   16,   15,   15, 
-    14,   14,   14,   13,   13,   12,   12,   12,   11,   11,   10,   10,    9,    9,    8,    8, 
-    7,    7,    6,    6,    5,    5,    5,    4,    4,    3,    3,    2,    2,    1,    1,    0, 
-    0,    0,   -1,   -1,   -2,   -2,   -3,   -3,   -4,   -4,   -5,   -5,   -5,   -6,   -6,   -7, 
-    -7,   -8,   -8,   -9,   -9,  -10,  -10,  -11,  -11,  -12,  -12,  -12,  -13,  -13,  -14,  -14, 
-    -14,  -15,  -15,  -16,  -16,  -17,  -17,  -18,  -18,  -19,  -19,  -20,  -20,  -21,  -21,  -22, 
-    -22,  -23,  -22,  -24,  -23,  -25,  -24,  -26,  -25,  -27,  -26,  -29,  -26,  -31,  -21,  -18 };
+       0,   36,   43,   63,   53,   58,   52,   55,   51,   53,   49,   50,   47,   48,   46,   46, 
+      44,   44,   42,   42,   40,   40,   39,   39,   37,   37,   35,   35,   33,   33,   31,   31, 
+      29,   29,   28,   27,   26,   25,   24,   23,   22,   22,   20,   20,   18,   18,   17,   16, 
+      15,   14,   13,   12,   11,   10,    9,    8,    7,    7,    6,    5,    4,    3,    2,    1, 
+       0,   -1,   -2,   -3,   -4,   -5,   -6,   -7,   -7,   -8,   -9,  -10,  -11,  -12,  -13,  -14, 
+     -15,  -16,  -17,  -18,  -18,  -20,  -20,  -22,  -22,  -23,  -24,  -25,  -26,  -27,  -28,  -29, 
+     -29,  -31,  -31,  -33,  -33,  -35,  -35,  -37,  -37,  -39,  -39,  -40,  -40,  -42,  -42,  -44, 
+     -44,  -46,  -46,  -48,  -47,  -50,  -49,  -53,  -51,  -55,  -52,  -58,  -53,  -63,  -43,  -36 };
 struct SNDTBL {
 	const int8_t *table;
 	const uint8_t bits;
@@ -109,11 +107,11 @@ struct VOICECMD
     void setFrequency(float f);
     float getFrequency() const;
     static inline constexpr uint16_t CountFromMs(int ms) {
-        return (ms * SAMPLE_RATE) / (1000 * BUF_LEN/2); }
+        return (ms * SAMPLE_RATE) / (1000 * BUF_SAMPLES); }
     void setCount(int ms) {
         count = std::max(CountFromMs(ms), (uint16_t)1); }
     static inline constexpr uint16_t CountFromSamples(int32_t spls) {
-        return spls / (BUF_LEN/2);
+        return spls / (BUF_SAMPLES);
     }
     void setCountFromSamples(int32_t spls) {
         count = CountFromSamples(spls);
@@ -349,13 +347,14 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
     // numVoices = std::max(1, numVoices - 1);
 
     // multi tone 
+    constexpr int INC = (DAC_MODE == DAC_CHANNEL_MODE_ALTER ? 4 : 2); // 2 channels, 16 bit
     int i = 0;
-    int z = (cmd.counter > 0 && (cmd.counter*2) < e->buf_size) ? 2 : 1; // divide loop
-    int loop_end = (z==1) ? e->buf_size : (cmd.counter*2);
+    int z = (cmd.counter > 0 && (cmd.counter*INC) < e->buf_size) ? 2 : 1; // divide loop
+    int loop_end = (z==1) ? e->buf_size : (cmd.counter*INC);
     for (; z>0; z--) {
         
         // decrement the sample counter by the loop iterations
-        cmd.counter -= (loop_end-i)/2;
+        cmd.counter -= (loop_end-i)/INC;
 
         if (numVoices == 0) // fixme alerts need to come through
         {
@@ -364,7 +363,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
         }
         else {
             // fuse all voices
-            for (; i < loop_end; i += 2) {
+            for (; i < loop_end; i += INC) {
                 int sum = 0;
                 for (int j = 0; j < MAX_VOICES; j++) {
                     // all voices
@@ -378,6 +377,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
                             numVoices = std::max(1, numVoices - 1);
                         }
                     }
+                    // fix phase-accumulator frequency generation
                     sum += ((int)v.table[v.phase >> v.shift] * v.gain) >> 7;
                     v.phase += v.step;
                 }
@@ -386,7 +386,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
                 if ( sum < -DAC_HLF_AMPL ) sum = -DAC_HLF_AMPL;
                 sum += DAC_CENTER;
 
-                buf[i]   = (uint8_t)sum; // one sample
+                buf[i]   = 0; // one sample
                 buf[i+1] = (uint8_t)sum;
             }
         }
@@ -409,7 +409,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
         }
         // the end+1 time slice needs to be zero, as well as the n+1 steps need tp be zero
         cmd.counter = cmd.timeseq[cmd.idx].duration;
-        reload_count = (cmd.counter > DMACMD::calcNrSamples(300)) ? VOICECMD::CountFromSamples(cmd.counter)/2 : VOICECMD::CountFromMs(1000);
+        reload_count = (cmd.counter > DMACMD::calcNrSamples(300)) ? VOICECMD::CountFromSamples(cmd.counter)/INC : VOICECMD::CountFromMs(1000);
         loop_end = e->buf_size; // finish the remaining DMA buffer
         for (int j = 0; j < cmd.voicecount; j++) {
             vl[j].fastLoad(cmd.idx);
@@ -496,7 +496,7 @@ bool Audio::begin( int16_t ch  )
         .freq_hz = SAMPLE_RATE,
         .offset = 0,
         .clk_src = DAC_DIGI_CLK_SRC_DEFAULT,
-        .chan_mode = DAC_CHANNEL_MODE_SIMUL,
+        .chan_mode = DAC_MODE,
     };
 
     esp_err_t err = dac_continuous_new_channels(&_dac_cfg, &_dac_chan);
@@ -562,7 +562,7 @@ public:
     {
         dma_cmd.voice[0].setFrequencyAndGain(f);
         dma_cmd.voice[0].start();
-        AUDIO->writeVolume(45.);
+        AUDIO->writeVolume(60.);
         Clock::start(this);
     }
     ~TestSequence()

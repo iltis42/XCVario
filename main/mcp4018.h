@@ -19,6 +19,6 @@ public:
 
 private:
     bool readWiper(int &val) override;
-    static constexpr int MCP4018RANGE = 80; // do not use the full range of 127
+    static constexpr int MCP4018RANGE = 40; // do not use the full range of 127
     int getRange() override { return MCP4018RANGE; };
 };

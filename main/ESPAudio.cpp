@@ -627,7 +627,7 @@ public:
         }
         else if (i < 21)
         {
-            dma_cmd.voice[1].setFrequency(f/4.);
+            dma_cmd.voice[1].setFrequency(f/2.);
             dma_cmd.voice[1].setGain(200);
         }
         else

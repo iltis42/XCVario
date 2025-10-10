@@ -974,15 +974,6 @@ void Audio::dactask()
             }
             else if ( event.cmd == DO_VARIO && ! _alarm_mode) {
                 // update vario sound
-                polar_sink = Speed2Fly.sink( ias.get() ); // fixme variable scope !!!!
-                float netto = te_vario.get() - polar_sink;
-                as2f = Speed2Fly.speed( netto, !VCMode.getCMode() ); // fixme variable scope !!!!
-                
-                s2f_ideal.set(static_cast<int>(std::round(as2f))); // fixme place code better
-                // low pass damping moved to the correct place
-                s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10)); // fixme variable scope
-                // ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
-
                 // pull the intput value from vario indicator, or speed respectively
                 float max = _range;
                 if( VCMode.audioIsVario() ) {

@@ -348,8 +348,7 @@ int irq_counter = 0;
 // DMA callback
 static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_data_t *e, void *user_data)
 {
-    static uint16_t reload_count = 1000;
-    static uint16_t irqs = 0;
+    static int32_t reload_count = 0;
     uint16_t fade = 0;
     DMACMD& cmd = *(DMACMD *)user_data;
     VOICECMD *vl = (VOICECMD *)cmd.voice;
@@ -366,14 +365,15 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
 
     // on the fly counting of active voices
     int numVoices = 0;
-    irqs++;
     for (int j = 0; j < MAX_VOICES; j++) {
         if ( vl[j].active ) numVoices++;
-
-        if (irqs == reload_count && j < cmd.voicecount) {
-            // reload the frequencies, making the variometer more responsive (even w/o sync to voice cycle)
+    }
+    if (cmd.counter < reload_count) {
+        // reload the frequencies, making the variometer more responsive (even w/o sync to voice cycle)
+        for (int j = 0; j < cmd.voicecount; j++) {
             vl[j].fastLoad(cmd.idx);
         }
+        reload_count = 0; // once
     }
     numVoices = std::max(1, numVoices - 1);
 
@@ -445,8 +445,8 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
         }
         // the end+1 time slice needs to be zero, as well as the n+1 steps need tp be zero
         cmd.counter = cmd.timeseq[cmd.idx].duration;
-        // prepare an optimized extra voice reload for signal periods longer than 300msec
-        reload_count = (cmd.counter > DMACMD::calcNrSamples(300)) ? VOICECMD::CountFromSamples(cmd.counter) : VOICECMD::CountFromMs(1000);
+        // prepare an optional extra voice reload for signal periods longer than 300msec
+        reload_count = (cmd.counter > DMACMD::calcNrSamples(300)) ? cmd.counter/2 : 0;
         loop_end = e->buf_size >> INC_SHIFT; // finish the remaining DMA buffer
         for (int j = 0; j < cmd.voicecount; j++) {
             vl[j].fastLoad(cmd.idx);

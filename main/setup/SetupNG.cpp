@@ -247,7 +247,6 @@ SetupNG<float>  		s2f_auto_lag( "S2F_HYST", 10, true, SYNC_BIDIR, PERSISTENT, nu
 SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume, QUANT_NONE, &percentage_limits);
 SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
 SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0 );
-SetupNG<int>  			audio_variable_frequency( "AUD_VAFQ", 0);
 SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
 SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS );
 

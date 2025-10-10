@@ -334,7 +334,6 @@ extern SetupNG<float>  		s2f_flap_pos;
 extern SetupNG<float>  		s2f_gyro_deg;
 extern SetupNG<float>  		s2f_auto_lag;
 
-extern SetupNG<int>  		audio_variable_frequency;
 extern SetupNG<int>  		chopping_mode;
 
 extern SetupNG<float>  		wifi_max_power;

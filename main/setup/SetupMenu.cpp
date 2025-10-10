@@ -794,12 +794,6 @@ void audio_menu_create_tonestyles(SetupMenu *top) {
 	tch->addEntry("S2F only");             // 2
 	tch->addEntry("Vario and S2F");        // 3  default
 	top->addEntry(tch);
-
-	SetupMenuSelect *advarto = new SetupMenuSelect("Variable Tone", RST_NONE, audio_setup_s, &audio_variable_frequency);
-	advarto->setHelp(
-			"Enable audio frequency updates within climbing tone intervals, disable keeps frequency constant");
-	advarto->mkEnable();
-	top->addEntry(advarto);
 }
 
 void audio_menu_create_deadbands(SetupMenu *top) {

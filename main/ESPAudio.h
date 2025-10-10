@@ -34,58 +34,59 @@ enum e_audio_alarm_type
 
 class Audio
 {
-	friend class TestSequence;
+    friend class TestSequence;
+
 public:
-	Audio();
-	virtual ~Audio();
+    Audio();
+    virtual ~Audio();
 
-	bool startAudio(int16_t ch=0);    			// initialisations and self-test, starts task driving the sequencer
-	void stopAudio(); 							// terminate any sound output
-	void startVarioVoice(); 					// start vario sound
-	void soundCheck();   						// audible check of the audio
+    bool startAudio(int16_t ch = 0); // initialisations and self-test, starts task driving the sequencer
+    void stopAudio();               // terminate any sound output
+    void startVarioVoice();         // start vario sound
+    void stopVarioVoice();
+    bool isUp() const { return _dac_chan != nullptr; }
+    void soundCheck();              // audible check of the audio
 
-	void alarm(e_audio_alarm_type alarmType);  	// outputs various alarm sounds according to alarmType
-	// system wide the only point to set audio volume !!!
-	void setVolume(float vol, bool sync = true); // vol: 0.0 .. 100.0 logarythmic scale
-	void updateSetup(); 						// incorporate setup changes
-	void updateAudioMode(); 					// call on cruise mode change
-	void updateTone(); 							// call after sensor update
-	void mute(); 								// mute the sound entirely
-	void unmute();  							// unmutes 
-	bool haveCAT5171() const;
-	void dump();
+    void alarm(e_audio_alarm_type alarmType);   // outputs various alarm sounds according to alarmType
+    // system wide the only point to set audio volume !!!
+    void setVolume(float vol, bool sync = true); // vol: 0.0 .. 100.0 logarythmic scale
+    void updateSetup();                         // incorporate setup changes
+    void updateAudioMode();                     // call on cruise mode change
+    void updateTone();                          // call after sensor update
+    void mute();                                // mute the sound entirely
+    void unmute();                              // unmutes
+    bool haveCAT5171() const;
+    void dump();
 
 private:
-	friend void pin_audio_irq( void *arg );
-	void dacInit();
-	bool inDeadBand();
-	// void enableAmplifier(bool enable);
-	void calculateFrequency();    				// determine frequency to be generated depending on TE value
-	void writeVolume( float volume ); // fixme
+    friend void pin_audio_irq(void *arg);
+    void dacInit();
+    bool inDeadBand(float a) const { return (a > _deadband_n && a < _deadband_p); }
+    void calculateFrequency(float a);       // determine frequency to be generated depending on TE value
+    void writeVolume(float volume);
 
-	static void dactask_starter(void* arg); 	// start task to control HW generator
-	void dactask();                           	// task for control of HW generator
+    static void dactask_starter(void *arg); // start task to control HW generator
+    void dactask();                         // task for control of HW generator
 
-	float vario_mode_volume;
-	float s2f_mode_volume;
-	float speaker_volume;
-	int16_t _channel;
-	dac_continuous_handle_t _dac_chan = nullptr;
+    float vario_mode_volume;
+    float s2f_mode_volume;
+    float speaker_volume;
+    int16_t _channel;
+    dac_continuous_handle_t _dac_chan = nullptr;
     dac_continuous_config_t _dac_cfg;
     Poti *_poti = nullptr;
 
-	float _range = 5.f;
-	float _deadband_p;
+    float _range = 5.f;
+    float _deadband_p;
     float _deadband_n;
-	static constexpr const float _high_tone_var = powf(2.0, 2./12.0); // major prime up
-	bool _alarm_mode = false;
-	float maxf;
-	float minf;
-	float _audio_value = 0.f;
-	float _exponent_max = 2;
+    static constexpr const float _high_tone_var = powf(2.0, 2. / 12.0); // major prime up
+    bool _alarm_mode = false;
+    float maxf;
+    float minf;
+    float _exponent_max = 2;
 
-	volatile bool _test_done = false;
-	bool _terminate;
+    volatile bool _test_done = false;
+    bool _terminate;
 };
 
 extern Audio *AUDIO;

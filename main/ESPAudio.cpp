@@ -502,8 +502,6 @@ Audio::~Audio()
     if (_dac_chan)
     {
         stopAudio();
-        ESP_ERROR_CHECK(dac_continuous_disable(_dac_chan));
-        ESP_ERROR_CHECK(dac_continuous_del_channels(_dac_chan));
     }
 
     if (_poti)
@@ -538,9 +536,6 @@ void Audio::dacInit()
 
     err |= dac_continuous_enable(_dac_chan);
     ESP_LOGI(FNAME, "DAC initialized success, DAC DMA is ready");
-    if (err == ESP_OK) {
-        _channel = -1;
-    }
 }
 void pin_audio_irq( void *arg ) {
 	AUDIO->dacInit(); // core does inherit towards the dac irq resources
@@ -564,9 +559,6 @@ bool Audio::startAudio(int16_t ch)
     TaskHandle_t my_task = xTaskGetCurrentTaskHandle();
 	xTaskCreatePinnedToCore(pin_audio_irq, "pinaudio", 4096, (void*)my_task, 10, NULL, 1);
 	ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-    if ( _channel == -1) {
-        return false;
-    }
 
     if ( ! _poti ) {
         ESP_LOGI(FNAME,"Find digital poti");
@@ -596,7 +588,7 @@ bool Audio::startAudio(int16_t ch)
         }
     }
 
-    if (_poti) {
+    if (_poti && _dac_chan) {
         unmute();
         ESP_ERROR_CHECK(dac_continuous_start_async_writing(_dac_chan));
 
@@ -613,8 +605,11 @@ bool Audio::startAudio(int16_t ch)
 }
 void Audio::stopAudio() {
     mute();
-    // vTaskDelay7(pdMS_TO_TICKS(2)); // no cracks ..
     ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
+    ESP_ERROR_CHECK(dac_continuous_disable(_dac_chan));
+    ESP_ERROR_CHECK(dac_continuous_del_channels(_dac_chan));
+    _dac_chan = nullptr;
+    _terminate = true; // kill task
 }
 
 void Audio::startVarioVoice()
@@ -628,7 +623,10 @@ void Audio::startVarioVoice()
     // load the vario sound
     unmute();
     dma_cmd.loadSound(&VarioSound);
-    dma_cmd.dump();
+}
+void Audio::stopVarioVoice()
+{
+    dma_cmd.resetSound();
 }
 
 // do the sound check, when the audio task is not yet running
@@ -715,10 +713,10 @@ void Audio::soundCheck()
     new TestSequence(633, maxf * 1.25);
 }
 
-// non blocking
+// kick some sound sequence, non blocking
 void Audio::alarm(e_audio_alarm_type style)
 {
-    if ( style > AUDIO_NO_ALARM && style < sound_list.size() && ! _alarm_mode) {
+    if ( style > AUDIO_NO_ALARM && style < sound_list.size() && ! _alarm_mode && _dac_chan) {
         AudioEvent ev(ADD_SOUND, style); // overlay sound
         if ( style >= AUDIO_ALARM_FLARM_1 ) {
             ev.cmd = START_SOUND; // start an alarm sound 
@@ -778,16 +776,12 @@ void Audio::updateAudioMode()
     // adjust dead band doe S2F
     // deadband also used to implement audio mute options
     if (VCMode.audioIsVario()) {
-        _deadband_p = (audio_mute_gen.get()>=1) ? _range+1 : deadband.get();
-        _deadband_n = (audio_mute_sink.get() || audio_mute_gen.get()==1) ? -_range-1 : deadband_neg.get();
+        _deadband_p = deadband.get();
+        _deadband_n = audio_mute_sink.get() ? -_range-1 : deadband_neg.get();
     }
     else {
         _deadband_p = s2f_deadband.get()/10;
         _deadband_n = s2f_deadband_neg.get()/10;
-        if (audio_mute_gen.get()>=1) {
-            _deadband_p = 60.;
-            _deadband_n = -60.;
-        }
     }
     if (std::abs(_deadband_p-_deadband_n) < 0.02) {
         _deadband_n = 0.01;
@@ -804,8 +798,10 @@ void Audio::updateAudioMode()
 
 void Audio::updateTone()
 {
-    AudioEvent ev(DO_VARIO, 0); // update vario sound
-    xQueueSend(AudioQueue, &ev, 0);
+    if ( audio_mute_gen.get() == AUDIO_ON ) {
+        AudioEvent ev(DO_VARIO, 0); // update vario sound
+        xQueueSend(AudioQueue, &ev, 0);
+    }
 }
 
 // unmute/mute the default voice
@@ -832,22 +828,14 @@ void Audio::dump() {
     dma_cmd.dump();
 }
 
-bool Audio::inDeadBand()
-{
-    if (_audio_value > _deadband_n && _audio_value < _deadband_p) {
-        return true;
-    }
-    return false;
-}
-
-void  Audio::calculateFrequency(){
-	float max_var = (_audio_value > 0) ? ((maxf-center_freq.get()) * 2) : (center_freq.get()-minf);
+void  Audio::calculateFrequency(float val) {
+	float max_var = (val > 0) ? ((maxf-center_freq.get()) * 2) : (center_freq.get()-minf);
 	float range = (VCMode.audioIsVario()) ? _range : 5.0;
-    float mult = std::pow( (abs(_audio_value)/range)+1, audio_factor.get());
-	float freq = center_freq.get() + ((mult*_audio_value)/range )  * (max_var/_exponent_max);
-    if ( _audio_value > 0 ) {
+    float mult = std::pow( (abs(val)/range)+1, audio_factor.get());
+	float freq = center_freq.get() + ((mult*val)/range )  * (max_var/_exponent_max);
+    if ( val > 0 ) {
         // durations
-        float tmp = 1000. / (1+9*(_audio_value/range));
+        float tmp = 1000. / (1+9*(val/range));
         // duration of main tone 1Hz: 900 ms; 10Hz: 50 ms
         int duration = (int)(tmp * 0.9) - 40;
         vario_tim[0].setSamples(duration);
@@ -861,14 +849,14 @@ void  Audio::calculateFrequency(){
         vario_tim[0].setSamples(50);
         vario_tim[1].setSamples(50);
     }
-    if ( inDeadBand() || _alarm_mode || speaker_volume < 1.0 ) {
+    if ( inDeadBand(val) || speaker_volume < 1.0 ) {
         vario_seq[0].step = vario_extra[0].step = vario_seq[1].step = vario_extra[1].step = 0;
     }
     else {
         // frequencies
         vario_seq[0].setStep(freq);
         vario_extra[0].setStep(freq * 5.);
-        if ( VCMode.audioIsChopping() && _audio_value > 0 ) {
+        if ( VCMode.audioIsChopping() && val > 0 ) {
             if ( dual_tone.get() ) vario_seq[1].setStep(freq * _high_tone_var);
             else vario_seq[1].step = vario_extra[1].step = 0;
         }
@@ -878,9 +866,10 @@ void  Audio::calculateFrequency(){
         }
     }
 
-    // ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", freq, _audio_value, mult );
+    // ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", freq, a, mult );
 }
 
+// do the db logarithmic mapping
 void Audio::writeVolume(float volume) {
     float vol = pow(10, (volume - 100.) * (1./110.)) * 114. - 14.;
 	// ESP_LOGI(FNAME, "set volume: %f/%f", volume, vol);
@@ -938,8 +927,8 @@ void Audio::dactask()
                         dma_cmd.voice[i].setCountFromSamples(next_time[0].duration);
                         repetitions[i] = snd->repetitions;
                         curr_idx[i] = 0;
-                        ESP_LOGI(FNAME, "Add %d: step %u gain %u count %u", i, (unsigned)dma_cmd.voice[i].step, (unsigned)dma_cmd.voice[i].gain_target, (unsigned)dma_cmd.voice[i].count );
-
+                        ESP_LOGI(FNAME, "Add %d: step %u gain %u count %u", i, (unsigned)dma_cmd.voice[i].step, 
+                            (unsigned)dma_cmd.voice[i].gain_target, (unsigned)dma_cmd.voice[i].count );
                     }
                 }
             }
@@ -961,7 +950,6 @@ void Audio::dactask()
                 if ( next_tone[vid] ) {
                     dma_cmd.voice[vid].fastLoad(curr_idx[vid]);
                     dma_cmd.voice[vid].setCountFromSamples(next_time[curr_idx[vid]].duration);
-
                     // ESP_LOGI(FNAME, "Voice %d: step %u dur %u", vid, (unsigned)next_tone[vid][curr_idx[vid]].step, (unsigned)next_tone[vid][curr_idx[vid]].duration );
                 }
             }
@@ -970,36 +958,41 @@ void Audio::dactask()
                 alarm = nullptr;
                 _alarm_mode = false;
                 ESP_LOGI(FNAME, "End of sound");
-                dma_cmd.loadSound(&VarioSound);
+                if (audio_mute_gen.get() == AUDIO_ON) {
+                    dma_cmd.loadSound(&VarioSound);
+                }
+                else {
+                    dma_cmd.resetSound();
+                }
             }
             else if ( event.cmd == DO_VARIO && ! _alarm_mode) {
                 // update vario sound
                 // pull the intput value from vario indicator, or speed respectively
                 float max = _range;
+                float audio_value;
                 if( VCMode.audioIsVario() ) {
                     // vario is the parameter for audio
-                    float tmp = te_vario.get();
+                    audio_value = te_vario.get();
                     if ( VCMode.isNetto() ) {
-                        tmp -= polar_sink;
+                        audio_value -= polar_sink;
                     }
                     if ( VCMode.getVMode() == CruiseMode::MODE_REL_NETTO ) {
-                        tmp += Speed2Fly.circlingSink( ias.get() );
+                        audio_value += Speed2Fly.circlingSink( ias.get() );
                     }
-                    _audio_value = tmp;
                 }
                 else {
                     // speed to fly is the parameter for audio
                     // map s2f_delta to -5..+5, instead of heaving another set of min/max variables.
-                    _audio_value = -s2f_delta/10.0;
+                    audio_value = -s2f_delta/10.0;
                     max = 5.0; // +/- 50km/h range
                 }
-                if( _audio_value > max ) {
-                    _audio_value = max;
-                } else if( _audio_value < -max ) {
-                    _audio_value = -max;
+                if( audio_value > max ) {
+                    audio_value = max;
+                } else if( audio_value < -max ) {
+                    audio_value = -max;
                 }
 
-                calculateFrequency();
+                calculateFrequency(audio_value);
             }
 		}
 

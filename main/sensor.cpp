@@ -1163,9 +1163,13 @@ void system_startup(void *args){
 	ESP_LOGI(FNAME,"Audio begin");
 	logged_tests += "Digi. Audio Poti test: ";
 	if( AUDIO->startAudio(0) ) {
-        AUDIO->soundCheck();
 		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 		logged_tests += passed_text;
+		if ( audio_mute_gen.get() != AUDIO_OFF ) {
+        	AUDIO->soundCheck();
+		} else {
+			AUDIO->stopAudio();
+		}
 	}
 	else {
 		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
@@ -1381,7 +1385,7 @@ void system_startup(void *args){
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid); // increase stack by 500 byte
 
 	VCMode.updateCache(); // correct initialization
-	AUDIO->startVarioVoice();
+	if (audio_mute_gen.get() == AUDIO_ON) { AUDIO->startVarioVoice(); }
 }
 
 // #include <xtensa/core-macros.h>  // for XTHAL_GET_CCOUNT

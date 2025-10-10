@@ -113,6 +113,18 @@ static int set_rotary_increment(SetupMenuSelect *p) {
 
 int audio_setup_s(SetupMenuSelect *p) {
 	AUDIO->updateSetup();
+	if (audio_mute_gen.get() == AUDIO_OFF) {
+        if ( AUDIO->isUp() ) { AUDIO->stopAudio(); }
+    }
+    else {
+        if ( ! AUDIO->isUp() ) { AUDIO->startAudio(); }
+        if (audio_mute_gen.get() == AUDIO_ALARMS) {
+            AUDIO->stopVarioVoice();
+        }
+        else {
+            AUDIO->startVarioVoice();
+        }
+    }
 	return 0;
 }
 int audio_setup_f(SetupMenuValFloat *p) {

@@ -15,6 +15,7 @@ public:
     virtual ~CAT5171() {}
 
     bool reset() override;
+    e_poti_type getType() const override { return POTI_CAT5171; }
     bool writeWiper(int val, bool validate = false) override;
 
 private:

@@ -15,6 +15,7 @@ public:
     virtual ~MCP4018() {}
 
     bool reset() override { return true; }; // no reset command
+    e_poti_type getType() const override { return POTI_MCP4018; }
     bool writeWiper(int val, bool validate = false) override;
 
 private:

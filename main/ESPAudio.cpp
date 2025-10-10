@@ -102,6 +102,7 @@ struct VOICECMD
     void init(uint8_t table_id);
     void load(const VOICECONF *vc, const TONE *t);
     void fastLoad(uint8_t i);
+    void reset();
     static constexpr uint32_t calcStep(float f) {
         return (uint32_t)((f * (1ULL << 32)) / SAMPLE_RATE); }
     void setFrequencyAndGain(float f);
@@ -198,6 +199,7 @@ struct SOUND {
 struct DMACMD {
     void init();
     void loadSound(const SOUND* s);
+    void resetSound();
     void dump();
     static inline constexpr uint32_t calcNrSamples(unsigned ms) {
         return ((uint32_t)(ms) * SAMPLE_RATE) / 1000; }
@@ -209,6 +211,8 @@ struct DMACMD {
     VOICECMD voice[MAX_VOICES];
 };
 static __attribute__((aligned(4))) DMACMD dma_cmd;
+// No tone
+const std::array<DURATION, 2> no_tone_tim = {{ {0}, {0} }};
 // Vario tone
 static std::array<DURATION, 3> vario_tim = {{ {100}, {50}, {0} }};
 static std::array<TONE, 3> vario_seq = {{ {500.0}, {0.}, {0.} }};
@@ -259,6 +263,15 @@ void IRAM_ATTR VOICECMD::fastLoad(uint8_t idx) {
         fade_count = 1;
     }
 }
+void VOICECMD::reset()
+{
+    seq = nullptr;
+    gain_target = 0;
+    fade_count = (step > 0) ? (4UL * (1ULL << 32) / 128UL) / step : 1;
+    if (fade_count == 0) {
+        fade_count = 1;
+    }
+}
 void VOICECMD::load(const VOICECONF *vc, const TONE *t) {
     // prepare the tone type (table)
     phase = 0;
@@ -294,13 +307,22 @@ void DMACMD::loadSound(const SOUND *s)
             voice[j].load(&s->vconf[j], s->toneseq[j]);
         }
         else {
-            voice[j].active = false;
+            voice[j].reset();
         }
     }
     // compile the timing sequence into nr samples
     timeseq = (const DURATION*)(s->timeseq);
     counter = timeseq[0].duration; // kick sound sequence
     voicecount = vc_tmp;
+}
+void DMACMD::resetSound() {
+    idx = 0;
+    repcount = 0;
+    for (int j = 0; j < MAX_VOICES; j++) {
+        voice[j].reset();
+    }
+    timeseq = no_tone_tim.data();
+    voicecount = 0;
 }
 void VOICECMD::dump() {
     ESP_LOGI(FNAME, "ac %d st %u c %u", active, (unsigned)step, (unsigned)count);

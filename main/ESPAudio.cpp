@@ -353,7 +353,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
             vl[j].fastLoad(cmd.idx);
         }
     }
-    // numVoices = std::max(1, numVoices - 1);
+    numVoices = std::max(1, numVoices - 1);
 
     // multi tone
     // 1 or 2 channels, each 16 bit

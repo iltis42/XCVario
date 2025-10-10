@@ -112,7 +112,7 @@ struct VOICECMD
     void setCount(int ms) {
         count = std::max(CountFromMs(ms), (uint16_t)1); }
     static inline constexpr uint16_t CountFromSamples(int32_t spls) {
-        return spls / (BUF_SAMPLES);
+        return spls / BUF_SAMPLES;
     }
     void setCountFromSamples(int32_t spls) {
         count = CountFromSamples(spls);
@@ -135,6 +135,7 @@ struct VOICECMD
     uint16_t gain;
     uint16_t gain_adjust;
     uint16_t gain_target;
+    uint16_t fade_count;
     uint16_t count;
     bool active = false;
     const TONE* seq; // tone sequence precompiled into a step sequence
@@ -147,6 +148,7 @@ void VOICECMD::init(uint8_t table_id)
     gain = 0;
     gain_adjust = 128; // no adjustment
     gain_target = 128;
+    fade_count = 1;
     count = 0;
     seq = nullptr;
     active = false;
@@ -252,6 +254,10 @@ void IRAM_ATTR VOICECMD::fastLoad(uint8_t idx) {
     else {
         gain_target = 0;
     }
+    fade_count = (step > 0) ? (4UL * (1ULL << 32) / 128UL) / step : 1;
+    if (fade_count == 0) {
+        fade_count = 1;
+    }
 }
 void VOICECMD::load(const VOICECONF *vc, const TONE *t) {
     // prepare the tone type (table)
@@ -298,7 +304,7 @@ void DMACMD::loadSound(const SOUND *s)
 }
 void VOICECMD::dump() {
     ESP_LOGI(FNAME, "ac %d st %u c %u", active, (unsigned)step, (unsigned)count);
-    ESP_LOGI(FNAME, "gain %d %d>%d", (int)gain_adjust, (int)gain, (int)gain_target);
+    ESP_LOGI(FNAME, "gain %d %d>%d (f%d)", (int)gain_adjust, (int)gain, (int)gain_target, (int)fade_count);
     if ( seq ) ESP_LOGI(FNAME, "seq %u %u %u", (unsigned)seq[0].step, (unsigned)seq[1].step, (unsigned)seq[2].step);
 }
 void DMACMD::dump() {
@@ -322,10 +328,12 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
 {
     static uint16_t reload_count = 1000;
     static uint16_t irqs = 0;
+    uint16_t fade = 0;
     DMACMD& cmd = *(DMACMD *)user_data;
     VOICECMD *vl = (VOICECMD *)cmd.voice;
     uint8_t *buf = (uint8_t *)e->buf;
     AudioEvent ev(VLOAD_DONE, 0);
+
     if ( request_synch_start ) {
         request_synch_start = false;
         ev.cmd = REQUEST_SOUND;
@@ -348,34 +356,39 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
     // numVoices = std::max(1, numVoices - 1);
 
     // multi tone
-    constexpr int INC = (DAC_MODE == DAC_CHANNEL_MODE_ALTER ? 4 : 2); // 2 channels, 16 bit
+    // 1 or 2 channels, each 16 bit
+    constexpr int INC_SHIFT = (DAC_MODE == DAC_CHANNEL_MODE_ALTER ? 2 : 1); // corresponding to INC
     int i = 0;
-    int z = (cmd.counter > 0 && (cmd.counter*INC) < e->buf_size) ? 2 : 1; // divide loop
-    int loop_end = (z==1) ? e->buf_size : (cmd.counter*INC);
+    int z = (cmd.counter > 0 && cmd.counter < (e->buf_size>>INC_SHIFT)) ? 2 : 1; // divide loop
+    int loop_end = (z==1) ? (e->buf_size>>INC_SHIFT) : cmd.counter;
     for (; z>0; z--) {
 
         // decrement the sample counter by the loop iterations
-        cmd.counter -= (loop_end-i)/INC;
+        cmd.counter -= loop_end-i;
 
-        if (numVoices == 0) // fixme alerts need to come through
+        if (numVoices == 0)
         {
             // silent
-            memset(buf+i, DAC_CENTER, loop_end-i);
+            memset(buf+i, DAC_CENTER, (loop_end-i)<<INC_SHIFT);
         }
         else {
             // fuse all voices
-            for (; i < loop_end; i += INC) {
+            for (; i < loop_end; i++) {
                 int sum = 0;
+                fade++;
                 for (int j = 0; j < MAX_VOICES; j++) {
                     // all voices
                     VOICECMD& v = vl[j];
                     if (!v.active) continue; // a silent voice
-                    if ( v.gain != v.gain_target ) { // phase-in/out
-                        if ( v.gain < v.gain_target ) v.gain++;
-                        else                          v.gain--;
-                        if ( v.gain == 0 ) {
-                            v.active = false;
-                            numVoices = std::max(1, numVoices - 1);
+                    if ( v.gain != v.gain_target ) {
+                        // fade in/out
+                        if ( (fade % v.fade_count) == 0 ) {
+                            if ( v.gain < v.gain_target ) v.gain++;
+                            else                          v.gain--;
+                            if ( v.gain == 0 ) {
+                                v.active = false;
+                                numVoices = std::max(1, numVoices - 1);
+                            }
                         }
                     }
                     // fix phase-accumulator frequency generation
@@ -387,8 +400,8 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
                 if ( sum < -DAC_HLF_AMPL ) sum = -DAC_HLF_AMPL;
                 sum += DAC_CENTER;
 
-                buf[i]   = 0; // one sample
-                buf[i+1] = (uint8_t)sum;
+                // buf[i<<INC_SHIFT]   = 0; // one sample
+                buf[(i<<INC_SHIFT)+1] = (uint8_t)sum;
             }
         }
 
@@ -410,8 +423,9 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
         }
         // the end+1 time slice needs to be zero, as well as the n+1 steps need tp be zero
         cmd.counter = cmd.timeseq[cmd.idx].duration;
-        reload_count = (cmd.counter > DMACMD::calcNrSamples(300)) ? VOICECMD::CountFromSamples(cmd.counter)/INC : VOICECMD::CountFromMs(1000);
-        loop_end = e->buf_size; // finish the remaining DMA buffer
+        // prepare an optimized extra voice reload for signal periods longer than 300msec
+        reload_count = (cmd.counter > DMACMD::calcNrSamples(300)) ? VOICECMD::CountFromSamples(cmd.counter) : VOICECMD::CountFromMs(1000);
+        loop_end = e->buf_size >> INC_SHIFT; // finish the remaining DMA buffer
         for (int j = 0; j < cmd.voicecount; j++) {
             vl[j].fastLoad(cmd.idx);
         }

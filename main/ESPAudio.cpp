@@ -899,7 +899,10 @@ void Audio::dactask()
             }
             else if ( event.cmd == REQUEST_SOUND ) {
                 dma_cmd.loadSound(alarm);
-                writeVolume(80);
+                // raise volume +20%, but assure at least 60%
+                float alarm_vol = std::min(speaker_volume+20.f, 100.f);
+                alarm_vol = std::max(alarm_vol, 60.f);
+                writeVolume(alarm_vol);
             }
             else if ( event.cmd == ADD_SOUND ) {
                 // Add sound to the queue, no synchronized start required

@@ -674,11 +674,6 @@ void register_coredump() {
 	}
 }
 
-void pin_audio_irq( void *arg ) {
-	AUDIO->begin(0); // core does inherit towards the dac irq resources
-	xTaskNotifyGive((TaskHandle_t)arg);
-	vTaskDelete(NULL);
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1157,11 +1152,7 @@ void system_startup(void *args){
 
 	ESP_LOGI(FNAME,"Audio begin");
 	logged_tests += "Digi. Audio Poti test: ";
-	TaskHandle_t main_task = xTaskGetCurrentTaskHandle();
-	xTaskCreatePinnedToCore(pin_audio_irq, "pinaudio", 4096, (void*)main_task, 10, NULL, 1);
-	ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-
-	if( AUDIO->isOk() ) {
+	if( AUDIO->startAudio(0) ) {
         AUDIO->soundCheck();
 		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 		logged_tests += passed_text;
@@ -1380,7 +1371,7 @@ void system_startup(void *args){
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid); // increase stack by 500 byte
 
 	VCMode.updateCache(); // correct initialization
-	AUDIO->startAudio();
+	AUDIO->startVarioVoice();
 }
 
 // #include <xtensa/core-macros.h>  // for XTHAL_GET_CCOUNT

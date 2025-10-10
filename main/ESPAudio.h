@@ -39,36 +39,37 @@ public:
 	Audio();
 	virtual ~Audio();
 
-	bool begin( int16_t ch=0 ); 				// initialisations and self-test
-	bool isOk() const { return _dac_inited; }
-    void stop(); 								// terminate any sound output
+	bool startAudio(int16_t ch=0);    			// initialisations and self-test, starts task driving the sequencer
+	void stopAudio(); 							// terminate any sound output
+	void startVarioVoice(); 					// start vario sound
+	void soundCheck();   						// audible check of the audio
+
+	void alarm(e_audio_alarm_type alarmType);  	// outputs various alarm sounds according to alarmType
+	// system wide the only point to set audio volume !!!
+	void setVolume(float vol, bool sync = true); // vol: 0.0 .. 100.0 logarythmic scale
 	void updateSetup(); 						// incorporate setup changes
 	void updateAudioMode(); 					// call on cruise mode change
 	void updateTone(); 							// call after sensor update
-	void mute(); 								// mute the vario voice
-	void unmute();  							// unmutes the vario voice
-	void startAudio(); 							// starts task driving the sequencer
-	// system wide the only point to set audio volume !!!
-	void setVolume(float vol, bool sync = true); // vol: 0.0 .. 100.0 logarythmic scale
-	void alarm(e_audio_alarm_type alarmType);  	// outputs various alarm sounds according to alarmType
-	void soundCheck();   						// audible check of the audio
-	bool haveCAT5171() const { return _haveCAT5171; };
+	void mute(); 								// mute the sound entirely
+	void unmute();  							// unmutes 
+	bool haveCAT5171() const;
 	void dump();
 
 private:
-	static void dactask_starter(void* arg); 	// start task to control HW generator
-	void dactask();                           	// task for control of HW generator
+	friend void pin_audio_irq( void *arg );
+	void dacInit();
 	bool inDeadBand();
-	void enableAmplifier(bool enable);
+	// void enableAmplifier(bool enable);
 	void calculateFrequency();    				// determine frequency to be generated depending on TE value
 	void writeVolume( float volume ); // fixme
 
-	unsigned long next_scedule = 0;
+	static void dactask_starter(void* arg); 	// start task to control HW generator
+	void dactask();                           	// task for control of HW generator
 
 	float vario_mode_volume;
 	float s2f_mode_volume;
 	float speaker_volume;
-	float current_volume;
+	int16_t _channel;
 	dac_continuous_handle_t _dac_chan = nullptr;
     dac_continuous_config_t _dac_cfg;
     Poti *_poti = nullptr;
@@ -84,10 +85,7 @@ private:
 	float _exponent_max = 2;
 
 	volatile bool _test_done = false;
-	bool _dac_inited = false;
-	bool amp_is_on = false;
-	bool _haveCAT5171 = false;
-	TaskHandle_t dactid = nullptr;
+	bool _terminate;
 };
 
 extern Audio *AUDIO;

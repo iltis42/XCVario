@@ -243,8 +243,8 @@ const std::array<const SOUND*, 10> sound_list = { { &VarioSound, &TurnOut, &Turn
 // To call from ISR context
 void IRAM_ATTR VOICECMD::fastLoad(uint8_t idx) {
     uint32_t s = seq[idx].step;
-    active = s != 0;
-    if ( active ) {
+    active = true; // enforce always a fade-out
+    if ( s != 0 ) {
         step = s;
         setMaxGain();
         gain_target = (gain_target * gain_adjust) >> 7; // scale with gain adjust

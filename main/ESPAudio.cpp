@@ -562,7 +562,7 @@ bool Audio::startAudio(int16_t ch)
 	}
     // switch to amplifier on GPIO19
     gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT ); // use pullup 1 == SOUND 0 == SILENCE
-    gpio_set_level(GPIO_NUM_19, 0);
+    mute();
 
 	updateSetup();
     updateAudioMode();
@@ -634,6 +634,7 @@ void Audio::startVarioVoice()
     ESP_LOGI(FNAME, "load vario sound");
     // load the vario sound
     unmute();
+    writeVolume(speaker_volume);
     dma_cmd.loadSound(&VarioSound);
 }
 void Audio::stopVarioVoice()

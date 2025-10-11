@@ -10,8 +10,8 @@ class MCP4018 : public Poti
 {
 public:
     // Connect module using I2C port
-    explicit MCP4018(i2cbus::I2C *i2cbus) : Poti(i2cbus, MPC4018_I2C_ADDR) {};
     MCP4018() = delete;
+    explicit MCP4018(i2cbus::I2C *i2cbus);
     virtual ~MCP4018() {}
 
     bool reset() override { return true; }; // no reset command
@@ -21,5 +21,5 @@ public:
 private:
     bool readWiper(int &val) override;
     static constexpr int MCP4018RANGE = 40; // do not use the full range of 127
-    int getRange() override { return MCP4018RANGE; };
 };
+

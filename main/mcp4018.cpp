@@ -5,6 +5,11 @@
 
 #include <esp_system.h>
 
+MCP4018::MCP4018(i2cbus::I2C *i2cbus) : Poti(i2cbus, MPC4018_I2C_ADDR)
+{
+	RANGE = MCP4018RANGE;
+}
+
 bool MCP4018::readWiper( int &val ) {
 	uint16_t i16val;
 	esp_err_t err = bus->readBits(MPC4018_I2C_ADDR, 0, 0, 2, (uint8_t*)&i16val);// 

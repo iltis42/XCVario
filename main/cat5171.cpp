@@ -5,6 +5,11 @@
 
 #include <esp_system.h>
 
+CAT5171::CAT5171(i2cbus::I2C *i2cbus) : Poti(i2cbus, CAT5171_I2C_ADDR)
+{
+	RANGE = CAT5171RANGE;
+}
+
 
 bool CAT5171::readWiper( int &val ) {
 	uint8_t rv;

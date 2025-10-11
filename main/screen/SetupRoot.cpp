@@ -125,7 +125,7 @@ void SetupRoot::rot(int count)
         // Volume
         AUDIO->setVolume(audio_volume.get() + count);
         // provide acoustic feedback on volume change fixme
-        if (audio_volume.get()==50) {
+        if (audio_volume.get()==40) {
             if (count > 0) {
                 AUDIO->alarm(AUDIO_CMD_CIRCLE_OUT);
             }

@@ -637,7 +637,7 @@ public:
     {
         dma_cmd.voice[0].setFrequencyAndGain(f);
         dma_cmd.voice[0].start();
-        AUDIO->writeVolume(50.);
+        AUDIO->writeVolume(35.);
         Clock::start(this);
     }
     ~TestSequence()
@@ -869,9 +869,8 @@ void  Audio::calculateFrequency(float val) {
     // ESP_LOGI(FNAME, "New Freq: (%0.1f) TE:%0.2f exp_fac:%0.1f", freq, a, mult );
 }
 
-// do the db logarithmic mapping
+// set the digital volume poti, 0..100%
 void Audio::writeVolume(float volume) {
-    float vol = pow(10, (volume - 100.) * (1./110.)) * 114. - 14.;
 	// ESP_LOGI(FNAME, "set volume: %f/%f", volume, vol);
     if (_poti) {
         _poti->writeVolume(vol);

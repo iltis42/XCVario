@@ -15,7 +15,7 @@
 #include "setup/CruiseMode.h"
 #include "protocol/Clock.h"
 #include "sensor.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <freertos/queue.h>
 #include <esp_system.h>
@@ -23,6 +23,8 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+
+//#define AUDIO_DEBUG 1
 
 // forward
 struct TONE;
@@ -325,11 +327,14 @@ void DMACMD::resetSound() {
     voicecount = 0;
 }
 void VOICECMD::dump() {
+#if defined(AUDIO_DEBUG)
     ESP_LOGI(FNAME, "ac %d st %u c %u", active, (unsigned)step, (unsigned)count);
     ESP_LOGI(FNAME, "gain %d %d>%d (f%d)", (int)gain_adjust, (int)gain, (int)gain_target, (int)fade_count);
-    if ( seq ) ESP_LOGI(FNAME, "seq %u %u %u", (unsigned)seq[0].step, (unsigned)seq[1].step, (unsigned)seq[2].step);
+    if ( seq ) { ESP_LOGI(FNAME, "seq %u %u %u", (unsigned)seq[0].step, (unsigned)seq[1].step, (unsigned)seq[2].step); }
+#endif
 }
 void DMACMD::dump() {
+#if defined(AUDIO_DEBUG)
     ESP_LOGI(FNAME, "dmacmd dump");
     ESP_LOGI(FNAME, "idx %d rep %d vc %d cnt %u", (int)idx, (int)repcount, (int)voicecount, (int)counter);
     // if ( timeseq ) ESP_LOGI(FNAME, "tim012 %d, %d, %d", (int)timeseq[0].duration, (int)timeseq[1].duration, (int)timeseq[2].duration);
@@ -339,11 +344,14 @@ void DMACMD::dump() {
             voice[j].dump();
         }
     }
+#endif
 }
 
+#if defined(AUDIO_DEBUG)
 // Benchmark
 int64_t total_us = 0, busy_irs = 0;
 int irq_counter = 0;
+#endif
 
 // DMA callback
 static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_data_t *e, void *user_data)
@@ -360,8 +368,10 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
         ev.cmd = REQUEST_SOUND;
     }
 
+#if defined(AUDIO_DEBUG)
     int64_t t_busy0 = esp_timer_get_time(); // benchmark
     irq_counter++;
+#endif
 
     // on the fly counting of active voices
     int numVoices = 0;
@@ -480,9 +490,11 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
         }
     }
 
+#if defined(AUDIO_DEBUG)
     // benchmark
     int64_t t_busy1 = esp_timer_get_time();
     busy_irs += (t_busy1 - t_busy0);
+#endif
 
     return high_task_wakeup;
 }
@@ -884,7 +896,9 @@ void Audio::dactask_starter(void *arg)
 
 void Audio::dactask()
 {
+#if defined(AUDIO_DEBUG)
 	int64_t t0 = esp_timer_get_time();
+#endif
     SOUND *alarm = nullptr; // preempting the vario sound
     const TONE* next_tone[MAX_VOICES]; // added to the vario sound
     const DURATION* next_time = nullptr; // current sequence time line
@@ -995,6 +1009,7 @@ void Audio::dactask()
             }
 		}
 
+#if defined(AUDIO_DEBUG)
         // ISR benchmark
         int64_t t1 = esp_timer_get_time();
         total_us = t1 - t0;
@@ -1006,6 +1021,7 @@ void Audio::dactask()
             total_us = 0;
             t0 = t1;
         }
+#endif
 
         if (_terminate) {
             break;

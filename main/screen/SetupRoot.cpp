@@ -143,8 +143,8 @@ void SetupRoot::press()
         active_screen = SCREEN_VARIO;
     }
 
-    // AUDIO->dump();
-    // return;
+    AUDIO->dump();
+    return;
 
     // cycle through screens, incl. setup
     if (!gflags.inSetup)

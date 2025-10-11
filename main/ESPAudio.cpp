@@ -873,7 +873,7 @@ void  Audio::calculateFrequency(float val) {
 void Audio::writeVolume(float volume) {
 	// ESP_LOGI(FNAME, "set volume: %f/%f", volume, vol);
     if (_poti) {
-        _poti->writeVolume(vol);
+        _poti->softSetVolume(volume);
     }
 }
 

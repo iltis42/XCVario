@@ -945,24 +945,6 @@ void IpsDisplay::initRetroDisplay(){
 
 }
 
-void IpsDisplay::drawWarning( const char *warn, bool push ){
-	ESP_LOGI(FNAME,"drawWarning");
-	clear();
-	ucg->setColor( COLOR_RED );
-	if( push ){
-		ucg->drawTriangle(  60, 220, 180, 220, 120, 262 );
-	}
-	ucg->setPrintPos(10, AMIDY );
-	ucg->setFontPosCenter();
-	ucg->setColor( COLOR_RED );
-	ucg->setFont(ucg_font_fub35_hr);
-	ucg->print(warn);
-	ucg->setFontPosBottom();
-}
-
-
-
-
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // right-aligned to value in 25 font size, no unit
 void IpsDisplay::drawSmallSpeed(float v, int16_t x, int16_t y)

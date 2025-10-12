@@ -143,13 +143,13 @@ void drawDisplay(void *arg)
 					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
 						if( !gflags.stall_warning_active ){
 							AUDIO->alarm(AUDIO_ALARM_STALL);
-							Display->drawWarning( "! STALL !", true );
+							MBOX->newMessage(4, "! STALL !");
 							gflags.stall_warning_active = true;
 						}
 					}
 					else{
 						if( gflags.stall_warning_active ){
-							Display->clear();
+							MBOX->recallAlarm();
 							gflags.stall_warning_active = false;
 						}
 					}
@@ -191,14 +191,14 @@ void drawDisplay(void *arg)
 						}
 						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
 							AUDIO->alarm(AUDIO_ALARM_STALL);
-							Display->drawWarning( "! GEAR !", false );
+							MBOX->newMessage(4, "! GEAR !");
 							gflags.gear_warning_active = true;
 						}
 					}
 					else{
 						if( gflags.gear_warning_active ){
 							// AUDIO->alarm( false );
-							Display->clear();
+							MBOX->recallAlarm();
 							gflags.gear_warning_active = false;
 						}
 					}

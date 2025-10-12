@@ -18,10 +18,11 @@
 // move the message, so that it is readable as a whole
 // clip the message line from the current screen
 //
-// alarm levels are 1, 2, 3
-// 1: stays for 10 seconds visible, blue line on top
-// 2: stays for 20 seconds visible, orange line
-// 3: stays for 30 seconds visible, red line
+// alarm levels are 1, 2, 3, 4
+// 1: queued, stays for 10 seconds visible, blue line on top
+// 2: queued, stays for 20 seconds visible, orange line
+// 3: pushed to front in queue, stays for 30 seconds visible, red line
+// 4: directly mapped, until recalled, red line, red letters, flashing (only short messages)
 //
 // precondition:
 // - ucg adapter for the connected display
@@ -45,6 +46,7 @@ public:
 
     // API
     void newMessage(int alert_level, const char* msg);
+    void recallAlarm();
     bool draw();
     // bool isVisible() const { return current != nullptr; }
 

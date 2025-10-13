@@ -775,19 +775,25 @@ void Audio::setVolume(float vol, bool sync) {
     }
     audio_volume.setCheckRange(vol, sync, false);
 	speaker_volume = audio_volume.get();
-    if( audio_split_vol.get() ) {
-		if( VCMode.getCMode() ) {
-			s2f_mode_volume = speaker_volume;
-		} else {
-			vario_mode_volume = speaker_volume;
-		}
-		ESP_LOGI(FNAME, "setvolume() to %f, for %s", speaker_volume, VCMode.getCMode() ? "s2f" : "vario" );
-	} else {
-		// copy to both variables in case audio_split_vol enabled later
-		s2f_mode_volume = speaker_volume;
-		vario_mode_volume = speaker_volume;
-		// ESP_LOGI(FNAME, "setvolume() to %f, joint mode", speaker_volume );
-	}
+    if (audio_split_vol.get())
+    {
+        if (VCMode.getCMode())
+        {
+            s2f_mode_volume = speaker_volume;
+        }
+        else
+        {
+            vario_mode_volume = speaker_volume;
+        }
+        ESP_LOGI(FNAME, "setvolume() to %f, for %s", speaker_volume, VCMode.getCMode() ? "s2f" : "vario");
+    }
+    else
+    {
+        // copy to both variables in case audio_split_vol enabled later
+        s2f_mode_volume = speaker_volume;
+        vario_mode_volume = speaker_volume;
+        ESP_LOGI(FNAME, "setvolume() to %f, joint mode", speaker_volume);
+    }
     writeVolume(speaker_volume);
 }
 
@@ -834,7 +840,11 @@ void Audio::updateAudioMode()
     ESP_LOGI(FNAME, "Vario chopping mode %d", VCMode.audioIsChopping());
 
     // set volume according s2f mode, need to be the last action here last
-    setVolume(VCMode.getCMode() ? s2f_mode_volume : vario_mode_volume);
+    if (audio_split_vol.get())
+    {
+        speaker_volume = VCMode.getCMode() ? s2f_mode_volume : vario_mode_volume;
+        writeVolume(speaker_volume);
+    }
 }
 
 void Audio::updateTone()

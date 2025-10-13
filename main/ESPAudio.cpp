@@ -304,10 +304,7 @@ void VOICECMD::reset()
 {
     seq = nullptr;
     gain_target = 0;
-    fade_count = (step > 0) ? (4UL * (1ULL << 32) / 128UL) / step : 1;
-    if (fade_count == 0) {
-        fade_count = 1;
-    }
+    active = false;
 }
 void VOICECMD::load(const VOICECONF *vc, const TONE *t) {
     // prepare the tone type (table)
@@ -452,10 +449,6 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
                         if ( (fade % v.fade_count) == 0 ) {
                             if ( v.gain < v.gain_target ) v.gain++;
                             else                          v.gain--;
-                            if ( v.gain == 0 ) {
-                                v.active = false;
-                                numVoices = std::max(1, numVoices - 1);
-                            }
                         }
                     }
                     // fix phase-accumulator frequency generation
@@ -846,7 +839,8 @@ void Audio::updateAudioMode()
 
 void Audio::updateTone()
 {
-    if ( audio_mute_gen.get() == AUDIO_ON ) {
+    if (audio_mute_gen.get() == AUDIO_ON)
+    {
         AudioEvent ev(DO_VARIO, 0); // update vario sound
         xQueueSend(AudioQueue, &ev, 0);
     }
@@ -1000,6 +994,9 @@ void Audio::dactask()
                     dma_cmd.voice[vid].fastLoad(curr_idx[vid]);
                     dma_cmd.voice[vid].setCountFromSamples(next_time[curr_idx[vid]].duration);
                     // ESP_LOGI(FNAME, "Voice %d: step %u dur %u", vid, (unsigned)next_tone[vid][curr_idx[vid]].step, (unsigned)next_tone[vid][curr_idx[vid]].duration );
+                }
+                else {
+                    dma_cmd.voice[vid].reset();
                 }
             }
             else if ( event.cmd == ENDOFF_SOUND ) {

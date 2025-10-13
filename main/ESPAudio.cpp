@@ -256,10 +256,32 @@ const std::array<TONE, 29> stall_seq2 = {{ {0}, {470}, {1318}, {728}, {662}, {0}
 const std::array<TONE, 29> stall_seq3 = {{ {0}, {1290}, {0}, {1227}, {1255}, {0}, {0}, {1290}, {0}, {1227}, {1255}, {0},
     {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {0} }};
 const std::array<VOICECONF, 3> stell_vconf = {{ {0, 200}, {0, 40}, {1, 20} }};
-const SOUND StallWarn = { stall_tim.data(), { stall_seq1.data(), stall_seq2.data(), stall_seq3.data(), nullptr }, stell_vconf.data(), 3 };
+const SOUND StallWarn = { stall_tim.data(), { stall_seq1.data(), stall_seq2.data(), stall_seq3.data(), nullptr }, stell_vconf.data(), 2 };
+
+constexpr double noteFreq(int semitoneOffset) {
+    return 440.0 * std::pow(2.0, semitoneOffset / 12.0);
+}
+constexpr float fCs4 = noteFreq(-8);   // 277.18 Hz
+constexpr float fE4 = noteFreq(-5);    // 329.63 Hz
+constexpr float fG4 = noteFreq(-2);    // 392.00 Hz
+constexpr float fA4 = noteFreq(0);     // 440.00 Hz
+constexpr float fBd4 = noteFreq(1);
+constexpr float fCs5 = noteFreq(4);
+constexpr float fE5 = noteFreq(7);
+constexpr float fG5 = noteFreq(10);
+constexpr float fBd5 = noteFreq(13);
+
+// Gear warning
+const std::array<DURATION, 12> gear_tim = {{ {40}, {40}, {40}, {40}, {40}, {40}, {40}, {40},    {140}, {70}, {800}, {0} }};
+const std::array<TONE, 12> gear_seq1 = {{ {fCs4}, {fE4}, {fG4}, {fBd4}, {fCs5}, {fE5}, {fG5}, {fBd5},    {fCs4}, {fCs4}, {0}, {0} }};
+const std::array<TONE, 12> gear_seq2 = {{ {0}, {0}, {fG4}, {fBd4}, {fCs5}, {fE5}, {fG5}, {fBd5},    {fG4}, {0}, {0}, {0} }};
+const std::array<TONE, 12> gear_seq3 = {{ {0}, {0}, {0}, {0}, {fCs5}, {fE5}, {fG5}, {fBd5},    {fE5}, {fE5}, {0}, {0} }};
+const std::array<TONE, 12> gear_seq4 = {{ {0}, {0}, {0}, {0}, {0}, {0}, {fG5}, {fBd5},    {fBd5}, {0}, {0}, {0} }};
+const std::array<VOICECONF, 4> gear_vconf = {{ {0, 128}, {0, 128}, {0, 128}, {1, 128} }};
+const SOUND GearWarn = { gear_tim.data(), { gear_seq1.data(), gear_seq2.data(), gear_seq3.data(), gear_seq4.data() }, gear_vconf.data(), 1 };
 
 // list of sounds
-const std::array<const SOUND*, 10> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &TurnOut, &TurnIn, &Flarm1, &Flarm2, &Flarm3, &StallWarn, &Flarm1 } };
+const std::array<const SOUND*, 10> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &TurnOut, &TurnIn, &Flarm1, &Flarm2, &Flarm3, &StallWarn, &GearWarn } };
 
 // To call from ISR context
 void IRAM_ATTR VOICECMD::fastLoad(uint8_t idx) {

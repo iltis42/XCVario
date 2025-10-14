@@ -213,6 +213,15 @@ struct DMACMD {
     VOICECMD voice[MAX_VOICES];
 };
 static __attribute__((aligned(4))) DMACMD dma_cmd;
+
+// chromatic macros
+constexpr float toneFactor(int semitoneOffset) {
+    return std::pow(2.0f, semitoneOffset / 12.0f);
+}
+constexpr float noteFreq(int semitoneOffset) {
+    return 440.0f * toneFactor(semitoneOffset);
+}
+
 // No tone
 const std::array<DURATION, 2> no_tone_tim = {{ {0}, {0} }};
 // Vario tone
@@ -221,6 +230,8 @@ static std::array<TONE, 3> vario_seq = {{ {0.}, {0.}, {0.} }};
 static std::array<TONE, 3> vario_extra = {{ {0.}, {0.}, {0.} }};
 static std::array<VOICECONF, 2> vario_vconf = {{ {0, 220}, {0, 21} }};
 const SOUND VarioSound = { vario_tim.data(), { vario_seq.data(), vario_extra.data(), nullptr, nullptr }, vario_vconf.data(), -1 };
+constexpr float HIGH_TONE_VAR = toneFactor(2); // major prime up
+
 
 // Flarm alarms
 const std::array<DURATION, 3> flarm1_tim = {{ {100}, {55}, {0} }};
@@ -258,9 +269,6 @@ const std::array<TONE, 29> stall_seq3 = {{ {0}, {1290}, {0}, {1227}, {1255}, {0}
 const std::array<VOICECONF, 3> stell_vconf = {{ {0, 200}, {0, 40}, {1, 20} }};
 const SOUND StallWarn = { stall_tim.data(), { stall_seq1.data(), stall_seq2.data(), stall_seq3.data(), nullptr }, stell_vconf.data(), 2 };
 
-constexpr double noteFreq(int semitoneOffset) {
-    return 440.0 * std::pow(2.0, semitoneOffset / 12.0);
-}
 constexpr float fCs4 = noteFreq(-8);   // 277.18 Hz
 constexpr float fE4 = noteFreq(-5);    // 329.63 Hz
 constexpr float fG4 = noteFreq(-2);    // 392.00 Hz
@@ -281,7 +289,8 @@ const std::array<VOICECONF, 4> gear_vconf = {{ {0, 128}, {0, 128}, {0, 128}, {1,
 const SOUND GearWarn = { gear_tim.data(), { gear_seq1.data(), gear_seq2.data(), gear_seq3.data(), gear_seq4.data() }, gear_vconf.data(), 1 };
 
 // list of sounds
-const std::array<const SOUND*, 10> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &TurnOut, &TurnIn, &Flarm1, &Flarm2, &Flarm3, &StallWarn, &GearWarn } };
+const std::array<const SOUND*, 12> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &TurnOut, &TurnIn, &TurnOut, &TurnIn, 
+                                                    &Flarm1, &Flarm2, &Flarm3, &StallWarn, &GearWarn } };
 
 // To call from ISR context
 void IRAM_ATTR VOICECMD::fastLoad(uint8_t idx) {
@@ -539,17 +548,7 @@ Audio::Audio()
 }
 Audio::~Audio()
 {
-    if (_dac_chan)
-    {
-        stopAudio();
-    }
-
-    if (_poti)
-    {
-        delete _poti;
-        _poti = nullptr;
-    }
-    _terminate = true;
+    stopAudio();
 }
 
 void Audio::dacInit()
@@ -595,10 +594,12 @@ bool Audio::startAudio(int16_t ch)
 	updateSetup();
     updateAudioMode();
 
-    _channel = ch;
-    TaskHandle_t my_task = xTaskGetCurrentTaskHandle();
-	xTaskCreatePinnedToCore(pin_audio_irq, "pinaudio", 4096, (void*)my_task, 10, NULL, 1);
-	ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    if ( ! _dac_chan ) {
+        _channel = ch;
+        TaskHandle_t my_task = xTaskGetCurrentTaskHandle();
+        xTaskCreatePinnedToCore(pin_audio_irq, "pinaudio", 4096, (void*)my_task, 10, NULL, 1);
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    }
 
     if ( ! _poti ) {
         ESP_LOGI(FNAME,"Find digital poti");
@@ -635,20 +636,30 @@ bool Audio::startAudio(int16_t ch)
         // set the volume from nvs
         float setvolume = default_volume.get();
         speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
-        setVolume(setvolume);
+        writeVolume(setvolume);
 
-        xTaskCreate(&dactask_starter, "dactask", 2400, this, 22, nullptr);
+        if ( _terminate ) {
+            xTaskCreate(&dactask_starter, "dactask", 2400, this, 22, nullptr);
+        }
 
         return true;
     }
     return false;
 }
 void Audio::stopAudio() {
-    mute();
-    ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
-    ESP_ERROR_CHECK(dac_continuous_disable(_dac_chan));
-    ESP_ERROR_CHECK(dac_continuous_del_channels(_dac_chan));
-    _dac_chan = nullptr;
+    if ( _dac_chan ) {
+        mute();
+        ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
+        ESP_ERROR_CHECK(dac_continuous_disable(_dac_chan));
+        ESP_ERROR_CHECK(dac_continuous_del_channels(_dac_chan));
+        _dac_chan = nullptr;
+    }
+    if (_poti)
+    {
+        Poti *tmp = _poti;
+        _poti = nullptr;
+        delete tmp;
+    }
     _terminate = true; // kill task
 }
 
@@ -814,7 +825,7 @@ void Audio::updateSetup()
             // reload the vario sound if active
             dma_cmd.loadSound(&VarioSound);
         }
-	}
+    }
     _exponent_max  = std::pow( 2, audio_factor.get());
 
 	maxf = center_freq.get() * tone_var.get();
@@ -916,7 +927,7 @@ void  Audio::calculateFrequency(float val) {
         vario_seq[0].setStep(freq);
         vario_extra[0].setStep(freq * 5.);
         if ( VCMode.audioIsChopping() && val > 0 ) {
-            if ( dual_tone.get() ) vario_seq[1].setStep(freq * _high_tone_var);
+            if ( dual_tone.get() ) vario_seq[1].setStep(freq * HIGH_TONE_VAR);
             else vario_seq[1].step = vario_extra[1].step = 0;
         }
         else {

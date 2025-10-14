@@ -25,6 +25,8 @@ enum e_audio_alarm_type
     AUDIO_CMD_CIRCLE_IN,
     AUDIO_HORIZ_GUST,
     AUDIO_WIND_CHANGE,
+    AUDIO_FLAP_FORWARD,
+    AUDIO_FLAP_BACK,
     AUDIO_ALARM_FLARM_1,
     AUDIO_ALARM_FLARM_2,
     AUDIO_ALARM_FLARM_3,
@@ -79,14 +81,13 @@ private:
     float _range = 5.f;
     float _deadband_p;
     float _deadband_n;
-    static constexpr const float _high_tone_var = powf(2.0, 2. / 12.0); // major prime up
     bool _alarm_mode = false;
     float maxf;
     float minf;
     float _exponent_max = 2;
 
     volatile bool _test_done = false;
-    bool _terminate;
+    bool _terminate = true;
 };
 
 extern Audio *AUDIO;

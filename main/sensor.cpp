@@ -1160,22 +1160,20 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
 	}
 
-	ESP_LOGI(FNAME,"Audio begin");
-	logged_tests += "Digi. Audio Poti test: ";
-	if( AUDIO->startAudio(0) ) {
-		ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
-		logged_tests += passed_text;
-		if ( audio_mute_gen.get() != AUDIO_OFF ) {
-        	AUDIO->soundCheck();
-		} else {
-			AUDIO->stopAudio();
+	if ( audio_mute_gen.get() != AUDIO_OFF ) {
+		ESP_LOGI(FNAME,"Audio begin");
+		logged_tests += "Digi. Audio Poti test: ";
+		if( AUDIO->startAudio(0) ) {
+			ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
+			logged_tests += passed_text;
+			AUDIO->soundCheck();
 		}
-	}
-	else {
-		ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
-		MBOX->newMessage(1, "Digital Poti: Failure");
-		selftestPassed = false;
-		logged_tests += failed_text;
+		else {
+			ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
+			MBOX->newMessage(1, "Digital Poti: Failure");
+			selftestPassed = false;
+			logged_tests += failed_text;
+		}
 	}
 
 	bmpVario.begin( teSensor, baroSensor, &Speed2Fly );

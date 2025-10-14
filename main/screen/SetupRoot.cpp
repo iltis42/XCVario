@@ -10,6 +10,7 @@
 
 #include "DrawDisplay.h"
 #include "UiEvents.h"
+#include "setup/SubMenuAudio.h"
 #include "setup/SubMenuDevices.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
@@ -95,6 +96,7 @@ void SetupRoot::exit(int levels)
         uiMonitor = nullptr;
     }
     free_connected_devices_menu();
+    free_audio_menu();
 
     if (_restart) {
         reBoot();

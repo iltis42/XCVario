@@ -6,6 +6,7 @@
  */
 
 #include "setup/SetupMenu.h"
+#include "setup/SubMenuAudio.h"
 #include "setup/SubMenuDevices.h"
 #include "setup/SubMenuCompassWind.h"
 #include "setup/SubMenuGlider.h"
@@ -54,13 +55,6 @@ static void vario_menu_create_meanclimb(SetupMenu *top);
 static void vario_menu_create_s2f(SetupMenu *top);
 static void vario_menu_create_ec(SetupMenu *top);
 
-static void audio_menu_create(SetupMenu *top);
-static void audio_menu_create_volume(SetupMenu *top);
-static void audio_menu_create_tonestyles(SetupMenu *top);
-static void audio_menu_create_deadbands(SetupMenu *top);
-static void audio_menu_create_equalizer(SetupMenu *top);
-static void audio_menu_create_mute(SetupMenu *top);
-
 static void options_menu_create(SetupMenu *top);
 static void options_menu_create_units(SetupMenu *top);
 static void options_menu_create_flarm(SetupMenu *top);
@@ -71,11 +65,8 @@ static void system_menu_create(SetupMenu *top);
 static void system_menu_create_software(SetupMenu *top);
 static void system_menu_create_battery(SetupMenu *top);
 static void system_menu_create_hardware(SetupMenu *top);
-static void system_menu_create_altimeter_airspeed(SetupMenu *top);
-static void system_menu_create_altimeter_airspeed_stallwa(SetupMenu *top);
 static void system_menu_create_hardware_type(SetupMenu *top);
 static void system_menu_create_hardware_rotary(SetupMenu *top);
-static void system_menu_create_hardware_rotary_screens(SetupMenu *top);
 static void system_menu_create_hardware_ahrs(SetupMenu *top);
 static void system_menu_create_ahrs_calib(SetupMenu *top);
 static void system_menu_create_hardware_ahrs_lc(SetupMenu *top);
@@ -108,26 +99,6 @@ static int set_rotary_increment(SetupMenuSelect *p) {
 	return 0;
 }
 
-int audio_setup_s(SetupMenuSelect *p) {
-	AUDIO->updateSetup();
-	if (audio_mute_gen.get() == AUDIO_OFF) {
-        if ( AUDIO->isUp() ) { AUDIO->stopAudio(); }
-    }
-    else {
-        if ( ! AUDIO->isUp() ) { AUDIO->startAudio(); }
-        if (audio_mute_gen.get() == AUDIO_ALARMS) {
-            AUDIO->stopVarioVoice();
-        }
-        else {
-            AUDIO->startVarioVoice();
-        }
-    }
-	return 0;
-}
-int audio_setup_f(SetupMenuValFloat *p) {
-	AUDIO->updateSetup();
-	return 0;
-}
 
 int speedcal_change(SetupMenuValFloat *p) {
 	if (asSensor)
@@ -217,23 +188,6 @@ int select_battery_type(SetupMenuSelect *p) {
 			bat_full_volt.set(13.6); // 100% charge
 		break;
 	}
-	return 0;
-}
-
-static char rentry0[32];
-static char rentry1[32];
-static char rentry2[32];
-
-int update_rentry(SetupMenuValFloat *p) {
-	// ESP_LOGI(FNAME,"update_rentry() vu:%s", Units::VarioUnit() );
-	sprintf(rentry0, "Fixed (5  %s)", Units::VarioUnit());
-	sprintf(rentry1, "Fixed (10 %s)", Units::VarioUnit());
-	sprintf(rentry2, "Variable (%d %s)", (int) (scale_range.get()), Units::VarioUnit());
-	return 0;
-}
-
-int update_rentrys(SetupMenuSelect *p) {
-	update_rentry(0);
 	return 0;
 }
 
@@ -379,13 +333,6 @@ int bug_adj(SetupMenuValFloat *p) {
 	return 0;
 }
 
-int cur_vol_dflt(SetupMenuSelect *p) {
-	if (p->getSelect() != 0)  // "set"
-		default_volume.set(audio_volume.get());
-	p->setSelect(0);   // return to "cancel"
-	return 0;
-}
-
 static int startFlarmSimulation(SetupMenuSelect *p) {
 	FlarmSim::StartSim();
 	return 0;
@@ -410,11 +357,6 @@ SetupMenu::~SetupMenu() {
 		delete c;
 	}
 	_childs.clear();
-}
-
-// fixme
-void SetupMenu::catchFocus(bool activate) {
-	focus = activate;
 }
 
 void SetupMenu::enter()
@@ -453,17 +395,17 @@ void SetupMenu::display(int mode)
 		MenuEntry *child = _childs[i];
 		child->refresh(); // cope with potential external change to the e.g. nvs representation of values
 		if (!child->isLeaf() || child->value()) {
-			MYUCG->setColor( COLOR_HEADER_LIGHT);
+			MYUCG->setColor(COLOR_HEADER_LIGHT);
 		}
 		menuPrintLn(child->getTitle(), i+1);
 		// ESP_LOGI(FNAME,"Child Title: %s - %p", child->getTitle(), child->value() );
 		if (child->value() && *child->value() != '\0') {
 			int fl = MYUCG->getStrWidth(child->getTitle());
 			menuPrintLn(": ", i+1, 1+fl);
-			MYUCG->setColor( COLOR_WHITE);
+			MYUCG->setColor(COLOR_WHITE);
 			menuPrintLn(child->value(), i+1, 1 + fl + MYUCG->getStrWidth(": "));
 		}
-		MYUCG->setColor( COLOR_WHITE);
+		MYUCG->setColor(COLOR_WHITE);
 		// ESP_LOGI(FNAME,"Child: %s y=%d",child->getTitle() ,y );
 	}
 	showhelp(true);
@@ -780,113 +722,6 @@ void vario_menu_create(SetupMenu *vae) {
 	vae->addEntry(elco);
 }
 
-void audio_menu_create_tonestyles(SetupMenu *top) {
-	SetupMenuValFloat *cf = new SetupMenuValFloat("CenterFreq", "Hz", audio_setup_f, false, &center_freq);
-	cf->setHelp("Center frequency for Audio at zero Vario or zero S2F delta");
-	top->addEntry(cf);
-
-	SetupMenuValFloat *oc = new SetupMenuValFloat("Octaves", "fold", audio_setup_f, false, &tone_var);
-	oc->setHelp("Maximum tone frequency variation");
-	top->addEntry(oc);
-
-	SetupMenuSelect *dt = new SetupMenuSelect("Dual Tone", RST_NONE, audio_setup_s, &dual_tone);
-	dt->setHelp(
-			"Select dual tone modue aka ilec sound (di/da/di), or single tone (di/di/di) mode");
-	dt->mkEnable();
-	top->addEntry(dt);
-
-	SetupMenuSelect *tch = new SetupMenuSelect("Chopping", RST_NONE, audio_setup_s, &chopping_mode);
-	tch->setHelp(
-			"Select tone chopping option on positive values for Vario and or S2F");
-	tch->addEntry("Disabled");             // 0
-	tch->addEntry("Vario only");           // 1
-	tch->addEntry("S2F only");             // 2
-	tch->addEntry("Vario and S2F");        // 3  default
-	top->addEntry(tch);
-}
-
-void audio_menu_create_deadbands(SetupMenu *top) {
-	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", audio_setup_f, false, &deadband_neg);
-	top->addEntry(dbminlv);
-
-	SetupMenuValFloat *dbmaxlv = new SetupMenuValFloat("Upper Vario", "", audio_setup_f, false, &deadband);
-	top->addEntry(dbmaxlv);
-
-	SetupMenuValFloat *dbmaxls2fn = new SetupMenuValFloat("Lower S2F", "", audio_setup_f, false, &s2f_deadband_neg);
-	top->addEntry(dbmaxls2fn);
-
-	SetupMenuValFloat *dbmaxls2f = new SetupMenuValFloat("Upper S2F", "", audio_setup_f, false, &s2f_deadband);
-	top->addEntry(dbmaxls2f);
-}
-
-void audio_menu_create_volume(SetupMenu *top) {
-	SetupMenuValFloat *dv = new SetupMenuValFloat("Default Volume", "%", nullptr, false, &default_volume);
-	top->addEntry(dv);
-	dv->setHelp("Default volume for Audio when device is switched on");
-
-	SetupMenuSelect *amspvol = new SetupMenuSelect("S2F Volume", RST_NONE, nullptr, &audio_split_vol);
-	amspvol->setHelp(
-			"Enable independent audio volume in SpeedToFly and Vario modes, disable for one volume for both");
-	amspvol->mkEnable();
-	top->addEntry(amspvol);
-}
-
-void audio_menu_create_mute(SetupMenu *top) {
-	SetupMenuSelect *asida = new SetupMenuSelect("In Sink", RST_NONE, audio_setup_s, &audio_mute_sink);
-	asida->setHelp("Select whether vario audio will be muted while in sink");
-	asida->addEntry("Stay On");  // 0
-	asida->addEntry("Mute");     // 1
-	top->addEntry(asida);
-
-	SetupMenuSelect *ageda = new SetupMenuSelect("Generally", RST_NONE, audio_setup_s, &audio_mute_gen);
-	ageda->setHelp(
-			"Select audio on, or vario audio muted, or all audio muted including alarms");
-	ageda->addEntry("Audio On");      // 0 = AUDIO_ON
-	ageda->addEntry("Alarms On");     // 1 = AUDIO_ALARMS
-	ageda->addEntry("Audio Off");     // 2 = AUDIO_OFF
-	top->addEntry(ageda);
-}
-
-void audio_menu_create(SetupMenu *audio) {
-
-	SetupMenu *volumes = new SetupMenu("Volume options", audio_menu_create_volume);
-	volumes->setHelp("Audio volume for variometer tone on internal and external speaker");
-	audio->addEntry(volumes);
-
-	SetupMenu *mutes = new SetupMenu("Mute Audio", audio_menu_create_mute);
-	audio->addEntry(mutes);
-	mutes->setHelp("Configure audio muting options", 240);
-
-	SetupMenuSelect *abnm = new SetupMenuSelect("Cruise Audio", RST_NONE, nullptr, &cruise_audio_mode);
-	abnm->setHelp(
-			"Select either S2F command or Variometer (Netto/Brutto as selected) as audio source while cruising");
-	abnm->addEntry("Speed2Fly");       // 0
-	abnm->addEntry("Vario");           // 1
-	audio->addEntry(abnm);
-
-	SetupMenu *audios = new SetupMenu("Tone Styles", audio_menu_create_tonestyles);
-	audio->addEntry(audios);
-	audios->setHelp("Configure audio style in terms of center frequency, octaves, single/dual tone, pitch and chopping", 220);
-
-	update_rentry(0);
-	SetupMenuSelect *audio_range_sm = new SetupMenuSelect("Range", RST_NONE, audio_setup_s, &audio_range);
-	audio_range_sm->addEntry(rentry0);
-	audio_range_sm->addEntry(rentry1);
-	audio_range_sm->addEntry(rentry2);
-	audio_range_sm->setHelp(
-			"Audio range: fixed, or variable according to current Vario display range setting");
-	audio->addEntry(audio_range_sm);
-
-	SetupMenu *db = new SetupMenu("Deadbands", audio_menu_create_deadbands);
-	audio->addEntry(db);
-	db->setHelp("Dead band limits within which audio remains silent.  1 m/s equals roughly 200 fpm or 2 knots");
-
-	SetupMenuValFloat *afac = new SetupMenuValFloat("Audio Exponent", "", audio_setup_f, false, &audio_factor);
-	afac->setHelp(
-			"How the audio frequency responds to the climb rate: < 1 for logarithmic, and > 1 for exponential, response");
-	audio->addEntry(afac);
-}
-
 void options_menu_create_units(SetupMenu *top) {
 	SetupMenuSelect *alu = new SetupMenuSelect("Altimeter", RST_NONE, nullptr, &alt_unit);
 	alu->addEntry("Meter (m)");
@@ -898,7 +733,7 @@ void options_menu_create_units(SetupMenu *top) {
 	iau->addEntry("Miles/hour (mph)");
 	iau->addEntry("Knots (kt)");
 	top->addEntry(iau);
-	SetupMenuSelect *vau = new SetupMenuSelect("Vario", RST_NONE, update_rentrys, &vario_unit);
+	SetupMenuSelect *vau = new SetupMenuSelect("Vario", RST_NONE, update_range_entry_s, &vario_unit);
 	vau->addEntry("Meters/sec (m/s)");
 	vau->addEntry("Feet/min x 100 (fpm)");
 	vau->addEntry("Knots (kt)");
@@ -1181,6 +1016,10 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 		SetupMenu *un = new SetupMenu("Units", options_menu_create_units);
 		opt->addEntry(un);
 		un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
+
+		// Audio
+		SetupMenu *ad = new SetupMenu("Audio", audio_menu_create);
+		opt->addEntry(ad);
 
 		// Airspeed
 		SetupMenu *velocity = new SetupMenu("Airspeed", system_menu_create_airspeed);
@@ -1492,10 +1331,6 @@ void system_menu_create(SetupMenu *sye) {
 	SetupMenu *hardware = new SetupMenu("Hardware Setup", system_menu_create_hardware);
 	hardware->setHelp("Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc", 240);
 	sye->addEntry(hardware);
-
-	// Audio
-	SetupMenu *ad = new SetupMenu("Audio", audio_menu_create);
-	sye->addEntry(ad);
 
 	// XCV role
 	SetupMenuSelect *role = new SetupMenuSelect("XCV device role", RST_IMMEDIATE, nullptr, &xcv_role);

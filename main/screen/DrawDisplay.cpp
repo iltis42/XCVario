@@ -28,7 +28,7 @@
 #include "S2fSwitch.h"
 #include "sensor.h"
 #include "protocol/WatchDog.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 
 // The context to serialize all display access.
@@ -58,7 +58,7 @@ void drawDisplay(void *arg)
         {
 			UiEvent event(eparam);
             uint8_t detail = event.getUDetail();
-			ESP_LOGI(FNAME, "Event param %x", eparam);
+			// ESP_LOGI(FNAME, "Event param %x", eparam);
             if (event.isButtonEvent())
             {
                 // ESP_LOGI(FNAME, "Button event %x", detail);

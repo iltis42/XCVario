@@ -57,13 +57,14 @@ bool IRAM_ATTR S2fSwitch::tick()
         {
             gotEvent = ModeEvent(ModeEvent::MODE_S2F).raw;
         }
+        xQueueSend(uiEventQueue, &gotEvent, 0);
     }
     else if (_state)
     {
         // toggle
         gotEvent = ModeEvent(ModeEvent::MODE_TOGGLE).raw;
+        xQueueSend(uiEventQueue, &gotEvent, 0);
     }
-    xQueueSend(uiEventQueue, &gotEvent, 0);
 
     return false;
 }

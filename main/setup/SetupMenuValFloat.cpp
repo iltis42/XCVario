@@ -13,7 +13,7 @@
 #include "glider/Polars.h"
 #include "sensor.h"
 #include "ESPAudio.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 
 SetupMenuValFloat::SetupMenuValFloat( const char* title, const char *unit, int (*action)( SetupMenuValFloat *p ), 

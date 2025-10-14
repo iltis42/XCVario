@@ -44,7 +44,8 @@ public:
 	void updateEntry( const char *ent, int num );
 	int getSelect() const { return _select; }
 	int getValue() const;
-	void setSelect( int sel );
+	void setSelect( int sel ) { _select = sel; }
+	void resetSelect() override { _select = -1; }
 	int numEntries() const { return _values.size(); };
 
 private:

@@ -82,10 +82,7 @@ static void system_menu_create_hardware_ahrs_lc(SetupMenu *top);
 static void system_menu_create_hardware_ahrs_parameter(SetupMenu *top);
 
 
-// Menu for flap setup
-float elev_step = 1;
-
-bool SetupMenu::focus = false;
+static char small_buf[32];
 
 int gload_reset(SetupMenuSelect *p) {
 	if ( p->getSelect() == 1 ) {
@@ -1540,8 +1537,8 @@ void setup_create_root(SetupMenu *top) {
 	ESP_LOGI(FNAME, "Create bugs menu");
 	Device *jumbo = DEVMAN->getDevice(DeviceId::JUMBO_DEV);
 	if (jumbo) {
-		sprintf(rentry0, "Bugs at %d%%", int(bugs.get()));
-		SetupMenu *wiper = new SetupMenu(rentry0, wiper_menu_create);
+		sprintf(small_buf, "Bugs at %d%%", int(bugs.get()));
+		SetupMenu *wiper = new SetupMenu(small_buf, wiper_menu_create);
 		top->addEntry(wiper);
 	} else {
 		bugs_item_create(top);

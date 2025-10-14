@@ -39,6 +39,11 @@ public:
 	void setDirty() { dirty = true; }
 	int getContId() const { return content_id; }
 	void setBuzzword(const char *bz=nullptr) { buzzword = bz; }
+	void resetAllSelects() {
+		for ( auto &e : _childs) {
+			e->resetSelect();
+		}
+	}
 
 	// the submenu structure
 	MenuEntry* addEntry(MenuEntry* item);
@@ -51,8 +56,6 @@ public:
 	void press() override;
 	void longPress() override;
 
-	static void catchFocus( bool activate );
-	static bool focus;
 	static gpio_num_t getGearWarningIO();
 
 	static SetupMenu* createTopSetup();

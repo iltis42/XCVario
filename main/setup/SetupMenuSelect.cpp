@@ -228,11 +228,6 @@ int SetupMenuSelect::getValue() const
 	return 0;
 }
 
-void SetupMenuSelect::setSelect(int sel)
-{
-	_select = sel;
-}
-
 void SetupMenuSelect::initSelect() const
 {
 	// no selection yet, select nvs stored entry, or the first entry

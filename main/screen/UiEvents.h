@@ -34,7 +34,7 @@ struct ButtonEvent
 
     uint32_t raw;
     ButtonEvent() = delete;
-    constexpr ButtonEvent(const uint8_t v) : raw((0xff & v) | EVT_BUTTON) {}
+    constexpr ButtonEvent(const unsigned v) : raw((0x00ff & v) | EVT_BUTTON) {}
 };
 
 // The rotary events are
@@ -43,7 +43,7 @@ struct RotaryEvent
     // const rotary values are -3, -2, -1, 1, 2, 3
     uint32_t raw;
     RotaryEvent() = delete;
-    constexpr RotaryEvent(const uint8_t v) : raw((0xff & v) | EVT_ROTARY) {}
+    constexpr RotaryEvent(const unsigned v) : raw((0x00ff & v) | EVT_ROTARY) {}
 };
 
 // The screen events are
@@ -57,7 +57,7 @@ struct ScreenEvent
 
     uint32_t raw;
     ScreenEvent() = delete;
-    constexpr ScreenEvent(const uint8_t v) : raw((0xff & v) | EVT_SCREEN) {}
+    constexpr ScreenEvent(const unsigned v) : raw((0x00ff & v) | EVT_SCREEN) {}
 };
 
 // The mode events are
@@ -69,7 +69,7 @@ struct ModeEvent
 
     uint32_t raw;
     ModeEvent() = delete;
-    constexpr ModeEvent(const uint8_t v) : raw((0xff & v) | EVT_MODE) {}
+    constexpr ModeEvent(const unsigned v) : raw((0x00ff & v) | EVT_MODE) {}
 };
 
 // Button and Rotary are often handled the same way
@@ -80,7 +80,8 @@ union UiEvent {
     uint32_t code;
     ButtonEvent button; // button event
     RotaryEvent rotary; // rotary event
-    int8_t getDetail() const { return code & 0xff; } // get the event code
+    inline uint8_t getUDetail() const { return code & 0xff; } // get the event details
+    inline int8_t getSDetail() const { return static_cast<int8_t>(code & 0xff); } // get the event details with sign
     bool isButtonEvent() const { return (code & EVT_BUTTON) != 0; } // true if button event
     bool isRotaryEvent() const { return (code & EVT_ROTARY) != 0; } // true if rotary event
     bool isKnobEvent() const { return (code & (EVT_BUTTON&EVT_ROTARY)) != 0; } // true if button  or rotary event

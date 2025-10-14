@@ -43,7 +43,6 @@ static unsigned long int flarm_alarm_holdtime = 0;
 void drawDisplay(void *arg)
 {
     ESPRotary &knob = *static_cast<ESPRotary *>(arg);
-    // QueueHandle_t uieventqueue = knob.getQueue();
 
     stall_alarm_off_kmh = stall_speed.get()/3;
 
@@ -51,14 +50,16 @@ void drawDisplay(void *arg)
 
     // esp_task_wdt_add(NULL); // incompatible with current setup implementation, e.g. all calib procedures would trigger the wd
 
-    int event = 0;
     while (1)
     {
         // handle button events in this context
-        if (xQueueReceive(uiEventQueue, &event, pdMS_TO_TICKS(20)) == pdTRUE)
+		int eparam;
+        if (xQueueReceive(uiEventQueue, &eparam, pdMS_TO_TICKS(20)) == pdTRUE)
         {
-            int detail = UiEvent(event).getDetail();
-            if (UiEvent(event).isButtonEvent())
+			UiEvent event(eparam);
+            uint8_t detail = event.getUDetail();
+			ESP_LOGI(FNAME, "Event param %x", eparam);
+            if (event.isButtonEvent())
             {
                 // ESP_LOGI(FNAME, "Button event %x", detail);
                 if (detail == ButtonEvent::SHORT_PRESS) {
@@ -74,35 +75,35 @@ void drawDisplay(void *arg)
                     knob.sendEscape();
                 }
             }
-            else if (UiEvent(event).isRotaryEvent()) {
-                // ESP_LOGI(FNAME, "Rotation step %d", detail);
-                knob.sendRot(detail);
+            else if (event.isRotaryEvent()) {
+                // ESP_LOGI(FNAME, "Rotation step %d", event.getSDetail());
+                knob.sendRot(event.getSDetail());
             }
-            else if (UiEvent(event).isScreenEvent()) {
+            else if (event.isScreenEvent()) {
                 // ESP_LOGI(FNAME, "Screen event %d", detail);
-                if ( detail == ScreenEvent::MSG_BOX ) {
-                    if ( MBOX->draw() ) { // time triggered mbox update
+                if (detail == ScreenEvent::MSG_BOX) {
+                    if (MBOX->draw()) { // time triggered mbox update
                         // mbox finish, time to refresh the bottom line of the screen
                         Display->setBottomDirty();
                     }
                 }
-                else if ( detail == ScreenEvent::BOOT_SCREEN ) {
+                else if (detail == ScreenEvent::BOOT_SCREEN) {
                     BootUpScreen::draw(); // time triggered boot screen update
                 }
                 // else if ( detail == ScreenEvent::FLARM_ALARM ) {
                 // }
-                else if ( detail == ScreenEvent::QNH_ADJUST) {
+                else if (detail == ScreenEvent::QNH_ADJUST) {
                     Menu->begin(SetupMenu::createQNHMenu());
                 }
-                else if ( detail == ScreenEvent::VOLT_ADJUST) {
+                else if (detail == ScreenEvent::VOLT_ADJUST) {
                     Menu->begin(SetupMenu::createVoltmeterAdjustMenu());
                 }
 			}
-            else if (UiEvent(event).isModeEvent()) {
-                if ( detail == ModeEvent::MODE_TOGGLE ) {
+            else if (event.isModeEvent()) {
+                if (detail == ModeEvent::MODE_TOGGLE) {
                     VCMode.setCMode(!VCMode.getCMode());
                 }
-                else if ( detail == ModeEvent::MODE_VARIO || detail == ModeEvent::MODE_S2F ) {
+                else if (detail == ModeEvent::MODE_VARIO || detail == ModeEvent::MODE_S2F) {
                     VCMode.setCMode(detail == ModeEvent::MODE_S2F);
                 }
             }

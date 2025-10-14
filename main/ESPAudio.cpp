@@ -217,9 +217,9 @@ static __attribute__((aligned(4))) DMACMD dma_cmd;
 const std::array<DURATION, 2> no_tone_tim = {{ {0}, {0} }};
 // Vario tone
 static std::array<DURATION, 3> vario_tim = {{ {100}, {50}, {0} }};
-static std::array<TONE, 3> vario_seq = {{ {500.0}, {0.}, {0.} }};
-static std::array<TONE, 3> vario_extra = {{ { 500.0*pow(2.0, 3.) }, { 0.}, {0.} }};
-const std::array<VOICECONF, 2> vario_vconf = {{ {0, 220}, {0, 21} }};
+static std::array<TONE, 3> vario_seq = {{ {0.}, {0.}, {0.} }};
+static std::array<TONE, 3> vario_extra = {{ {0.}, {0.}, {0.} }};
+static std::array<VOICECONF, 2> vario_vconf = {{ {0, 220}, {0, 21} }};
 const SOUND VarioSound = { vario_tim.data(), { vario_seq.data(), vario_extra.data(), nullptr, nullptr }, vario_vconf.data(), -1 };
 
 // Flarm alarms
@@ -807,6 +807,13 @@ void Audio::updateSetup()
 		_range = 10.0;
 	} else {
 		_range = scale_range.get();
+	}
+    if (vario_vconf[1].gain_adjust != audio_harmonics.get()) {
+        vario_vconf[1].gain_adjust = audio_harmonics.get();
+        if (VCMode.audioIsVario() && audio_mute_gen.get() == AUDIO_ON) {
+            // reload the vario sound if active
+            dma_cmd.loadSound(&VarioSound);
+        }
 	}
     _exponent_max  = std::pow( 2, audio_factor.get());
 

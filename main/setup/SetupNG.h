@@ -53,11 +53,12 @@ typedef enum e_display_variant { DISPLAY_WHITE_ON_BLACK, DISPLAY_BLACK_ON_WHITE 
 typedef enum e_s2f_type  { S2F_HW_SWITCH, S2F_HW_PUSH_BUTTON, S2F_HW_SWITCH_INVERTED, S2F_SWITCH_DISABLE } e_s2f_type;
 typedef enum e_wireless_type { WL_DISABLE, WL_BLUETOOTH, WL_WLAN_MASTER, WL_WLAN_CLIENT, WL_WLAN_STANDALONE, WL_BLUETOOTH_LE } e_wireless_t;
 typedef enum { NO_ROLE, MASTER_ROLE, SECOND_ROLE } e_xcvrole_t;
-typedef enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED, AM_FLAP, AM_AHRS } e_audiomode_t;
-typedef enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE } e_audio_tone_mode_t;
-typedef enum e_audio_chopping_style { AUDIO_CHOP_SOFT, AUDIO_CHOP_HARD } e_audio_chopping_style_t;
-typedef enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE } e_audio_range_t;
-typedef enum e_audio_mute_gen { AUDIO_ON, AUDIO_ALARMS, AUDIO_OFF } e_audio_mute_gen_t;
+enum e_audiomode_type { AM_VARIO, AM_S2F, AM_SWITCH, AM_AUTOSPEED, AM_FLAP, AM_AHRS };
+enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE };
+enum e_audio_chopping_style { AUDIO_CHOP_SOFT, AUDIO_CHOP_HARD };
+enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE };
+enum e_audio_harmonics { AUD_HARM_OFF=0, AUD_HARM_LOW=7, AUD_HARM_MED=14, AUD_HARM_HIGH=21 };
+enum e_audio_mute_gen { AUDIO_ON, AUDIO_ALARMS, AUDIO_OFF };
 typedef enum e_amp_shutdown { AMP_STAY_ON, AMP_SHUTDOWN, AMP_SHUTDOWN_5S } e_amp_shutdown_t;
 typedef enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_ENABLE } e_flap_sensor_t;
 typedef enum e_cruise_audio { AUDIO_S2F, AUDIO_VARIO } e_cruise_audio_2;
@@ -299,10 +300,14 @@ private:
 	const limits_t *_limt = nullptr;
 };
 
+//////////////////////////
+// configuration variables
 extern SetupNG<float> 		MC;
 extern SetupNG<float> 		QNH;
 extern SetupNG<float> 		polar_wingload;
+
 extern SetupNG<float> 		polar_speed1;
+
 extern SetupNG<float> 		polar_sink1;
 extern SetupNG<float> 		polar_speed2;
 extern SetupNG<float> 		polar_sink2;
@@ -314,11 +319,6 @@ extern SetupNG<float> 		polar_wingarea;
 extern SetupNG<float>  		speedcal;
 extern SetupNG<float>  		vario_delay;
 extern SetupNG<float>  		vario_av_delay;
-extern SetupNG<float>  		center_freq;
-extern SetupNG<float>  		tone_var;
-extern SetupNG<int>  		dual_tone;
-extern SetupNG<float>  		deadband;
-extern SetupNG<float>  		deadband_neg;
 extern SetupNG<float>  		scale_range;
 extern SetupNG<int>			log_scale;
 extern SetupNG<float>  		ballast;
@@ -326,44 +326,8 @@ extern SetupNG<float>  		ballast_kg;
 extern SetupNG<float>		empty_weight;
 extern SetupNG<float>		crew_weight;
 extern SetupNG<float>		gross_weight;
-
-extern SetupNG<int>  		s2f_ideal;
-extern SetupNG<int>  		s2f_switch_mode;
-extern SetupNG<float>  		s2f_threshold;
-extern SetupNG<float>  		s2f_flap_pos;
-extern SetupNG<float>  		s2f_gyro_deg;
-extern SetupNG<float>  		s2f_auto_lag;
-
-extern SetupNG<int>  		chopping_mode;
-
-extern SetupNG<float>  		wifi_max_power;
-extern SetupNG<int>  		factory_reset;
-extern SetupNG<int>  		audio_range;
-extern SetupNG<int>  		alt_select;
-extern SetupNG<int>  		fl_auto_transition;
-extern SetupNG<int>  		alt_display_mode;
-extern SetupNG<float>  		transition_alt;
-extern SetupNG<int>  		glider_type_index;
-
-extern SetupNG<float>  		as_offset;
-extern SetupNG<int>  		bat_type;
-extern SetupNG<float>  		bat_low_volt;
-extern SetupNG<float>  		bat_red_volt;
-extern SetupNG<float>  		bat_yellow_volt;
-extern SetupNG<float>  		bat_full_volt;
-extern SetupNG<float>  		core_climb_period;
-extern SetupNG<float>  		core_climb_min;
-extern SetupNG<float>  		core_climb_history;
-extern SetupNG<float>  		mean_climb_major_change;
-extern SetupNG<float>  		elevation;
-extern SetupNG<float>  		audio_volume;
-extern SetupNG<int>  		audio_split_vol;
-extern SetupNG<float>  		default_volume;
-extern SetupNG<float>  		s2f_deadband;
-extern SetupNG<float>  		s2f_deadband_neg;
-extern SetupNG<float>  		s2f_delay;
-extern SetupNG<float>  		factory_volt_adjust;
 extern SetupNG<float>  		bugs;
+
 extern SetupNG<int>  		cruise_mode;
 extern SetupNG<float>  		OAT;   // outside temperature
 extern SetupNG<float>  		swind_dir;   // straight wind direction
@@ -389,6 +353,53 @@ extern SetupNG<int>  		mags_alive;
 extern SetupNG<int>  		flarm_alive;
 extern SetupNG<int>  		airborne;
 
+extern SetupNG<int>  		s2f_ideal;
+extern SetupNG<int>  		s2f_switch_mode;
+extern SetupNG<float>  		s2f_threshold;
+extern SetupNG<float>  		s2f_flap_pos;
+
+extern SetupNG<float>  		s2f_gyro_deg;
+extern SetupNG<float>  		s2f_auto_lag;
+
+
+extern SetupNG<float>  		audio_volume;
+extern SetupNG<float>  		default_volume;
+extern SetupNG<int>  		audio_split_vol;
+extern SetupNG<int>  		audio_range;
+extern SetupNG<float>  		center_freq;
+extern SetupNG<float>  		tone_var;
+extern SetupNG<int>  		dual_tone;
+extern SetupNG<int>  		chopping_mode;
+extern SetupNG<int>  		audio_harmonics;
+extern SetupNG<float>		audio_factor;
+extern SetupNG<float>  		deadband;
+extern SetupNG<float>  		deadband_neg;
+
+extern SetupNG<float>  		wifi_max_power;
+extern SetupNG<int>  		factory_reset;
+extern SetupNG<int>  		alt_select;
+extern SetupNG<int>  		fl_auto_transition;
+extern SetupNG<int>  		alt_display_mode;
+extern SetupNG<float>  		transition_alt;
+extern SetupNG<int>  		glider_type_index;
+
+extern SetupNG<float>  		as_offset;
+
+extern SetupNG<int>  		bat_type;
+extern SetupNG<float>  		bat_low_volt;
+extern SetupNG<float>  		bat_red_volt;
+extern SetupNG<float>  		bat_yellow_volt;
+extern SetupNG<float>  		bat_full_volt;
+extern SetupNG<float>  		core_climb_period;
+extern SetupNG<float>  		core_climb_min;
+extern SetupNG<float>  		core_climb_history;
+extern SetupNG<float>  		mean_climb_major_change;
+extern SetupNG<float>  		elevation;
+extern SetupNG<float>  		s2f_deadband;
+extern SetupNG<float>  		s2f_deadband_neg;
+extern SetupNG<float>  		s2f_delay;
+extern SetupNG<float>  		factory_volt_adjust;
+
 extern SetupNG<int>  		display_type;
 extern SetupNG<int>  		display_test;
 extern SetupNG<int>  		display_orientation;
@@ -399,30 +410,27 @@ extern SetupNG<float>  		flap_minus_1;
 extern SetupNG<float>  		flap_0;
 extern SetupNG<float>  		flap_plus_1;
 extern SetupNG<float>  		flap_plus_2;
+extern SetupNG<int>  		alt_unit;
 extern SetupNG<int>  		alt_quantization;
 extern SetupNG<int>  		ias_unit;
-extern SetupNG<int>  		alt_unit;
-extern SetupNG<int>  		dst_unit;
 extern SetupNG<int>  		vario_unit;
 extern SetupNG<int>  		temperature_unit;
+extern SetupNG<int>  		dst_unit;
 extern SetupNG<int>  		qnh_unit;
 extern SetupNG<int>  		rot_default;
 extern SetupNG<int>  		serial1_speed;
 extern SetupNG<int>  		serial1_pin_swap;
 extern SetupNG<int>  		serial1_ttl_signals;
-extern SetupNG<int>  		serial1_rx_ttl;
 extern SetupNG<int>  		serial1_tx_enable;
 extern SetupNG<int>  		serial2_speed;
 extern SetupNG<int>  		serial2_pin_swap;
 extern SetupNG<int>  		serial2_ttl_signals;
-extern SetupNG<int>  		serial2_rx_inverted;
 extern SetupNG<int>  		serial2_tx_enable;
 extern SetupNG<int>  		software_update;
 extern SetupNG<int>  		battery_display;
 extern SetupNG<int>  		airspeed_mode;
 extern SetupNG<int>  		nmea_protocol;
 extern SetupNG<int>		    log_level;
-extern SetupNG<float>		audio_factor;
 extern SetupNG<float>		te_comp_adjust;
 extern SetupNG<int>		    te_comp_enable;
 extern SetupNG<int>		    rotary_dir;
@@ -438,19 +446,13 @@ extern SetupNG<float>		ahrs_dynamic_factor;
 extern SetupNG<int>		    ahrs_roll_check;
 extern SetupNG<float>       gyro_gating;
 extern SetupNG<int>		    display_style;
-extern SetupNG<int>		    display_variant;
 extern SetupNG<int>		    s2f_switch_type;
-extern SetupNG<float>		glider_ground_aa;
-extern SetupNG<Quaternion>	imu_reference;
-extern SetupNG<mpud::raw_axes_t> gyro_bias;
-extern SetupNG<mpud::raw_axes_t> accl_bias;
-extern SetupNG<float>       mpu_temperature;
 extern SetupNG<int>		    hardwareRevision;
 extern SetupNG<int>		    ahrs_licence_dig1;
 extern SetupNG<int>		    ahrs_licence_dig2;
 extern SetupNG<int>		    ahrs_licence_dig3;
 extern SetupNG<int>		    ahrs_licence_dig4;
-extern SetupNG<int>		    dummy;
+// extern SetupNG<int>		    dummy;
 extern SetupNG<int>		    wk_sens_pos_plus_3;
 extern SetupNG<int>		    wk_sens_pos_plus_2;
 extern SetupNG<int>		    wk_sens_pos_plus_1;
@@ -464,7 +466,6 @@ extern SetupNG<int>       	flarm_warning;
 extern SetupNG<float>     	flarm_volume;
 extern SetupNG<float>       flarm_alarm_time;
 extern SetupNG<int>       	flap_sensor;
-extern SetupNG<int>       	compass_dev_auto;
 extern SetupNG<float>       compass_dev_0;
 extern SetupNG<float>       compass_dev_45;
 extern SetupNG<float>       compass_dev_90;
@@ -486,6 +487,19 @@ extern SetupNG<float>		compass_damping;
 extern SetupNG<int>         compass_nmea_hdm;
 extern SetupNG<int>         compass_nmea_hdt;
 extern SetupNG<float>		compass_i2c_cl;
+extern SetupNG<float>       wind_as_filter;
+extern SetupNG<float>       wind_gps_lowpass;
+extern SetupNG<float>       wind_dev_filter;
+extern SetupNG<int> 		wind_enable;
+extern SetupNG<int> 		wind_northup;
+extern SetupNG<int> 		wind_logging;
+extern SetupNG<float> 		wind_as_calibration;
+extern SetupNG<float> 		wind_filter_lowpass;
+extern SetupNG<int> 		wind_display;
+extern SetupNG<float>		wind_straight_course_tolerance;
+extern SetupNG<float> 		wind_straight_speed_tolerance;
+extern SetupNG<int> 		wind_reference;
+extern SetupNG<float> 		wind_max_deviation;
 extern SetupNG<int> 		s2f_blockspeed;
 extern SetupNG<int>			needle_color;
 extern SetupNG<int>			s2f_arrow_color;
@@ -504,7 +518,9 @@ extern SetupNG<int>			airspeed_sensor_type;
 extern SetupNG<int>			cruise_audio_mode;
 extern SetupNG<int>			netto_mode;
 extern SetupNG<float>		v_max;
+
 extern SetupNG<float>		gload_pos_thresh;
+
 extern SetupNG<float>		gload_neg_thresh;
 extern SetupNG<float>		gload_pos_limit_low;
 extern SetupNG<float>		gload_neg_limit_low;
@@ -512,25 +528,14 @@ extern SetupNG<float>		gload_pos_limit;
 extern SetupNG<float>		gload_neg_limit;
 extern SetupNG<float>		gload_pos_max;
 extern SetupNG<float>		gload_neg_max;
-extern SetupNG<float>		gload_alarm_volume;
 extern SetupNG<float>		airspeed_max;
-extern SetupNG<int> 		wind_enable;
-extern SetupNG<int> 		wind_northup;
-extern SetupNG<int> 		wind_logging;
-extern SetupNG<float> 		wind_as_calibration;
-extern SetupNG<float> 		wind_filter_lowpass;
-extern SetupNG<float>       wind_gps_lowpass;
-extern SetupNG<float>       wind_as_filter;
-extern SetupNG<float>       wind_dev_filter;
-extern SetupNG<int> 		wind_display;
-extern SetupNG<int> 		wind_reference;
-extern SetupNG<float> 		wind_max_deviation;
-extern SetupNG<float>		wind_straight_course_tolerance;
-extern SetupNG<float> 		wind_straight_speed_tolerance;
+extern SetupNG<float>		gload_alarm_volume;
+extern SetupNG<int>		    display_variant;
+extern SetupNG<int>       	compass_dev_auto;
 extern SetupNG<float>       max_circle_wind_diff;
-extern SetupNG<float>       circle_wind_lowpass;
 extern SetupNG<float>      	max_circle_wind_delta_deg;
 extern SetupNG<float>      	max_circle_wind_delta_speed;
+extern SetupNG<float>       circle_wind_lowpass;
 extern SetupNG<int> 		can_speed;
 extern SetupNG<float> 		master_xcvario;
 extern SetupNG<int> 		menu_long_press;
@@ -547,7 +552,14 @@ extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
 extern SetupNG<int> 		logging;
 extern SetupNG<float>      	display_clock_adj;
+
+extern SetupNG<float>		glider_ground_aa;
+extern SetupNG<Quaternion>	imu_reference;
+extern SetupNG<mpud::raw_axes_t> gyro_bias;
+extern SetupNG<mpud::raw_axes_t> accl_bias;
+extern SetupNG<float>       mpu_temperature;
 extern SetupNG<int> 		xcv_role;
+
 extern SetupNG<DeviceNVS>	anemoi_devsetup;
 extern SetupNG<DeviceNVS>	auto_connect;
 extern SetupNG<DeviceNVS>	flarm_devsetup;
@@ -562,6 +574,3 @@ extern SetupNG<DeviceNVS>	radio_host_setup;
 extern SetupNG<DeviceNVS>	krt_devsetup;
 extern SetupNG<DeviceNVS>	atr_devsetup;
 
-
-void change_ballast();
-void change_mc();

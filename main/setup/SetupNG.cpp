@@ -178,7 +178,8 @@ static void ch_airborne_state(){
 
 }
 
-
+//////////////////////////
+// configuration variables
 SetupNG<float>          MC(  "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc, QUANT_VSPEED, LIMITS(0.0, 9.9, 0.1) );
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_QNH, LIMITS(900, 1100.0, 0.250) );
 SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast, QUANT_NONE, LIMITS(10.0, 100.0, 0.1) );
@@ -196,11 +197,6 @@ SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_FROM_MASTER
 SetupNG<float>  		speedcal( "SPEEDCAL", 0.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-100, 100, 1));
 SetupNG<float>  		vario_delay( "VARIO_DELAY", 3.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(2.0, 10.0, 0.1));
 SetupNG<float>  		vario_av_delay( "VARIO_AV_DELAY", 20.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(2.0, 60.0, 1)); // changed to 20 seconds (quasi standard) what equals to a half circle
-SetupNG<float>  		center_freq( "AUDIO_CENTER_F", 500.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(200.0, 2000.0, 10.0));
-SetupNG<float>  		tone_var( "OCTAVES", 2.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1.2, 4, 0.05));
-SetupNG<int>  			dual_tone( "DUAL_TONE", 0, true, SYNC_BIDIR );
-SetupNG<float>  		deadband( "DEADBAND", 0.3, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_VSPEED, LIMITS(.0, 5.0, 0.1));
-SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_VSPEED, LIMITS(-5.0, .0, 0.1));
 SetupNG<float>  		scale_range( "VARIO_RANGE", 5.0, true, SYNC_NONE, PERSISTENT, 0, QUANT_VSPEED, LIMITS(1.0, 30.0, 1));
 SetupNG<int>			log_scale( "LOG_SCALE", 0 );
 SetupNG<float>  		ballast( "BALLAST" , 0.0, true, SYNC_NONE, VOLATILE, 0 );  // ballast increase from reference weight in %
@@ -245,10 +241,17 @@ SetupNG<float>  		s2f_auto_lag( "S2F_HYST", 10, true, SYNC_BIDIR, PERSISTENT, nu
 
 						// set audio volume exclusively through the Audio class
 SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume, QUANT_NONE, &percentage_limits);
-SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
-SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0 );
-SetupNG<int>  			chopping_mode( "CHOPPING_MODE",  VARIO_CHOP );
-SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS );
+SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
+SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0, true, SYNC_BIDIR );
+SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS, true, SYNC_BIDIR );
+SetupNG<float>  		center_freq( "AUDIO_CENTER_F", 500.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(200.0, 2000.0, 10.0));
+SetupNG<float>  		tone_var( "OCTAVES", 2.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1.2, 4, 0.05));
+SetupNG<int>  			dual_tone( "DUAL_TONE", 0, true, SYNC_BIDIR );
+SetupNG<int>  			chopping_mode( "CHOPPING_MODE", BOTH_CHOP, true, SYNC_BIDIR );
+SetupNG<int>  			audio_harmonics( "AUD_HARMONICS" , AUD_HARM_HIGH, true, SYNC_BIDIR );
+SetupNG<float>		    audio_factor( "AUDIO_FACTOR", 1, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.1, 2, 0.025));
+SetupNG<float>  		deadband( "DEADBAND", 0.3, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_VSPEED, LIMITS(.0, 5.0, 0.1));
+SetupNG<float>  		deadband_neg("DEADBAND_NEG" , -0.3, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_VSPEED, LIMITS(-5.0, .0, 0.1));
 
 SetupNG<float>  		wifi_max_power( "WIFI_MP" , 50, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(10.0, 100.0, 5.0));
 SetupNG<int>  			factory_reset( "FACTORY_RES" , 0 );
@@ -306,7 +309,6 @@ SetupNG<int>  			battery_display( "BAT_DISPLAY", Battery::BAT_PERCENTAGE );
 SetupNG<int>  			airspeed_mode( "AIRSPEED_MODE", MODE_IAS );
 SetupNG<int>  			nmea_protocol( "NMEA_PROTOCOL", XCVARIO_P );
 SetupNG<int>		    log_level( "LOG_LEVEL", 3 );
-SetupNG<float>		    audio_factor( "AUDIO_FACTOR", 1, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.1, 2, 0.025));
 SetupNG<float>		    te_comp_adjust ( "TECOMP_ADJ", 0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-100, 100, 0.1));
 SetupNG<int>		    te_comp_enable( "TECOMP_ENA", TE_TEK_PROBE );
 SetupNG<int>		    rotary_dir( "ROTARY_DIR", 0 );
@@ -328,7 +330,7 @@ SetupNG<int>		    ahrs_licence_dig1("AHRS_LIC_1_2", 0, false );
 SetupNG<int>		    ahrs_licence_dig2("AHRS_LIC_2", 0, false );
 SetupNG<int>		    ahrs_licence_dig3("AHRS_LIC_3", 0, false );
 SetupNG<int>		    ahrs_licence_dig4("AHRS_LIC_4", 0, false );
-// SetupNG<int>		    dummy("DUMMY", 0 );
+// SetupNG<int>		    dummy("DUMMY", 0, false, SYNC_NONE, VOLATILE );
 SetupNG<int>		    wk_sens_pos_plus_3("WKSP3", 1000);
 SetupNG<int>		    wk_sens_pos_plus_2("WKSP2", 1500);
 SetupNG<int>		    wk_sens_pos_plus_1("WKSP1", 2000);

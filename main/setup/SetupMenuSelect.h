@@ -27,6 +27,7 @@ public:
 	virtual ~SetupMenuSelect() = default;
 	void enter() override;
 	void display(int mode=0) override;
+	void refresh() override { if (_nvs) _select = -1; } // trigger the lazy initialization
 	void rot(int count);
 	void press() override;
 	void longPress() override;
@@ -45,7 +46,6 @@ public:
 	int getSelect() const { return _select; }
 	int getValue() const;
 	void setSelect( int sel ) { _select = sel; }
-	void resetSelect() override { _select = -1; }
 	int numEntries() const { return _values.size(); };
 
 private:

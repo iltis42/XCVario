@@ -379,7 +379,6 @@ void SetupMenu::display(int mode)
 		(populateMenu)(this);
 		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
 	}
-	xSemaphoreTake(display_mutex, portMAX_DELAY);
 	ESP_LOGI(FNAME,"SetupMenu display(%s-%d)", _title.c_str(), highlight );
 	if ( highlight >= (int)(_childs.size()) ) {
 		highlight = _childs.size()-1;
@@ -413,7 +412,6 @@ void SetupMenu::display(int mode)
 	}
 	showhelp(true);
 	dirty = false;
-	xSemaphoreGive(display_mutex);
 }
 
 int SetupMenu::freeBottomLines() const

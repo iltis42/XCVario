@@ -11,10 +11,8 @@ void LeakTest::start(PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSenso
 	ESP_LOGI(FNAME, "Starting Leak test");
 
 	// Display initialization
-	xSemaphoreTake(display_mutex, portMAX_DELAY);
 	Display->clear();
 	Display->writeText(1, "** Leak Test **");
-	xSemaphoreGive(display_mutex);
 
 	// Constants for thresholds
 	constexpr float ST_THRESHOLD   = 0.1f;   // %
@@ -62,7 +60,6 @@ void LeakTest::start(PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSenso
 
 		// Display sensor values
 		char buf[40];
-		xSemaphoreTake(display_mutex, portMAX_DELAY);
 		snprintf(buf, sizeof(buf), "ST P: %3.2f hPa", ba);
 		Display->writeText(2, buf);
 		snprintf(buf, sizeof(buf), "TE P: %3.2f hPa", te);
@@ -93,18 +90,15 @@ void LeakTest::start(PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSenso
 					(fabs(ted) > TE_THRESHOLD) ||
 					((sspeed > MIN_SPEED) && (fabs(speedd) > SPEED_THRESHOLD))) {
 				failed = true;
-				xSemaphoreGive(display_mutex);
 				break;
 			}
 		}
 
 		snprintf(buf, sizeof(buf), "Seconds: %d", (i * 5) + 5);
 		Display->writeText(8, buf);
-		xSemaphoreGive(display_mutex);
 	}
 
 	// Final result
-	xSemaphoreTake(display_mutex, portMAX_DELAY);
 	if (failed) {
 		Display->writeText(9, "Test FAILED");
 		ESP_LOGI(FNAME, "FAILED");
@@ -112,7 +106,6 @@ void LeakTest::start(PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSenso
 		Display->writeText(9, "Test PASSED");
 		ESP_LOGI(FNAME, "PASSED");
 	}
-	xSemaphoreGive(display_mutex);
 
 	// Wait for rotary press
 	int switchState = Rotary->readBootupStatus();
@@ -125,8 +118,6 @@ void LeakTest::start(PressureSensor* bmpBA, PressureSensor* bmpTE, AirspeedSenso
 	ESP_LOGI(FNAME, "Read Rotary: %d", switchState);
 
 	// Clear display
-	xSemaphoreTake(display_mutex, portMAX_DELAY);
 	Display->clear();
-	xSemaphoreGive(display_mutex);
 }
 

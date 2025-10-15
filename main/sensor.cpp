@@ -767,7 +767,7 @@ void system_startup(void *args){
 	logged_tests += "\n";
 
 	// Start UI task responsible to manage screens and display. Needed to habe the boot screen and message box working
-	xTaskCreate(&drawDisplay, "drawDisplay", 6144, Rotary, 4, &dpid); // increase stack by 1K
+	xTaskCreate(&UiEventLoop, "UIloop", 6144, Rotary, 4, &dpid); // increase stack by 1K
 
 	BootUpScreen *boot_screen = BootUpScreen::create();
 	MessageBox::createMessageBox();
@@ -1457,7 +1457,7 @@ extern "C" void  app_main(void)
 	ESP_LOGI( FNAME,"Hardware revision %d", hardwareRevision.get());
 	MPU.clearpwm(); // Stop MPU heating
 
-	// Init ui and screen drawDisplay task recources
+	// Init ui and screen UiEventLoop task recources
 	uiEventQueue = xQueueCreate(10, sizeof(int));
 
 	// Init of rotary

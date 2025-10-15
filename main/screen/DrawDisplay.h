@@ -14,4 +14,4 @@
 
 // Everything is pumping events into this queue to update the screens
 extern QueueHandle_t uiEventQueue;
-void drawDisplay(void *arg);
+void UiEventLoop(void *arg);

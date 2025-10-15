@@ -51,7 +51,6 @@ public:
 	virtual bool isLeaf() const { return true; }
 	virtual const char* value() const = 0; // content as string
 	virtual int freeBottomLines() const;
-	virtual void resetSelect() {} // for select menus to reset the lazy initialization
 
 	void lock() { bits._locked = true; }
 	void unlock() { bits._locked = false; }

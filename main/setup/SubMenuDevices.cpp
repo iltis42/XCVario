@@ -590,7 +590,6 @@ void system_menu_connected_devices(SetupMenu *top) // dynamic!
     if ( ! adddev ) {
         adddev = new SetupMenu("Add Device", connected_devices_menu_add_device);
         adddev->setHelp("Get XCVario to know about your devices, it will handle data routing automatically");
-        adddev->setDynContent();
         top->addEntry(adddev);
     }
 

@@ -43,6 +43,7 @@
 #include <iterator>
 #include <algorithm>
 #include <string>
+#include <array>
 #include <string_view>
 
 static void setup_create_root(SetupMenu *top);
@@ -191,17 +192,17 @@ int select_battery_type(SetupMenuSelect *p) {
 	return 0;
 }
 
-static const char *velocity_mode[3] = {"IAS", "TAS", "CAS"};
+const std::array<std::string_view, 3> velocity_mode = {"IAS", "TAS", "CAS"};
 static int update_velocity_buzz(SetupMenuSelect *p) {
-	SetupMenu *velocity = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(3));
-	velocity->setBuzzword(velocity_mode[airspeed_mode.get()]);
+	SetupMenu *velocity = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(4));
+	velocity->setBuzzword(velocity_mode[airspeed_mode.get()].data());
 	return 0;
 }
 
-static const char *alti_mode[2] = {"QNH", "QFE"};
+const std::array<std::string_view, 2> alti_mode = {"QNH", "QFE"};
 static int update_alti_buzz(SetupMenuSelect *p) {
-	SetupMenu *alti = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(4));
-	alti->setBuzzword(alti_mode[alt_display_mode.get()]);
+	SetupMenu *alti = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(5));
+	alti->setBuzzword(alti_mode[alt_display_mode.get()].data());
 	return 0;
 }
 
@@ -362,19 +363,19 @@ SetupMenu::~SetupMenu() {
 void SetupMenu::enter()
 {
 	ESP_LOGI(FNAME,"enter inSet %d, mptr: %p", gflags.inSetup, populateMenu );
-	if ((_childs.empty() || dyn_content) && populateMenu) {
-		dirty = true; // force to create child list
-		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
+	if (_childs.empty() && populateMenu) {
+		(populateMenu)(this);
+		ESP_LOGI(FNAME,"created childs %d", _childs.size());
 	}
 	MenuEntry::enter();
 }
 
 void SetupMenu::display(int mode)
 {
-	if ( dirty && populateMenu) {
+	if (dirty && populateMenu) {
 		// Cope with changes in menu item presence
+		// populateMenu() callback needs to be designed for this !!!
 		ESP_LOGI(FNAME,"SetupMenu display() dirty %d", dirty );
-		dirty = false;
 		(populateMenu)(this);
 		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
 	}
@@ -393,7 +394,9 @@ void SetupMenu::display(int mode)
 	doHighlight(highlight);
 	for (int i = 0; i < _childs.size(); i++) {
 		MenuEntry *child = _childs[i];
-		child->refresh(); // cope with potential external change to the e.g. nvs representation of values
+		// cope with potential external change to the e.g. nvs representation of values
+		if ( dirty ) { child->refresh(); }
+		MYUCG->setColor(COLOR_WHITE);
 		if (!child->isLeaf() || child->value()) {
 			MYUCG->setColor(COLOR_HEADER_LIGHT);
 		}
@@ -404,11 +407,12 @@ void SetupMenu::display(int mode)
 			menuPrintLn(": ", i+1, 1+fl);
 			MYUCG->setColor(COLOR_WHITE);
 			menuPrintLn(child->value(), i+1, 1 + fl + MYUCG->getStrWidth(": "));
+			ESP_LOGI(FNAME,"Child V: %s",child->value() );
 		}
-		MYUCG->setColor(COLOR_WHITE);
 		// ESP_LOGI(FNAME,"Child: %s y=%d",child->getTitle() ,y );
 	}
 	showhelp(true);
+	dirty = false;
 	xSemaphoreGive(display_mutex);
 }
 
@@ -756,9 +760,9 @@ void options_menu_create_units(SetupMenu *top) {
 static void system_menu_create_airspeed(SetupMenu *top) {
 	SetupMenuSelect *amode = new SetupMenuSelect("Airspeed Mode", RST_NONE, update_velocity_buzz, &airspeed_mode);
 	amode->setHelp("Select mode of Airspeed indicator to display IAS (Indicated AirSpeed), TAS (True AirSpeed) or CAS (calibrated airspeed)", 180);
-	amode->addEntry(velocity_mode[0]);
-	amode->addEntry(velocity_mode[1]);
-	amode->addEntry(velocity_mode[2]);
+	amode->addEntry(velocity_mode[0].data());
+	amode->addEntry(velocity_mode[1].data());
+	amode->addEntry(velocity_mode[2].data());
 	// amode->addEntry("Slip Angle");
 	top->addEntry(amode);
 
@@ -785,8 +789,8 @@ static void options_menu_create_altimeter(SetupMenu *top) {
 	SetupMenuSelect *altDisplayMode = new SetupMenuSelect("Altitude Mode", RST_NONE, update_alti_buzz, &alt_display_mode);
 	top->addEntry(altDisplayMode);
 	altDisplayMode->setHelp("Select altitude display mode");
-	altDisplayMode->addEntry(alti_mode[0]);
-	altDisplayMode->addEntry(alti_mode[1]);
+	altDisplayMode->addEntry(alti_mode[0].data());
+	altDisplayMode->addEntry(alti_mode[1].data());
 
 	SetupMenuSelect *atrans = new SetupMenuSelect("Auto Transition", RST_NONE, nullptr, &fl_auto_transition);
 	top->addEntry(atrans);
@@ -1023,12 +1027,12 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 
 		// Airspeed
 		SetupMenu *velocity = new SetupMenu("Airspeed", system_menu_create_airspeed);
-		velocity->setBuzzword(velocity_mode[airspeed_mode.get()]);
+		velocity->setBuzzword(velocity_mode[airspeed_mode.get()].data());
 		opt->addEntry(velocity);
 
 		// Altimeter
 		SetupMenu *alti = new SetupMenu("Altimeter", options_menu_create_altimeter);
-		alti->setBuzzword(alti_mode[alt_display_mode.get()]);
+		alti->setBuzzword(alti_mode[alt_display_mode.get()].data());
 		opt->addEntry(alti);
 
 		SetupMenu *flarm = new SetupMenu("FLARM", options_menu_create_flarm);
@@ -1036,15 +1040,13 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 		flarm->setHelp("Option to display FLARM Warnings depending on FLARM alarm level");
 
 		SetupMenu *compassWindMenu = new SetupMenu("Compass/Wind", options_menu_create_compasswind);
-		compassWindMenu->setDynContent();
 		opt->addEntry(compassWindMenu);
 		compassWindMenu->setHelp("Setup Compass and Wind", 280);
 
 		SetupMenu *screens = new SetupMenu("Screens & Gauges", options_menu_create_screens);
-		screens->setDynContent();
 		opt->addEntry(screens);
 	}
-	SetupMenu *flarm = static_cast<SetupMenu*>(opt->getEntry(5));
+	SetupMenu *flarm = static_cast<SetupMenu*>(opt->getEntry(6));
 	if ( DEVMAN->getDevice(FLARM_DEV) != nullptr ) {
 		flarm->unlock();
 		flarm->setBuzzword();
@@ -1343,7 +1345,6 @@ void system_menu_create(SetupMenu *sye) {
 	// Devices menu
 	SetupMenu *devices = new SetupMenu("Connected Devices", system_menu_connected_devices);
 	devices->setHelp("Devices, Interf.s, Protocols");
-	devices->setDynContent();
 	sye->addEntry(devices);
 
 	SetupMenuSelect *logg = new SetupMenuSelect("Logging", RST_NONE, nullptr, &logging);
@@ -1422,12 +1423,10 @@ void setup_create_root(SetupMenu *top) {
 		SetupMenu *po = new SetupMenu("Glider Details", glider_menu_create);
 		po->setBuzzword(Polars::getGliderType());
 		po->setHelp("Polar, weight and all attributes of the glider");
-		po->setDynContent();
 		top->addEntry(po);
 
 		// Options Setup
 		SetupMenu *opt = new SetupMenu("Options", options_menu_create);
-		opt->setDynContent();
 		top->addEntry(opt);
 
 		// System Setup

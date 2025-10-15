@@ -194,14 +194,14 @@ int select_battery_type(SetupMenuSelect *p) {
 
 const std::array<std::string_view, 3> velocity_mode = {"IAS", "TAS", "CAS"};
 static int update_velocity_buzz(SetupMenuSelect *p) {
-	SetupMenu *velocity = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(4));
+	SetupMenu *velocity = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(3));
 	velocity->setBuzzword(velocity_mode[airspeed_mode.get()].data());
 	return 0;
 }
 
 const std::array<std::string_view, 2> alti_mode = {"QNH", "QFE"};
 static int update_alti_buzz(SetupMenuSelect *p) {
-	SetupMenu *alti = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(5));
+	SetupMenu *alti = static_cast<SetupMenu*>(p->getParent()->getParent()->getEntry(4));
 	alti->setBuzzword(alti_mode[alt_display_mode.get()].data());
 	return 0;
 }
@@ -335,7 +335,9 @@ int bug_adj(SetupMenuValFloat *p) {
 }
 
 static int startFlarmSimulation(SetupMenuSelect *p) {
-	FlarmSim::StartSim();
+	if ( p->getSelect() == 1 ) {
+		FlarmSim::StartSim();
+	}
 	return 0;
 }
 
@@ -837,8 +839,9 @@ void options_menu_create_flarm(SetupMenu *top) {
 
 	SetupMenuSelect *flarms = new SetupMenuSelect("Alarm Simulation", RST_NONE, startFlarmSimulation, nullptr, false, true);
 	flarms->setHelp(
-			"Simulate an airplane crossing from left to right with different alarm levels and vertical distance 5 seconds after pressed (exits setup!)");
+			"Simulate an airplane crossing from left to right with different alarm levels and vertical distance in 5 seconds");
 	flarms->addEntry("Start Simulation");
+	flarms->addEntry("Cancel");
 	top->addEntry(flarms);
 }
 
@@ -1013,7 +1016,7 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 					"Student mode, disables all sophisticated setup to just basic pre-flight related items like MC, ballast or bugs");
 			stumo->mkEnable();
 		}
-		Flap::setupMenue(opt);
+		
 		// Units
 		SetupMenu *un = new SetupMenu("Units", options_menu_create_units);
 		opt->addEntry(un);
@@ -1044,7 +1047,7 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 		SetupMenu *screens = new SetupMenu("Screens & Gauges", options_menu_create_screens);
 		opt->addEntry(screens);
 	}
-	SetupMenu *flarm = static_cast<SetupMenu*>(opt->getEntry(6));
+	SetupMenu *flarm = static_cast<SetupMenu*>(opt->getEntry(5));
 	if ( DEVMAN->getDevice(FLARM_DEV) != nullptr ) {
 		flarm->unlock();
 		flarm->setBuzzword();
@@ -1283,6 +1286,8 @@ void system_menu_create_hardware(SetupMenu *top) {
 	SetupMenu *rotary = new SetupMenu("Rotary Setup", system_menu_create_hardware_rotary);
 	top->addEntry(rotary);
 
+	Flap::setupMenue(top);
+
 	SetupMenuSelect *gear = new SetupMenuSelect("Gear Warn", RST_NONE, config_gear_warning, &gear_warning);
 	top->addEntry(gear);
 	gear->setHelp(
@@ -1318,10 +1323,16 @@ void system_menu_create(SetupMenu *sye) {
 	sye->addEntry(soft);
 
 	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, nullptr, &factory_reset);
-	fa->setHelp("Option to reset all settings to factory defaults, means metric system, 5 m/s vario range and more");
+	fa->setHelp("Reset all settings to factory defaults (metric system, 5 m/s vario range, etc.)");
 	fa->addEntry("Cancel");
 	fa->addEntry("ResetAll");
 	sye->addEntry(fa);
+
+	// Glider Setup
+	SetupMenu *po = new SetupMenu("Glider Type", glider_menu_create);
+	po->setBuzzword(Polars::getGliderType());
+	po->setHelp("Polar, weight and all attributes of the glider");
+	sye->addEntry(po);
 
 	SetupMenu *bat = new SetupMenu("Battery Setup", system_menu_create_battery);
 	bat->setHelp(
@@ -1417,12 +1428,6 @@ void setup_create_root(SetupMenu *top) {
 		SetupMenu *va = new SetupMenu("Vario and Speed 2 Fly", vario_menu_create);
 		top->addEntry(va);
 
-		// Glider Setup
-		SetupMenu *po = new SetupMenu("Glider Details", glider_menu_create);
-		po->setBuzzword(Polars::getGliderType());
-		po->setHelp("Polar, weight and all attributes of the glider");
-		top->addEntry(po);
-
 		// Options Setup
 		SetupMenu *opt = new SetupMenu("Options", options_menu_create);
 		top->addEntry(opt);
@@ -1434,7 +1439,11 @@ void setup_create_root(SetupMenu *top) {
 }
 
 SetupMenu* SetupMenu::createTopSetup() {
-	SetupMenu *setup = new  SetupMenu("Setup", setup_create_root);
+	const char *top_menu_name = "Setup";
+	if (glider_type_index.get() != 1000) {
+		top_menu_name =	Polars::getPolarName(Polars::getGliderEnumPos());
+	}
+	SetupMenu *setup = new  SetupMenu(top_menu_name, setup_create_root);
 	return setup;
 }
 

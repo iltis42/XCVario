@@ -288,8 +288,15 @@ const std::array<TONE, 12> gear_seq4 = {{ {0}, {0}, {0}, {0}, {0}, {0}, {fG5}, {
 const std::array<VOICECONF, 4> gear_vconf = {{ {0, 128}, {0, 128}, {0, 128}, {1, 128} }};
 const SOUND GearWarn = { gear_tim.data(), { gear_seq1.data(), gear_seq2.data(), gear_seq3.data(), gear_seq4.data() }, gear_vconf.data(), 1 };
 
+// Ding
+const std::array<DURATION, 11> ding_tim = {{  {8}, {8}, {8},       {160}, {160}, {160},     {40}, {40}, {40},        {600}, {0} }};
+const std::array<TONE, 11> ding_seq1 = {{  {6868}, {2643}, {6868}, {2643}, {2643}, {0},     {2643}, {0}, {2643},     {0}, {0} }};
+const std::array<TONE, 11> ding_seq2 = {{  {2643}, {6868}, {2643}, {6868}, {1250}, {2643},  {1250}, {2643}, {1250}, {2643}, {0} }};
+const std::array<VOICECONF, 2> ding_vconf = {{ {0, 230}, {1, 26},  }};
+const SOUND Ding = { ding_tim.data(), { nullptr, nullptr, ding_seq1.data(), ding_seq2.data() }, ding_vconf.data(), 0 };
+
 // list of sounds
-const std::array<const SOUND*, 12> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &TurnOut, &TurnIn, &TurnOut, &TurnIn, 
+const std::array<const SOUND*, 13> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &Ding, &TurnOut, &TurnIn, &TurnOut, &TurnIn, 
                                                     &Flarm1, &Flarm2, &Flarm3, &StallWarn, &GearWarn } };
 
 // To call from ISR context
@@ -1005,7 +1012,7 @@ void Audio::dactask()
             }
             else if ( event.cmd == VLOAD_DONE ) {
                 uint8_t vid = event.param;
-                ESP_LOGI(FNAME, "Event voice done %d", vid);
+                // ESP_LOGI(FNAME, "Event voice done %d", vid);
                             
                 curr_idx[vid]++;
                 if ( next_tone[vid][curr_idx[vid]].step == 0 ) {

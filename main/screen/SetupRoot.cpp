@@ -135,6 +135,9 @@ void SetupRoot::rot(int count)
                 AUDIO->alarm(AUDIO_CMD_CIRCLE_IN);
             }
         }
+        else if (audio_volume.get()==36) {
+            AUDIO->alarm(AUDIO_DING);
+        }
     }
 }
 

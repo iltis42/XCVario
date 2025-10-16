@@ -42,7 +42,7 @@ static QueueHandle_t AudioQueue = nullptr;
 static bool request_synch_start = false;
 
 // DAC setup
-constexpr const int SAMPLE_RATE = 88200;    // Hz
+constexpr const int SAMPLE_RATE = 66150;    // Hz
 constexpr const int BUF_LEN     = 2048;     // DMA buffer per push -> ~11,6msec chunks
 constexpr const dac_continuous_channel_mode_t DAC_MODE = DAC_CHANNEL_MODE_ALTER; // interleaved for 2 channels
 // samples per channel

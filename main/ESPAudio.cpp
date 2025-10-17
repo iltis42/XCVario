@@ -73,9 +73,10 @@ struct SNDTBL {
 	const int8_t *table;
 	const uint8_t bits;
 };
-const std::array<SNDTBL, 2> sound_table = {{
+const std::array<SNDTBL, 3> sound_table = {{
 	{ (int8_t *)sine_table.data(), TABLE_BITS },
-	{ (int8_t *)sawtooth_table.data(), TABLE_BITS }
+	{ (int8_t *)sawtooth_table.data(), TABLE_BITS },
+	{ nullptr, 0 } // noise
 }};
 
 // helper for DMA command stream and sequencer
@@ -309,8 +310,14 @@ const std::array<TONE, 13> flapb_seq2 = {{    {925*toneFactor(2)}, {0}, {0},   {
 const std::array<VOICECONF, 2> flapb_vconf = {{ {0, 150}, {1, 80}  }};
 const SOUND FlapBack = { flapb_tim.data(), { flapb_seq1.data(), flapb_seq2.data(), nullptr, nullptr }, flapb_vconf.data(), 0 };
 
+// Wind noise
+const std::array<DURATION, 2> wind_tim = {{ {1000}, {0} }};
+const std::array<TONE, 2> wind_seq1 = {{ {500}, {0.} }};
+const std::array<VOICECONF, 2> wind_vconf = {{ {2, 220}}};
+const SOUND WindGust = { wind_tim.data(), { wind_seq1.data(), nullptr, nullptr, nullptr }, wind_vconf.data(), 0 };
+
 // list of sounds
-const std::array<const SOUND*, 13> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &Ding, &TurnOut, &TurnIn, &FlapForward, &FlapBack,
+const std::array<const SOUND*, 13> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &Ding, &WindGust, &TurnIn, &FlapForward, &FlapBack,
                                                     &Flarm1, &Flarm2, &Flarm3, &StallWarn, &GearWarn } };
 
 // To call from ISR context
@@ -415,6 +422,18 @@ int64_t total_us = 0, busy_irs = 0;
 int irq_counter = 0;
 #endif
 
+static IRAM_ATTR uint32_t lfsr = 0xACE1u;  // arbitrary start vlue
+
+static inline int8_t lfsr_noise(void) {
+    // XOR-Shift LFSR, fast, deterministic
+    lfsr ^= lfsr << 13;
+    lfsr ^= lfsr >> 17;
+    lfsr ^= lfsr << 5;
+    // value range: 0–255 -> map to -63..+64
+    return (int8_t)(((lfsr >> 24) & 0x7F) - 63);
+}
+
+
 // DMA callback
 static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_data_t *e, void *user_data)
 {
@@ -482,8 +501,13 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
                         }
                     }
                     // fix phase-accumulator frequency generation
-                    sum += ((int)v.table[v.phase >> v.shift] * v.gain) >> 7;
-                    v.phase += v.step;
+                    if ( v.table != nullptr ) {
+                        sum += ((int)v.table[v.phase >> v.shift] * v.gain) >> 7;
+                        v.phase += v.step;
+                    }
+                    else {
+                        sum += lfsr_noise(); // noise
+                    }
                 }
                 sum /= numVoices;
                 if ( sum >  DAC_HLF_AMPL ) sum =  DAC_HLF_AMPL;

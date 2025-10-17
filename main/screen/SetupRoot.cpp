@@ -136,9 +136,9 @@ void SetupRoot::rot(int count)
                 AUDIO->alarm(AUDIO_FLAP_FORWARD, true);
             }
         }
-        // else if (audio_volume.get()<37 && audio_volume.get()>30) {
-        //     AUDIO->alarm(AUDIO_DING, true);
-        // }
+        else if (audio_volume.get()<37 && audio_volume.get()>30) {
+            AUDIO->alarm(AUDIO_HORIZ_GUST, true);
+        }
         last_vol = audio_volume.get();
     }
 }

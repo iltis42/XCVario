@@ -254,8 +254,8 @@ const std::array<TONE, 2> turn_seq = {{ {888.0}, {0.} }};
 const std::array<TONE, 2> stretch_seq = {{ {888.0*2./3.}, {0.} }};
 const std::array<TONE, 2> turnmore_seq = {{ {888.0*5./4.}, {0.} }};
 const std::array<VOICECONF, 2> turn_vconf = {{ {1, 128}, {1, 128} }};
-const SOUND TurnOut = { turn_tim.data(), { nullptr, nullptr, turn_seq.data(), stretch_seq.data() }, turn_vconf.data(), 0 };
-const SOUND TurnIn  = { turn_tim.data(), { nullptr, nullptr, turn_seq.data(), turnmore_seq.data() }, turn_vconf.data(), 0 };
+const SOUND TurnOut = { turn_tim.data(), { turn_seq.data(), stretch_seq.data(), nullptr, nullptr }, turn_vconf.data(), 0 };
+const SOUND TurnIn  = { turn_tim.data(), { turn_seq.data(), turnmore_seq.data(), nullptr, nullptr }, turn_vconf.data(), 0 };
 
 // Stall warning
 const std::array<DURATION, 29> stall_tim = {{ {150}, {65}, {110}, {50}, {134}, {30},  {150}, {65}, {110}, {50}, {134}, {30}, 
@@ -787,16 +787,20 @@ void Audio::soundCheck()
 }
 
 // kick some sound sequence, non blocking
-void Audio::alarm(e_audio_alarm_type style)
+void Audio::alarm(e_audio_alarm_type style, bool overlay)
 {
-    if ( style > AUDIO_NO_ALARM && style < sound_list.size() && ! _alarm_mode && _dac_chan) {
-        AudioEvent ev(ADD_SOUND, style); // overlay sound
-        if ( style >= AUDIO_ALARM_FLARM_1 ) {
-            ev.cmd = START_SOUND; // start an alarm sound 
-            _alarm_mode = true;
+    if ( _dac_chan ) { // audio switched on
+        if ( style < sound_list.size() && ! _alarm_mode ) {
+            AudioEvent ev(START_SOUND, style); // start an alarm sound
+            if ( overlay ) {
+                ev.cmd = ADD_SOUND; // overlay sound
+            }
+            else {
+                _alarm_mode = true;
+            }
+            
+            xQueueSend(AudioQueue, &ev, 0);
         }
-        
-        xQueueSend(AudioQueue, &ev, 0);
     }
 }
 
@@ -1012,10 +1016,11 @@ void Audio::dactask()
                 const SOUND* snd = sound_list[event.param];
                 next_time = snd->timeseq;
                 ESP_LOGI(FNAME, "Overlay sound %d", event.param );
-                for ( int i = 2; i < MAX_VOICES; i++ ) {
-                    next_tone[i] = snd->toneseq[i];
+                const int from_voice = 2; // first 1/2 voices are reserved for vario
+                for ( int i = from_voice; i < MAX_VOICES; i++ ) {
+                    next_tone[i] = snd->toneseq[i-from_voice];
                     if ( next_tone[i] ) {
-                        dma_cmd.voice[i].load(&(snd->vconf[i-2]), next_tone[i]);
+                        dma_cmd.voice[i].load(&(snd->vconf[i-from_voice]), next_tone[i]);
                         dma_cmd.voice[i].setCountFromSamples(next_time[0].duration);
                         repetitions[i] = snd->repetitions;
                         curr_idx[i] = 0;
@@ -1029,7 +1034,7 @@ void Audio::dactask()
                 // ESP_LOGI(FNAME, "Event voice done %d", vid);
                             
                 curr_idx[vid]++;
-                if ( next_tone[vid][curr_idx[vid]].step == 0 ) {
+                if ( next_time[curr_idx[vid]].duration == 0 ) {
                     if ( repetitions[vid] > 0 ) {
                         repetitions[vid]--;
                         curr_idx[vid] = 0; // restart this voice

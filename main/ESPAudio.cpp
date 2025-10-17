@@ -289,14 +289,28 @@ const std::array<VOICECONF, 4> gear_vconf = {{ {0, 128}, {0, 128}, {0, 128}, {1,
 const SOUND GearWarn = { gear_tim.data(), { gear_seq1.data(), gear_seq2.data(), gear_seq3.data(), gear_seq4.data() }, gear_vconf.data(), 1 };
 
 // Ding
-const std::array<DURATION, 11> ding_tim = {{  {8}, {8}, {8},       {160}, {160}, {160},     {40}, {40}, {40},        {600}, {0} }};
+const std::array<DURATION, 11> ding_tim = {{  {10}, {10}, {10},    {160}, {160}, {160},     {40}, {40}, {40},        {600}, {0} }};
 const std::array<TONE, 11> ding_seq1 = {{  {6868}, {2643}, {6868}, {2643}, {2643}, {0},     {2643}, {0}, {2643},     {0}, {0} }};
 const std::array<TONE, 11> ding_seq2 = {{  {2643}, {6868}, {2643}, {6868}, {1250}, {2643},  {1250}, {2643}, {1250}, {2643}, {0} }};
-const std::array<VOICECONF, 2> ding_vconf = {{ {0, 230}, {1, 26},  }};
-const SOUND Ding = { ding_tim.data(), { nullptr, nullptr, ding_seq1.data(), ding_seq2.data() }, ding_vconf.data(), 0 };
+const std::array<VOICECONF, 2> ding_vconf = {{ {0, 180}, {0, 30}  }};
+const SOUND Ding = { ding_tim.data(), { ding_seq1.data(), ding_seq2.data(), nullptr, nullptr }, ding_vconf.data(), 0 };
+
+// Flap forward
+const std::array<DURATION, 10> flapf_tim = {{ {55}, {50},   {55}, {50},   {55}, {50},   {55}, {50},   {100}, {0} }};
+const std::array<TONE, 10> flapf_seq1 = {{    {925}, {925}, {616}, {616}, {462}, {462}, {308}, {308}, {0}, {0} }};
+const std::array<TONE, 10> flapf_seq2 = {{    {0}, {925},   {0}, {616*toneFactor(4)},   {0}, {462},   {0}, {308*toneFactor(4)},   {0}, {0} }};
+const std::array<VOICECONF, 2> flapf_vconf = {{ {0, 150}, {1, 70} }};
+const SOUND FlapForward = { flapf_tim.data(), { flapf_seq1.data(), flapf_seq2.data(), nullptr, nullptr }, flapf_vconf.data(), 0 };
+
+// Flap back
+const std::array<DURATION, 13> flapb_tim = {{ {25}, {30}, {50},  {25}, {30}, {50},    {25}, {30}, {50},    {25}, {30}, {50}, {0} }};
+const std::array<TONE, 13> flapb_seq1 = {{    {925}, {925}, {0}, {1391}, {1391}, {0}, {1855}, {1855}, {0}, {2754}, {2754}, {0}, {0} }};
+const std::array<TONE, 13> flapb_seq2 = {{    {925*toneFactor(2)}, {0}, {0},   {1391}, {0}, {0},    {1855*toneFactor(2)}, {0}, {0},    {2754}, {0}, {0}, {0} }};
+const std::array<VOICECONF, 2> flapb_vconf = {{ {0, 150}, {1, 80}  }};
+const SOUND FlapBack = { flapb_tim.data(), { flapb_seq1.data(), flapb_seq2.data(), nullptr, nullptr }, flapb_vconf.data(), 0 };
 
 // list of sounds
-const std::array<const SOUND*, 13> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &Ding, &TurnOut, &TurnIn, &TurnOut, &TurnIn, 
+const std::array<const SOUND*, 13> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &Ding, &TurnOut, &TurnIn, &FlapForward, &FlapBack,
                                                     &Flarm1, &Flarm2, &Flarm3, &StallWarn, &GearWarn } };
 
 // To call from ISR context

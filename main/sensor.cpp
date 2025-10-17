@@ -1166,7 +1166,7 @@ void system_startup(void *args){
 		if( AUDIO->startAudio(0) ) {
 			ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 			logged_tests += passed_text;
-			AUDIO->soundCheck();
+			// AUDIO->soundCheck();
 		}
 		else {
 			ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");

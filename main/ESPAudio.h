@@ -87,7 +87,7 @@ private:
     float minf;
     float _exponent_max = 2;
 
-    volatile bool _test_done = false;
+    volatile bool _test_done = true;
     bool _terminate = true;
 };
 

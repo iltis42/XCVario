@@ -692,7 +692,7 @@ void Audio::stopVarioVoice()
 class TestSequence : public Clock_I
 {
 public:
-    TestSequence(float freq, float maxfreq) : Clock_I(15), f(freq), maxf(maxfreq)
+    TestSequence(float freq) : Clock_I(15), f(freq)
     {
         dma_cmd.voice[0].setFrequencyAndGain(f);
         dma_cmd.voice[0].start();
@@ -763,13 +763,13 @@ public:
 
 private:
     float f;
-    float maxf;
     int i = 0;
 };
 void Audio::soundCheck()
 {
     ESP_LOGI(FNAME, "Audio soundCheck");
-    new TestSequence(633, maxf * 1.25);
+    _test_done = false;
+    new TestSequence(633.0); // approx. D5
 }
 
 // kick some sound sequence, non blocking

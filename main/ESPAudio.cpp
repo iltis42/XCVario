@@ -54,21 +54,21 @@ constexpr const int DAC_HLF_AMPL = 64;
 
 // predefined sine wave table
 const std::array<int8_t, TABLE_SIZE> sine_table = {
-    0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 32, 35, 37, 40, 42, 45, 47, 49, 51, 53, 54, 56, 57, 58, 60, 61, 61, 62,
-    63, 63, 63, 63, 63, 63, 63, 62, 61, 61, 60, 58, 57, 56, 54, 53, 51, 49, 47, 45, 42, 40, 37, 35, 32, 30, 27, 24,
-    21, 18, 15, 12, 9, 6, 3, 0, -3, -6, -9, -12, -15, -18, -21, -24, -27, -30, -32, -35, -37, -40, -42, -45, -47,
+      0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 32, 35, 37, 40, 42, 45, 47, 49, 51, 53, 54, 56, 57, 58, 60, 61, 61, 62,
+     63, 63, 63, 63, 63, 63, 63, 62, 61, 61, 60, 58, 57, 56, 54, 53, 51, 49, 47, 45, 42, 40, 37, 35, 32, 30, 27, 24,
+     21, 18, 15, 12, 9, 6, 3, 0, -3, -6, -9, -12, -15, -18, -21, -24, -27, -30, -32, -35, -37, -40, -42, -45, -47,
     -49, -51, -53, -54, -56, -57, -58, -60, -61, -61, -62, -63, -63, -63, -63, -63, -63, -63, -62, -61, -61, -60,
     -58, -57, -56, -54, -53, -51, -49, -47, -45, -42, -40, -37, -35, -32, -30, -27, -24, -21, -18, -15, -12, -9, -6, -3 };
 
 const std::array<int8_t, TABLE_SIZE> sawtooth_table = {
-       0,   36,   43,   63,   53,   58,   52,   55,   51,   53,   49,   50,   47,   48,   46,   46, 
-      44,   44,   42,   42,   40,   40,   39,   39,   37,   37,   35,   35,   33,   33,   31,   31, 
-      29,   29,   28,   27,   26,   25,   24,   23,   22,   22,   20,   20,   18,   18,   17,   16, 
-      15,   14,   13,   12,   11,   10,    9,    8,    7,    7,    6,    5,    4,    3,    2,    1, 
-       0,   -1,   -2,   -3,   -4,   -5,   -6,   -7,   -7,   -8,   -9,  -10,  -11,  -12,  -13,  -14, 
-     -15,  -16,  -17,  -18,  -18,  -20,  -20,  -22,  -22,  -23,  -24,  -25,  -26,  -27,  -28,  -29, 
-     -29,  -31,  -31,  -33,  -33,  -35,  -35,  -37,  -37,  -39,  -39,  -40,  -40,  -42,  -42,  -44, 
-     -44,  -46,  -46,  -48,  -47,  -50,  -49,  -53,  -51,  -55,  -52,  -58,  -53,  -63,  -43,  -36 };
+      0,   36,   43,   63,   53,   58,   52,   55,   51,   53,   49,   50,   47,   48,   46,   46, 
+     44,   44,   42,   42,   40,   40,   39,   39,   37,   37,   35,   35,   33,   33,   31,   31, 
+     29,   29,   28,   27,   26,   25,   24,   23,   22,   22,   20,   20,   18,   18,   17,   16, 
+     15,   14,   13,   12,   11,   10,    9,    8,    7,    7,    6,    5,    4,    3,    2,    1, 
+      0,   -1,   -2,   -3,   -4,   -5,   -6,   -7,   -7,   -8,   -9,  -10,  -11,  -12,  -13,  -14, 
+    -15,  -16,  -17,  -18,  -18,  -20,  -20,  -22,  -22,  -23,  -24,  -25,  -26,  -27,  -28,  -29, 
+    -29,  -31,  -31,  -33,  -33,  -35,  -35,  -37,  -37,  -39,  -39,  -40,  -40,  -42,  -42,  -44, 
+    -44,  -46,  -46,  -48,  -47,  -50,  -49,  -53,  -51,  -55,  -52,  -58,  -53,  -63,  -43,  -36 };
 struct SNDTBL {
 	const int8_t *table;
 	const uint8_t bits;
@@ -91,13 +91,13 @@ enum {
 union AudioEvent {
     struct {
         uint8_t cmd;
-        uint8_t param; // can be voice id, sound id, or volume
+        int8_t param; // can be voice id, sound id, or volume
     };
     uint16_t raw = 0; // access the packed 32-bit value
 
     constexpr AudioEvent() = default;
-    constexpr AudioEvent(uint32_t d) : raw(d) {}
-    constexpr AudioEvent(uint8_t c, uint8_t v)
+    constexpr AudioEvent(uint16_t d) : raw(d) {}
+    constexpr AudioEvent(uint8_t c, int8_t v)
         : cmd(c), param(v) {}
 };
 struct VOICECMD
@@ -716,14 +716,10 @@ void Audio::startVarioVoice()
     }; // wait until sound check finished
 
     ESP_LOGI(FNAME, "load vario sound");
-    // load the vario sound
     unmute();
     writeVolume(speaker_volume);
-    dma_cmd.loadSound(&VarioSound);
-}
-void Audio::stopVarioVoice()
-{
-    dma_cmd.resetSound();
+    // load the vario sound
+    startSound(AUDIO_VARIO_SOUND);
 }
 
 // do the sound check, when the audio task is not yet running
@@ -805,22 +801,21 @@ private:
 };
 void Audio::soundCheck()
 {
-    ESP_LOGI(FNAME, "Audio soundCheck");
-    _test_done = false;
-    new TestSequence(633.0); // approx. D5
+    if ( _dac_chan ) { // audio switched on
+        ESP_LOGI(FNAME, "Audio soundCheck");
+        _test_done = false;
+        new TestSequence(633.0); // approx. D5
+    }
 }
 
 // kick some sound sequence, non blocking
-void Audio::alarm(e_audio_alarm_type style, bool overlay)
+void Audio::startSound(e_audio_sound_type style, bool overlay)
 {
     if ( _dac_chan ) { // audio switched on
-        if ( style < sound_list.size() && ! _alarm_mode ) {
+        if (_alarm_mode || !overlay) {
             AudioEvent ev(START_SOUND, style); // start an alarm sound
             if ( overlay ) {
                 ev.cmd = ADD_SOUND; // overlay sound
-            }
-            else {
-                _alarm_mode = true;
             }
             
             xQueueSend(AudioQueue, &ev, 0);
@@ -1006,7 +1001,7 @@ void Audio::dactask()
 #if defined(AUDIO_DEBUG)
 	int64_t t0 = esp_timer_get_time();
 #endif
-    SOUND *alarm = nullptr; // preempting the vario sound
+    SOUND *sound = nullptr; // preempting the vario sound
     const TONE* next_tone[MAX_VOICES]; // added to the vario sound
     const DURATION* next_time = nullptr; // current sequence time line
     uint8_t curr_idx[MAX_VOICES] = {0};
@@ -1022,18 +1017,25 @@ void Audio::dactask()
         {
 			// Process audio events
             if ( event.cmd == START_SOUND ) {
-                if ( event.param < sound_list.size() ) {
-                    alarm = (SOUND *)sound_list[event.param];
+                if (event.param <= AUDIO_NO_SOUND ) {
+                    ESP_LOGI(FNAME, "Stop sound");
+                    dma_cmd.resetSound();
+                }
+                else if ( event.param < sound_list.size() ) {
+                    sound = (SOUND *)sound_list[event.param];
                     ESP_LOGI(FNAME, "Start sound %d", event.param );
                     request_synch_start = true;
                 }
             }
             else if ( event.cmd == REQUEST_SOUND ) {
-                dma_cmd.loadSound(alarm);
-                // raise volume +20%, but assure at least 60%
-                float alarm_vol = std::min(speaker_volume+20.f, 100.f);
-                alarm_vol = std::max(alarm_vol, 60.f);
-                writeVolume(alarm_vol);
+                dma_cmd.loadSound(sound);
+                if ( sound != &VarioSound ) {
+                    _alarm_mode = true;
+                    // raise volume +20%, but assure at least 60%
+                    float alarm_vol = std::min(speaker_volume+20.f, 100.f);
+                    alarm_vol = std::max(alarm_vol, 60.f);
+                    writeVolume(alarm_vol);
+                }
             }
             else if ( event.cmd == ADD_SOUND ) {
                 // Add sound to the queue, no synchronized start required
@@ -1079,7 +1081,7 @@ void Audio::dactask()
             }
             else if ( event.cmd == ENDOFF_SOUND ) {
                 writeVolume(speaker_volume);
-                alarm = nullptr;
+                sound = nullptr;
                 _alarm_mode = false;
                 ESP_LOGI(FNAME, "End of sound");
                 if (audio_mute_gen.get() == AUDIO_ON) {

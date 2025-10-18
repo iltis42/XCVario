@@ -143,7 +143,7 @@ void UiEventLoop(void *arg)
 					float acc_stall= stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
 					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
 						if( !gflags.stall_warning_active ){
-							AUDIO->alarm(AUDIO_ALARM_STALL);
+							AUDIO->startSound(AUDIO_ALARM_STALL);
 							MBOX->newMessage(4, "! STALL !");
 							gflags.stall_warning_active = true;
 						}
@@ -191,7 +191,7 @@ void UiEventLoop(void *arg)
 							gflags.gear_warning_active = false;
 						}
 						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
-							AUDIO->alarm(AUDIO_ALARM_STALL);
+							AUDIO->startSound(AUDIO_ALARM_STALL);
 							MBOX->newMessage(4, "! GEAR !");
 							gflags.gear_warning_active = true;
 						}
@@ -258,7 +258,7 @@ void UiEventLoop(void *arg)
 			if( screen_gmeter.get() != SCREEN_OFF  ){
 				if( IMU::getGliderAccelZ() > gload_pos_limit.get() || IMU::getGliderAccelZ() < gload_neg_limit.get()  ){
 					if( !gflags.gload_alarm ) {
-						AUDIO->alarm(AUDIO_ALARM_STALL);
+						AUDIO->startSound(AUDIO_ALARM_STALL);
 						gflags.gload_alarm = true;
 					}
 				}else

@@ -57,7 +57,6 @@ const MenuEntry* MenuEntry::findMenu(const char *title) const
 // ln is the line enumeration, starting with 0
 void MenuEntry::menuPrintLn(const char* str, int ln, int x) const {
 	if (x > 0) { MYUCG->setPrintPos(x,(ln+1)*25); }
-	MYUCG->setColor( COLOR_WHITE );
 	MYUCG->print(str);
 }
 

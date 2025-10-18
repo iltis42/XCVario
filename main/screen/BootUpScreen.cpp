@@ -176,12 +176,10 @@ BootUpScreen *BootUpScreen::create()
 
 void BootUpScreen::terminate()
 {
-    xSemaphoreTake(display_mutex,portMAX_DELAY);
     if ( inst ) {
         delete inst;
         inst = nullptr;
     }
-    xSemaphoreGive(display_mutex);
 }
 
 BootUpScreen::~BootUpScreen()
@@ -203,11 +201,9 @@ void BootUpScreen::finish(int part)
 
 void BootUpScreen::draw()
 {
-    xSemaphoreTake(display_mutex,portMAX_DELAY);
     if ( inst ) {
         inst->animate();
     }
-    xSemaphoreGive(display_mutex);
 }
 
 void BootUpScreen::animate()

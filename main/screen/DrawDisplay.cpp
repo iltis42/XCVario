@@ -40,7 +40,7 @@ static uint16_t gear_warning_holdoff = 0;
 static unsigned long int flarm_alarm_holdtime = 0;
 
 
-void drawDisplay(void *arg)
+void UiEventLoop(void *arg)
 {
     ESPRotary &knob = *static_cast<ESPRotary *>(arg);
 
@@ -280,7 +280,7 @@ void drawDisplay(void *arg)
 		}
 		// esp_task_wdt_reset();
 		if( uxTaskGetStackHighWaterMark(NULL) < 512  ) {
-			ESP_LOGW(FNAME,"Warning drawDisplay stack low: %d bytes", uxTaskGetStackHighWaterMark(NULL) );
+			ESP_LOGW(FNAME,"Warning UiEventLoop stack low: %d bytes", uxTaskGetStackHighWaterMark(NULL) );
 		}
     }
 }

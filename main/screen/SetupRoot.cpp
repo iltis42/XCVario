@@ -127,14 +127,19 @@ void SetupRoot::rot(int count)
         // Volume
         AUDIO->setVolume(audio_volume.get() + count);
         // provide acoustic feedback on volume change fixme
-        if (audio_volume.get()==40) {
+        static int last_vol = 0;
+        if ((audio_volume.get()>40 && last_vol<=40) || (audio_volume.get()<40 && last_vol>=40)) {
             if (count > 0) {
-                AUDIO->alarm(AUDIO_CMD_CIRCLE_OUT);
+                AUDIO->alarm(AUDIO_FLAP_BACK, true);
             }
             else {
-                AUDIO->alarm(AUDIO_CMD_CIRCLE_IN);
+                AUDIO->alarm(AUDIO_FLAP_FORWARD, true);
             }
         }
+        else if (audio_volume.get()<37 && audio_volume.get()>30) {
+            AUDIO->alarm(AUDIO_HORIZ_GUST, true);
+        }
+        last_vol = audio_volume.get();
     }
 }
 

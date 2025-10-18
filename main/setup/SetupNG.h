@@ -548,8 +548,6 @@ extern SetupNG<int> 		vario_mc_gauge;
 extern SetupNG<bitfield_compass> 	calibration_bits;
 extern SetupNG<int> 		gear_warning;
 extern SetupNG<t_tenchar_id>  custom_wireless_id;
-extern uint8_t g_col_background;
-extern uint8_t g_col_highlight;
 extern SetupNG<int> 		logging;
 extern SetupNG<float>      	display_clock_adj;
 

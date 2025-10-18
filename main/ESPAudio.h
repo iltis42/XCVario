@@ -23,6 +23,7 @@ enum e_audio_alarm_type
     AUDIO_VARIO_SOUND,
     AUDIO_CMD_CIRCLE_OUT,
     AUDIO_CMD_CIRCLE_IN,
+    AUDIO_DING,
     AUDIO_HORIZ_GUST,
     AUDIO_WIND_CHANGE,
     AUDIO_FLAP_FORWARD,
@@ -49,7 +50,7 @@ public:
     bool isUp() const { return _dac_chan != nullptr; }
     void soundCheck();              // audible check of the audio
 
-    void alarm(e_audio_alarm_type alarmType);   // outputs various alarm sounds according to alarmType
+    void alarm(e_audio_alarm_type alarmType, bool overlay = false); // outputs various alarm sounds according to alarmType
     // system wide the only point to set audio volume !!!
     void setVolume(float vol, bool sync = true); // vol: 0.0 .. 100.0 logarythmic scale
     void updateSetup();                         // incorporate setup changes
@@ -86,7 +87,7 @@ private:
     float minf;
     float _exponent_max = 2;
 
-    volatile bool _test_done = false;
+    volatile bool _test_done = true;
     bool _terminate = true;
 };
 

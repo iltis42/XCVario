@@ -127,8 +127,6 @@ static int16_t LOAD_MNG_POS = 0;
 static int16_t LOAD_MIAS_POS = 0;
 static int fh;
 
-SemaphoreHandle_t display_mutex=NULL;
-
 ucg_color_t IpsDisplay::colors[320+1];
 ucg_color_t IpsDisplay::colorsalt[320+1];
 
@@ -196,7 +194,6 @@ IpsDisplay::IpsDisplay( AdaptUGC *aucg ) {
 	tick = 0;
 	DISPLAY_W = ucg->getDisplayWidth();
 	DISPLAY_H = ucg->getDisplayHeight();
-	display_mutex = xSemaphoreCreateMutex();
 }
 
 IpsDisplay::~IpsDisplay() {
@@ -1149,7 +1146,6 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 	// ESP_LOGI(FNAME,"P1:%d/%d P2:%d/%d P3:%d/%d P4:%d/%d roll:%f d:%d ", P1r.x, P1r.y+p, P2r.x, P2r.y+p, P3r.x, P3r.y+p, P4r.x , P4r.y+p, rad2deg(roll), p  );
 	if( P1r.y != P1o.y || P1r.x != P1o.x ){
 		// ESP_LOGI(FNAME,"drawHorizon P: %1.1f R: %1.1f Y: %1.1f", rad2deg(pitch), rad2deg(roll), rad2deg(yaw) );
-		xSemaphoreTake(display_mutex,portMAX_DELAY );
 		ucg->setClipRange( 20, 60, 200, 200 );
 		ucg->setColor( COLOR_LBLUE );
 		ucg->drawTetragon( P1r.x, P1r.y, P2r.x, P2r.y, P3r.x, P3r.y, P4r.x , P4r.y );
@@ -1164,7 +1160,6 @@ void IpsDisplay::drawHorizon( float pitch, float roll, float yaw ){
 		P6o = P6r;
 		oroll = roll;
 		ucg->undoClipRange();
-		xSemaphoreGive(display_mutex);
 	}
 	if( theCompass ){
 		heading = static_cast<int>(rintf(mag_hdt.get()));
@@ -1534,13 +1529,11 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
 		float temp, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_setting, float wksensor )
 {
-	xSemaphoreTake(display_mutex,portMAX_DELAY);
 	if( display_style.get() == DISPLAY_AIRLINER ) {
 		drawAirlinerDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, s2fmode, standard_setting, wksensor );
 	} else {
 		drawRetroDisplay( airspeed,te,ate, polar_sink, altitude, temp, volt, s2fd, s2f, acl, wksensor );
 	}
-	xSemaphoreGive(display_mutex);
 }
 
 void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,

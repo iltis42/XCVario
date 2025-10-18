@@ -69,7 +69,6 @@ void SetupMenuValFloat::setPrecision( int prec ){
 void SetupMenuValFloat::display(int mode)
 {
 	ESP_LOGI(FNAME,"display %s", _title.c_str());
-	xSemaphoreTake(display_mutex,portMAX_DELAY);
 	if ( bits._is_inline ) {
 		indentHighlight(_parent->getHighlight());
 	}
@@ -80,7 +79,6 @@ void SetupMenuValFloat::display(int mode)
 	if( _action != 0 ) {
 		(*_action)( this );
 	}
-	xSemaphoreGive(display_mutex);
 }
 
 void SetupMenuValFloat::refresh()

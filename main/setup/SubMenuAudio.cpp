@@ -93,10 +93,6 @@ static int applyAudioProfile(SetupMenuSelect *p)
         audio_harmonics.set(ap.harmonics);
         audio_factor.set(ap.exponent);
         p->getParent()->setDirty();
-        // reload the proper selection for all entries
-        p->getParent()->resetAllSelects();
-        // except the profile select itself
-        p->setSelect(selected_profile);
     }
     // custom profile - do nothing
     return 0;
@@ -159,8 +155,6 @@ void audio_menu_create_tonestyle(SetupMenu *top) { // dynamic!
 
     if (top->getNrChilds() == 0)
     {
-        top->setDynContent();
-
         SetupMenuSelect *prfl = new SetupMenuSelect("Preset scheme", RST_NONE, applyAudioProfile);
         prfl->setHelp("Choose one of the predefined audio profiles to preset audio parameters");
         for (const auto &p : audio_prfls) {

@@ -68,8 +68,6 @@ extern AnalogInput *BatVoltage;
 
 extern std::string logged_tests;
 
-extern SemaphoreHandle_t display_mutex;
-
 extern float getTAS();
 
 extern I2C_t& i2c;

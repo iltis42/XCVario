@@ -52,25 +52,25 @@ static void glider_menu_create_polarpoints(SetupMenu *top) {
 
 
 static void position_labels_menu_create(SetupMenu* top){
-	SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label +3", RST_NONE, nullptr, &wk_label_plus_3 );
+	SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label 0", RST_NONE, nullptr, &wk_label_minus_3 );
 	flab->addEntryList( flap_labels ); // Initialize Flap Label Entries
 	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label +2", RST_NONE, nullptr, &wk_label_plus_2 );
+	flab = new SetupMenuSelect( "Flap Label 1", RST_NONE, nullptr, &wk_label_minus_2 );
 	flab->addEntryList( flap_labels );
 	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label +1", RST_NONE, nullptr, &wk_label_plus_1 );
+	flab = new SetupMenuSelect( "Flap Label 2", RST_NONE, nullptr, &wk_label_minus_1 );
 	flab->addEntryList( flap_labels );
 	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label  0", RST_NONE, nullptr, &wk_label_null_0 );
+	flab = new SetupMenuSelect( "Flap Label  3", RST_NONE, nullptr, &wk_label_null_0 );
 	flab->addEntryList( flap_labels );
 	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label -1", RST_NONE, nullptr, &wk_label_minus_1 );
+	flab = new SetupMenuSelect( "Flap Label 4", RST_NONE, nullptr, &wk_label_plus_1 );
 	flab->addEntryList( flap_labels );
 	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label -2", RST_NONE, nullptr, &wk_label_minus_2 );
+	flab = new SetupMenuSelect( "Flap Label 5", RST_NONE, nullptr, &wk_label_plus_2 );
 	flab->addEntryList( flap_labels );
 	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label -3", RST_NONE, nullptr, &wk_label_minus_3 );
+	flab = new SetupMenuSelect( "Flap Label 6", RST_NONE, nullptr, &wk_label_plus_3 );
 	flab->addEntryList( flap_labels );
 	top->addEntry( flab );
 }
@@ -83,23 +83,24 @@ static void flap_speeds_menu_create(SetupMenu* top){
 	SetupMenu *flapls = new SetupMenu("Flap Position Labels", position_labels_menu_create);
 	top->addEntry( flapls );
 
-	SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "", nullptr, false, &flap_plus_2  );
-	top->addEntry( plus3 );
-
-	SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "", nullptr, false, &flap_plus_1  );
-	top->addEntry( plus2 );
-
-	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to  0", "", nullptr, false, &flap_0  );
-	top->addEntry( plus1 );
-
-	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed  0 to -1", "", nullptr, false, &flap_minus_1  );
-	top->addEntry( min1 );
+	SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "", nullptr, false, &flap_minus_3  );
+	top->addEntry( min3 );
 
 	SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "", nullptr, false, &flap_minus_2  );
 	top->addEntry( min2 );
 
-	SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "", nullptr, false, &flap_minus_3  );
-	top->addEntry( min3 );
+	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed  0 to -1", "", nullptr, false, &flap_minus_1  );
+	top->addEntry( min1 );
+
+	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to  0", "", nullptr, false, &flap_0  );
+	top->addEntry( plus1 );
+
+	SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "", nullptr, false, &flap_plus_1  );
+	top->addEntry( plus2 );
+
+	SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "", nullptr, false, &flap_plus_2  );
+	top->addEntry( plus3 );
+
 }
 
 void glider_menu_create(SetupMenu *top) {

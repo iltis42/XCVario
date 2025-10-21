@@ -14,6 +14,7 @@
 #include "screen/element/Battery.h"
 #include "screen/element/Altimeter.h"
 #include "screen/element/CruiseStatus.h"
+#include "screen/element/FlapsBox.h"
 
 #include "math/Trigenometry.h"
 #include "comm/DeviceMgr.h"
@@ -65,6 +66,7 @@ McCready*   IpsDisplay::MCgauge = nullptr;
 Battery*    IpsDisplay::BATgauge = nullptr;
 Altimeter*	IpsDisplay::ALTgauge = nullptr;
 CruiseStatus* IpsDisplay::VCSTATgauge = nullptr;
+FlapsBox*   IpsDisplay::FLAPSgauge = nullptr;
 
 int16_t DISPLAY_H;
 int16_t DISPLAY_W;
@@ -143,11 +145,6 @@ int IpsDisplay::as_prev = -1;
 int IpsDisplay::tyalt = 0;
 int IpsDisplay::pyalt = 0;
 
-// Flap definitions
-#define WKSYMST DISPLAY_W-28
-ucg_color_t IpsDisplay::wkcolor;
-int IpsDisplay::wkoptalt;
-
 int   IpsDisplay::_divisons = 5;
 float IpsDisplay::_range = 5.;
 float IpsDisplay::average_climbf = 0;
@@ -163,8 +160,6 @@ static int16_t old_sink_bar_val = 0;
 
 static bool bottom_dirty = false;
 static bool mode_dirty = false;
-
-#define WKBARMID (AMIDY-15)
 
 bool flarm_connected=false;
 
@@ -329,9 +324,13 @@ void IpsDisplay::initDisplay() {
     MAINgauge->setUnit(Units::Vario(1.));
     MAINgauge->setRange(scale_range.get(), 0.f, log_scale.get());
     MAINgauge->setColor(needle_color.get());
-    if (!MCgauge) {
-        MCgauge = new McCready(1, DISPLAY_H + 2);
-    }
+    if (vario_mc_gauge.get()) {
+        if ( !MCgauge ) { MCgauge = new McCready(1, DISPLAY_H + 2); }
+    	else {
+			delete MCgauge;
+			MCgauge = nullptr;
+		}
+	}
     if (!BATgauge) {
         BATgauge = new Battery(DISPLAY_W - 10, DISPLAY_H - 12);
     }
@@ -340,6 +339,15 @@ void IpsDisplay::initDisplay() {
     }
     if ( !VCSTATgauge ) {
         VCSTATgauge = new CruiseStatus(DISPLAY_W - (DISPLAY_W - INNER_RIGHT_ALIGN + 8) * ((display_orientation.get() == DISPLAY_NINETY) + 1), 18);
+    }
+    if ( FLAP ) {
+		if ( !FLAPSgauge ) {
+        	FLAPSgauge = new FlapsBox(DISPLAY_W-28, AMIDY, DISPLAY_H > DISPLAY_W);
+		} else {
+			delete FLAPSgauge;
+			FLAPSgauge = nullptr;
+			ESP_LOGI(FNAME,"FlapsBox deleted");
+		}
     }
 
     if( display_style.get() != DISPLAY_AIRLINER ) {
@@ -358,7 +366,9 @@ void IpsDisplay::initDisplay() {
 		ucg->setColor(COLOR_WHITE );
 
 		// small MC
-		MCgauge->setLarge(false);
+        if ( MCgauge ) {
+    		MCgauge->setLarge(false);
+        }
 		ALTgauge->setRef(FIELD_START+80, YALT-12);
 
 		// draw TE scale
@@ -389,10 +399,6 @@ void IpsDisplay::initDisplay() {
 		// Thermometer
 		drawThermometer(  FIELD_START+5, DISPLAY_H-5 );
 
-		if ( FLAP ) {
-			FLAP->setBarPosition( WKSYMST+2, YS2F-fh );
-			FLAP->setSymbolPosition( WKSYMST+2, YS2F-fh-25 );
-		}
 		bottom_dirty = false;
 	}
 
@@ -554,9 +560,8 @@ void IpsDisplay::redrawValues()
 	}
 	average_climbf = -1000.0;
 
-	wkoptalt = -100;
 	tyalt = -1000;
-	if ( FLAP ) FLAP->redraw();
+	if ( FLAPSgauge ) FLAPSgauge->forceRedraw();
 	old_vario_bar_val = 0;
 	old_sink_bar_val = 0;
 	prev_winddir = -1000;
@@ -912,10 +917,8 @@ void IpsDisplay::initRetroDisplay(){
         CenterAid::remove();
     }
     VCSTATgauge->useSymbol(true);
-    if (vario_mc_gauge.get()) { MCgauge->setLarge(true); }
-    else {
-		delete MCgauge;
-		MCgauge = nullptr;
+    if (MCgauge) {
+		MCgauge->setLarge(true);
 	}
 	if ( vario_lower_gauge.get() ) {
 		ALTgauge->setRef(INNER_RIGHT_ALIGN, 0.8*DISPLAY_H);
@@ -935,9 +938,8 @@ void IpsDisplay::initRetroDisplay(){
 		drawTopGauge(0, INNER_RIGHT_ALIGN, SPEEDYPOS, true );
 	}
 
-	if ( FLAP ) {
-		FLAP->setBarPosition( WKSYMST-4, WKBARMID);
-		FLAP->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(FLAP->getNegMax()))-18 );
+	if ( FLAPSgauge ) {
+		FLAPSgauge->forceRedraw();
 	}
 
 }
@@ -1476,21 +1478,9 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// WK-Indicator
-	if( FLAP && !(tick%3) )
+	if( FLAPSgauge && !(tick%3) )
 	{
-		float wkspeed = Units::ActualWingloadCorrection(ias.get());
-		int wki;
-		float wkopt = FLAP->getOptimum( wkspeed, wki );
-		int wk = (int)((wki - wkopt + 0.5)*10);
-		// ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d wkpos:%f", airspeed_kmh, wkspeed, wki, wk, wkpos );
-		// ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
-		ucg->setColor(  COLOR_WHITE  );
-		FLAP->drawBigBar( (float)(wk)/10, wksensor );
-		wkoptalt = wk;
-
-		if ( FLAP->getNegMax() > -3 ) {
-			FLAP->drawWingSymbol( wki, wksensor);
-		}
+		FLAPSgauge->draw(ias.get());
 	}
 
 	// Cruise mode or circling
@@ -1571,18 +1561,9 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	float s2fd = Units::Airspeed( s2fd_ms );
 
 	// WK-Indicator
-	if( FLAP && !(tick%7) )
+	if( FLAPSgauge && !(tick%7) )
 	{
-		float wkspeed = Units::ActualWingloadCorrection(airspeed_kmh); // no units conversion in here, tbd: move sub to other place
-		int wki;
-		float wkopt=FLAP->getOptimum( wkspeed, wki );
-		int wk = (int)((wki - wkopt + 0.5)*10);
-		// ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed_kmh, wkspeed, wki, wk, wkpos );
-		ucg->setColor(  COLOR_WHITE  );
-		FLAP->drawSmallBar( (float)(wk)/10 );
-		wkoptalt = wk;
-
-		FLAP->drawWingSymbol( wki, wksensor);
+		FLAPSgauge->draw(ias.get());
 	}
 	ucg->setFont(ucg_font_fub35_hn, true);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );

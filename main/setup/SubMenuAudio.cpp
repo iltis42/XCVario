@@ -127,10 +127,10 @@ static int audio_setup_s(SetupMenuSelect *p) {
     else {
         if ( ! AUDIO->isUp() ) { AUDIO->startAudio(); }
         if (audio_mute_gen.get() == AUDIO_ALARMS) {
-            AUDIO->stopVarioVoice();
+            AUDIO->startSound(AUDIO_VARIO_SOUND);
         }
         else {
-            AUDIO->startVarioVoice();
+            AUDIO->startSound(AUDIO_NO_SOUND);
         }
     }
     p->getParent()->setDirty();

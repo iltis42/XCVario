@@ -147,7 +147,7 @@ void Flarm::drawFlarmWarning(){
 	if( _tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec
 		AlarmLevel = 0;
 	// float volume=0;
-	e_audio_alarm_type alarm = AUDIO_ALARM_FLARM_1;
+	e_audio_sound_type alarm = AUDIO_ALARM_FLARM_1;
 	if( AlarmLevel == 3 ) { // highest, impact 0-8 seconds
 		// volume = flarm_volume.get();
 		alarm = AUDIO_ALARM_FLARM_3;
@@ -160,11 +160,11 @@ void Flarm::drawFlarmWarning(){
 		// volume = flarm_volume.get()/8;
 		alarm = AUDIO_ALARM_FLARM_1;
 	}else{
-		alarm = AUDIO_NO_ALARM;
+		alarm = AUDIO_NO_SOUND;
 	}
 
-	if( alarm != AUDIO_NO_ALARM ) {
-		AUDIO->alarm(alarm);
+	if( alarm != AUDIO_NO_SOUND ) {
+		AUDIO->startSound(alarm);
 	}
 
 	if( AlarmLevel != alarmOld ) {

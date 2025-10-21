@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
 #include <driver/dac_continuous.h>
 
 #include <cinttypes>
@@ -17,9 +15,9 @@
 class Poti;
 class TestSequence;
 
-enum e_audio_alarm_type
+enum e_audio_sound_type
 {
-    AUDIO_NO_ALARM = -1,
+    AUDIO_NO_SOUND = -1,
     AUDIO_VARIO_SOUND,
     AUDIO_CMD_CIRCLE_OUT,
     AUDIO_CMD_CIRCLE_IN,
@@ -45,12 +43,11 @@ public:
 
     bool startAudio(int16_t ch = 0); // initialisations and self-test, starts task driving the sequencer
     void stopAudio();               // terminate any sound output
-    void startVarioVoice();         // start vario sound
-    void stopVarioVoice();
+    void startVarioVoice();         // start vario sound for the very first time
     bool isUp() const { return _dac_chan != nullptr; }
     void soundCheck();              // audible check of the audio
 
-    void alarm(e_audio_alarm_type alarmType, bool overlay = false); // outputs various alarm sounds according to alarmType
+    void startSound(e_audio_sound_type alarmType, bool overlay = false); // outputs various alarm sounds according to alarmType
     // system wide the only point to set audio volume !!!
     void setVolume(float vol, bool sync = true); // vol: 0.0 .. 100.0 logarythmic scale
     void updateSetup();                         // incorporate setup changes

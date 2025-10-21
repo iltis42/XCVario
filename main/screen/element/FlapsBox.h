@@ -12,6 +12,20 @@
 
 #include <cinttypes>
 
+union SwitchEvent {
+    struct {
+        uint8_t from;
+        uint8_t to; // flap setting
+    };
+    uint16_t raw = 0;
+
+    constexpr SwitchEvent() = delete;
+    constexpr SwitchEvent(int f, int t)
+        : from((f & 0xFF)), to((t & 0xFF)) {}
+    constexpr bool operator!=(const SwitchEvent &other) const noexcept {
+        return raw != other.raw; }
+};
+
 // a visual flaps assistant
 class FlapsBox : public ScreenElement
 {
@@ -29,7 +43,8 @@ private: // attributes
     float _flaps_position = 0.;
     int   _last_flap_idx = 0;
     int   _snd_latency_cnt = 0;
+    SwitchEvent _last_event;
+    int   _same_event_to = -1;
     bool  _vertical;
     int16_t _LFH;
-    int16_t _LFW;
 };

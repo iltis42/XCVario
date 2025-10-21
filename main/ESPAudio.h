@@ -7,8 +7,6 @@
 
 #pragma once
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
 #include <driver/dac_continuous.h>
 
 #include <cinttypes>

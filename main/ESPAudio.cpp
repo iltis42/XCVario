@@ -17,6 +17,8 @@
 #include "sensor.h"
 #include "logdefnone.h"
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <freertos/queue.h>
 #include <esp_system.h>
 
@@ -812,7 +814,7 @@ void Audio::soundCheck()
 void Audio::startSound(e_audio_sound_type style, bool overlay)
 {
     if ( _dac_chan ) { // audio switched on
-        if (_alarm_mode || !overlay) {
+        if (!_alarm_mode || !overlay) {
             AudioEvent ev(START_SOUND, style); // start an alarm sound
             if ( overlay ) {
                 ev.cmd = ADD_SOUND; // overlay sound

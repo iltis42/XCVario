@@ -1361,7 +1361,7 @@ void system_startup(void *args){
 	SetupRoot::initScreens();
 
 	if ( flap_enable.get() ) {
-		FLAP = Flap::theFlap();
+		FLAP = Flap::theFlap(); // check on FLAP pointer further on
 	}
 	if( hardwareRevision.get() != XCVARIO_20 ){
 		gpio_pullup_en( GPIO_NUM_34 );

@@ -12,6 +12,7 @@
 #include "KalmanMPU6050.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/NMEA.h"
+#include "Flap.h"
 #include "logdefnone.h"
 
 #include <cmath>
@@ -136,6 +137,9 @@ void S2F::change_ballast()
 	calculateOverweight();
 	recalculatePolar();
 	recalcSinkNSpeeds();
+	if ( FLAP ) {
+		FLAP->prepLevels();
+	}
 }
 
 void S2F::change_mc()

@@ -32,7 +32,7 @@ FlapsBox::FlapsBox(int16_t cx, int16_t cy, bool vertical) :
     _vertical(vertical)
 {
     MYUCG->setFont(ucg_font_fub11_hn);
-	_LFH = MYUCG->getFontAscent() - MYUCG->getFontDescent();
+	_LFH = MYUCG->getFontAscent() - MYUCG->getFontDescent() + 2;
     ESP_LOGI(FNAME, "FlapsBox label height %d, a%d d%d", _LFH, MYUCG->getFontAscent(), MYUCG->getFontDescent());
 }
 
@@ -96,7 +96,7 @@ void FlapsBox::drawLabels(float lwk_speed, float uwk_speed)
             MYUCG->print(label);
             MYUCG->setColor(1, COLOR_DGREEN);
             MYUCG->undoClipRange();
-            // MYUCG->setColor(COLOR_WHITE);
+            MYUCG->setClipRange(boxx, _ref_y + top_pix+1, boxw, BOX_LENGTH/2 - top_pix);
             MYUCG->setPrintPos(_ref_x + (BOX_WIDTH - lwidth)/2 + 1, _ref_y - pixoff + _LFH/2);
             MYUCG->print(label);
         }

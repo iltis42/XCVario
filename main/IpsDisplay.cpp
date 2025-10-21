@@ -145,11 +145,6 @@ int IpsDisplay::as_prev = -1;
 int IpsDisplay::tyalt = 0;
 int IpsDisplay::pyalt = 0;
 
-// Flap definitions
-// #define WKSYMST DISPLAY_W-28
-ucg_color_t IpsDisplay::wkcolor;
-int IpsDisplay::wkoptalt;
-
 int   IpsDisplay::_divisons = 5;
 float IpsDisplay::_range = 5.;
 float IpsDisplay::average_climbf = 0;
@@ -165,8 +160,6 @@ static int16_t old_sink_bar_val = 0;
 
 static bool bottom_dirty = false;
 static bool mode_dirty = false;
-
-#define WKBARMID (AMIDY-15)
 
 bool flarm_connected=false;
 
@@ -373,7 +366,9 @@ void IpsDisplay::initDisplay() {
 		ucg->setColor(COLOR_WHITE );
 
 		// small MC
-		MCgauge->setLarge(false);
+        if ( MCgauge ) {
+    		MCgauge->setLarge(false);
+        }
 		ALTgauge->setRef(FIELD_START+80, YALT-12);
 
 		// draw TE scale
@@ -404,10 +399,6 @@ void IpsDisplay::initDisplay() {
 		// Thermometer
 		drawThermometer(  FIELD_START+5, DISPLAY_H-5 );
 
-		// if ( FLAP ) {
-		// 	FLAP->setBarPosition( WKSYMST+2, YS2F-fh );
-		// 	FLAP->setSymbolPosition( WKSYMST+2, YS2F-fh-25 );
-		// }
 		bottom_dirty = false;
 	}
 
@@ -569,7 +560,6 @@ void IpsDisplay::redrawValues()
 	}
 	average_climbf = -1000.0;
 
-	wkoptalt = -100;
 	tyalt = -1000;
 	if ( FLAPSgauge ) FLAPSgauge->forceRedraw();
 	old_vario_bar_val = 0;
@@ -950,8 +940,6 @@ void IpsDisplay::initRetroDisplay(){
 
 	if ( FLAPSgauge ) {
 		FLAPSgauge->forceRedraw();
-		// FLAPSgauge->setBarPosition( WKSYMST-4, WKBARMID);
-		// FLAPSgauge->setSymbolPosition( WKSYMST-3, WKBARMID-27*(abs(FLAP->getNegMax()))-18 );
 	}
 
 }
@@ -1492,19 +1480,6 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// WK-Indicator
 	if( FLAPSgauge && !(tick%3) )
 	{
-		// float wkspeed = Units::ActualWingloadCorrection(ias.get());
-		// int wki;
-		// float wkopt = FLAP->getOptimum( wkspeed, wki );
-		// int wk = (int)((wki - wkopt + 0.5)*10);
-		// // ESP_LOGI(FNAME,"as:%d wksp:%f wki:%d wk:%d wkpos:%f", airspeed_kmh, wkspeed, wki, wk, wkpos );
-		// // ESP_LOGI(FNAME,"WK changed WKE=%d WKS=%f", wk, wksensor );
-		// ucg->setColor(  COLOR_WHITE  );
-		// FLAP->drawBigBar( (float)(wk)/10, wksensor );
-		// wkoptalt = wk;
-
-		// if ( FLAP->getNegMax() > -3 ) {
-		// 	FLAP->drawWingSymbol( wki, wksensor);
-		// }
 		FLAPSgauge->draw(ias.get());
 	}
 
@@ -1588,17 +1563,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	// WK-Indicator
 	if( FLAPSgauge && !(tick%7) )
 	{
-		// float wkspeed = Units::ActualWingloadCorrection(airspeed_kmh); // no units conversion in here, tbd: move sub to other place
-		// int wki;
-		// float wkopt=FLAP->getOptimum( wkspeed, wki );
-		// int wk = (int)((wki - wkopt + 0.5)*10);
-		// // ESP_LOGI(FNAME,"ias:%d wksp:%f wki:%d wk:%d wkpos%f", airspeed_kmh, wkspeed, wki, wk, wkpos );
-		// ucg->setColor(  COLOR_WHITE  );
-		// FLAP->drawSmallBar( (float)(wk)/10 );
-		// wkoptalt = wk;
-
-		// FLAP->drawWingSymbol( wki, wksensor);
-		FLAPSgauge->draw();
+		FLAPSgauge->draw(ias.get());
 	}
 	ucg->setFont(ucg_font_fub35_hn, true);  // 52 height
 	ucg->setColor(  COLOR_WHITE  );

@@ -54,7 +54,6 @@ public:
 	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
 	// static bool drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty );
-	// static void drawWindArrow( float dir, float speed, int type );
 	static void setBottomDirty();
 	static void setCruiseChanged();
 
@@ -84,14 +83,10 @@ private:
 	static int s2fclipalt;
 	static int as_prev;
 
-	static int wkalt;
-	static int wkoptalt;
-
 	static int tyalt;
 	static int pyalt;
 	static float average_climbf;
 
-	static ucg_color_t wkcolor;
 	static float old_polar_sink;
 	static float flt_altitude;
 

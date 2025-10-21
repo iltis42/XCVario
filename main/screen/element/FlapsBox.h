@@ -34,7 +34,7 @@ public:
     // API
 
     void setRef(int16_t x, int16_t y) { _ref_x=x; _ref_y=y; }
-    void draw(float ias=0.f);
+    void draw(float ias);
 
 private:
     void drawLabels(float lwk_speed, float uwk_speed);

@@ -30,6 +30,7 @@ class McCready;
 class Battery;
 class Altimeter;
 class CruiseStatus;
+class FlapsBox;
 
 // fixme needs a home
 float getHeading();
@@ -100,6 +101,7 @@ private:
 	static Battery*    BATgauge;
 	static Altimeter*  ALTgauge;
     static CruiseStatus* VCSTATgauge;
+	static FlapsBox*   FLAPSgauge;
 	static temp_status_t siliconTempStatusOld;
 
 	static void setArrowColor( bool upper );

@@ -26,8 +26,33 @@ constexpr const int16_t LABEL_SPACING = 40;
 constexpr const float   PIX_PER_KMH = ((float)(BOX_LENGTH)-2*BOX_CORNER) / 26; // km/h range on flap box
 constexpr const int     SOUND_LATENCY = 5; // frames 
 
-FlapsBox::FlapsBox(int16_t cx, int16_t cy, bool vertical) :
+
+constexpr FBoxStateHash::FBoxStateHash(float f, float minvd, float maxvd) :
+    wkidx10( (int)std::roundf(f*10.) )
+{
+    top_pix = static_cast<int16_t>(minvd * PIX_PER_KMH);
+        bottom_pix = static_cast<int16_t>(maxvd * PIX_PER_KMH);
+}
+constexpr bool FBoxStateHash::operator!=(const FBoxStateHash &other) const noexcept
+{
+    if ( wkidx10 != other.wkidx10 ) return true;
+    if ( ((top_pix > -BOX_LENGTH/2
+            && top_pix < BOX_LENGTH/2)
+        || (other.top_pix > -BOX_LENGTH/2
+            && other.top_pix < BOX_LENGTH/2))
+        && top_pix != other.top_pix ) return true;
+    if ( ((bottom_pix > -BOX_LENGTH/2
+            && bottom_pix < BOX_LENGTH/2)
+        || (other.bottom_pix > -BOX_LENGTH/2
+            && other.bottom_pix < BOX_LENGTH/2))
+        && bottom_pix != other.bottom_pix) return true;
+    return false;
+}
+
+
+FlapsBox::FlapsBox(Flap* flap, int16_t cx, int16_t cy, bool vertical) :
     ScreenElement(cx, cy),
+    _flap(flap),
     _last_event(0,0),
     _vertical(vertical)
 {
@@ -36,9 +61,9 @@ FlapsBox::FlapsBox(int16_t cx, int16_t cy, bool vertical) :
     ESP_LOGI(FNAME, "FlapsBox label height %d, a%d d%d", _LFH, MYUCG->getFontAscent(), MYUCG->getFontDescent());
 }
 
-void FlapsBox::drawLabels(float lwk_speed, float uwk_speed)
+void FlapsBox::drawLabels(FBoxStateHash cs)
 {
-    ESP_LOGI(FNAME, "draw wkf=%.2f, %.1f/%.1f", _flaps_position, lwk_speed, uwk_speed);
+    ESP_LOGI(FNAME, "draw wkf=%.1f, %d/%d", cs.wkidx10/10.f, cs.top_pix, cs.bottom_pix);
     int16_t boxx = _ref_x+2,
     boxy = _ref_y - BOX_LENGTH / 2 + 2,
     boxw = BOX_WIDTH - 4,
@@ -47,19 +72,19 @@ void FlapsBox::drawLabels(float lwk_speed, float uwk_speed)
     MYUCG->setFont(ucg_font_fub11_hn);
 
     // colored speed range (background)
-    int16_t top_pix = static_cast<int16_t>(lwk_speed * PIX_PER_KMH);
-    int16_t bottom_pix = static_cast<int16_t>(uwk_speed * PIX_PER_KMH);
-    int16_t green_top =  _ref_y + top_pix;
-    if ( top_pix > -BOX_LENGTH/2 ) {
+    // int16_t top_pix = static_cast<int16_t>(lwk_speed * PIX_PER_KMH);
+    // int16_t bottom_pix = static_cast<int16_t>(uwk_speed * PIX_PER_KMH);
+    int16_t green_top =  _ref_y + cs.top_pix;
+    if ( cs.top_pix > -BOX_LENGTH/2 ) {
         MYUCG->setColor(COLOR_WGREY);
-        MYUCG->drawBox(boxx, boxy, boxw, BOX_LENGTH/2 + top_pix);
+        MYUCG->drawBox(boxx, boxy, boxw, BOX_LENGTH/2 + cs.top_pix);
     }
     if ( green_top < _ref_y + boxh ) {
         MYUCG->setColor(COLOR_DGREEN);
-        if ( bottom_pix < BOX_LENGTH/2 ) {
-            MYUCG->drawBox(boxx, green_top, boxw, _ref_y - green_top + bottom_pix);
+        if ( cs.bottom_pix < BOX_LENGTH/2 ) {
+            MYUCG->drawBox(boxx, green_top, boxw, _ref_y - green_top + cs.bottom_pix);
             MYUCG->setColor(COLOR_WGREY);
-            MYUCG->drawBox(boxx, _ref_y + bottom_pix, boxw, BOX_LENGTH/2 - bottom_pix);
+            MYUCG->drawBox(boxx, _ref_y + cs.bottom_pix, boxw, BOX_LENGTH/2 - cs.bottom_pix);
         } else {
             MYUCG->drawBox(boxx, green_top, boxw, boxh);
         }
@@ -67,11 +92,11 @@ void FlapsBox::drawLabels(float lwk_speed, float uwk_speed)
 
     // foreground labels
     // const int from = std::max((int)std::roundf(_flaps_position-1), 0);
-    // const int to   = std::min((int)std::roundf(_flaps_position+1), FLAP->getNrPositions()-1);
+    // const int to   = std::min((int)std::roundf(_flaps_position+1), _flap->getNrPositions()-1);
     // for (int wk = from; wk <= to; wk++)
     int wk = (int)std::roundf(_flaps_position);
     {
-        const char *label = FLAP->getFL(wk)->label;
+        const char *label = _flap->getFL(wk)->label;
         int16_t pixoff = (_flaps_position - wk) * LABEL_SPACING; // 20 pixels per flap step
         // ESP_LOGI(FNAME, "wk %d, pixoff %d", wk, pixoff);
         int16_t lwidth = MYUCG->getStrWidth(label);
@@ -88,33 +113,33 @@ void FlapsBox::drawLabels(float lwk_speed, float uwk_speed)
         // MYUCG->printf(label);
 
         // or cool alternatively, but not correctly working, because of a eglib bug with clipping and text output
-        if ( top_pix < (pixoff + _LFH/2) && top_pix > (pixoff - _LFH/2) ) {
+        if ( cs.top_pix < (pixoff + _LFH/2) && cs.top_pix > (pixoff - _LFH/2) ) {
             // clipped top grey to green band
             MYUCG->setColor(1, COLOR_WGREY);
             MYUCG->undoClipRange();
-            MYUCG->setClipRange(boxx, boxy, boxw, BOX_LENGTH/2 + top_pix);
+            MYUCG->setClipRange(boxx, boxy, boxw, BOX_LENGTH/2 + cs.top_pix);
             MYUCG->print(label);
             MYUCG->setColor(1, COLOR_DGREEN);
             MYUCG->undoClipRange();
-            MYUCG->setClipRange(boxx, _ref_y + top_pix+1, boxw, BOX_LENGTH/2 - top_pix);
+            MYUCG->setClipRange(boxx, _ref_y + cs.top_pix+1, boxw, BOX_LENGTH/2 - cs.top_pix);
             MYUCG->setPrintPos(_ref_x + (BOX_WIDTH - lwidth)/2 + 1, _ref_y - pixoff + _LFH/2);
             MYUCG->print(label);
         }
-        else if ( bottom_pix < (pixoff + _LFH/2) && bottom_pix > (pixoff - _LFH/2) ) {
+        else if ( cs.bottom_pix < (pixoff + _LFH/2) && cs.bottom_pix > (pixoff - _LFH/2) ) {
             // clipped bottom green to grey band
             MYUCG->setColor(1, COLOR_DGREEN);
             MYUCG->undoClipRange();
-            MYUCG->setClipRange(boxx, boxy, boxw, BOX_LENGTH/2 + bottom_pix);
+            MYUCG->setClipRange(boxx, boxy, boxw, BOX_LENGTH/2 + cs.bottom_pix);
             MYUCG->print(label);
             MYUCG->undoClipRange();
-            MYUCG->setClipRange(boxx, _ref_y + bottom_pix+1, boxw, BOX_LENGTH/2 - bottom_pix);
+            MYUCG->setClipRange(boxx, _ref_y + cs.bottom_pix+1, boxw, BOX_LENGTH/2 - cs.bottom_pix);
             MYUCG->setColor(1, COLOR_WGREY);
             MYUCG->setPrintPos(_ref_x + (BOX_WIDTH - lwidth)/2 + 1, _ref_y - pixoff + _LFH/2);
             MYUCG->print(label);
         }
         else {
             // no clipping, just choose the right background
-            if (pixoff < top_pix || pixoff > bottom_pix) {
+            if (pixoff < cs.top_pix || pixoff > cs.bottom_pix) {
                 MYUCG->setColor(1, COLOR_WGREY);
             }
             else {
@@ -127,6 +152,8 @@ void FlapsBox::drawLabels(float lwk_speed, float uwk_speed)
 
     MYUCG->setColor(1, g_col_background, g_col_background, g_col_background);
     MYUCG->undoClipRange();
+
+    _state = cs;
 }
 
 void FlapsBox::draw(float ias)
@@ -141,30 +168,40 @@ void FlapsBox::draw(float ias)
     }
     
     float wktarget;
-    if ( FLAP->haveSensor() ) {
-        wktarget = FLAP->getFlapPosition();
+    if ( _flap->haveSensor() ) {
+        wktarget = _flap->getFlapPosition();
     } else {
-        wktarget = (int)std::ceilf(FLAP->getOptimum(ias));
+        wktarget = (int)std::ceilf(_flap->getOptimum(ias));
     }
     // damp speed of indicator to make it good readable
     _flaps_position = _flaps_position + (wktarget - _flaps_position) * 0.2f;
-    float minv, maxv;
-    minv = FLAP->getSpeedBand(_flaps_position, maxv) - ias;
-    maxv -= ias;
-    drawLabels(minv, maxv);
 
+    float minv, maxv;
+    minv = _flap->getSpeedBand(_flaps_position, maxv);
+    if ( airborne.get() == false ) {
+        // on ground, set a virtual green band for the correct start position
+        if ( _state.getWkIdx() == flap_takeoff.get() ) {
+            minv = -5.;
+            maxv = 5.;
+        }
+    }
+    // the three variables that define the box state
+    FBoxStateHash current_state( _flaps_position, minv - ias, maxv - ias);
+    if ( current_state != _state || _dirty ) {
+        drawLabels(current_state);
+    }
+    
     // do sounds when stepping over the speed range (with sensor),
     // or when the recommended position changes (without sensor)
     int flap_idx = (int)std::roundf(_flaps_position);
-    if ( FLAP->haveSensor() ) {
+    if ( _flap->haveSensor() ) {
         _last_flap_idx = flap_idx; // keep in sync with actual position, option to not play any sound
-        if ( minv > 0. ) { // slipped below the lower speed limit
+        if ( minv > 0. && flap_idx < _flap->getNrPositions()-1 ) { // slipped below the lower speed limit
             flap_idx++;
         } 
-        else if ( maxv < 0. ) { // exceeded the upper speed limit
+        else if ( maxv < 0. && flap_idx > 0 ) { // exceeded the upper speed limit
             flap_idx--;
         }
-
     }
 
     // play sounds after some latency

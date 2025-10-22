@@ -350,7 +350,7 @@ void IpsDisplay::initDisplay() {
     }
     if ( FLAP ) {
 		if ( !FLAPSgauge ) {
-        	FLAPSgauge = new FlapsBox(DISPLAY_W-28, AMIDY, DISPLAY_H > DISPLAY_W);
+        	FLAPSgauge = new FlapsBox(FLAP, DISPLAY_W-28, AMIDY, DISPLAY_H > DISPLAY_W);
 		}
     }
     else {

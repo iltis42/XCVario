@@ -12,6 +12,8 @@
 
 #include <cinttypes>
 
+class Flap; // where all the data and logic resides
+
 union SwitchEvent {
     struct {
         uint8_t from;
@@ -26,21 +28,34 @@ union SwitchEvent {
         return raw != other.raw; }
 };
 
+struct FBoxStateHash {
+    int16_t wkidx10;
+    int16_t top_pix;
+    int16_t bottom_pix;
+
+    constexpr FBoxStateHash() = delete;
+    constexpr FBoxStateHash(float f, float minvd, float maxvd);
+    constexpr int getWkIdx() const { return (wkidx10+5) / 10; }
+    constexpr bool operator!=(const FBoxStateHash &other) const noexcept;
+};
+
 // a visual flaps assistant
 class FlapsBox : public ScreenElement
 {
 public:
-    FlapsBox(int16_t cx, int16_t cy, bool vertical=true);
+    FlapsBox(Flap* flap, int16_t cx, int16_t cy, bool vertical=true);
     // API
 
     void setRef(int16_t x, int16_t y) { _ref_x=x; _ref_y=y; }
     void draw(float ias);
 
 private:
-    void drawLabels(float lwk_speed, float uwk_speed);
+    void drawLabels(FBoxStateHash cs);
 
 private: // attributes
+    Flap* _flap;
     float _flaps_position = 0.;
+    FBoxStateHash _state = {0,0,0};
     int   _last_flap_idx = 0;
     int   _snd_latency_cnt = 0;
     SwitchEvent _last_event;

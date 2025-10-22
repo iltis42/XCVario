@@ -186,7 +186,9 @@ void FlapsBox::draw(float ias)
         }
     }
     // the three variables that define the box state
-    FBoxStateHash current_state( _flaps_position, minv - ias, maxv - ias);
+    minv -= ias;
+    maxv -= ias;
+    FBoxStateHash current_state( _flaps_position, minv, maxv);
     if ( current_state != _state || _dirty ) {
         drawLabels(current_state);
     }

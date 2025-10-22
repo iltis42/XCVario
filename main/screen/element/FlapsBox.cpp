@@ -182,7 +182,7 @@ void FlapsBox::draw(float ias)
                     AUDIO->startSound(AUDIO_FLAP_FORWARD, true);
                 }
                 _last_event = current_event;
-                _same_event_to = 100;
+                _same_event_to = 200;
                 _last_flap_idx = flap_idx;
             }
         }

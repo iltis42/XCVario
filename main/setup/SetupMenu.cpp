@@ -861,12 +861,12 @@ void screens_menu_create_extreme_records(SetupMenu *top) {
 }
 
 static void screens_menu_create_vario(SetupMenu *top) {
-	SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, nullptr, &needle_color);
-	ncolor->addEntry("White");
-	ncolor->addEntry("Orange");
-	ncolor->addEntry("Red");
-	top->addEntry(ncolor);
 
+    // SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, nullptr, &needle_color);
+    // ncolor->addEntry("White");
+    // ncolor->addEntry("Orange");
+    // ncolor->addEntry("Red");
+    // top->addEntry(ncolor);
 	SetupMenuSelect *scrcaid = new SetupMenuSelect("Thermal-Assist", RST_NONE, nullptr, &vario_centeraid);
 	scrcaid->setHelp("Enable/disable display of the thermal assistent");
 	scrcaid->mkEnable();

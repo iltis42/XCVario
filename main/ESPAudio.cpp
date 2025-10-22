@@ -1034,7 +1034,7 @@ void Audio::dactask()
                 if ( sound != &VarioSound ) {
                     _alarm_mode = true;
                     // raise volume +20%, but assure at least 60%
-                    float alarm_vol = std::min(speaker_volume+20.f, 100.f);
+                    float alarm_vol = std::min(speaker_volume+alarm_volraise.get(), 100.f);
                     alarm_vol = std::max(alarm_vol, 60.f);
                     writeVolume(alarm_vol);
                 }

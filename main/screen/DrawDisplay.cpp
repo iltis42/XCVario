@@ -226,8 +226,9 @@ void UiEventLoop(void *arg)
 					// AUDIO->alarm( false );
 				}
 			}
-			if( gflags.flarmWarning )
+			if( gflags.flarmWarning ) {
 				Flarm::drawFlarmWarning();
+			}
 			// G-Load Display
 			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
 			if( ((IMU::getGliderAccelZ() > gload_pos_thresh.get() || IMU::getGliderAccelZ() < gload_neg_thresh.get()) && screen_gmeter.get() == SCREEN_DYNAMIC ) ||

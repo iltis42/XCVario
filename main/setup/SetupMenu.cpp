@@ -828,10 +828,6 @@ void options_menu_create_flarm(SetupMenu *top) {
 	flarml->addEntry("Level 3");
 	top->addEntry(flarml);
 
-	SetupMenuValFloat *flarmv = new SetupMenuValFloat("Alarm Volume", "%", nullptr, false, &flarm_volume);
-	flarmv->setHelp("Maximum audio volume of FLARM alarm warning");
-	top->addEntry(flarmv);
-
 	SetupMenuValFloat *flarmt = new SetupMenuValFloat("Alarm Timeout", "sec", nullptr, false, &flarm_alarm_time);
 	flarmt->setHelp(
 			"The time FLARM alarm warning keeps displayed after alarm went off");
@@ -952,9 +948,9 @@ void screens_menu_create_gload(SetupMenu *top) {
 	SetupMenu *extreme = new SetupMenu("Extreme Recordings", screens_menu_create_extreme_records);
 	top->addEntry(extreme);
 
-	SetupMenuValFloat *gloadalvo = new SetupMenuValFloat("Alarm Volume", "%", nullptr, false, &gload_alarm_volume);
-	gloadalvo->setHelp("Maximum volume of G-Load alarm audio warning");
-	top->addEntry(gloadalvo);
+	// SetupMenuValFloat *gloadalvo = new SetupMenuValFloat("Alarm Volume", "%", nullptr, false, &gload_alarm_volume);
+	// gloadalvo->setHelp("Maximum volume of G-Load alarm audio warning");
+	// top->addEntry(gloadalvo);
 }
 
 void screens_menu_create_horizon(SetupMenu *top) {

@@ -364,6 +364,7 @@ extern SetupNG<float>  		s2f_auto_lag;
 
 extern SetupNG<float>  		audio_volume;
 extern SetupNG<float>  		default_volume;
+extern SetupNG<float>     	alarm_volraise;
 extern SetupNG<int>  		audio_split_vol;
 extern SetupNG<int>  		audio_range;
 extern SetupNG<float>  		center_freq;
@@ -528,7 +529,7 @@ extern SetupNG<float>		gload_neg_limit;
 extern SetupNG<float>		gload_pos_max;
 extern SetupNG<float>		gload_neg_max;
 extern SetupNG<float>		airspeed_max;
-extern SetupNG<float>		gload_alarm_volume;
+// extern SetupNG<float>		gload_alarm_volume; fixme no use
 extern SetupNG<int>		    display_variant;
 extern SetupNG<int>       	compass_dev_auto;
 extern SetupNG<float>       max_circle_wind_diff;

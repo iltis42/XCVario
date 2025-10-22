@@ -236,6 +236,7 @@ SetupNG<float>  		s2f_auto_lag( "S2F_HYST", 10, true, SYNC_BIDIR, PERSISTENT, nu
 						// set audio volume exclusively through the Audio class
 SetupNG<float> 			audio_volume("AUD_VOL", 10, true, SYNC_BIDIR, VOLATILE, change_volume, QUANT_NONE, &percentage_limits);
 SetupNG<float>  		default_volume( "DEFAULT_VOL", 25.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
+SetupNG<float>          alarm_volraise( "FLARM_VOL", 20, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
 SetupNG<int>  			audio_split_vol( "AUD_SPLIT", 0, true, SYNC_BIDIR );
 SetupNG<int>  			audio_range( "AUDIO_RANGE" , AUDIO_RANGE_5_MS, true, SYNC_BIDIR );
 SetupNG<float>  		center_freq( "AUDIO_CENTER_F", 500.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(200.0, 2000.0, 10.0));
@@ -276,12 +277,12 @@ SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
 SetupNG<int>  			display_test( "DISPLAY_TEST", 0, false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , DISPLAY_NORMAL, true, SYNC_NONE, PERSISTENT, chg_display_orientation );
 SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0, true, SYNC_BIDIR, PERSISTENT, flap_act);
-SetupNG<float>  		flap_minus_3( "FLAP_MINUS_3", 200, true, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float>  		flap_minus_2( "FLAP_MINUS_2", 165, true, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float>  		flap_minus_1( "FLAP_MINUS_1", 105, true, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float>  		flap_0(       "FLAP_0", 88, true, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float>  		flap_plus_1(  "FLAP_PLUS_1", 78, true, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float>  		flap_plus_2(  "FLAP_PLUS_2", 70, true, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		wk_speed_0( "FLAP_MINUS_3", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		wk_speed_1( "FLAP_MINUS_2", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		wk_speed_2( "FLAP_MINUS_1", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		wk_speed_3( "FLAP_0", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		wk_speed_4( "FLAP_PLUS_1", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		wk_speed_5( "FLAP_PLUS_2", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER );
 SetupNG<int>  			alt_quantization( "ALT_QUANT", Altimeter::ALT_QUANT_10 );
 SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH );
@@ -325,17 +326,16 @@ SetupNG<int>		    ahrs_licence_dig2("AHRS_LIC_2", 0, false );
 SetupNG<int>		    ahrs_licence_dig3("AHRS_LIC_3", 0, false );
 SetupNG<int>		    ahrs_licence_dig4("AHRS_LIC_4", 0, false );
 // SetupNG<int>		    dummy("DUMMY", 0, false, SYNC_NONE, VOLATILE );
-SetupNG<int>		    wk_sens_pos_plus_3("WKSP3", 1000);
-SetupNG<int>		    wk_sens_pos_plus_2("WKSP2", 1500);
-SetupNG<int>		    wk_sens_pos_plus_1("WKSP1", 2000);
-SetupNG<int>		    wk_sens_pos_0("WKSP0", 2500);
-SetupNG<int>		    wk_sens_pos_minus_1("WKSM1", 3000);
-SetupNG<int>		    wk_sens_pos_minus_2("WKSM2", 3500);
-SetupNG<int>		    wk_sens_pos_minus_3("WKSM3", 4000);
+SetupNG<int>		    wk_sens_pos_0("WKSM3", 4000);
+SetupNG<int>		    wk_sens_pos_1("WKSM2", 3500);
+SetupNG<int>		    wk_sens_pos_2("WKSM1", 3000);
+SetupNG<int>		    wk_sens_pos_3("WKSP0", 2500);
+SetupNG<int>		    wk_sens_pos_4("WKSP1", 2000);
+SetupNG<int>		    wk_sens_pos_5("WKSP2", 1500);
+SetupNG<int>		    wk_sens_pos_6("WKSP3", 1000);
 SetupNG<int>            stall_warning( "STALL_WARN", 0 );
 SetupNG<float>			stall_speed( "STALL_SPEED", 70, true, SYNC_FROM_MASTER, PERSISTENT, 0, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<int>            flarm_warning( "FLARM_LEVEL", 1 );
-SetupNG<float>          flarm_volume( "FLARM_VOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
 SetupNG<float>          flarm_alarm_time( "FLARM_ALM", 5, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1, 15, 1));
 SetupNG<int>            flap_sensor( "FLAP_SENS", 0, false, SYNC_FROM_MASTER, PERSISTENT, flap_act); // fixme synch logic broken
 SetupNG<float>          compass_dev_0( "CP_DEV_0", 0 );
@@ -375,13 +375,13 @@ SetupNG<float> 			wind_max_deviation("WIND_MDEV", 30.0, true, SYNC_NONE, PERSIST
 SetupNG<int> 			s2f_blockspeed( "S2G_BLOCKSPEED", 0, true, SYNC_BIDIR );  // considering netto vario and g load for S2F or not
 SetupNG<int> 			needle_color("NEEDLE_COLOR", VN_COLOR_ORANGE );
 SetupNG<int>			s2f_arrow_color("S2F_ARRCOL", AC_WHITE_WHITE );
-SetupNG<int> 			wk_label_plus_3( "WKLP3", 41,  true, SYNC_BIDIR, PERSISTENT, flap_update_act);  //  L
-SetupNG<int> 			wk_label_plus_2( "WKLP2", 11,  true, SYNC_BIDIR, PERSISTENT, flap_update_act);  //  2
-SetupNG<int> 			wk_label_plus_1( "WKLP1", 10,  true, SYNC_BIDIR, PERSISTENT, flap_update_act);  //  1
-SetupNG<int> 			wk_label_null_0( "WKL0",   9,  true, SYNC_BIDIR, PERSISTENT, flap_update_act);  //  0
-SetupNG<int> 			wk_label_minus_1( "WKLM1", 8,  true, SYNC_BIDIR, PERSISTENT, flap_update_act);  // -1
-SetupNG<int> 			wk_label_minus_2( "WKLM2", 7,  true, SYNC_BIDIR, PERSISTENT, flap_update_act);  // -2
-SetupNG<int> 			wk_label_minus_3( "WKLM3", 42,  true, SYNC_BIDIR, PERSISTENT, flap_update_act); //  S
+SetupNG<int> 			wk_label_0( "WKLM3", 42, false, SYNC_BIDIR, PERSISTENT, flap_update_act); //  S
+SetupNG<int> 			wk_label_1( "WKLM2",  7, false, SYNC_BIDIR, PERSISTENT, flap_update_act); // -2
+SetupNG<int> 			wk_label_2( "WKLM1",  8, false, SYNC_BIDIR, PERSISTENT, flap_update_act); // -1
+SetupNG<int> 			wk_label_3( "WKL0",   9, false, SYNC_BIDIR, PERSISTENT, flap_update_act); //  0
+SetupNG<int> 			wk_label_4( "WKLP1", 10, false, SYNC_BIDIR, PERSISTENT, flap_update_act); //  
+SetupNG<int> 			wk_label_5( "WKLP2", 11, false, SYNC_BIDIR, PERSISTENT, flap_update_act); //  2
+SetupNG<int> 			wk_label_6( "WKLP3", 41, false, SYNC_BIDIR, PERSISTENT, flap_update_act); //  L
 SetupNG<float>       	flap_takeoff("FLAPTO", 1,  true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 6, 1));
 SetupNG<int> 			audio_mute_sink( "AUDISS", 0 );
 SetupNG<int> 			audio_mute_gen( "AUDISG", AUDIO_ON );
@@ -401,7 +401,7 @@ SetupNG<float>			gload_neg_limit("GLOADNL", -3, true, SYNC_NONE, PERSISTENT, nul
 SetupNG<float>			gload_pos_max("GLOADPM", 1);
 SetupNG<float>			gload_neg_max("GLOADNM", 0);
 SetupNG<float>			airspeed_max("ASMAX", 0 );
-SetupNG<float>		    gload_alarm_volume("GLOADAVOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
+// SetupNG<float>		    gload_alarm_volume("GLOADAVOL", 100, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, &percentage_limits);
 SetupNG<int>        	display_variant("DISPLAY_VARIANT", 0 );
 SetupNG<int>        	compass_dev_auto("COMPASS_DEV", 0 );
 SetupNG<float>       	max_circle_wind_diff("CI_WINDDM", 60.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 90.0, 1.0));

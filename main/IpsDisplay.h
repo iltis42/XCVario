@@ -27,6 +27,7 @@ extern int screens_init;
 class PolarGauge;
 class WindIndicator;
 class McCready;
+class S2FBar;
 class Battery;
 class Altimeter;
 class CruiseStatus;
@@ -76,7 +77,6 @@ private:
 	// local variabls for dynamic display
 	static int s2falt;
 	static int s2fdalt;
-    static int s2f_level_prev;
 	static bool wireless_alive;
 	static int tempalt;
 	static bool s2fmodealt;
@@ -93,15 +93,13 @@ private:
 	static PolarGauge* MAINgauge;
     static PolarGauge* WNDgauge;
 	static McCready*   MCgauge;
+	static S2FBar*     S2FBARgauge;
 	static Battery*    BATgauge;
 	static Altimeter*  ALTgauge;
     static CruiseStatus* VCSTATgauge;
 	static FlapsBox*   FLAPSgauge;
 	static temp_status_t siliconTempStatusOld;
 
-	static void setArrowColor( bool upper );
-	static void drawArrow(int16_t x, int16_t y, int16_t level, bool del);
-	static void drawS2FBar(int16_t x, int16_t y, int s2fd);
 	static void drawBT();
 	static void drawCable(int16_t x, int16_t y);
 	static void drawWifi( int x, int y );

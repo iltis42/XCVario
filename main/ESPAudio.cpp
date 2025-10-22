@@ -270,7 +270,7 @@ const std::array<TONE, 29> stall_seq2 = {{ {0}, {470}, {1318}, {728}, {662}, {0}
 const std::array<TONE, 29> stall_seq3 = {{ {0}, {1290}, {0}, {1227}, {1255}, {0}, {0}, {1290}, {0}, {1227}, {1255}, {0},
     {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {0} }};
 const std::array<VOICECONF, 3> stell_vconf = {{ {0, 200}, {0, 40}, {1, 20} }};
-const SOUND StallWarn = { stall_tim.data(), { stall_seq1.data(), stall_seq2.data(), stall_seq3.data(), nullptr }, stell_vconf.data(), 2 };
+const SOUND StallWarn = { stall_tim.data(), { stall_seq1.data(), stall_seq2.data(), stall_seq3.data(), nullptr }, stell_vconf.data(), 1 };
 
 constexpr float fCs4 = noteFreq(-8);   // 277.18 Hz
 constexpr float fE4 = noteFreq(-5);    // 329.63 Hz
@@ -1034,7 +1034,7 @@ void Audio::dactask()
                 if ( sound != &VarioSound ) {
                     _alarm_mode = true;
                     // raise volume +20%, but assure at least 60%
-                    float alarm_vol = std::min(speaker_volume+20.f, 100.f);
+                    float alarm_vol = std::min(speaker_volume+alarm_volraise.get(), 100.f);
                     alarm_vol = std::max(alarm_vol, 60.f);
                     writeVolume(alarm_vol);
                 }

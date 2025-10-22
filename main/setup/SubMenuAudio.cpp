@@ -206,6 +206,14 @@ void audio_menu_create_tonestyle(SetupMenu *top) { // dynamic!
 }
 
 void audio_menu_create_deadband(SetupMenu *top) {
+    update_range_entry(0);
+    SetupMenuSelect *audio_range_sm = new SetupMenuSelect("Range", RST_NONE, audio_setup_s, &audio_range);
+    audio_range_sm->addEntry(range0.c_str());
+    audio_range_sm->addEntry(range1.c_str());
+    audio_range_sm->addEntry(range2.c_str());
+    audio_range_sm->setHelp("Audio range: fixed, or variable according to current Vario display range setting");
+    top->addEntry(audio_range_sm);
+
 	SetupMenuValFloat *dbminlv = new SetupMenuValFloat("Lower Vario", "", audio_setup_f, false, &deadband_neg);
 	top->addEntry(dbminlv);
 
@@ -240,6 +248,10 @@ void audio_menu_create(SetupMenu *audio) {
         dv->setHelp("Default volume for Audio when device is switched on");
         audio->addEntry(dv);
 
+        SetupMenuValFloat *flarmv = new SetupMenuValFloat("Alarm Vol. Raise", "%", nullptr, false, &alarm_volraise);
+        flarmv->setHelp("Audio volume raise for alarms and warnings above normal volume (min. 60%)");
+        audio->addEntry(flarmv);
+
         SetupMenuSelect *amspvol = new SetupMenuSelect("Split Volume", RST_NONE, nullptr, &audio_split_vol);
         amspvol->setHelp("Independent audio volumes for Cruise and Vario mode");
         amspvol->mkEnable();
@@ -257,15 +269,7 @@ void audio_menu_create(SetupMenu *audio) {
         astyle->setHelp("Refine XCV audio by preset tone styles, or a customized parameter set");
         audio->addEntry(astyle);
 
-        update_range_entry(0);
-        SetupMenuSelect *audio_range_sm = new SetupMenuSelect("Range", RST_NONE, audio_setup_s, &audio_range);
-        audio_range_sm->addEntry(range0.c_str());
-        audio_range_sm->addEntry(range1.c_str());
-        audio_range_sm->addEntry(range2.c_str());
-        audio_range_sm->setHelp("Audio range: fixed, or variable according to current Vario display range setting");
-        audio->addEntry(audio_range_sm);
-
-        SetupMenu *db = new SetupMenu("Deadbands", audio_menu_create_deadband);
+        SetupMenu *db = new SetupMenu("Range & Deadbands", audio_menu_create_deadband);
         audio->addEntry(db);
         db->setHelp("Dead band limits within which audio remains silent.  1 m/s equals roughly 200 fpm or 2 knots");
     }

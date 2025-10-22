@@ -52,16 +52,16 @@ struct FLConf {
 };
 
 // volatile dummy to avoid null pointer checks
-SetupNG<float> flap_plus_3(  "FLAP_PLUS_3", GENERAL_V_MIN, false, SYNC_NONE, VOLATILE);
+SetupNG<float> dummy_speed_6(  "FLAP_PLUS_3", GENERAL_V_MIN, false, SYNC_NONE, VOLATILE);
 // storage of all flap configuration entries
 static const std::array<FLConf, Flap::MAX_NR_POS> FL_STORE = {{
-	{&flap_minus_3, &wk_label_minus_3, &wk_sens_pos_minus_3},
-	{&flap_minus_2, &wk_label_minus_2, &wk_sens_pos_minus_2},
-	{&flap_minus_1, &wk_label_minus_1, &wk_sens_pos_minus_1},
-	{&flap_0,       &wk_label_null_0,  &wk_sens_pos_0},
-	{&flap_plus_1,  &wk_label_plus_1,  &wk_sens_pos_plus_1},
-	{&flap_plus_2,  &wk_label_plus_2,  &wk_sens_pos_plus_2},
-	{&flap_plus_3,  &wk_label_plus_3,  &wk_sens_pos_plus_3}
+	{&wk_speed_0, &wk_label_0, &wk_sens_pos_0},
+	{&wk_speed_1, &wk_label_1, &wk_sens_pos_1},
+	{&wk_speed_2, &wk_label_2, &wk_sens_pos_2},
+	{&wk_speed_3, &wk_label_3, &wk_sens_pos_3},
+	{&wk_speed_4, &wk_label_4, &wk_sens_pos_4},
+	{&wk_speed_5, &wk_label_5, &wk_sens_pos_5},
+	{&dummy_speed_6,&wk_label_6, &wk_sens_pos_6}
 	}};
 
 

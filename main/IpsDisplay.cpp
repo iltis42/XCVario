@@ -11,6 +11,7 @@
 #include "screen/element/PolarGauge.h"
 #include "screen/element/WindIndicator.h"
 #include "screen/element/McCready.h"
+#include "screen/element/S2FBar.h"
 #include "screen/element/Battery.h"
 #include "screen/element/Altimeter.h"
 #include "screen/element/CruiseStatus.h"
@@ -63,6 +64,7 @@ int   IpsDisplay::_pixpmd = 10;
 PolarGauge* IpsDisplay::MAINgauge = nullptr;
 PolarGauge* IpsDisplay::WNDgauge = nullptr;
 McCready*   IpsDisplay::MCgauge = nullptr;
+S2FBar*     IpsDisplay::S2FBARgauge = nullptr;
 Battery*    IpsDisplay::BATgauge = nullptr;
 Altimeter*	IpsDisplay::ALTgauge = nullptr;
 CruiseStatus* IpsDisplay::VCSTATgauge = nullptr;
@@ -74,11 +76,7 @@ int16_t DISPLAY_W;
 // u8g2_t IpsDisplay::u8g2c;
 
 const int   dmid = 160;   // display middle
-const int   bwide = 64;   // total width of bargraph
-const int   smfh  = 12;   // small font heigth
-const int   hbw   = 12;   // horizontal bar width for unit of bargraph
 const int   bw    = 32;   // bar width
-const int   S2F_TRISIZE = 60; // triangle size quality up/down
 
 #define TRISIZE 15
 
@@ -100,7 +98,7 @@ const int   S2F_TRISIZE = 60; // triangle size quality up/down
 #define MAXS2FTRI 43
 #define MAXTEBAR ((DISPLAY_H-(VARBARGAP*2))/2)
 
-#define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI +22 )
+#define YALT (YS2F+S2FFONTH+HEADFONTH+GAP+2*MAXS2FTRI)
 
 #define BTSIZE  5
 #define BTW    15
@@ -136,7 +134,6 @@ AdaptUGC *IpsDisplay::ucg = 0;
 
 int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
-int IpsDisplay::s2f_level_prev=0;
 bool IpsDisplay::wireless_alive = false;
 int IpsDisplay::tempalt = -2000;
 bool IpsDisplay::s2fmodealt = false;
@@ -323,14 +320,25 @@ void IpsDisplay::initDisplay() {
     }
     MAINgauge->setUnit(Units::Vario(1.));
     MAINgauge->setRange(scale_range.get(), 0.f, log_scale.get());
-    MAINgauge->setColor(needle_color.get());
+    MAINgauge->setColor(VN_COLOR_RED); // fixme temp needle_color.get());
     if (vario_mc_gauge.get()) {
-        if ( !MCgauge ) { MCgauge = new McCready(1, DISPLAY_H + 2); }
-    	else {
-			delete MCgauge;
-			MCgauge = nullptr;
-		}
+        if ( !MCgauge ) {
+            MCgauge = new McCready(1, DISPLAY_H + 2);
+        }
+        if ( !S2FBARgauge) {
+            S2FBARgauge = new S2FBar(DISPLAY_W - 54, AMIDY, 28, 32);
+        }
 	}
+    else {
+        if ( MCgauge ) {
+            delete MCgauge;
+            MCgauge = nullptr;
+        }
+        if ( S2FBARgauge) {
+            delete S2FBARgauge;
+            S2FBARgauge = nullptr;
+        }
+    }
     if (!BATgauge) {
         BATgauge = new Battery(DISPLAY_W - 10, DISPLAY_H - 12);
     }
@@ -343,11 +351,13 @@ void IpsDisplay::initDisplay() {
     if ( FLAP ) {
 		if ( !FLAPSgauge ) {
         	FLAPSgauge = new FlapsBox(DISPLAY_W-28, AMIDY, DISPLAY_H > DISPLAY_W);
-		} else {
-			delete FLAPSgauge;
-			FLAPSgauge = nullptr;
-			ESP_LOGI(FNAME,"FlapsBox deleted");
 		}
+    }
+    else {
+        if ( FLAPSgauge ) {
+            delete FLAPSgauge;
+            FLAPSgauge = nullptr;
+        }
     }
 
     if( display_style.get() != DISPLAY_AIRLINER ) {
@@ -369,7 +379,11 @@ void IpsDisplay::initDisplay() {
         if ( MCgauge ) {
     		MCgauge->setLarge(false);
         }
-		ALTgauge->setRef(FIELD_START+80, YALT-12);
+        if ( S2FBARgauge ) {
+            S2FBARgauge->setRef(ASVALX+10, DISPLAY_H/2);
+            S2FBARgauge->setWidth(50);
+        }
+		ALTgauge->setRef(FIELD_START+80, YALT);
 
 		// draw TE scale
 		drawLegend();
@@ -537,7 +551,6 @@ void IpsDisplay::redrawValues()
 	tempalt = -2000;
 	s2falt = -1;
 	s2fdalt = -1;
-	s2f_level_prev = 0;
 	wireless_alive = false;
 	if ( MCgauge ) {
 		MCgauge->forceRedraw();
@@ -613,85 +626,6 @@ void IpsDisplay::setTeBuf( int y1, int h, int r, int g, int b ){
 	}
 }
 
-
-
-
-void IpsDisplay::setArrowColor( bool upper ){
-	if( s2f_arrow_color.get() == AC_BLUE_BLUE )
-		ucg->setColor( COLOR_BBLUE );
-	if( s2f_arrow_color.get() == AC_WHITE_WHITE )
-		ucg->setColor( COLOR_WHITE );
-	if( s2f_arrow_color.get() == AC_GREEN_RED ){
-		if( upper )
-			ucg->setColor( COLOR_GREEN );
-		else
-			ucg->setColor( COLOR_RED );
-	}
-}
-
-void IpsDisplay::drawArrow(int16_t x, int16_t y, int16_t level, bool del)
-{
-	const int width=40;
-	const int step=8;
-	const int gap=2;
-	int height=step;
-
-	if ( level == 0 ) return;
-
-	int init = 1;
-	if ( std::abs(level) == 4 ) {
-		init = 2;
-		if ( del )
-			setArrowColor( level < 0 );
-		else{
-			if( s2f_arrow_color.get() == AC_GREEN_RED  )
-				ucg->setColor( COLOR_WHITE );
-			else
-				ucg->setColor( COLOR_RED );
-		}
-	}
-	else if ( del ) {
-		ucg->setColor( COLOR_BLACK );
-	}
-	else {
-		setArrowColor( level < 0 );
-	}
-
-	int l = level-init;
-	if ( level < 0 ) {
-		height = -height;
-		l = level+init;
-	}
-	ucg->drawTriangle(x,y+l*(step+gap), x,y+l*(step+gap)+height, x-width, y+l*gap);
-	ucg->drawTriangle(x,y+l*(step+gap), x+width,y+l*gap, x,y+l*(step+gap)+height);
-}
-
-// speed to fly delta given in kmh, s2fd > 0 means speed up
-// bars dice up 10 kmh steps
-void IpsDisplay::drawS2FBar(int16_t x, int16_t y, int s2fd)
-{
-	int level = s2fd/10; // dice up into 10 kmh steps
-
-	// draw max. three bars, then change color of the last one to red
-	if ( level > 4 ) { level = 4; }
-	else if ( level < -4 ) { level = -4; }
-
-	// ESP_LOGI(FNAME,"s2fbar %d %d", s2fd, level);
-	if ( level == s2f_level_prev ) {
-		return;
-	}
-
-	int inc = (level-s2f_level_prev > 0) ? 1 : -1;
-	for ( int i = s2f_level_prev + ((s2f_level_prev==0 || s2f_level_prev*inc>0) ? inc : 0);
-			i != level+((i*inc < 0)?0:inc); i+=inc ) {
-		if ( i != 0 ) {
-			drawArrow(x, y+(i>0?1:-1)*24, i, i*inc < 0);
-			// ESP_LOGI(FNAME,"s2fbar draw %d,%d", i, (i*inc < 0)?0:inc);
-		}
-	}
-
-	s2f_level_prev = level;
-}
 
 void IpsDisplay::drawBT() {
 	bool bta=true;
@@ -927,6 +861,10 @@ void IpsDisplay::initRetroDisplay(){
 		delete ALTgauge;
 		ALTgauge = nullptr;
 	}
+    if ( S2FBARgauge ) {
+        S2FBARgauge->setRef(DISPLAY_W - 54, AMIDY);
+        S2FBARgauge->setWidth(28);
+    }
 	redrawValues();
 
 	// Unit's
@@ -1384,9 +1322,8 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Unit adaption for mph and knots
 	float acl = Units::Vario( acl_ms );
-
-	//  float s2f = Units::Airspeed( s2f_ms );   not used for now
-	// float s2fd = Units::Airspeed( s2fd_ms );
+	float s2f = Units::Airspeed( s2f_ms );
+	float s2fd = Units::Airspeed( s2fd_ms );
 	// int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
 
 	// average Climb
@@ -1394,13 +1331,15 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		MAINgauge->drawFigure(ate_ms);
 	}
 
-	// S2F Command triangle
-	// if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30)) && !ulmode ) {
+	// S2F bar
+	if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30)) && S2FBARgauge ) {
 		// static float s=0; // check the bar code
 		// s2fd = sin(s) * 42.;
 		// s+=0.04;
-	// 	drawS2FBar(AMIDX, AMIDY,(int)s2fd);
-	// }
+		S2FBARgauge->draw((int)s2fd);
+		S2FBARgauge->drawSpeed(s2f);
+
+	}
 
 	// MC val
 	if( MCgauge && !(tick%8) ) {
@@ -1720,7 +1659,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		as_prev = airspeed_kmh;
 	}
 	// S2F command trend triangle
-	if( ((int)s2fd != s2fdalt) || (s2falt != (int)(s2f+0.5)) || !(tick%21) ) {
+	if ( (((int)s2fd != s2fdalt) || (s2falt != (int)(s2f+0.5)) || !(tick%21)) && S2FBARgauge ) {
 		// Arrow pointing there
 		if( s2fmode ){
 			// erase old
@@ -1733,8 +1672,8 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		drawSmallSpeed(s2f, ASVALX+30, YS2F-fh+3);
 
 		// draw S2F Delta
-		drawSmallSpeed(s2fd, ASVALX+30, DISPLAY_H/2+fh+7);
-		drawS2FBar(ASVALX+20, DISPLAY_H/2 + 10, s2fd);
+		drawSmallSpeed(s2fd, ASVALX+30, DISPLAY_H/2+fh+2);
+		S2FBARgauge->draw(s2fd);
 
 		s2fdalt = (int)s2fd;
 		s2falt = (int)(s2f+0.5);

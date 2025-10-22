@@ -819,7 +819,7 @@ static void options_menu_create_altimeter(SetupMenu *top) {
 }
 
 void options_menu_create_flarm(SetupMenu *top) {
-	SetupMenuSelect *flarml = new SetupMenuSelect("Alarm Level", RST_NONE, nullptr, &flarm_warning);
+	SetupMenuSelect *flarml = new SetupMenuSelect("Level Threshold", RST_NONE, nullptr, &flarm_warning);
 	flarml->setHelp(
 			"Level of FLARM alarm to enable: 1 is lowest (13-18 sec), 2 medium (9-12 sec), 3 highest (0-8 sec) until impact");
 	flarml->addEntry("Disable");
@@ -833,11 +833,11 @@ void options_menu_create_flarm(SetupMenu *top) {
 			"The time FLARM alarm warning keeps displayed after alarm went off");
 	top->addEntry(flarmt);
 
-	SetupMenuSelect *flarms = new SetupMenuSelect("Alarm Simulation", RST_NONE, startFlarmSimulation, nullptr, false, true);
+	SetupMenuSelect *flarms = new SetupMenuSelect("Alarm Check", RST_NONE, startFlarmSimulation, nullptr, false, true);
 	flarms->setHelp(
 			"Simulate an airplane crossing from left to right with different alarm levels and vertical distance in 5 seconds");
-	flarms->addEntry("Start Simulation");
 	flarms->addEntry("Cancel");
+	flarms->addEntry("Start Simulation");
 	top->addEntry(flarms);
 }
 
@@ -861,44 +861,49 @@ void screens_menu_create_extreme_records(SetupMenu *top) {
 }
 
 static void screens_menu_create_vario(SetupMenu *top) {
-
     // SetupMenuSelect *ncolor = new SetupMenuSelect("Needle Color", RST_NONE, nullptr, &needle_color);
     // ncolor->addEntry("White");
     // ncolor->addEntry("Orange");
     // ncolor->addEntry("Red");
     // top->addEntry(ncolor);
-	SetupMenuSelect *scrcaid = new SetupMenuSelect("Thermal-Assist", RST_NONE, nullptr, &vario_centeraid);
-	scrcaid->setHelp("Enable/disable display of the thermal assistent");
-	scrcaid->mkEnable();
-	top->addEntry(scrcaid);
+    SetupMenuSelect *disty = new SetupMenuSelect("Style", RST_NONE, nullptr, &display_style);
+    top->addEntry(disty);
+    disty->setHelp("Display style in airliner style or retro mode with classic vario meter needle");
+    disty->addEntry("Airliner");
+    disty->addEntry("Retro");
 
-	SetupMenuSelect *tgauge = new SetupMenuSelect("Upper Gauge", RST_NONE, nullptr, &vario_upper_gauge);
-	tgauge->setHelp("Choose the content for this gauge");
-	tgauge->addEntry("Disable");
-	tgauge->addEntry("Airspeed", GAUGE_SPEED);
-	tgauge->addEntry("Speed2Fly", GAUGE_S2F);
-	tgauge->addEntry("Net. Vario", NETTO_VARIO);
-	tgauge->addEntry("Heading", GAUGE_HEADING);
-	tgauge->addEntry("Slip Angle", GAUGE_SLIP);
-	top->addEntry(tgauge);
+    SetupMenuSelect *scrcaid = new SetupMenuSelect("Thermal-Assist", RST_NONE, nullptr, &vario_centeraid);
+    scrcaid->setHelp("Enable/disable display of the thermal assistent");
+    scrcaid->mkEnable();
+    top->addEntry(scrcaid);
 
-	SetupMenuSelect *bgauge = new SetupMenuSelect("Lower Gauge", RST_NONE, nullptr, &vario_lower_gauge);
-	bgauge->setHelp("Choose the content for this gauge");
-	bgauge->addEntry("Disable");
-	bgauge->addEntry("Altimeter", GAUGE_ALT);
-	// bgauge->addEntry("Life Wind", GAUGE_NONE);
-	top->addEntry(bgauge);
+    SetupMenuSelect *tgauge = new SetupMenuSelect("Upper Gauge", RST_NONE, nullptr, &vario_upper_gauge);
+    tgauge->setHelp("Choose the content for this gauge");
+    tgauge->addEntry("Disable");
+    tgauge->addEntry("Airspeed", GAUGE_SPEED);
+    tgauge->addEntry("Speed2Fly", GAUGE_S2F);
+    tgauge->addEntry("Net. Vario", NETTO_VARIO);
+    tgauge->addEntry("Heading", GAUGE_HEADING);
+    tgauge->addEntry("Slip Angle", GAUGE_SLIP);
+    top->addEntry(tgauge);
 
-	SetupMenuSelect * wke = new SetupMenuSelect( "Flap Indicator", RST_NONE, nullptr, &flap_enable );
-	wke->mkEnable();
-	wke->setHelp("Enable flap indicator to assist optimum flap setting depending on speed, G-load and ballast");
-	top->addEntry( wke );
+    SetupMenuSelect *bgauge = new SetupMenuSelect("Lower Gauge", RST_NONE, nullptr, &vario_lower_gauge);
+    bgauge->setHelp("Choose the content for this gauge");
+    bgauge->addEntry("Disable");
+    bgauge->addEntry("Altimeter", GAUGE_ALT);
+    // bgauge->addEntry("Life Wind", GAUGE_NONE);
+    top->addEntry(bgauge);
 
-	SetupMenuSelect *nup = new SetupMenuSelect("Wind Rose", RST_NONE, nullptr, &wind_northup);
-	nup->setHelp("Display wind relative to glider is default, choose north-up, if prefered");
-	nup->addEntry("Glider");
-	nup->addEntry("North-Up");
-	top->addEntry(nup);
+    SetupMenuSelect *wke = new SetupMenuSelect("Flap Indicator", RST_NONE, nullptr, &flap_enable);
+    wke->mkEnable();
+    wke->setHelp("Enable flap indicator to assist optimum flap setting depending on speed, G-load and ballast");
+    top->addEntry(wke);
+
+    SetupMenuSelect *nup = new SetupMenuSelect("Wind Rose", RST_NONE, nullptr, &wind_northup);
+    nup->setHelp("Display wind relative to glider is default, choose north-up, if prefered");
+    nup->addEntry("Glider-Up");
+    nup->addEntry("North-Up");
+    top->addEntry(nup);
 }
 
 void screens_menu_create_gload(SetupMenu *top) {
@@ -1114,13 +1119,6 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	dtype->addEntry("ST7789");
 	dtype->addEntry("ILI9341");
 	top->addEntry(dtype);
-
-	SetupMenuSelect *disty = new SetupMenuSelect("Style", RST_NONE, nullptr, &display_style);
-	top->addEntry(disty);
-	disty->setHelp(
-			"Display style in more digital airliner stype or retro mode with classic vario meter needle");
-	disty->addEntry("Airliner");
-	disty->addEntry("Retro");
 
 	SetupMenuSelect *disva = new SetupMenuSelect("Color Variant", RST_NONE, nullptr, &display_variant);
 	top->addEntry(disva);

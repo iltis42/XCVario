@@ -462,7 +462,7 @@ extern SetupNG<int>		    wk_sens_pos_4;
 extern SetupNG<int>		    wk_sens_pos_5;
 extern SetupNG<int>		    wk_sens_pos_6;
 extern SetupNG<int>       	stall_warning;
-extern SetupNG<float>		stall_speed;
+extern SetupNG<float>		polar_stall_speed;
 extern SetupNG<int>       	flarm_warning;
 extern SetupNG<float>       flarm_alarm_time;
 extern SetupNG<int>       	flap_sensor;

@@ -37,15 +37,18 @@ MessagePool::~MessagePool()
 }
 
 // granted none nullptr return value
-Message* MessagePool::getOne()
+Message* MessagePool::getOne(bool enforce)
 {
     Message* msg = nullptr;
     xSemaphoreTake(_mutex, portMAX_DELAY);
     while ( _freeList.empty() )
     {
         xSemaphoreGive(_mutex);
+        if ( !enforce ) {
+            _nr_acqfails++;
+            return nullptr;
+        }
         vTaskDelay(pdMS_TO_TICKS(10));
-        _nr_acqfails++;
         xSemaphoreTake(_mutex, portMAX_DELAY);
     }
     msg = _freeList.front();

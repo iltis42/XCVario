@@ -32,7 +32,7 @@ public:
     MessagePool();
     ~MessagePool();
 
-    Message* getOne();
+    Message* getOne(bool enforce=true);
     void recycleMsg(Message* msg);
 
     // Some debug and statistics

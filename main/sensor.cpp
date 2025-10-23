@@ -573,6 +573,8 @@ void readSensors(void *pvParameters){
 
 
 		AUDIO->updateTone();
+		const int screenEvent = ScreenEvent(ScreenEvent::VARIO_UPDATE).raw;
+		xQueueSend(uiEventQueue, &screenEvent, 0);
 
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}

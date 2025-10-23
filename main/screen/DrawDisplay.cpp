@@ -80,7 +80,13 @@ void UiEventLoop(void *arg)
             }
             else if (event.isScreenEvent()) {
                 // ESP_LOGI(FNAME, "Screen event %d", detail);
-                if (detail == ScreenEvent::MSG_BOX) {
+                if (detail == ScreenEvent::VARIO_UPDATE) {
+					// Vario Screen
+					if ( !(gflags.raw & VARIO_SCREEN_MASK.raw) ) {
+						Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), temp, batteryVoltage, s2f_delta, as2f, average_climb.get(), VCMode.getCMode(), gflags.standard_setting, flap_pos.get() );
+					}
+				}
+                else if (detail == ScreenEvent::MSG_BOX) {
                     if (MBOX->draw()) { // time triggered mbox update
                         // mbox finish, time to refresh the bottom line of the screen
                         Display->setBottomDirty();
@@ -235,11 +241,7 @@ void UiEventLoop(void *arg)
 					}
 				}
 			}
-			// Vario Screen
-			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon )  ) {
-				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
-				Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), t, batteryVoltage, s2f_delta, as2f, average_climb.get(), VCMode.getCMode(), gflags.standard_setting, flap_pos.get() );
-			}
+
 			if( theCenteraid ){
 				theCenteraid->tick();
 			}

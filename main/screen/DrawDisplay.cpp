@@ -36,6 +36,9 @@ QueueHandle_t uiEventQueue = nullptr;
 
 static unsigned long int flarm_alarm_holdtime = 0;
 
+const global_flags VARIO_SCREEN_MASK = { true, false, false, false, false, true, true, true, false, false, false, false };
+
+
 
 void UiEventLoop(void *arg)
 {
@@ -120,15 +123,13 @@ void UiEventLoop(void *arg)
             }
         }
 
-        // TickType_t dLastWakeTime = xTaskGetTickCount();
         if (gflags.inSetup != true)
         {
-            float t = OAT.get();
+            temp = OAT.get();
             if (gflags.validTemperature == false) {
-                t = DEVICE_DISCONNECTED_C;
+                temp = DEVICE_DISCONNECTED_C;
             }
-            float airspeed = 0;
-            if (airspeed_mode.get() == MODE_IAS) {
+			if (airspeed_mode.get() == MODE_IAS) {
                 airspeed = ias.get();
             }
             else if (airspeed_mode.get() == MODE_TAS) {

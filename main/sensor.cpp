@@ -138,6 +138,7 @@ static float temperature=15.0;
 static float xcvTemp=15.0;
 static unsigned long _millis = 0;
 unsigned long _gps_millis = 0;
+static bool first_devices_run = false;
 
 
 float batteryVoltage = 0.;
@@ -157,7 +158,7 @@ uint8_t g_col_header_light_b=g_col_highlight;
 uint8_t gyro_flash_savings=0;
 
 // boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.
-t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -863,7 +864,7 @@ void system_startup(void *args){
 
 	// DEVMAN serialization, read in all configured devices.
 	DEVMAN->reserectFromNvs();
-	if ( gflags.intrDevices ) {
+	if ( first_devices_run ) {
 		DEVMAN->introduceDevices(); // create a flarm etc.
 	}
 	if ( CAN ) {
@@ -1421,7 +1422,7 @@ extern "C" void  app_main(void)
 	}
 	if ( ! flarm_devsetup.exists() ) {
 		ESP_LOGI(FNAME,"Init devices" );
-		gflags.intrDevices = true;
+		first_devices_run = true;
 	}
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();

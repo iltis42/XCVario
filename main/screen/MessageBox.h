@@ -9,6 +9,7 @@
 #pragma once
 
 #include "protocol/ClockIntf.h"
+#include "comm/Mutex.h"
 
 #include <queue>
 #include <string>
@@ -32,7 +33,8 @@
 struct ScreenMsg {
     int alert_level;
     std::string text;
-    ScreenMsg(int a, const char *str) : alert_level(a), text(str) {}
+    int _to;
+    ScreenMsg(int a, const char *str, int to = 0) : alert_level(a), text(str), _to(to) {}
 };
 
 
@@ -45,7 +47,7 @@ public:
     ~MessageBox();
 
     // API
-    void newMessage(int alert_level, const char* msg);
+    void newMessage(int alert_level, const char* msg, int to = 0);
     void recallAlarm();
     bool draw();
     // bool isVisible() const { return current != nullptr; }
@@ -62,6 +64,7 @@ private:
 private:
     MessagePtr current = nullptr;
     std::deque<MessagePtr> _msg_list;
+    mutable SemaphoreMutex _list_mutex;
     const int width;
     const int height;
     int _print_pos = 0;

@@ -34,17 +34,19 @@
 // The context to serialize all display access.
 QueueHandle_t uiEventQueue = nullptr;
 
-static float stall_alarm_off_kmh = 0.;
-static uint16_t stall_alarm_off_holddown = 0;
-static uint16_t gear_warning_holdoff = 0;
 static unsigned long int flarm_alarm_holdtime = 0;
+
+const global_flags VARIO_SCREEN_MASK = { true, false, false, false, false, true, true, true, false, false, false, false };
+
 
 
 void UiEventLoop(void *arg)
 {
     ESPRotary &knob = *static_cast<ESPRotary *>(arg);
-
-    stall_alarm_off_kmh = stall_speed.get()/3;
+	float temp = DEVICE_DISCONNECTED_C;
+	float airspeed = 0;
+	bool stall_warning_active = false;
+	bool gear_warning_active = false;
 
     xQueueReset(uiEventQueue);
 
@@ -81,7 +83,13 @@ void UiEventLoop(void *arg)
             }
             else if (event.isScreenEvent()) {
                 // ESP_LOGI(FNAME, "Screen event %d", detail);
-                if (detail == ScreenEvent::MSG_BOX) {
+                if (detail == ScreenEvent::VARIO_UPDATE) {
+					// Vario Screen
+					if ( !(gflags.raw & VARIO_SCREEN_MASK.raw) ) {
+						Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), temp, batteryVoltage, s2f_delta, as2f, average_climb.get(), VCMode.getCMode(), gflags.standard_setting, flap_pos.get() );
+					}
+				}
+                else if (detail == ScreenEvent::MSG_BOX) {
                     if (MBOX->draw()) { // time triggered mbox update
                         // mbox finish, time to refresh the bottom line of the screen
                         Display->setBottomDirty();
@@ -115,15 +123,13 @@ void UiEventLoop(void *arg)
             }
         }
 
-        // TickType_t dLastWakeTime = xTaskGetTickCount();
         if (gflags.inSetup != true)
         {
-            float t = OAT.get();
+            temp = OAT.get();
             if (gflags.validTemperature == false) {
-                t = DEVICE_DISCONNECTED_C;
+                temp = DEVICE_DISCONNECTED_C;
             }
-            float airspeed = 0;
-            if (airspeed_mode.get() == MODE_IAS) {
+			if (airspeed_mode.get() == MODE_IAS) {
                 airspeed = ias.get();
             }
             else if (airspeed_mode.get() == MODE_TAS) {
@@ -135,82 +141,48 @@ void UiEventLoop(void *arg)
             }
 
             // Stall Warning Screen
-			if( stall_warning.get() && screen_gmeter.get() != SCREEN_PRIMARY ){  // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
-				if( gflags.stall_warning_armed ){
-					float acceleration=IMU::getGliderAccelZ();
-					if( acceleration < 0.3 )
-						acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
-					float acc_stall= stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
-					if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
-						if( !gflags.stall_warning_active ){
-							AUDIO->startSound(AUDIO_ALARM_STALL);
-							MBOX->newMessage(4, "! STALL !");
-							gflags.stall_warning_active = true;
-						}
-					}
-					else{
-						if( gflags.stall_warning_active ){
-							MBOX->recallAlarm();
-							gflags.stall_warning_active = false;
-						}
-					}
-					if( ias.get() < stall_alarm_off_kmh ){
-						stall_alarm_off_holddown++;
-						if( stall_alarm_off_holddown > 1200 ){  // ~30 seconds holddown
-							gflags.stall_warning_armed = false;
-							stall_alarm_off_holddown=0;
-						}
-					}
-					else{
-						stall_alarm_off_holddown=0;
+			if( stall_warning.get() && screen_gmeter.get() != SCREEN_PRIMARY ) {
+				// In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
+				float acceleration=IMU::getGliderAccelZ();
+				if( acceleration < 0.3 )
+					acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
+				float acc_stall= polar_stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
+				if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
+					if( !stall_warning_active ){
+						AUDIO->startSound(AUDIO_ALARM_STALL);
+						MBOX->newMessage(4, "! STALL !", 20); // 20 sec
+						stall_warning_active = true;
 					}
 				}
 				else{
-					if( ias.get() > stall_speed.get() ){
-						gflags.stall_warning_armed = true;
-						stall_alarm_off_holddown=0;
-					}
+					stall_warning_active = false;
 				}
 			}
-			if( gear_warning.get() ){
-				if( !gear_warning_holdoff ){
-					int gw = 0;
-					if( gear_warning.get() == GW_EXTERNAL ){
-						gw = gflags.gear_warn_external;
-					}else{
-						gw = gpio_get_level( SetupMenu::getGearWarningIO() );
-						if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
-							gw = !gw;
-						}
+			if ( gear_warning.get() ) {
+				int gw = 0;
+				if( gear_warning.get() == GW_EXTERNAL ){
+					gw = gflags.gear_warn_external;
+				}else{
+					gw = gpio_get_level( SetupMenu::getGearWarningIO() );
+					if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
+						gw = !gw;
 					}
-					if( gw ){
-						if( Rotary->readBootupStatus() ){   // Acknowledge Warning -> Warning OFF
-							gear_warning_holdoff = 25000;  // ~500 sec
-							// AUDIO->alarm( false );
-							Display->clear();
-							gflags.gear_warning_active = false;
-						}
-						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
-							AUDIO->startSound(AUDIO_ALARM_STALL);
-							MBOX->newMessage(4, "! GEAR !");
-							gflags.gear_warning_active = true;
-						}
-					}
-					else{
-						if( gflags.gear_warning_active ){
-							// AUDIO->alarm( false );
-							MBOX->recallAlarm();
-							gflags.gear_warning_active = false;
-						}
+				}
+				if( gw ){
+					if( !gear_warning_active && !stall_warning_active ){
+						AUDIO->startSound(AUDIO_ALARM_GEAR);
+						MBOX->newMessage(4, "! GEAR !", 20);
+						gear_warning_active = true;
 					}
 				}
 				else{
-					gear_warning_holdoff--;
+					gear_warning_active = false;
 				}
 			}
+			
 
 			// Flarm Warning Screen
-			if( flarm_warning.get() && !gflags.stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get() ){ // 0 -> Disable
+			if( flarm_warning.get() && !stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get() ){ // 0 -> Disable
 				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
 				if( !gflags.flarmWarning ) {
 					gflags.flarmWarning = true;
@@ -270,11 +242,7 @@ void UiEventLoop(void *arg)
 					}
 				}
 			}
-			// Vario Screen
-			if( !(gflags.stall_warning_active || gflags.gear_warning_active || gflags.flarmWarning || gflags.gLoadDisplay || gflags.horizon )  ) {
-				// ESP_LOGI(FNAME,"TE=%2.3f", te_vario.get() );
-				Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), t, batteryVoltage, s2f_delta, as2f, average_climb.get(), VCMode.getCMode(), gflags.standard_setting, flap_pos.get() );
-			}
+
 			if( theCenteraid ){
 				theCenteraid->tick();
 			}

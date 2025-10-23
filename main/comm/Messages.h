@@ -32,10 +32,11 @@ public:
     MessagePool();
     ~MessagePool();
 
-    Message* getOne();
+    Message* getOne(bool enforce=true);
     void recycleMsg(Message* msg);
 
     // Some debug and statistics
+    int nrAcqFails() const { return _nr_acqfails; }
     int nrFree() const;
     int nrUsed() const;
     int nrAcq() const { return _nr_acquisition; }

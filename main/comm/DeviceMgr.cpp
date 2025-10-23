@@ -982,6 +982,17 @@ int Device::getSendPort(ProtocolType p) const
 namespace DEV
 {
 
+Message* plsMessage(DeviceId target_id, int port)
+{
+    Message* m = MP.getOne(false);
+    if ( m ) {
+        m->target_id = target_id;
+        m->port = port;
+        return m;
+    }
+    return nullptr;
+}
+
 Message* acqMessage(DeviceId target_id, int port)
 {
     Message* m = MP.getOne();

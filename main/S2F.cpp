@@ -82,7 +82,7 @@ void S2F::recalculatePolar()
 	a1 = a1 * ((bugs.get() + 100.0) / 100.0);
 	a2 = a2 * ((bugs.get() + 100.0) / 100.0);
 	ESP_LOGI(FNAME, "bugs:%d balo:%.1f%% a0=%f a1=%f  a2=%f s(80)=%f, s(160)=%f", (int)bugs.get(), myballast, a0, a1, a2, sink(80), sink(160));
-	_stall_speed_ms = stall_speed.get() / 3.6;
+	_stall_speed_ms = polar_stall_speed.get() / 3.6;
 }
 
 void S2F::setPolar()
@@ -158,7 +158,7 @@ float S2F::getVn( float v ){
 
 double S2F::sink( double v_in ) {
 	double v = v_in;
-	double v_stall = stall_speed.get() * 0.9;
+	double v_stall = polar_stall_speed.get() * 0.9;
 	if ( v_in < v_stall || !IsValid() ){
 		// ESP_LOGI(FNAME,"S2F::sink, warning, airspeed %.1f below minimum speed %.1f km/h", v_in, v_stall );
 		return 0.0;
@@ -213,8 +213,8 @@ void S2F::recalcSinkNSpeeds()
 	}
 	// 2*a2*v + a1 = 0
 	_min_speed = (3.6*-a1)/(2*a2);
-	if ( _min_speed < stall_speed.get() )
-		_min_speed = stall_speed.get();
+	if ( _min_speed < polar_stall_speed.get() )
+		_min_speed = polar_stall_speed.get();
 	_min_sink = sink( _min_speed );
 	_circling_speed = 1.2*_min_speed;
 	_circling_sink = sink( _circling_speed );

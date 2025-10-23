@@ -15,6 +15,8 @@
 #include "logdefnone.h"
 #include "sensor.h"
 
+#include <mutex>
+
 MessageBox *MBOX; // the global representation
 
 const int CLOCK_DIVIDER = 8;
@@ -35,6 +37,7 @@ MessageBox::MessageBox() :
     width(MYUCG->getDisplayWidth()),
     height(MYUCG->getDisplayHeight())
 {
+    // _list_mutex = SemaphoreMutex();
 }
 
 MessageBox::~MessageBox()
@@ -43,15 +46,19 @@ MessageBox::~MessageBox()
     _msg_list.clear();
 }
 
-void MessageBox::newMessage(int alert_level, const char *str)
+void MessageBox::newMessage(int alert_level, const char *str, int to)
 {
-    std::unique_ptr<ScreenMsg> msg = std::make_unique<ScreenMsg>(alert_level, str);
-    if ( alert_level >= 3 ) {
-        _msg_list.push_front(std::move(msg));
+    std::unique_ptr<ScreenMsg> msg = std::make_unique<ScreenMsg>(alert_level, str, to);
+    {
+        std::lock_guard<SemaphoreMutex> lock(_list_mutex);
+        if ( alert_level >= 3 ) {
+            _msg_list.push_front(std::move(msg));
+        }
+        else {
+            _msg_list.push_back(std::move(msg));
+        }
     }
-    else {
-        _msg_list.push_back(std::move(msg));
-    }
+    
     if ( alert_level == 4 ) {
         _msg_to = 0; // trigger immediate display
     }
@@ -63,9 +70,7 @@ void MessageBox::newMessage(int alert_level, const char *str)
 void MessageBox::recallAlarm()
 {
     if ( current ) {
-        if ( current->alert_level == 4 ) {
-            _msg_to = 0; // trigger immediate display of next message
-        }
+        _msg_to = 0; // trigger immediate display of next message
     }
 }
 
@@ -76,14 +81,17 @@ bool MessageBox::nextMsg()
     MYUCG->undoClipRange();
     removeMsg();
 
-    if (!_msg_list.empty()) {
-        current = std::move(_msg_list.front());
-        _msg_list.pop_front();
-    }
-    else {
-        // All done
-        current = nullptr;
-        return false;
+    {
+        std::lock_guard<SemaphoreMutex> lock(_list_mutex);
+        if (!_msg_list.empty()) {
+            current = std::move(_msg_list.front());
+            _msg_list.pop_front();
+        }
+        else {
+            // All done
+            current = nullptr;
+            return false;
+        }
     }
 
     // prepare screen with a colored line on top
@@ -118,7 +126,8 @@ bool MessageBox::nextMsg()
     // set time counter
     _start_scroll = 0;
     _nr_scroll = std::max(MYUCG->getStrWidth(current->text.c_str()) - width +2, 0);
-    _msg_to = current->alert_level * 10 * (1000/(CLOCK_DIVIDER*Clock::TICK_ATOM)); // x 10 sec
+    _msg_to = (current->_to > 0) ? current->_to :  current->alert_level * 10; // x 10 sec
+    _msg_to *= (1000/(CLOCK_DIVIDER*Clock::TICK_ATOM)); // convert to ticks
 
     return true;
 }

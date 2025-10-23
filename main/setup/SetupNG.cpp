@@ -334,7 +334,7 @@ SetupNG<int>		    wk_sens_pos_4("WKSP1", 2000);
 SetupNG<int>		    wk_sens_pos_5("WKSP2", 1500);
 SetupNG<int>		    wk_sens_pos_6("WKSP3", 1000);
 SetupNG<int>            stall_warning( "STALL_WARN", 0 );
-SetupNG<float>			stall_speed( "STALL_SPEED", 70, true, SYNC_FROM_MASTER, PERSISTENT, 0, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>			polar_stall_speed( "STALL_SPEED", 70, true, SYNC_FROM_MASTER, PERSISTENT, 0, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<int>            flarm_warning( "FLARM_LEVEL", 1 );
 SetupNG<float>          flarm_alarm_time( "FLARM_ALM", 5, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1, 15, 1));
 SetupNG<int>            flap_sensor( "FLAP_SENS", 0, false, SYNC_FROM_MASTER, PERSISTENT, flap_act); // fixme synch logic broken

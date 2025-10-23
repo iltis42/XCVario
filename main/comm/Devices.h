@@ -72,7 +72,8 @@ class Message;
 namespace DEV
 {
 
-Message* acqMessage(DeviceId target, int port);
+Message* plsMessage(DeviceId target, int port); // can fail
+Message* acqMessage(DeviceId target, int port); // garanty, but potential wait
 inline void relMessage(Message *msg);
 
 bool Send(Message* msg);

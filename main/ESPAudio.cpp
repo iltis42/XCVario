@@ -261,16 +261,16 @@ const SOUND TurnOut = { turn_tim.data(), { turn_seq.data(), stretch_seq.data(), 
 const SOUND TurnIn  = { turn_tim.data(), { turn_seq.data(), turnmore_seq.data(), nullptr, nullptr }, turn_vconf.data(), 0 };
 
 // Stall warning
-const std::array<DURATION, 29> stall_tim = {{ {150}, {65}, {110}, {50}, {134}, {30},  {150}, {65}, {110}, {50}, {134}, {30}, 
-    {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {0} }};
-const std::array<TONE, 29> stall_seq1 = {{ {0}, {3150}, {446}, {354}, {330}, {0}, {0}, {3150}, {446}, {354}, {330}, {0}, 
-    {1600}, {913}, {1600}, {913}, {1600}, {913}, {1600}, {913}, {1600}, {913}, {1600}, {913}, {1600}, {913}, {1600}, {913}, {0} }};
-const std::array<TONE, 29> stall_seq2 = {{ {0}, {470}, {1318}, {728}, {662}, {0}, {0}, {470}, {1318}, {728}, {662}, {0},
-    {300}, {145}, {300}, {145}, {300}, {145}, {300}, {145}, {300}, {145}, {300}, {145}, {300}, {145}, {300}, {145}, {0} }};
-const std::array<TONE, 29> stall_seq3 = {{ {0}, {1290}, {0}, {1227}, {1255}, {0}, {0}, {1290}, {0}, {1227}, {1255}, {0},
-    {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {0} }};
+const std::array<DURATION, 30> stall_tim = {{ {150}, {65}, {110}, {50}, {134}, {30},  {150}, {65}, {110}, {50}, {134}, {30}, 
+    {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {60}, {1000}, {0} }};
+const std::array<TONE, 30> stall_seq1 = {{ {0}, {3150}, {446}, {354}, {330}, {0}, {0}, {3150}, {446}, {354}, {330}, {0}, 
+    {1600}, {913}, {1600}, {913}, {1600}, {913}, {1600}, {913}, {1600}, {913}, {1600}, {913}, {1600}, {913}, {1600}, {913}, {0}, {0} }};
+const std::array<TONE, 30> stall_seq2 = {{ {0}, {470}, {1318}, {728}, {662}, {0}, {0}, {470}, {1318}, {728}, {662}, {0},
+    {300}, {145}, {300}, {145}, {300}, {145}, {300}, {145}, {300}, {145}, {300}, {145}, {300}, {145}, {300}, {145}, {0}, {0} }};
+const std::array<TONE, 30> stall_seq3 = {{ {0}, {1290}, {0}, {1227}, {1255}, {0}, {0}, {1290}, {0}, {1227}, {1255}, {0},
+    {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {0}, {0} }};
 const std::array<VOICECONF, 3> stell_vconf = {{ {0, 200}, {0, 40}, {1, 20} }};
-const SOUND StallWarn = { stall_tim.data(), { stall_seq1.data(), stall_seq2.data(), stall_seq3.data(), nullptr }, stell_vconf.data(), 1 };
+const SOUND StallWarn = { stall_tim.data(), { stall_seq1.data(), stall_seq2.data(), stall_seq3.data(), nullptr }, stell_vconf.data(), 0 };
 
 constexpr float fCs4 = noteFreq(-8);   // 277.18 Hz
 constexpr float fE4 = noteFreq(-5);    // 329.63 Hz
@@ -324,7 +324,7 @@ const std::array<const SOUND*, 13> sound_list = { { &VarioSound, &TurnOut, &Turn
 
 // To call from ISR context
 void IRAM_ATTR VOICECMD::fastLoad(uint8_t idx) {
-    uint32_t s = seq[idx].step;
+    uint32_t s = (seq) ? seq[idx].step : 0;
     active = true; // enforce always a fade-out
     if ( s != 0 ) {
         step = s;

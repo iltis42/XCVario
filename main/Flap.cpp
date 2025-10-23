@@ -17,7 +17,6 @@
 
 
 constexpr float GENERAL_V_MIN = 50;
-constexpr float GENERAL_V_MAX = 280;
 
 Flap* Flap::_instance = nullptr;
 Flap* FLAP = nullptr;
@@ -628,7 +627,7 @@ float Flap::getSpeedBand(float wkf, float &maxv)
     int wki = ( wkf < 0.01 ) ? 0 : (int)std::ceilf(wkf);
     float minv = flevel[wki].speed;
     if( wki == 0 ) {
-        maxv = GENERAL_V_MAX;
+        maxv = v_max.get();
     }
     else {
         maxv = flevel[wki-1].speed;

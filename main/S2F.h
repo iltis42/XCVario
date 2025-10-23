@@ -28,7 +28,7 @@ public:
 	void recalcSinkNSpeeds();
 	static float getBallastPercent();
 	inline double circlingSink(double v) {
-		if( v > stall_speed.get()*0.6 )
+		if( v > polar_stall_speed.get()*0.6 )
 			return _circling_sink;
 		else
 			return 0;

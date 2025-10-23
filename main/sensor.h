@@ -26,24 +26,23 @@
 
 #define GYRO_FS (mpud::GYRO_FS_250DPS)
 
-typedef struct global_flags{
-	bool inSetup :1;
-	bool haveMPU :1;
-	bool ahrsKeyValid  :1;
-	bool gload_alarm :1;
-	bool standard_setting :1;
-	bool stall_warning_active :1;
-	bool stall_warning_armed :1;
-	bool flarmWarning :1 ;
-	bool gLoadDisplay :1;
-	bool horizon :1;
-	bool gear_warning_active :1;
-	bool validTemperature :1 ;
-	bool mpu_pwm_initalized: 1;
-	bool gear_warn_external :1;
-	bool schedule_reboot :1;
-	bool intrDevices :1;
-} t_global_flags;
+union global_flags {
+	struct {
+		bool inSetup :1;
+		bool haveMPU :1;
+		bool ahrsKeyValid  :1;
+		bool gload_alarm :1;
+		bool standard_setting :1;
+		bool flarmWarning :1 ;
+		bool gLoadDisplay :1;
+		bool horizon :1;
+		bool validTemperature :1 ;
+		bool mpu_pwm_initalized: 1;
+		bool gear_warn_external :1;
+		bool schedule_reboot :1;
+	};
+	uint16_t raw;
+};
 
 class CANbus;
 class SerialLine;
@@ -54,7 +53,7 @@ class PressureSensor;
 class SetupRoot;
 class WatchDog_C;
 
-extern t_global_flags gflags;
+extern global_flags gflags;
 extern BMPVario bmpVario;
 extern CANbus* CAN;
 extern SerialLine *S1,*S2;

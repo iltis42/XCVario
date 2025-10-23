@@ -59,6 +59,7 @@
 #include "OneWireESP32.h"
 #include "logdef.h"
 #include "math/Trigenometry.h"
+#include "comm/Messages.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -100,7 +101,6 @@ uint64_t t_addr[1];
 
 AirspeedSensor *asSensor=0;
 
-SemaphoreHandle_t xMutex=NULL;
 SemaphoreHandle_t spiMutex=NULL;
 
 S2F Speed2Fly;
@@ -139,6 +139,7 @@ static float temperature=15.0;
 static float xcvTemp=15.0;
 static unsigned long _millis = 0;
 unsigned long _gps_millis = 0;
+static bool first_devices_run = false;
 
 
 float batteryVoltage = 0.;
@@ -158,7 +159,7 @@ uint8_t g_col_header_light_b=g_col_highlight;
 uint8_t gyro_flash_savings=0;
 
 // boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.
-t_global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false };
+global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -252,7 +253,6 @@ static void grabMPU()
 static void toyFeed()
 {
 	if ( ToyNmeaPrtcl ) {
-		xSemaphoreTake(xMutex,portMAX_DELAY );
 		if( ahrs_rpyl_dataset.get() ){
 			ToyNmeaPrtcl->sendXcvRPYL(IMU::getRoll(), IMU::getPitch(), IMU::getYaw(), IMU::getGliderAccelZ());
 			ToyNmeaPrtcl->sendXcvAPENV1( ias.get(), altitude.get(), te_vario.get() );
@@ -275,7 +275,6 @@ static void toyFeed()
 		default:
 			ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
 		}
-		xSemaphoreGive(xMutex);
 	}
 }
 
@@ -375,13 +374,11 @@ void readSensors(void *pvParameters){
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
 		// ESP_LOGI(FNAME,"AS");
-		xSemaphoreTake(xMutex,portMAX_DELAY );   // Static Pressure
 		bool bok=false;
 		float bp = baroSensor->readPressure(bok);
 		// ESP_LOGI(FNAME,"Baro");
 		bool tok=false;
 		float tp = teSensor->readPressure(tok);  // TE Pressure
-		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"TE, Delta: %d - log%d", (int)(millis() - _millis));
 		if( logging.get() ){
 			char log[ProtocolItf::MAX_LEN];
@@ -578,6 +575,8 @@ void readSensors(void *pvParameters){
 
 
 		AUDIO->updateTone();
+		const int screenEvent = ScreenEvent(ScreenEvent::VARIO_UPDATE).raw;
+		xQueueSend(uiEventQueue, &screenEvent, 0);
 
 		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
 	}
@@ -644,6 +643,9 @@ void readTemp(void *pvParameters)
 			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 20000 ) {
 				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 			}
+			extern MessagePool MP;
+			ESP_LOGI(FNAME,"MPool in-use:%d, acq-fails: %d", MP.nrUsed(), MP.nrAcqFails() );
+
 		}
 		if( (ttick%5) == 0 ){
 			SetupCommon::commitDirty();
@@ -720,7 +722,6 @@ void system_startup(void *args){
 	BatVoltage = new AnalogInput((22.0+1.2)/1200, ADC_CHANNEL_7);
 	BatVoltage->begin(ADC_ATTEN_DB_0);  // for battery voltage
 	BatVoltage->setAdjust(factory_volt_adjust.get());
-	xMutex=xSemaphoreCreateMutex();
 	ccp = (int)(core_climb_period.get()*10);
 	spi_bus_config_t buscfg = {
 		.mosi_io_num = SPI_MOSI,
@@ -867,7 +868,7 @@ void system_startup(void *args){
 
 	// DEVMAN serialization, read in all configured devices.
 	DEVMAN->reserectFromNvs();
-	if ( gflags.intrDevices ) {
+	if ( first_devices_run ) {
 		DEVMAN->introduceDevices(); // create a flarm etc.
 	}
 	if ( CAN ) {
@@ -1425,7 +1426,7 @@ extern "C" void  app_main(void)
 	}
 	if ( ! flarm_devsetup.exists() ) {
 		ESP_LOGI(FNAME,"Init devices" );
-		gflags.intrDevices = true;
+		first_devices_run = true;
 	}
 	ESP_LOGI(FNAME,"Now init all Setup elements");
 	SetupCommon::initSetup();

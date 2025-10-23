@@ -28,9 +28,9 @@ enum UiEventType {
 struct ButtonEvent
 {
     enum { SHORT_PRESS = 1,
-           LONG_PRESS = 2,
-           BUTTON_RELEASED = 3,
-           ESCAPE = 4 };
+        LONG_PRESS = 2,
+        BUTTON_RELEASED = 3,
+        ESCAPE = 4 };
 
     uint32_t raw;
     ButtonEvent() = delete;
@@ -50,10 +50,11 @@ struct RotaryEvent
 struct ScreenEvent
 {
     enum { MSG_BOX = 1,
-           BOOT_SCREEN,
-           FLARM_ALARM,
-           VOLT_ADJUST,
-           QNH_ADJUST };
+        BOOT_SCREEN,
+        FLARM_ALARM,
+        VOLT_ADJUST,
+        QNH_ADJUST,
+        VARIO_UPDATE };
 
     uint32_t raw;
     ScreenEvent() = delete;

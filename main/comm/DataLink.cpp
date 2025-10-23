@@ -409,10 +409,12 @@ void DataLink::doForward(DeviceId src_dev)
     // log += std::to_string(src_dev) + "/" + std::to_string(_itf_id.port) + " to ";
     xSemaphoreTake(_route_mutex, portMAX_DELAY);
     for ( auto &target : _routes ) {
-        Message* msg = DEV::acqMessage(target.did, target.getItfTarget().port);
-        // log += std::to_string(target.did) + "/" + std::to_string(target.getItfTarget().port) + ", ";
-        msg->buffer = _sm._frame;
-        DEV::Send(msg);
+        Message* msg = DEV::plsMessage(target.did, target.getItfTarget().port);
+        if ( msg ) {
+            // log += std::to_string(target.did) + "/" + std::to_string(target.getItfTarget().port) + ", ";
+            msg->buffer = _sm._frame;
+            DEV::Send(msg);
+        }
     }
     xSemaphoreGive(_route_mutex);
     // if ( _routes.size() > 0 ) {

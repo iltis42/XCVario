@@ -781,7 +781,7 @@ static void system_menu_create_airspeed(SetupMenu *top) {
 	stawaen->mkEnable();
 	top->addEntry(stawaen);
 
-	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", nullptr, true, &stall_speed);
+	SetupMenuValFloat *staspe = new SetupMenuValFloat("Stall Speed", "", nullptr, true, &polar_stall_speed);
 	top->addEntry(staspe);
 }
 

@@ -1357,7 +1357,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawTopGauge( airspeed_kmh, INNER_RIGHT_ALIGN, SPEEDYPOS );
 	}
 	// Altitude
-	if( ALTgauge && !(tick%4) ) {
+	if( ALTgauge ) {
 		ALTgauge->draw(altitude_m);
 	}
 
@@ -1518,7 +1518,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	// }
 
 	// Altitude
-	if( ALTgauge && !(tick%4) ) {
+	if( ALTgauge ) {
 		ALTgauge->draw(altitude_m);
 	}
 	// MC Value

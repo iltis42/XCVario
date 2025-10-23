@@ -100,7 +100,6 @@ uint64_t t_addr[1];
 
 AirspeedSensor *asSensor=0;
 
-SemaphoreHandle_t xMutex=NULL;
 SemaphoreHandle_t spiMutex=NULL;
 
 S2F Speed2Fly;
@@ -252,7 +251,6 @@ static void grabMPU()
 static void toyFeed()
 {
 	if ( ToyNmeaPrtcl ) {
-		xSemaphoreTake(xMutex,portMAX_DELAY );
 		if( ahrs_rpyl_dataset.get() ){
 			ToyNmeaPrtcl->sendXcvRPYL(IMU::getRoll(), IMU::getPitch(), IMU::getYaw(), IMU::getGliderAccelZ());
 			ToyNmeaPrtcl->sendXcvAPENV1( ias.get(), altitude.get(), te_vario.get() );
@@ -275,7 +273,6 @@ static void toyFeed()
 		default:
 			ESP_LOGE(FNAME,"Protocol %d not supported error", nmea_protocol.get() );
 		}
-		xSemaphoreGive(xMutex);
 	}
 }
 
@@ -375,13 +372,11 @@ void readSensors(void *pvParameters){
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
 		// ESP_LOGI(FNAME,"AS");
-		xSemaphoreTake(xMutex,portMAX_DELAY );   // Static Pressure
 		bool bok=false;
 		float bp = baroSensor->readPressure(bok);
 		// ESP_LOGI(FNAME,"Baro");
 		bool tok=false;
 		float tp = teSensor->readPressure(tok);  // TE Pressure
-		xSemaphoreGive(xMutex);
 		// ESP_LOGI(FNAME,"TE, Delta: %d - log%d", (int)(millis() - _millis));
 		if( logging.get() ){
 			char log[ProtocolItf::MAX_LEN];
@@ -720,7 +715,6 @@ void system_startup(void *args){
 	BatVoltage = new AnalogInput((22.0+1.2)/1200, ADC_CHANNEL_7);
 	BatVoltage->begin(ADC_ATTEN_DB_0);  // for battery voltage
 	BatVoltage->setAdjust(factory_volt_adjust.get());
-	xMutex=xSemaphoreCreateMutex();
 	ccp = (int)(core_climb_period.get()*10);
 	spi_bus_config_t buscfg = {
 		.mosi_io_num = SPI_MOSI,

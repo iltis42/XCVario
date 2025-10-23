@@ -59,6 +59,7 @@
 #include "OneWireESP32.h"
 #include "logdef.h"
 #include "math/Trigenometry.h"
+#include "comm/Messages.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -642,6 +643,9 @@ void readTemp(void *pvParameters)
 			if( heap_caps_get_free_size(MALLOC_CAP_8BIT) < 20000 ) {
 				ESP_LOGW(FNAME,"Warning heap_caps_get_free_size getting low: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 			}
+			extern MessagePool MP;
+			ESP_LOGI(FNAME,"MPool in-use:%d, acq-fails: %d", MP.nrUsed(), MP.nrAcqFails() );
+
 		}
 		if( (ttick%5) == 0 ){
 			SetupCommon::commitDirty();

@@ -333,6 +333,11 @@ void clientLoop(void *pvParameters)
 				ESP_LOGW(FNAME,"Warning client task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
 			}
 		}
+
+		// Vario screen update for client
+		const int screenEvent = ScreenEvent(ScreenEvent::VARIO_UPDATE).raw;
+		xQueueSend(uiEventQueue, &screenEvent, 0);
+
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
 	}
 }
@@ -578,7 +583,7 @@ void readSensors(void *pvParameters){
 		const int screenEvent = ScreenEvent(ScreenEvent::VARIO_UPDATE).raw;
 		xQueueSend(uiEventQueue, &screenEvent, 0);
 
-		vTaskDelayUntil(&xLastWakeTime, 100/portTICK_PERIOD_MS);
+		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
 	}
 }
 

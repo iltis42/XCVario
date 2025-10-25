@@ -117,6 +117,7 @@ private:
 	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
 	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
+	static void drawAvgVario( int16_t x, int16_t y, float val );
 	static void drawSmallSpeed(float v_kmh, int16_t x, int16_t y);
 	static bool drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit=false);
 	static void drawLegend( bool onlyLines=false );

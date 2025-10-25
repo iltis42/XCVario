@@ -33,7 +33,12 @@ S2FBar::S2FBar(int16_t cx, int16_t cy, int16_t width, int16_t gap) :
 void S2FBar::drawSpeed(float v)
 {
 	int airspeed = (int)std::roundf(v);
-	MYUCG->setColor( COLOR_WHITE );
+    if ( _prev_s2f_level == 0 ) {
+	    MYUCG->setColor(COLOR_DGREEN);
+    }
+    else {
+        MYUCG->setColor(COLOR_WGREY);
+    }
 	MYUCG->setFont(ucg_font_fub11_hn, true);
 	char s[32];
 	sprintf(s," %3d ",  airspeed );

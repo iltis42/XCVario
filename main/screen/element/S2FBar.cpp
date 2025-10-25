@@ -93,6 +93,11 @@ void S2FBar::draw(int s2fd)
     else if (level < -4) {
         level = -4;
     }
+    if ( _dirty ) {
+        // force redraw of all
+        _prev_s2f_level = 0;
+        _dirty = false;
+    }
 
     // ESP_LOGI(FNAME,"s2fbar %d %d", s2fd, level);
     if (level == _prev_s2f_level) {

@@ -651,6 +651,9 @@ void readTemp(void *pvParameters)
 			extern MessagePool MP;
 			ESP_LOGI(FNAME,"MPool in-use:%d, acq-fails: %d", MP.nrUsed(), MP.nrAcqFails() );
 
+			// static char buf[2048];
+    		// vTaskGetRunTimeStats(buf);
+    		// std::printf("Task runtime stats:\n%s\n", buf);
 		}
 		if( (ttick%5) == 0 ){
 			SetupCommon::commitDirty();

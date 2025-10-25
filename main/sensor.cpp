@@ -334,6 +334,16 @@ void clientLoop(void *pvParameters)
 			}
 		}
 
+		// Need to be done for client and main vario (Oops)
+		polar_sink = Speed2Fly.sink( ias.get() );
+		float netto = te_vario.get() - polar_sink;
+		as2f = Speed2Fly.speed( netto, !VCMode.getCMode() );
+		
+		s2f_ideal.set(static_cast<int>(std::round(as2f)));
+		// low pass damping
+		s2f_delta = s2f_delta + ((as2f - ias.get()) - s2f_delta)* (1/(s2f_delay.get()*10));
+		// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
+
 		// Vario screen update for client
 		const int screenEvent = ScreenEvent(ScreenEvent::VARIO_UPDATE).raw;
 		xQueueSend(uiEventQueue, &screenEvent, 0);
@@ -372,8 +382,9 @@ void readSensors(void *pvParameters){
 		if( asSensor ){  // AS differential Sensor
 			bool ok=false;
 			float p = asSensor->readPascal(60, ok);
-			if( ok )
+			if( ok ) {
 				dynamicP = p;
+			}
 		}
 		_millis=millis();
 		struct timeval tv;
@@ -569,6 +580,7 @@ void readSensors(void *pvParameters){
 			ESP_LOGW(FNAME,"Warning sensor task stack low: %d bytes", uxTaskGetStackHighWaterMark( bpid ) );
 		}
 
+		// Need to be done for client and main vario (Oops)
 		polar_sink = Speed2Fly.sink( ias.get() );
 		float netto = te_vario.get() - polar_sink;
 		as2f = Speed2Fly.speed( netto, !VCMode.getCMode() );

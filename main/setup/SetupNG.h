@@ -60,7 +60,7 @@ enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE }
 enum e_audio_harmonics { AUD_HARM_OFF=0, AUD_HARM_LOW=7, AUD_HARM_MED=14, AUD_HARM_HIGH=21 };
 enum e_audio_mute_gen { AUDIO_ON, AUDIO_ALARMS, AUDIO_OFF };
 typedef enum e_amp_shutdown { AMP_STAY_ON, AMP_SHUTDOWN, AMP_SHUTDOWN_5S } e_amp_shutdown_t;
-typedef enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_ENABLE } e_flap_sensor_t;
+enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_ENABLE, FLAP_SENSOR_CLIENT };
 typedef enum e_cruise_audio { AUDIO_S2F, AUDIO_VARIO } e_cruise_audio_2;
 typedef enum e_vario_mode { VARIO_BRUTTO, VARIO_NETTO, CRUISE_ONLY_NETTO } e_vario_mode_t;
 typedef enum e_airspeed_sensor_type { PS_ABPMRR, PS_TE4525, PS_MP3V5004, PS_MCPH21, PS_NONE } e_airspeed_sensor_type_t;
@@ -404,7 +404,7 @@ extern SetupNG<float>  		factory_volt_adjust;
 extern SetupNG<int>  		display_type;
 extern SetupNG<int>  		display_test;
 extern SetupNG<int>  		display_orientation;
-extern SetupNG<int>  		flap_enable;
+extern SetupNG<int>  		flapbox_enable;
 extern SetupNG<float>  		wk_speed_0;
 extern SetupNG<float>  		wk_speed_1;
 extern SetupNG<float>  		wk_speed_2;

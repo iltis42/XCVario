@@ -34,7 +34,7 @@
 
 // global variables
 DeviceManager* DEVMAN = nullptr; // singleton like
-QueueHandle_t ItfSendQueue = 0;
+QueueHandle_t ItfSendQueue = nullptr;
 MessagePool MP;
 
 // static vars
@@ -87,10 +87,13 @@ static const RoutingTarget* findRoute(const RoutingTarget& source) {
 // - Device attributes
 //   + a readable name
 //   + a list of interfaces, first one is a default proposal
-//   + later entries with same dev id speicialize and override the first default
+//   + later entries with same dev id speicialize and override the first default, but need to be there. 
+//     -> Addition per setup needs to select the remaining attributes through the paired (device id + interface)
 //   + a list of protocol, first N are the by default configured ones
-//   + an interface profile enum, if needed
-// -
+//   + an interface profile enum, or port, if needed
+//   + device flags
+//   + optional pointer to a SetupNG<> configuration entry for this device
+//
 constexpr std::pair<DeviceId, DeviceAttributes> DEVATTR[] = {
     {DeviceId::ANEMOI_DEV, {"Anemoi", {{S1_RS232, S2_RS232}}, {{ANEMOI_P}, 1}, 0, IS_REAL, &anemoi_devsetup}},
     {DeviceId::ANEMOI_DEV, {"", {{S2_RS232}}, {{ANEMOI_P}, 1}, 0, IS_REAL, &anemoi_devsetup}},
@@ -331,7 +334,7 @@ DeviceManager::DeviceManager()
 
 DeviceManager::~DeviceManager()
 {
-    xQueueSend( ItfSendQueue, nullptr, 0 ); // for transmitter
+    xQueueSend( ItfSendQueue, nullptr, 0 ); // terminate transmitter
 }
 
 // The device manager

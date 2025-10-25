@@ -45,8 +45,8 @@ class FlapsBox : public ScreenElement
 public:
     FlapsBox(Flap* flap, int16_t cx, int16_t cy, bool vertical=true);
     // API
-
     void setRef(int16_t x, int16_t y) { _ref_x=x; _ref_y=y; }
+    void setLength(int16_t length);
     void draw(float ias);
 
 private:
@@ -62,4 +62,7 @@ private: // attributes
     int   _same_event_to = -1;
     bool  _vertical;
     int16_t _LFH;
+public:
+    static int16_t BOX_LENGTH;
+    static float   PIX_PER_KMH;
 };

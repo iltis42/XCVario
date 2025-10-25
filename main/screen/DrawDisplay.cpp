@@ -28,7 +28,7 @@
 #include "S2fSwitch.h"
 #include "sensor.h"
 #include "protocol/WatchDog.h"
-#include "logdefnone.h"
+#include "logdef.h"
 
 
 // The context to serialize all display access.

@@ -32,7 +32,7 @@ namespace Polars {
 	const char *getPolarName(int i);
 	int getPolarIndex(int i);
 	void extract(int glider_index);
-	const char *getGliderType();
+	const char *getGliderType(int i);
 	int getGliderEnumPos();
-	bool hasFlaps();
+	bool hasFlaps(int);
 };

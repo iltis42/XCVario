@@ -10,7 +10,7 @@
 #include "logdefnone.h"
 
 
-const std::string_view ENABLE_MODE[4] = { "Disable", "Enable", "Dynamic", "Primary" };
+const std::string_view ENABLE_MODE[5] = { "Disable", "Enable", "Dynamic", "Primary", "Client" };
 
 SetupMenuSelect::SetupMenuSelect( const char* title, e_restart_mode_t restart, int (*action)(SetupMenuSelect *p),
 									SetupNG<int> *anvs, bool ext_handler, bool end_menu ) :

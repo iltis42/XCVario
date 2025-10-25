@@ -80,7 +80,7 @@ void AnalogInput::setAdjust(float adj){
 	_adjust_factor = _multiplier * ((100.0 + adj) / 100.0);
 }
 
-unsigned int AnalogInput::getRaw() {
+unsigned int AnalogInput::getRaw() const {
 	int adc = 0;
 	for( int i=0; i<RAWBUF; i++ ) {
 		adc += raw[i];

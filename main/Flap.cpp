@@ -16,6 +16,9 @@
 #include <array>
 
 
+static int select_flap_sens_pin(SetupMenuSelect *p);
+static int flap_cal_act(SetupMenuSelect *p);
+
 constexpr float GENERAL_V_MIN = 50;
 
 Flap* Flap::_instance = nullptr;
@@ -32,76 +35,81 @@ const std::string_view flap_labels[55] = { "-9", "-8", "-7", "-6", "-5", "-4", "
 	" N", " L", " S", "3a", "3b", " A", "21", "22", "23", "24", "25", "26", "27", "T", "" };  // L=41  S=42
 
 // all nvs setup data enumerable
-struct FLConf {
-	SetupNG<float> *speed;
-	SetupNG<int>   *labelidx;
-	SetupNG<int>   *sensval;
-	constexpr FLConf( SetupNG<float> *s, SetupNG<int> *l, SetupNG<int> *sv ) :
-		speed(s), labelidx(l), sensval(sv) {}
-	float getSpeed() const {
-		return (speed) ? speed->get() : 0;
-	}
-	const char* getLabel() const {
-		int idx = labelidx->get();
-		if( idx >= 0 && idx < 55 ) {
-			return flap_labels[idx].data();
-		}
-		return "";
-	}
+struct FLConf
+{
+    SetupNG<float> *speed;
+    SetupNG<int>   *labelidx;
+    SetupNG<int>   *sensval;
+    constexpr FLConf(SetupNG<float> *s, SetupNG<int> *l, SetupNG<int> *sv) : speed(s), labelidx(l), sensval(sv) {}
+    float getSpeed() const {
+        return (speed) ? speed->get() : 0;
+    }
+    const char *getLabel() const {
+        int idx = labelidx->get();
+        if (idx >= 0 && idx < 55)
+        {
+            return flap_labels[idx].data();
+        }
+        return "";
+    }
 };
 
 // volatile dummy to avoid null pointer checks
 SetupNG<float> dummy_speed_6(  "FLAP_PLUS_3", GENERAL_V_MIN, false, SYNC_NONE, VOLATILE);
 // storage of all flap configuration entries
 static const std::array<FLConf, Flap::MAX_NR_POS> FL_STORE = {{
-	{&wk_speed_0, &wk_label_0, &wk_sens_pos_0},
-	{&wk_speed_1, &wk_label_1, &wk_sens_pos_1},
-	{&wk_speed_2, &wk_label_2, &wk_sens_pos_2},
-	{&wk_speed_3, &wk_label_3, &wk_sens_pos_3},
-	{&wk_speed_4, &wk_label_4, &wk_sens_pos_4},
-	{&wk_speed_5, &wk_label_5, &wk_sens_pos_5},
-	{&dummy_speed_6,&wk_label_6, &wk_sens_pos_6}
-	}};
-
+    {&wk_speed_0, &wk_label_0, &wk_sens_pos_0},
+    {&wk_speed_1, &wk_label_1, &wk_sens_pos_1},
+    {&wk_speed_2, &wk_label_2, &wk_sens_pos_2},
+    {&wk_speed_3, &wk_label_3, &wk_sens_pos_3},
+    {&wk_speed_4, &wk_label_4, &wk_sens_pos_4},
+    {&wk_speed_5, &wk_label_5, &wk_sens_pos_5},
+    {&dummy_speed_6, &wk_label_6, &wk_sens_pos_6}}};
 
 // Action Routines
-int select_flap_sens_pin(SetupMenuSelect *p){
-	ESP_LOGI(FNAME,"select_flap_sens_pin");
-	p->clear();
-	FLAP = Flap::theFlap();
-	if( FLAP ) {
-		ESP_LOGI(FNAME,"select_flap_sens_pin, have flap");
-		FLAP->configureADC( p->getSelect() );
-		if ( FLAP->haveSensor() ) {
-			// ESP_LOGI(FNAME,"select_flap_sens_pin, have sensor");
-			MYUCG->setPrintPos(5,50);
-			MYUCG->setFont(ucg_font_ncenR14_hr, true );
-			MYUCG->printf("Check Sensor Reading,");
-			MYUCG->setPrintPos(5,80);
-			MYUCG->printf("Press Button to exit");
-			while( !Rotary->readSwitch() ){
-				// ESP_LOGI(FNAME,"SW wait loop");
-				MYUCG->setPrintPos(5,120);
-				MYUCG->printf("Sensor: %d       ", FLAP->getSensorRaw() );
-				delay(100);
-			}
-		}
-	}else{
-		ESP_LOGI(FNAME,"NO flap");
-	}
-	MYUCG->setPrintPos(5,280);
-	MYUCG->printf("Saved");
-	delay( 2000 );
-	p->clear();
-	return 0;
-}
-
-unsigned int Flap::getSensorRaw()
+int select_flap_sens_pin(SetupMenuSelect *p)
 {
-    return haveSensor() ? sensorAdc->getRaw() : 0;
+    ESP_LOGI(FNAME, "select_flap_sens_pin");
+    if (p->getSelect() == FLAP_SENSOR_ENABLE)
+    {
+        p->clear();
+        ESP_LOGI(FNAME, "select_flap_sens_pin, have flap");
+        FLAP->configureADC(FLAP_SENSOR_ENABLE);
+        if (FLAP->haveSensor())
+        {
+            // ESP_LOGI(FNAME,"select_flap_sens_pin, have sensor");
+            MYUCG->setPrintPos(5, 50);
+            MYUCG->setFont(ucg_font_ncenR14_hr, true);
+            MYUCG->printf("Check Sensor Reading,");
+            MYUCG->setPrintPos(5, 80);
+            MYUCG->printf("Press Button to exit");
+            while (!Rotary->readSwitch())
+            {
+                // ESP_LOGI(FNAME,"SW wait loop");
+                MYUCG->setPrintPos(5, 120);
+                MYUCG->printf("Sensor: %d       ", FLAP->getSensorRaw());
+                delay(100);
+            }
+        }
+        delay(800);
+        p->clear();
+    }
+    else
+    {
+        ESP_LOGI(FNAME, "NO flap");
+        FLAP->configureADC(FLAP_SENSOR_DISABLE);
+    }
+    p->getParent()->setDirty();
+    p->getParent()->getParent()->setDirty();
+    return 0;
 }
 
-int wk_cal_show(SetupMenuSelect *p, int wk, Average<7> &filter)
+unsigned int Flap::getSensorRaw() const
+{
+    return sensorAdc ? sensorAdc->getRaw() : 0;
+}
+
+int wk_calib_level(SetupMenuSelect *p, int wk, Average<12> &filter)
 {
     MYUCG->setPrintPos(1, 60);
     MYUCG->printf("Set Flap %s ", FLAP->getFL(wk)->label);
@@ -136,7 +144,7 @@ int flap_cal_act(SetupMenuSelect *p)
         ESP_LOGI(FNAME, "Abort calibration, no signal");
         return 0;
     }
-    Average<7> filter;
+    Average<12> filter;
     if (p->getSelect())
     {
         p->clear();
@@ -147,7 +155,7 @@ int flap_cal_act(SetupMenuSelect *p)
         int flap;
         for (int wk = 0; wk < FLAP->getNrPositions(); wk++)
         {
-            flap = wk_cal_show(p, wk, filter);
+            flap = wk_calib_level(p, wk, filter);
             FL_STORE[wk].sensval->set(flap);
         }
         MYUCG->setPrintPos(1, 260);
@@ -160,213 +168,28 @@ int flap_cal_act(SetupMenuSelect *p)
     return 0;
 }
 
-void Flap::setupSensorMenueEntries(SetupMenu *wkm)
+void flap_menu_create_flap_sensor(SetupMenu *wkm)
 {
-	SetupMenuSelect *wkes = new SetupMenuSelect( "Flap Sensor", RST_NONE, select_flap_sens_pin, &flap_sensor );
-	wkes->addEntry( "Disable");
-	wkes->addEntry( "Enable");
-	wkes->setHelp("Option to enable Flap sensor on corresponding IO pin, hardware may differ: check where you get a valid reading");
-	wkm->addEntry( wkes );
+    if ( wkm->getNrChilds() == 0 ) {
+        SetupMenuSelect *wkes = new SetupMenuSelect("Flap Sensor", RST_NONE, select_flap_sens_pin, &flap_sensor);
+        wkes->mkEnable();
+        wkes->addEntry("From Master/Second");
+        wkes->setHelp("Presence of a Flap sensor, maybe connected to the master unit");
+        wkm->addEntry(wkes);
 
-	SetupMenuSelect *wkcal = new SetupMenuSelect( "Sensor Calibration", RST_NONE, flap_cal_act );
-	wkcal->addEntry( "Cancel");
-	wkcal->addEntry( "Start");
-	wkcal->setHelp(  "Option to calibrate flap Sensor (WK), to indicate current flap setting: Press button after each setting" );
-	wkm->addEntry( wkcal );
+        SetupMenuSelect *wkcal = new SetupMenuSelect("Sensor Calibration", RST_NONE, flap_cal_act);
+        wkcal->addEntry("Cancel");
+        wkcal->addEntry("Start");
+        wkcal->setHelp("Calibrate the flap sensor to the configured levels. (Press button to proceed)");
+        wkm->addEntry(wkcal);
+    }
+    SetupMenu *wkcal = static_cast<SetupMenu*>(wkm->getEntry(1));
+    if ( flap_sensor.get() == FLAP_SENSOR_ENABLE ) {
+        wkcal->unlock();
+    } else {
+        wkcal->lock();
+    }
 }
-
-void Flap::setupMenue(SetupMenu *parent){
-	ESP_LOGI(FNAME,"Flap::setupMenue");
-	if( ! parent  ){
-		return;
-	}
-	SetupMenu* wkm = new SetupMenu("Flap Sensor", setupSensorMenueEntries);
-	parent->addEntry( wkm );
-}
-
-// void Flap::drawSmallBar( float wkf ){
-	// MYUCG->setFont(ucg_font_profont22_mr, true);
-	// int	lfh = MYUCG->getFontAscent()+4;
-	// int lfw = MYUCG->getStrWidth( "+2" );
-	// int top = barpos_y-lfh/2;
-	// if( dirty ) {
-	// 	MYUCG->setColor(COLOR_HEADER);
-	// 	MYUCG->drawFrame(barpos_x-5, top-4, lfw+4, 2*lfh);
-	// 	int tri = barpos_y+lfh/2-3;
-	// 	MYUCG->setColor(COLOR_GREEN);
-	// 	MYUCG->drawTriangle( barpos_x-10, tri-5,  barpos_x-10,tri+5, barpos_x-5, tri );
-	// 	MYUCG->setColor(COLOR_WHITE);
-	// 	drawWingSymbol(wkf, 0);
-	// 	dirty = false;
-	// }
-	// MYUCG->setClipRange( barpos_x-2, top-2, lfw, 2*lfh-2 );
-	// if ((int)((wkf-2)*(lfh+4)) != (int)((wkf_old-2)*(lfh+4))) {
-	// 	wkf_old = wkf;
-	// 	MYUCG->setColor(COLOR_BLACK);
-	// 	MYUCG->drawBox( barpos_x-2, top-2, lfw, 2*lfh-2 );
-	// }
-
-	// for( int wk=int(wkf-1); wk<=int(wkf+1) && wk<=2; wk++ ){
-	// 	char position[6];
-	// 	if(wk<-3)
-	// 		continue;
-
-	// 	sprintf( position,"%s", flapLabels[wk+3]);
-	// 	int y=top+(lfh+4)*(5-(wk+2))+(int)((wkf-2)*(lfh+4)+3);
-	// 	MYUCG->setPrintPos(barpos_x-2, y );
-	// 	MYUCG->setColor(COLOR_WHITE);
-	// 	MYUCG->printf(position);
-	// 	if( wk != -3 ) {
-	// 		MYUCG->drawHLine(barpos_x-5, y+3, lfw+4 );
-	// 	}
-	// }
-	// MYUCG->undoClipRange();
-// }
-
-// void Flap::drawFrame(int16_t xpos, int16_t ypos){
-	// MYUCG->drawFrame( xpos-16, ypos-4, 11, 7 );
-	// MYUCG->drawFrame( xpos-17, ypos-5, 13, 9 );
-// }
-
-// void Flap::drawLever( int16_t xpos, int16_t ypos, int16_t& oldypos, bool warn, bool good ){
-
-	// unsigned int curmillis = millis();
-	// if( warn ){
-	// 	// Blink effekt
-	// 	if(curmillis - _millis > 150){
-	// 		MYUCG->setColor(COLOR_BLACK);
-	// 		drawFrame( xpos, oldypos );
-	// 		if( warn_color ){
-	// 			// ESP_LOGI(FNAME,"WHITE %d", curmillis - _millis);
-	// 			MYUCG->setColor(COLOR_WHITE);
-	// 			warn_color = false;
-	// 		}
-	// 		else{
-	// 			// ESP_LOGI(FNAME,"RED %d", curmillis - _millis);
-	// 			MYUCG->setColor(COLOR_RED);
-	// 			warn_color = true;
-	// 		}
-	// 		_millis = curmillis;
-	// 		drawFrame( xpos, ypos );
-	// 		oldypos = ypos;
-	// 	}
-	// }
-	// else{
-	// 	MYUCG->setColor(COLOR_BLACK);
-	// 	drawFrame( xpos, oldypos );
-	// 	if( good ){
-	// 		MYUCG->setColor(COLOR_GREEN);
-	// 	}
-	// 	else{
-	// 		MYUCG->setColor(COLOR_WHITE);
-	// 	}
-	// 	drawFrame( xpos, ypos );
-	// 	oldypos = ypos;
-	// }
-// }
-
-// static bool good_old = false;
-
-// void Flap::drawBigBar( float wkf, float wksens ){
-	// MYUCG->setFont(ucg_font_profont22_mr, true);
-	// MYUCG->setFontPosCenter();
-	// int16_t lfh = 24; // MYUCG->getFontAscent()+10;  // a bit place around number
-	// int16_t lfw = MYUCG->getStrWidth( "+2" );
-	// int16_t size = 1; //NUMPOS*lfh;
-	// // draw Frame around and a triangle
-	// if( dirty ) {
-	// 	for( int wk=flap_min; wk<=flap_max; wk++ ){
-	// 		char position[6];
-	// 		// ESP_LOG_BUFFER_HEXDUMP(FNAME, flapLabels[wk+3], 4, ESP_LOG_INFO);
-	// 		sprintf( position,"%s", flapLabels[wk+3]);
-	// 		int y= barpos_y + lfh*wk;  // negative WK eq. lower position
-	// 		// ESP_LOGI(FNAME,"Y: %d lfh:%d wk:%d",y, lfh, wk );
-	// 		MYUCG->setPrintPos(barpos_x+2, y+5);
-	// 		MYUCG->setColor(COLOR_WHITE);
-	// 		// print digit
-	// 		MYUCG->print(position);
-	// 		// Frame around digit
-	// 		MYUCG->setColor(COLOR_HEADER);
-	// 		MYUCG->drawFrame(barpos_x-2, y-(lfh/2), lfw+6, lfh );
-	// 	}
-	// 	if ( flap_min > -3 ) { drawWingSymbol(wkf, wksens); }
-	// 	dirty = false;
-	// }
-	// // ESP_LOGI(FNAME,"np: %d size: %d",  NUMPOS, size );
-	// int16_t yclip = barpos_y+flap_min*lfh-(lfh/2);
-	// MYUCG->setClipRange( barpos_x-17, yclip, 15, size );
-	// int16_t y = barpos_y + (int)((wkf)*(lfh) + 0.5 );
-	// int16_t ys = barpos_y + (int)(( wksens )*(lfh) + 0.5 );
-	// // ESP_LOGI(FNAME,"wkf: %f", wkf);
-
-	// tickopt++;
-	// bool dirty_lever = false;
-	// // ESP_LOGI(FNAME,"drawBigBar wkf: %.2f y:%d lfh:%d", wkf, y, lfh );
-	// if( optPosOldY != y ) {  // redraw on change or every half second
-	// 	MYUCG->setColor(COLOR_BLACK);
-	// 	MYUCG->drawTriangle( barpos_x-15,optPosOldY-5,  barpos_x-15,optPosOldY+5,  barpos_x-2,optPosOldY );
-	// 	MYUCG->setColor(COLOR_GREEN);
-	// 	MYUCG->drawTriangle( barpos_x-15,y-5,       barpos_x-15,y+5,       barpos_x-2,y );
-	// 	optPosOldY = y;
-	// 	dirty_lever = true;
-	// }
-	// bool warn=false;
-	// bool good=false;
-	// if( abs( wkf - wksens) < 0.5 )
-	// 	good = true;
-	// if( abs( wkf - wksens) > 1 )
-	// 	warn = true;
-	// if( sensorOldY != ys || warn || good_old != good || dirty_lever) {  // redraw on change or when status changed
-	// 	if( flap_sensor.get() ) {
-	// 		// ESP_LOGI(FNAME,"wk lever redraw, old=%d", sensorOldY );
-	// 		drawLever( barpos_x, ys, sensorOldY, warn, good );
-	// 		good_old = good;
-	// 		if( abs(y-ys) < 12 ){
-	// 			MYUCG->setColor(COLOR_GREEN);  // redraw triangle
-	// 			MYUCG->drawTriangle( barpos_x-15,y-5,       barpos_x-15,y+5,       barpos_x-2,y );
-	// 		}
-	// 	}
-	// }
-	// MYUCG->setFontPosBottom();
-	// MYUCG->undoClipRange();
-// }
-
-// #define DISCRAD 3
-// #define BOXLEN  12
-// #define FLAPLEN 14
-
-// void Flap::drawWingSymbol( int16_t wk, float wksens )
-// {
-	// static bool warn_old = false;
-	// static int16_t wk_old = 0; // warn on either warn or wkopt change
-
-	// bool warn = wksens > -10. && abs( wk - wksens) > 1.;
-
-	// if ( warn == warn_old && wk == wk_old && ! dirty ) return;
-
-	// if(warn){
-	// 	MYUCG->setColor( COLOR_RED );
-	// }else{
-	// 	MYUCG->setColor( COLOR_HEADER );
-	// }
-	// MYUCG->drawDisc( symbolpos_x, symbolpos_y, DISCRAD, UCG_DRAW_ALL );
-	// MYUCG->drawBox( symbolpos_x, symbolpos_y-DISCRAD, BOXLEN, DISCRAD*2+1  );
-	// MYUCG->setColor( COLOR_BLACK );
-	// MYUCG->drawTriangle( symbolpos_x+DISCRAD+BOXLEN-2, symbolpos_y-DISCRAD,
-	// 		symbolpos_x+DISCRAD+BOXLEN-2, symbolpos_y+DISCRAD+1,
-	// 		symbolpos_x+DISCRAD+BOXLEN-2+FLAPLEN, symbolpos_y+wk_old*4 );
-	// if(warn){
-	// 	MYUCG->setColor( COLOR_RED );
-	// }else{
-	// 	MYUCG->setColor( COLOR_GREEN );
-	// }
-	// MYUCG->drawTriangle( symbolpos_x+DISCRAD+BOXLEN-2, symbolpos_y-DISCRAD,
-	// 		symbolpos_x+DISCRAD+BOXLEN-2, symbolpos_y+DISCRAD+1,
-	// 		symbolpos_x+DISCRAD+BOXLEN-2+FLAPLEN, symbolpos_y+wk*4 );
-
-	// wk_old = wk;
-	// warn_old = warn;
-// }
 
 void Flap::initFromNVS()
 {
@@ -475,13 +298,7 @@ void Flap::configureADC( int port ){
 		delete sensorAdc;
 		sensorAdc = nullptr;
 	}
-	// flap_pos.init(); // remove display until set properly, removed, calls itself configureADC
-	if ( SetupCommon::isClient() ) {
-		ESP_LOGI( FNAME, "Client role: Abort");
-		return; // no analog pin config for the client
-	}
-	if( flap_sensor.get() != FLAP_SENSOR_DISABLE ) // migration from old settings with multiple IO's
-		flap_sensor.set( FLAP_SENSOR_ENABLE );
+	
 	if( flap_sensor.get() == FLAP_SENSOR_ENABLE ) { // nonzero -> configured, only one port needed for XCV23+ HW
 		sensorAdc = new AnalogInput(-1, ADC_CHANNEL_6);
 	}
@@ -503,6 +320,10 @@ void Flap::configureADC( int port ){
 
 Flap::Flap()
 {
+	if( flap_sensor.get() > FLAP_SENSOR_CLIENT ) {
+		// migration from old settings with multiple IO's
+		flap_sensor.set( FLAP_SENSOR_ENABLE );
+	}
     configureADC(flap_sensor.get());
     prepLevels();
 }
@@ -523,24 +344,20 @@ Flap*  Flap::theFlap()
 	return _instance;
 }
 
-bool Flap::sensorToLeverPosition(int val, float &lever)
+float Flap::sensorToLeverPosition( int val ) const
 {
     // ESP_LOGI(FNAME,"getSensorWkPos %d", wks);
     int wk = flevel.size()-1;
     for (int i = 0; i < flevel.size(); i++)
     {
-        if (_sens_ordered)
-        {
-            if (val > flevel[i].sensval)
-            {
+        if (_sens_ordered) {
+            if (val > flevel[i].sensval) {
                 wk = i;
                 break;
             }
         }
-        else
-        {
-            if (val < flevel[i].sensval)
-            {
+        else {
+            if (val < flevel[i].sensval) {
                 wk = i;
                 break;
             }
@@ -548,8 +365,7 @@ bool Flap::sensorToLeverPosition(int val, float &lever)
     }
     float wkf = wk + (float)(val - flevel[wk].sensval) / flevel[wk].sens_delta;
     ESP_LOGI(FNAME,"getLeverPos(%d): level %d, out: %1.2f wk: %d", val, flevel[wk].sensval, wkf, wk);
-    lever = wkf;
-    return true;
+    return wkf;
 }
 
 void  Flap::progress() {
@@ -566,23 +382,28 @@ void  Flap::progress() {
 		rawFiltered = rawFiltered + (wkraw - rawFiltered)/6;
 		tick++;
 		if( !(tick%4) ){
-			if( sensorToLeverPosition( rawFiltered, lever ) ){
-				ESP_LOGI(FNAME,"wk sensor=%1.2f  raw=%d", lever, rawFiltered );
-				if( lever < 0 )
-					lever = 0;
-				else if( lever > flevel.size()-1 )
-					lever = flevel.size()-1;
+			float lever = sensorToLeverPosition( rawFiltered );
+            ESP_LOGI(FNAME,"wk sensor=%1.2f  raw=%d", lever, rawFiltered );
+            if ( lever < 0. ) {
+                lever = 0.;
+            }
+            else if ( lever > flevel.size()-1 ) {
+                lever = flevel.size()-1;
+            }
 
-				if( (int)(flap_pos.get()*10) != (int)(lever*10) ){
-					flap_pos.set( lever );   // update secondary vario
-				}
-			}
+            if ( (int)(flap_pos.get()*10) != (int)(lever*10) ) {
+                flap_pos.set(lever); // update secondary vario
+            }
 		}
 	}
 }
 
+float Flap::getFlapPosition() const
+{
+    return flap_pos.get();
+}
 
-float Flap::getOptimum(float spd)
+float Flap::getOptimum(float spd) const
 {
 	// Correct for current g load
 	g_force += (IMU::getGliderAccelZ() - g_force) * 0.2;  // lowpass filtering, to smooth display in rough air .. fixme tune factor
@@ -622,7 +443,7 @@ float Flap::getOptimum(float spd)
 
 // get speed band for given flap position wk
 // 0 < wk < (# positions - 1)
-float Flap::getSpeedBand(float wkf, float &maxv)
+float Flap::getSpeedBand(float wkf, float &maxv) const
 {
     int wki = ( wkf < 0.01 ) ? 0 : (int)std::ceilf(wkf);
     float minv = flevel[wki].speed;
@@ -641,15 +462,4 @@ float Flap::getSpeedBand(float wkf, float &maxv)
 	// ESP_LOGI(FNAME,"wkf:%.1f minv:%.1f maxv:%.1f", wkf, minv, maxv);
     return minv;
 }
-
-// void Flap::setBarPosition(int16_t x, int16_t y)
-// {
-// 	barpos_x = x;
-// 	barpos_y = y;
-// }
-// void Flap::setSymbolPosition(int16_t x, int16_t y)
-// {
-// 	symbolpos_x = x;
-// 	symbolpos_y = y;
-// }
 

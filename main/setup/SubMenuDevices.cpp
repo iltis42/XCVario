@@ -420,8 +420,12 @@ static int select_interface_action(SetupMenuSelect *p)
 }
 static void create_dev(DeviceId did, InterfaceId iid)
 {
+    ESP_LOGI(FNAME,"create dev id %d interface id %d", did, iid);
+
     // get default protocols and port
     const DeviceAttributes &da = DeviceManager::getDevAttr(did, iid);
+    ESP_LOGI(FNAME,"dev attr name %s", da.name.data());
+    ESP_LOGI(FNAME,"dev attr nr of protos %d nr of itfs %d", da.prcols.getExtra(), da.itfs.getExtra());
     Device *dev = nullptr;
     for (int i=0; i<da.prcols.getExtra(); ++i) {
         ProtocolType pid = da.prcols.proto(i);
@@ -461,6 +465,7 @@ static void connected_devices_menu_add_device(SetupMenu *top) // dynamic!
     SetupMenuSelect *ndev = static_cast<SetupMenuSelect*>(top->getEntry(0));
     SetupMenuSelect *flavor = static_cast<SetupMenuSelect*>(top->getEntry(1));
     if ( ! ndev ) {
+        top->setDynContent();
         ndev = new SetupMenuSelect("Device", RST_NONE, select_device_action);
         top->addEntry(ndev);
         // flavor
@@ -588,6 +593,7 @@ void system_menu_connected_devices(SetupMenu *top) // dynamic!
 {
     SetupMenu *adddev = static_cast<SetupMenu*>(top->getEntry(0));
     if ( ! adddev ) {
+        top->setDynContent();
         adddev = new SetupMenu("Add Device", connected_devices_menu_add_device);
         adddev->setHelp("Get XCVario to know about your devices, it will handle data routing automatically");
         top->addEntry(adddev);

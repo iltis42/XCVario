@@ -66,7 +66,7 @@ using RoutingList = std::set<RoutingTarget>;
 union PackedInt5Array {
     struct{
         uint64_t value  : 60;
-        unsigned flags  : 4;
+        unsigned flags  : 4; // e.g. nr of default protocols
     };
     uint64_t data = 0; // 64-bit storage
 
@@ -80,7 +80,7 @@ union PackedInt5Array {
         data = pack(itf);
         data |= uint64_t(flgs)<<60;
     }
-    constexpr PackedInt5Array(PrtclArray proto, int flgs=0) {
+    constexpr PackedInt5Array(PrtclArray proto, int flgs) {
         data = pack(proto);
         data |= uint64_t(flgs)<<60;
     }

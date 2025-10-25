@@ -132,6 +132,7 @@ ucg_color_t IpsDisplay::colorsalt[320+1];
 
 AdaptUGC *IpsDisplay::ucg = 0;
 
+static int _ate = -1000;
 int IpsDisplay::s2falt=-1;
 int IpsDisplay::s2fdalt=0;
 bool IpsDisplay::wireless_alive = false;
@@ -384,6 +385,9 @@ void IpsDisplay::initDisplay() {
             S2FBARgauge->setWidth(50);
         }
 		ALTgauge->setRef(FIELD_START+80, YALT);
+        if ( FLAPSgauge ) {
+            FLAPSgauge->setLength(150);
+        }
 
 		// draw TE scale
 		drawLegend();
@@ -552,14 +556,17 @@ void IpsDisplay::redrawValues()
 	s2falt = -1;
 	s2fdalt = -1;
 	wireless_alive = false;
-	if ( MCgauge ) {
-		MCgauge->forceRedraw();
-	}
-	BATgauge->forceRedraw();
-	if ( ALTgauge ) {
-		ALTgauge->forceRedraw();
-	}
-	as_prev = -1;
+    if (MCgauge) {
+        MCgauge->forceRedraw();
+    }
+    BATgauge->forceRedraw();
+    if (ALTgauge) {
+        ALTgauge->forceRedraw();
+    }
+    if (S2FBARgauge) {
+        S2FBARgauge->forceRedraw();
+    }
+    as_prev = -1;
     mode_dirty = true;
 
 	tyalt = 0;
@@ -579,6 +586,7 @@ void IpsDisplay::redrawValues()
 	old_sink_bar_val = 0;
 	prev_winddir = -1000;
 	prev_heading = -1000;
+    _ate = -1000;
 }
 
 void IpsDisplay::drawTeBuf(){
@@ -852,22 +860,25 @@ void IpsDisplay::initRetroDisplay(){
     }
     VCSTATgauge->useSymbol(true);
     if (MCgauge) {
-		MCgauge->setLarge(true);
-	}
-	if ( vario_lower_gauge.get() ) {
-		ALTgauge->setRef(INNER_RIGHT_ALIGN, 0.8*DISPLAY_H);
-	}
-	else {
-		delete ALTgauge;
-		ALTgauge = nullptr;
-	}
-    if ( S2FBARgauge ) {
+        MCgauge->setLarge(true);
+    }
+    if (vario_lower_gauge.get()) {
+        ALTgauge->setRef(INNER_RIGHT_ALIGN, 0.8 * DISPLAY_H);
+    }
+    else {
+        delete ALTgauge;
+        ALTgauge = nullptr;
+    }
+    if (S2FBARgauge) {
         S2FBARgauge->setRef(DISPLAY_W - 54, AMIDY);
         S2FBARgauge->setWidth(28);
     }
-	redrawValues();
+    if (FLAPSgauge) {
+        FLAPSgauge->setLength(100);
+    }
+    redrawValues();
 
-	// Unit's
+    // Unit's
 	ucg->setFont(ucg_font_fub11_hr);
 	ucg->setPrintPos(2,50);
 	ucg->setColor(COLOR_HEADER);
@@ -881,6 +892,26 @@ void IpsDisplay::initRetroDisplay(){
 	}
 
 }
+
+void IpsDisplay::drawAvgVario( int16_t x, int16_t y, float val )
+{
+	int ival = rint(val*10);  // integer value in steps of 10th
+    char s[32];
+    ucg->setFont(ucg_font_fub35_hn, false );
+    ucg->setFontPosCenter();
+    static const char* format[2] = {"%2.1f","%2.0f"};
+    sprintf(s, format[std::abs(ival)>100], float(abs(ival)/10.) );
+    int x_start = x - ucg->getStrWidth(s);
+    if (ival<0) {
+        ucg->setColor( COLOR_BBLUE );
+    } else {
+        ucg->setColor( COLOR_WHITE );
+    }
+    ucg->setPrintPos(x_start, y + 8);
+    ucg->print(s);
+    ucg->setFontPosBottom();
+}
+
 
 // Accepts speed in kmh IAS/TAS, translates into configured unit
 // right-aligned to value in 25 font size, no unit
@@ -1332,11 +1363,11 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// S2F bar
-	if( (((int)s2fd != s2fdalt && !((tick+1)%2) ) || !((tick+3)%30)) && S2FBARgauge ) {
+    if ( (((int)s2fd != s2fdalt) || (s2falt != (int)(s2f+0.5)) || !(tick%21)) && S2FBARgauge ) {
 		// static float s=0; // check the bar code
 		// s2fd = sin(s) * 42.;
 		// s+=0.04;
-		S2FBARgauge->draw((int)s2fd);
+		S2FBARgauge->draw(s2fd);
 		S2FBARgauge->drawSpeed(s2f);
 
 	}
@@ -1440,19 +1471,19 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 		drawAvg( acl, acl-average_climbf );
 		average_climbf = acl;
 	}
-	if ( bottom_dirty ) {
-		ESP_LOGI(FNAME,"redraw sale around %f", -_range+2);
-		bottom_dirty = false;
-		MAINgauge->drawScaleBottom();
-		MAINgauge->forceAllRedraw();
-		if ( MCgauge ) {
-			MCgauge->forceRedraw();
-			// MCgauge->draw(MC.get());
-		}
-		BATgauge->forceRedraw();
-		// BATgauge->draw(volt);
-	}
-	// ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
+    if (bottom_dirty)
+    {
+        ESP_LOGI(FNAME, "redraw scale around %f", -_range + 2);
+        bottom_dirty = false;
+        MAINgauge->drawScaleBottom();
+        MAINgauge->forceAllRedraw();
+        if (MCgauge)
+        {
+            MCgauge->forceRedraw();
+        }
+        BATgauge->forceRedraw();
+    }
+    // ESP_LOGI(FNAME,"IpsDisplay::drawRetroDisplay  TE=%0.1f  x0:%d y0:%d x2:%d y2:%d", te, x0, y0, x2,y2 );
 }
 
 void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sink, float altitude,
@@ -1466,7 +1497,9 @@ void IpsDisplay::drawDisplay( int airspeed, float te, float ate, float polar_sin
 }
 
 void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_ms, float polar_sink_ms, float altitude_m,
-		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor ){
+		float temp, float volt, float s2fd_ms, float s2f_ms, float acl_ms, bool s2fmode, bool standard_setting, float wksensor )
+{
+
 	if( !(screens_init & INIT_DISPLAY_AIRLINER) ){
 		initDisplay();
 		screens_init |= INIT_DISPLAY_AIRLINER;
@@ -1508,14 +1541,14 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	ucg->setColor(  COLOR_WHITE  );
 
 	// Average Vario
-	// if( _ate != (int)(ate*10) && !(tick%3) ) {
-	// 	// draw numeric value
-	// 	// set coarse clipbox to avoid overwriting Vario Skale and pointer
-	// 	ucg->setClipRange(DISPLAY_LEFT+bw+22,1,120,100);
-	// 	drawAvgVario( FIELD_START+88, YVAR-23, ate );
-	// 	ucg->undoClipRange();
-	// 	_ate = (int)(ate)*10;
-	// }
+	if( _ate != (int)(ate*10) && !(tick%3) ) {
+		// draw numeric value
+		// set coarse clipbox to avoid overwriting Vario Skale and pointer
+		ucg->setClipRange(DISPLAY_LEFT+bw+22,1,120,100);
+	    drawAvgVario( FIELD_START+78, YVAR-23, ate );
+		ucg->undoClipRange();
+		_ate = (int)(ate)*10;
+	}
 
 	// Altitude
 	if( ALTgauge ) {
@@ -1689,5 +1722,11 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	if ( bottom_dirty ) {
 		bottom_dirty = false;
 		drawLegend();
+        if (MCgauge) {
+            MCgauge->forceRedraw();
+        }
+        BATgauge->forceRedraw();
+        drawThermometer(FIELD_START+5, DISPLAY_H-5);
+        tempalt=-1000;
 	}
 }

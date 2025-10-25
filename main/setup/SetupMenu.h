@@ -35,6 +35,7 @@ public:
 	// void setHighlight(MenuEntry*);
 	void setHighlight(int chnr);
 	int getNrChilds() const { return _childs.size(); }
+	void setDynContent() { dyn_content = true; }
 	void setDirty() { dirty = true; }
 	int getContId() const { return content_id; }
 	void setBuzzword(const char *bz=nullptr) { buzzword = bz; }
@@ -62,6 +63,7 @@ protected:
 	SetupMenuCreator_t populateMenu;
 	std::vector<MenuEntry*> _childs;
 	int highlight = -1;
+	bool dyn_content = false; // reentrant create routine required, call it when dirty
 	bool dirty = false; // need to refresh content/child list
 	int content_id;
 	const char *buzzword = nullptr;

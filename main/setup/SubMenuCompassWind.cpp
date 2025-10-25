@@ -211,6 +211,8 @@ void options_menu_create_compasswind_circlingwind(SetupMenu *top) {
 
 void options_menu_create_compasswind(SetupMenu *top) { // dynamic!
 	if ( top->getNrChilds() == 0 ) {
+		top->setDynContent();
+		
 		SetupMenu *compassMenu = new SetupMenu("Compass", options_menu_create_compasswind_compass);
 		top->addEntry(compassMenu);
 

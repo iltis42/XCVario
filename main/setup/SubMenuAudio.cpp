@@ -155,6 +155,8 @@ void audio_menu_create_tonestyle(SetupMenu *top) { // dynamic!
 
     if (top->getNrChilds() == 0)
     {
+        top->setDynContent();
+
         SetupMenuSelect *prfl = new SetupMenuSelect("Preset scheme", RST_NONE, applyAudioProfile);
         prfl->setHelp("Choose one of the predefined audio profiles to preset audio parameters");
         for (const auto &p : audio_prfls) {

@@ -1,8 +1,13 @@
 #pragma once
 
-#include <cstdint>
 #include <string_view>
 #include <vector>
+
+class SetupMenu;
+
+void flap_menu_create_flap_sensor(SetupMenu *wkm);
+
+
 
 // Flap level internal representation
 // ==================================
@@ -20,22 +25,18 @@
 
 
 class AnalogInput;
-class SetupMenu;
-class SetupMenuSelect;
-class SetupMenuValFloat;
 
 extern const std::string_view flap_labels[55];
 
-int select_flap_sens_pin(SetupMenuSelect *p);
-int flap_cal_act(SetupMenuSelect *p);
 
-struct FlapLevel {
-	float speed;
-	float speed_delta;
-	const char* label;
-	int sensval;
-	int sens_delta;
-	FlapLevel( float s, const char* l, int sv ) : speed(s), speed_delta(0.), label(l), sensval(sv), sens_delta(0) {}
+struct FlapLevel
+{
+    float speed;
+    float speed_delta;
+    const char *label;
+    int sensval;
+    int sens_delta;
+    FlapLevel(float s, const char *l, int sv) : speed(s), speed_delta(0.), label(l), sensval(sv), sens_delta(0) {}
 };
 
 /*
@@ -43,71 +44,43 @@ struct FlapLevel {
  *
  */
 
-class Flap {
+class Flap
+{
 private:
-    Flap();
+	Flap();
+
 public:
     ~Flap();
-	static Flap* theFlap();
-	void  progress();
-	// recommendations
-	float getOptimum(float speed);
-	float getSpeedBand(float wkf, float &maxv);
-	float getFlapPosition() { return lever; };
-	inline bool haveSensor() { return sensorAdc != nullptr; }
-	const FlapLevel* getFL(int idx) const { return (idx < flevel.size()) ? &flevel[idx] : &dummy; }
+    static Flap *theFlap();
+    void progress();
+    // recommendations
+    float getOptimum(float speed) const;
+    float getSpeedBand(float wkf, float &maxv) const;
+    float getFlapPosition() const;
+    bool haveSensor() const { return sensorAdc != nullptr; }
+    const FlapLevel *getFL(int idx) const { return (idx < flevel.size()) ? &flevel[idx] : &dummy; }
 
-	// obsolete
-    // void setBarPosition(int16_t x, int16_t y);
-    // void setSymbolPosition(int16_t x, int16_t y);
-	// void drawSmallBar( float wkf );
-	// void drawBigBar( float wkf, float wksens );
-	// void drawLever( int16_t xpos, int16_t ypos, int16_t &oldypos, bool warn, bool good );
-	// void drawWingSymbol(int16_t wk, float wksens);
-	// void redraw() { sensorOldY = -1000; dirty=true; };
-	static void setupMenue(SetupMenu *parent);
-
-	// sensor access
-	unsigned int getSensorRaw();
-	void initFromNVS();
-	void saveToNVS();
-	void prepLevels();
+    // sensor access
+    unsigned int getSensorRaw() const;
+    void configureADC(int port);
+    void initFromNVS();
+    void saveToNVS();
+    void prepLevels();
     int getNrPositions() const { return flevel.size(); }
-    static inline Flap* FLAP() { return _instance; }
     static constexpr const int MAX_NR_POS = 7;
 
-private: // helper
-    friend int select_flap_sens_pin(SetupMenuSelect *p);
-	static void setupSensorMenueEntries(SetupMenu *wkm);
-    static void position_labels_menu_create(SetupMenu* top);
-
-	bool sensorToLeverPosition( int sensorreading, float& lever);
-	void configureADC( int port );
-	void drawFrame(int16_t xpos, int16_t ypos);
-
 private:
-    static Flap* _instance;
-	AnalogInput *sensorAdc = nullptr;
-	float lever = -1.;
-	int16_t leverold = -2.;
-	std::vector<FlapLevel> flevel;
-	bool _sens_ordered = true; // if true, sensval are in descending order from flap level 0 upwards
-	static FlapLevel dummy;
-
-	bool  dirty = true;
-	int16_t optPosOldY = 0;
-	int16_t sensorOldY = 0;
-	int   rawFiltered = 0;
-	int   tick = 0;
-	int   tickopt = 0;
-	bool  warn_color = false;
-	float g_force = 1.;
-    float wkf_old = 0.;
-	int16_t barpos_x = 0;
-	int16_t barpos_y = 0;
-	int16_t symbolpos_x = 0;
-	int16_t symbolpos_y = 0;
-	unsigned int _millis;
+    // helper
+    float sensorToLeverPosition(int sensorreading) const;
+    // attributes
+    static Flap *_instance;
+    AnalogInput *sensorAdc = nullptr;
+    std::vector<FlapLevel> flevel;
+    bool _sens_ordered = true; // if true, sensval are in descending order from flap level 0 upwards
+    static FlapLevel dummy;
+    int rawFiltered = 0;
+    int tick = 0;
+    mutable float g_force = 1.;
 };
 
 extern Flap* FLAP;

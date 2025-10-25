@@ -144,12 +144,12 @@ void glider_menu_create(SetupMenu *top) {
 	}
 
 	SetupMenu *tmp_menu = static_cast<SetupMenu*>(top->getEntry(6)); // flap speeds
-	if( Polars::hasFlaps() ){
+	if( Polars::hasFlaps(Polars::getGliderEnumPos()) ){
 		tmp_menu->unlock();
 		tmp_menu->setBuzzword();
 	}else{
 		tmp_menu->lock();
-		tmp_menu->setBuzzword("No flaps");
+		tmp_menu->setBuzzword("no flaps");
 	}
 
 

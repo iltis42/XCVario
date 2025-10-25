@@ -14,7 +14,7 @@
 #include <vector>
 #include <utility>
 
-extern const std::string_view ENABLE_MODE[4];
+extern const std::string_view ENABLE_MODE[5];
 
 class SetupMenuSelect : public MenuEntry
 {

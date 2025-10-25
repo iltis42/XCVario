@@ -609,7 +609,7 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	s2fmod->setHelp("Select data source for switching between S2F and Vario modes", 230);
 	s2fmod->addEntry("Switch", AM_SWITCH);
 	s2fmod->addEntry("AutoSpeed", AM_AUTOSPEED);
-	if ( flap_sensor.get() ) {
+	if ( FLAP ) {
 		s2fmod->addEntry("AutoFlap", AM_FLAP); // not dynamic, exit setup to change
 	}
 	s2fmod->addEntry("AutoTurn", AM_AHRS);
@@ -629,7 +629,7 @@ void vario_menu_create_s2f(SetupMenu *top) {
 	top->addEntry(autospeed);
 	autospeed->setHelp("Transition speed for the AutoSpeed S2F switch");
 
-	if ( flap_sensor.get() ) {
+	if ( FLAP ) {
 		SetupMenuValFloat *s2f_flap = new SetupMenuValFloat("AutoFlap Position", "flp", nullptr, false, &s2f_flap_pos);
 		top->addEntry(s2f_flap);
 		s2f_flap->setHelp("Precise flap position for the AutoFlap S2F switch");
@@ -893,7 +893,7 @@ static void screens_menu_create_vario(SetupMenu *top) {
     // bgauge->addEntry("Life Wind", GAUGE_NONE);
     top->addEntry(bgauge);
 
-    SetupMenuSelect *wke = new SetupMenuSelect("Flap Indicator", RST_NONE, nullptr, &flap_enable);
+    SetupMenuSelect *wke = new SetupMenuSelect("Flap Indicator", RST_NONE, nullptr, &flapbox_enable);
     wke->mkEnable();
     wke->setHelp("Enable flap indicator to assist optimum flap setting depending on speed, G-load and ballast");
     top->addEntry(wke);
@@ -1277,42 +1277,64 @@ void system_menu_create_hardware_ahrs(SetupMenu *top) {
 }
 
 void system_menu_create_hardware(SetupMenu *top) {
-	SetupMenu *display = new SetupMenu("DISPLAY Setup", system_menu_create_hardware_type);
-	top->addEntry(display);
+	if ( top->getNrChilds() == 0 ) {
+		top->setDynContent();
+		SetupMenu *display = new SetupMenu("DISPLAY Setup", system_menu_create_hardware_type);
+		top->addEntry(display);
 
-	SetupMenu *rotary = new SetupMenu("Rotary Setup", system_menu_create_hardware_rotary);
-	top->addEntry(rotary);
+		SetupMenu *rotary = new SetupMenu("Rotary Setup", system_menu_create_hardware_rotary);
+		top->addEntry(rotary);
 
-	Flap::setupMenue(top);
+		// Flap::setupMenue(top);
+		SetupMenu* wkm = new SetupMenu("Flap Sensor", flap_menu_create_flap_sensor);
+		top->addEntry( wkm );
 
-	SetupMenuSelect *gear = new SetupMenuSelect("Gear Warn", RST_NONE, config_gear_warning, &gear_warning);
-	top->addEntry(gear);
-	gear->setHelp(
-			"Enable gear warning on S2 flap sensor or serial RS232 pin (pos. or neg. signal) or by external command",
-			220);
-	gear->addEntry("Disable");
-	gear->addEntry("S2 Flap positive"); // A positive signal, high signal or > 2V will start alarm
-	gear->addEntry("S2 RS232 positive");
-	gear->addEntry("S2 Flap negative"); // A negative signal, low signal or < 1V will start alarm
-	gear->addEntry("S2 RS232 negative");
-	gear->addEntry("External");  // A $g,w<n>*CS command from an external device
+		SetupMenuSelect *gear = new SetupMenuSelect("Gear Warn", RST_NONE, config_gear_warning, &gear_warning);
+		top->addEntry(gear);
+		gear->setHelp(
+				"Enable gear warning on S2 flap sensor or serial RS232 pin (pos. or neg. signal) or by external command",
+				220);
+		gear->addEntry("Disable");
+		gear->addEntry("S2 Flap positive"); // A positive signal, high signal or > 2V will start alarm
+		gear->addEntry("S2 RS232 positive");
+		gear->addEntry("S2 Flap negative"); // A negative signal, low signal or < 1V will start alarm
+		gear->addEntry("S2 RS232 negative");
+		gear->addEntry("External");  // A $g,w<n>*CS command from an external device
 
-	if (hardwareRevision.get() >= XCVARIO_21) {
-		SetupMenu *ahrs = new SetupMenu("AHRS Setup", system_menu_create_hardware_ahrs);
-		top->addEntry(ahrs);
+		if (hardwareRevision.get() >= XCVARIO_21) {
+			SetupMenu *ahrs = new SetupMenu("AHRS Setup", system_menu_create_hardware_ahrs);
+			top->addEntry(ahrs);
+		}
+
+		SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", RST_ON_EXIT, nullptr, &airspeed_sensor_type );
+		top->addEntry( pstype );
+		pstype->setHelp( "Factory default for type of pressure sensor, will not erase on factory reset (reboots)");
+		pstype->addEntry( "ABPMRR");
+		pstype->addEntry( "TE4525");
+		pstype->addEntry( "MP5004");
+		pstype->addEntry( "MCPH21");
+		pstype->addEntry( "Autodetect");
+
+		SetupMenuValFloat *met_adj = SetupMenu::createVoltmeterAdjustMenu();
+		top->addEntry(met_adj);
 	}
-
-	SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", RST_ON_EXIT, nullptr, &airspeed_sensor_type );
-	top->addEntry( pstype );
-	pstype->setHelp( "Factory default for type of pressure sensor, will not erase on factory reset (reboots)");
-	pstype->addEntry( "ABPMRR");
-	pstype->addEntry( "TE4525");
-	pstype->addEntry( "MP5004");
-	pstype->addEntry( "MCPH21");
-	pstype->addEntry( "Autodetect");
-
-	SetupMenuValFloat *met_adj = SetupMenu::createVoltmeterAdjustMenu();
-	top->addEntry(met_adj);
+	SetupMenu *wkm = static_cast<SetupMenu*>(top->getEntry(2)); // Flap Sensor
+	if ( FLAP ) {
+		wkm->unlock();
+		if ( flap_sensor.get() == FLAP_SENSOR_DISABLE ) {
+			wkm->setBuzzword(ENABLE_MODE[0].data());
+		}
+		else if ( flap_sensor.get() == FLAP_SENSOR_ENABLE ) {
+			wkm->setBuzzword(ENABLE_MODE[1].data());
+		}
+		else if ( flap_sensor.get() == FLAP_SENSOR_CLIENT ) {
+			wkm->setBuzzword(ENABLE_MODE[4].data());
+		}
+	}
+	else {
+		wkm->lock();
+		wkm->setBuzzword("n/a");
+	}
 }
 
 void system_menu_create(SetupMenu *sye) {
@@ -1327,7 +1349,7 @@ void system_menu_create(SetupMenu *sye) {
 
 	// Glider Setup
 	SetupMenu *po = new SetupMenu("Glider Type", glider_menu_create);
-	po->setBuzzword(Polars::getGliderType());
+	po->setBuzzword(Polars::getGliderType(Polars::getGliderEnumPos()));
 	po->setHelp("Polar, weight and all attributes of the glider");
 	sye->addEntry(po);
 

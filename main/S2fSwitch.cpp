@@ -144,7 +144,7 @@ bool Speed()
 }
 bool Flap()
 {
-    if (flap_sensor.get()) // fixme need to work for client, th.m. the vario w/o sensor
+    if (FLAP) 
     {
         return FLAP->getFlapPosition() < s2f_flap_pos.get();
     }

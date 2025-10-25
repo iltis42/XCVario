@@ -19,7 +19,7 @@ public:
 
 	void begin(adc_atten_t attenuation, adc_unit_t unit=ADC_UNIT_1, bool calibration=true);
 	void setAdjust(float adj);
-	unsigned int getRaw();
+	unsigned int getRaw() const;
  	// create raw readings
     bool tick() override;
 	// get a calibrated voltage reading

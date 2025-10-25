@@ -135,7 +135,7 @@ void change_volume() {
 }
 
 void flap_act() {
-    if (flap_enable.get()) {
+    if (flapbox_enable.get() || flap_sensor.get() != FLAP_SENSOR_DISABLE) {
         FLAP = Flap::theFlap(); // check on FLAP pointer further on
     }
     else if ( FLAP ) {
@@ -215,7 +215,7 @@ SetupNG<int>  			extwind_status( "EWST", -1, false, SYNC_BIDIR, VOLATILE );
 SetupNG<float>  		mag_hdm( "HDM", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		mag_hdt( "HDT", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		average_climb( "AVCL", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
-SetupNG<float>  		flap_pos( "FLPS", -100.0, true, SYNC_FROM_MASTER, VOLATILE );
+SetupNG<float>  		flap_pos( "FLPS", 0.0, true, SYNC_BIDIR, VOLATILE );
 SetupNG<float>  		altitude( "ALTI", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		ias( "IASV", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
 SetupNG<float>  		te_vario( "TEVA", 0.0, true, SYNC_FROM_MASTER, VOLATILE );
@@ -276,7 +276,7 @@ SetupNG<float>  		factory_volt_adjust("FACT_VOLT_ADJ", 0.00815, false, SYNC_NONE
 SetupNG<int>  			display_type( "DISPLAY_TYPE",  UNIVERSAL );
 SetupNG<int>  			display_test( "DISPLAY_TEST", 0, false, SYNC_NONE, VOLATILE );
 SetupNG<int>  			display_orientation("DISPLAY_ORIENT" , DISPLAY_NORMAL, true, SYNC_NONE, PERSISTENT, chg_display_orientation );
-SetupNG<int>  			flap_enable( "FLAP_ENABLE", 0, true, SYNC_BIDIR, PERSISTENT, flap_act);
+SetupNG<int>  			flapbox_enable( "FLAP_ENABLE", 0, true, SYNC_BIDIR, PERSISTENT, flap_act);
 SetupNG<float>  		wk_speed_0( "FLAP_MINUS_3", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<float>  		wk_speed_1( "FLAP_MINUS_2", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<float>  		wk_speed_2( "FLAP_MINUS_1", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
@@ -333,11 +333,11 @@ SetupNG<int>		    wk_sens_pos_3("WKSP0", 2500);
 SetupNG<int>		    wk_sens_pos_4("WKSP1", 2000);
 SetupNG<int>		    wk_sens_pos_5("WKSP2", 1500);
 SetupNG<int>		    wk_sens_pos_6("WKSP3", 1000);
-SetupNG<int>            stall_warning( "STALL_WARN", 0 );
-SetupNG<float>			polar_stall_speed( "STALL_SPEED", 70, true, SYNC_FROM_MASTER, PERSISTENT, 0, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<int>            flarm_warning( "FLARM_LEVEL", 1 );
+SetupNG<int>            stall_warning( "STALL_WARN", 0, true, SYNC_BIDIR, PERSISTENT );
+SetupNG<float>			polar_stall_speed( "STALL_SPEED", 70, true, SYNC_BIDIR, PERSISTENT, 0, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<int>            flarm_warning( "FLARM_LEVEL", 1, true, SYNC_BIDIR, PERSISTENT );
 SetupNG<float>          flarm_alarm_time( "FLARM_ALM", 5, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1, 15, 1));
-SetupNG<int>            flap_sensor( "FLAP_SENS", 0, false, SYNC_FROM_MASTER, PERSISTENT, flap_act); // fixme synch logic broken
+SetupNG<int>            flap_sensor( "FLAP_SENS", FLAP_SENSOR_DISABLE, false, SYNC_NONE, PERSISTENT, flap_act);
 SetupNG<float>          compass_dev_0( "CP_DEV_0", 0 );
 SetupNG<float>          compass_dev_45( "CP_DEV_45", 0 );
 SetupNG<float>          compass_dev_90( "CP_DEV_90", 0 );

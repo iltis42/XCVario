@@ -88,9 +88,9 @@ void Polars::extract(int glider_index)
 	}
 }
 
-const char *Polars::getGliderType()
+const char *Polars::getGliderType(int i)
 {
-    return polars_default_arr[my_polar].type.data();
+    return polars_default_arr[i].type.data();
 }
 
 int Polars::getGliderEnumPos()
@@ -98,7 +98,7 @@ int Polars::getGliderEnumPos()
     return my_polar;
 }
 
-bool Polars::hasFlaps(){
-    return polars_default_arr[my_polar].flags & 0x01;
+bool Polars::hasFlaps(int i){
+    return polars_default_arr[i].flags & 0x01;
 }
 

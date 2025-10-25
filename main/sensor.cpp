@@ -1369,7 +1369,7 @@ void system_startup(void *args){
 	// Init the vario screens
 	SetupRoot::initScreens();
 
-	if ( flap_enable.get() ) {
+	if ( flapbox_enable.get() ) {
 		FLAP = Flap::theFlap(); // check on FLAP pointer further on
 	}
 	if( hardwareRevision.get() != XCVARIO_20 ){

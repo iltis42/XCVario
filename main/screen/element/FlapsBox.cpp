@@ -20,31 +20,34 @@
 extern AdaptUGC *MYUCG;
 
 constexpr const int16_t BOX_WIDTH  = 28;
-constexpr const int16_t BOX_LENGTH = 100; // w/o corners
+// constexpr const int16_t BOX_LENGTH = 100; // w/o corners
 constexpr const int16_t BOX_CORNER = 8;
 constexpr const int16_t LABEL_SPACING = 40;
-constexpr const float   PIX_PER_KMH = ((float)(BOX_LENGTH)-2*BOX_CORNER) / 26; // km/h range on flap box
+// constexpr const float   PIX_PER_KMH = ((float)(BOX_LENGTH)-2*BOX_CORNER) / (26.f + std::max(BOX_LENGTH-100, 0))/30.f; // km/h range on flap box
 constexpr const int     SOUND_LATENCY = 5; // frames 
+
+int16_t FlapsBox::BOX_LENGTH = 100;
+float   FlapsBox::PIX_PER_KMH = 3.23f;
 
 
 constexpr FBoxStateHash::FBoxStateHash(float f, float minvd, float maxvd) :
     wkidx10( (int)std::roundf(f*10.) )
 {
-    top_pix = static_cast<int16_t>(minvd * PIX_PER_KMH);
-        bottom_pix = static_cast<int16_t>(maxvd * PIX_PER_KMH);
+    top_pix = static_cast<int16_t>(minvd * FlapsBox::PIX_PER_KMH);
+    bottom_pix = static_cast<int16_t>(maxvd * FlapsBox::PIX_PER_KMH);
 }
 constexpr bool FBoxStateHash::operator!=(const FBoxStateHash &other) const noexcept
 {
     if ( wkidx10 != other.wkidx10 ) return true;
-    if ( ((top_pix > -BOX_LENGTH/2
-            && top_pix < BOX_LENGTH/2)
-        || (other.top_pix > -BOX_LENGTH/2
-            && other.top_pix < BOX_LENGTH/2))
+    if ( ((top_pix > -FlapsBox::BOX_LENGTH/2
+            && top_pix < FlapsBox::BOX_LENGTH/2)
+        || (other.top_pix > -FlapsBox::BOX_LENGTH/2
+            && other.top_pix < FlapsBox::BOX_LENGTH/2))
         && top_pix != other.top_pix ) return true;
-    if ( ((bottom_pix > -BOX_LENGTH/2
-            && bottom_pix < BOX_LENGTH/2)
-        || (other.bottom_pix > -BOX_LENGTH/2
-            && other.bottom_pix < BOX_LENGTH/2))
+    if ( ((bottom_pix > -FlapsBox::BOX_LENGTH/2
+            && bottom_pix < FlapsBox::BOX_LENGTH/2)
+        || (other.bottom_pix > -FlapsBox::BOX_LENGTH/2
+            && other.bottom_pix < FlapsBox::BOX_LENGTH/2))
         && bottom_pix != other.bottom_pix) return true;
     return false;
 }
@@ -59,6 +62,12 @@ FlapsBox::FlapsBox(Flap* flap, int16_t cx, int16_t cy, bool vertical) :
     MYUCG->setFont(ucg_font_fub11_hn);
 	_LFH = MYUCG->getFontAscent() - MYUCG->getFontDescent() + 2;
     ESP_LOGI(FNAME, "FlapsBox label height %d, a%d d%d", _LFH, MYUCG->getFontAscent(), MYUCG->getFontDescent());
+}
+
+void FlapsBox::setLength(int16_t length)
+{
+    BOX_LENGTH = length;
+    PIX_PER_KMH = ((float)(BOX_LENGTH)-2*BOX_CORNER) / (26.f + std::max(BOX_LENGTH-100, 0)/30.f); // km/h range on flap box
 }
 
 void FlapsBox::drawLabels(FBoxStateHash cs)

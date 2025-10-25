@@ -365,8 +365,8 @@ SetupMenu::~SetupMenu() {
 void SetupMenu::enter()
 {
 	ESP_LOGI(FNAME,"enter inSet %d, mptr: %p", gflags.inSetup, populateMenu );
-	if (_childs.empty() && populateMenu) {
-		(populateMenu)(this);
+	if ((_childs.empty() || dyn_content) && populateMenu) {
+		(populateMenu)(this); // callback needs to be designed for this !!!
 		ESP_LOGI(FNAME,"created childs %d", _childs.size());
 	}
 	MenuEntry::enter();
@@ -376,7 +376,6 @@ void SetupMenu::display(int mode)
 {
 	if (dirty && populateMenu) {
 		// Cope with changes in menu item presence
-		// populateMenu() callback needs to be designed for this !!!
 		ESP_LOGI(FNAME,"SetupMenu display() dirty %d", dirty );
 		(populateMenu)(this);
 		ESP_LOGI(FNAME,"create_childs %d", _childs.size());
@@ -966,6 +965,8 @@ void screens_menu_create_horizon(SetupMenu *top) {
 
 static void options_menu_create_screens(SetupMenu *top) { // dynamic!
 	if ( top->getNrChilds() == 0 ) {
+		top->setDynContent();
+
 		SetupMenu *vario = new SetupMenu("Variometer", screens_menu_create_vario);
 		top->addEntry(vario);
 
@@ -1011,6 +1012,7 @@ static void options_menu_create_screens(SetupMenu *top) { // dynamic!
 
 void options_menu_create(SetupMenu *opt) { // dynamic!
 	if ( opt->getNrChilds() == 0 ) {
+		opt->setDynContent();
 		if (student_mode.get() == 0) {
 			SetupMenuSelect *stumo = new SetupMenuSelect("Student Mode", RST_NONE, nullptr, &student_mode);
 			opt->addEntry(stumo);

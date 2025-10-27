@@ -159,10 +159,6 @@ void Flarm::drawFlarmWarning(){
 		alarm = AUDIO_NO_SOUND;
 	}
 
-	if( alarm != AUDIO_NO_SOUND ) {
-		AUDIO->startSound(alarm);
-	}
-
 	if( AlarmLevel != alarmOld ) {
 		ucg->setPrintPos(200, 25 );
 		ucg->setFontPosCenter();
@@ -170,6 +166,10 @@ void Flarm::drawFlarmWarning(){
 		ucg->setFont(ucg_font_fub20_hr, true);
 		ucg->printf( "%d ", AlarmLevel );
 		alarmOld = AlarmLevel;
+
+		if( alarm != AUDIO_NO_SOUND ) {
+			AUDIO->startSound(alarm);
+		}
 	}
 	if( oldDist !=  RelativeDistance ) {
 		ucg->setPrintPos(130, 140 );

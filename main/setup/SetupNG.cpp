@@ -226,7 +226,7 @@ SetupNG<int>  			flarm_alive( "AL_FLARM", ALIVE_NONE, false, SYNC_NONE, VOLATILE
 SetupNG<int>  			airborne("AIRBORNE", 0, false, SYNC_FROM_MASTER, VOLATILE, &ch_airborne_state);
 
 SetupNG<int>  			s2f_ideal( "S2F_IDEAL", 100.0, false, SYNC_FROM_MASTER, VOLATILE);
-SetupNG<int>  			s2f_switch_mode( "AUDIO_MODE" ,  AM_AUTOSPEED, false, SYNC_BIDIR, PERSISTENT );
+SetupNG<int>  			s2f_switch_mode( "AUDIO_MODE", AM_SWITCH, false, SYNC_BIDIR, PERSISTENT );
 SetupNG<float>  		s2f_threshold( "S2F_SPEED", 100.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(20.0, 250.0, 1.0));
 SetupNG<float>  		s2f_flap_pos( "S2F_FLAP", 1, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-3, 3, 0.1));
 static const limits_t percentage_limits = {0, 100, 1.0};

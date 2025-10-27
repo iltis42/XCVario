@@ -32,6 +32,10 @@ struct FBoxStateHash {
     int16_t wkidx10;
     int16_t top_pix;
     int16_t bottom_pix;
+    struct {
+        int16_t top_exseed :1;
+        int16_t bottom_exseed :1;
+    };
 
     constexpr FBoxStateHash() = delete;
     constexpr FBoxStateHash(float f, float minvd, float maxvd);

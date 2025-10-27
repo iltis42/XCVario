@@ -35,6 +35,8 @@ constexpr FBoxStateHash::FBoxStateHash(float f, float minvd, float maxvd) :
 {
     top_pix = static_cast<int16_t>(minvd * FlapsBox::PIX_PER_KMH);
     bottom_pix = static_cast<int16_t>(maxvd * FlapsBox::PIX_PER_KMH);
+    top_exseed = (top_pix < -FlapsBox::BOX_LENGTH/2) ? 1 : 0;
+    bottom_exseed = (bottom_pix > FlapsBox::BOX_LENGTH/2) ? 1 : 0;
 }
 constexpr bool FBoxStateHash::operator!=(const FBoxStateHash &other) const noexcept
 {
@@ -49,6 +51,8 @@ constexpr bool FBoxStateHash::operator!=(const FBoxStateHash &other) const noexc
         || (other.bottom_pix > -FlapsBox::BOX_LENGTH/2
             && other.bottom_pix < FlapsBox::BOX_LENGTH/2))
         && bottom_pix != other.bottom_pix) return true;
+    if ( top_exseed != other.top_exseed ) return true;
+    if ( bottom_exseed != other.bottom_exseed ) return true;
     return false;
 }
 
@@ -77,12 +81,34 @@ void FlapsBox::drawLabels(FBoxStateHash cs)
     boxy = _ref_y - BOX_LENGTH / 2 + 2,
     boxw = BOX_WIDTH - 4,
     boxh = BOX_LENGTH - 4;
-    MYUCG->setClipRange(boxx, boxy, boxw, boxh);
-    MYUCG->setFont(ucg_font_fub11_hn);
 
     // colored speed range (background)
     // int16_t top_pix = static_cast<int16_t>(lwk_speed * PIX_PER_KMH);
     // int16_t bottom_pix = static_cast<int16_t>(uwk_speed * PIX_PER_KMH);
+    // draw excess corners in green
+    if ( cs.top_exseed != _state.top_exseed ) {
+        if ( cs.top_exseed ) {
+            MYUCG->setColor(COLOR_DGREEN);
+        } else {
+            MYUCG->setColor(COLOR_WGREY);
+        }
+        MYUCG->setClipRange(boxx, boxy - (BOX_CORNER - 2), boxw, BOX_CORNER - 2);
+        MYUCG->drawRBox(boxx, boxy - (BOX_CORNER - 2), boxw, 2 * (BOX_CORNER - 2), BOX_CORNER - 2);
+        MYUCG->undoClipRange();
+    }
+    if ( cs.bottom_exseed != _state.bottom_exseed ) {
+        if ( cs.bottom_exseed ) {
+            MYUCG->setColor(COLOR_DGREEN);
+        } else {
+            MYUCG->setColor(COLOR_WGREY);
+        }
+        MYUCG->setClipRange(boxx, boxy + boxh, boxw, BOX_CORNER - 2);
+        MYUCG->drawRBox(boxx, boxy + boxh, boxw - (BOX_CORNER - 2), 2 * (BOX_CORNER - 2), BOX_CORNER - 2);
+        MYUCG->undoClipRange();
+    }
+
+    // MYUCG->setClipRange(boxx, boxy, boxw, boxh);
+    MYUCG->setFont(ucg_font_fub11_hn);
     int16_t green_top =  _ref_y + cs.top_pix;
     if ( cs.top_pix > -BOX_LENGTH/2 ) {
         MYUCG->setColor(COLOR_WGREY);
@@ -160,7 +186,7 @@ void FlapsBox::drawLabels(FBoxStateHash cs)
 
 
     MYUCG->setColor(1, g_col_background, g_col_background, g_col_background);
-    MYUCG->undoClipRange();
+    // MYUCG->undoClipRange();
 
     _state = cs;
 }

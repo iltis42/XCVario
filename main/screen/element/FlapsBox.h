@@ -40,6 +40,7 @@ struct FBoxStateHash {
     constexpr FBoxStateHash() = delete;
     constexpr FBoxStateHash(float f, float minvd, float maxvd);
     constexpr int getWkIdx() const { return (wkidx10+5) / 10; }
+    constexpr float getWk() const { return (float)(wkidx10) / 10.f; }
     constexpr bool operator!=(const FBoxStateHash &other) const noexcept;
 };
 

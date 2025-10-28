@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include <string_view>
 #include <vector>
 
@@ -56,6 +57,7 @@ public:
     // recommendations
     float getOptimum(float speed) const;
     float getSpeedBand(float wkf, float &maxv) const;
+    float getSpeed(float wkf);
     float getFlapPosition() const;
     bool haveSensor() const { return sensorAdc != nullptr; }
     const FlapLevel *getFL(int idx) const { return (idx < flevel.size()) ? &flevel[idx] : &dummy; }
@@ -71,6 +73,7 @@ public:
 
 private:
     // helper
+    static int getWkI(float wkf) { return ( wkf < 0.01 ) ? 0 : (int)std::ceilf(wkf); }
     float sensorToLeverPosition(int sensorreading) const;
     // attributes
     static Flap *_instance;

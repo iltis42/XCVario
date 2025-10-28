@@ -406,7 +406,7 @@ float Flap::getFlapPosition() const
 float Flap::getOptimum(float spd) const
 {
 	// Correct for current g load
-	g_force += (IMU::getGliderAccelZ() - g_force) * 0.2;  // lowpass filtering, to smooth display in rough air .. fixme tune factor
+	g_force += (IMU::getGliderAccelZ() - g_force) * 0.5;
 	if ( g_force < 0.3 ) {
 		g_force = 0.3; // Ignore meaningless values below 0.3g
 	}
@@ -445,7 +445,7 @@ float Flap::getOptimum(float spd) const
 // 0 < wk < (# positions - 1)
 float Flap::getSpeedBand(float wkf, float &maxv) const
 {
-    int wki = ( wkf < 0.01 ) ? 0 : (int)std::ceilf(wkf);
+    int wki = getWkI(wkf);
     float minv = flevel[wki].speed;
     if( wki == 0 ) {
         maxv = v_max.get();
@@ -455,11 +455,16 @@ float Flap::getSpeedBand(float wkf, float &maxv) const
     }
 
     float shift = (wkf-wki)*flevel[wki].speed_delta;
-	// ESP_LOGI(FNAME,"shift:%.1f", shift);
+    // ESP_LOGI(FNAME,"shift:%.1f", shift);
     minv += shift;
     maxv += shift;
 
-	// ESP_LOGI(FNAME,"wkf:%.1f minv:%.1f maxv:%.1f", wkf, minv, maxv);
+    // ESP_LOGI(FNAME,"wkf:%.1f minv:%.1f maxv:%.1f", wkf, minv, maxv);
     return minv;
 }
 
+float Flap::getSpeed(float wkf)
+{
+    int wki = getWkI(wkf);
+    return flevel[wki].speed + (wkf-wki)*flevel[wki].speed_delta;
+}

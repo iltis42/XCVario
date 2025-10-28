@@ -1358,12 +1358,12 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	// int airspeed =  (int)(Units::Airspeed( airspeed_kmh ) + 0.5);
 
 	// average Climb
-	if( !(tick%10) ) {
+	if( !(tick%2) ) {
 		MAINgauge->drawFigure(ate_ms);
 	}
 
 	// S2F bar
-    if ( (((int)s2fd != s2fdalt) || (s2falt != (int)(s2f+0.5)) || !(tick%21)) && S2FBARgauge ) {
+    if ( (((int)s2fd != s2fdalt) || (s2falt != (int)(s2f+0.5)) || !(tick%11)) && S2FBARgauge ) {
 		// static float s=0; // check the bar code
 		// s2fd = sin(s) * 42.;
 		// s+=0.04;
@@ -1373,7 +1373,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// MC val
-	if( MCgauge && !(tick%8) ) {
+	if( MCgauge && !(tick%5) ) {
 		MCgauge->draw(MC.get());
 	}
 
@@ -1384,7 +1384,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Upper gauge
-	if( vario_upper_gauge.get() && !(tick%5) ) {
+	if( vario_upper_gauge.get() && !(tick%3) ) {
 		drawTopGauge( airspeed_kmh, INNER_RIGHT_ALIGN, SPEEDYPOS );
 	}
 	// Altitude
@@ -1393,7 +1393,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Wind & center aid
-	if( !(tick%4) ){
+	if( !(tick%2) ){
 		if ( theCenteraid && ! VCMode.getCMode() ) {
 			theCenteraid->drawCenterAid();
 		}
@@ -1427,15 +1427,13 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 	}
 
 	// Vario indicator
+	MAINgauge->draw(te_ms);
 	if( !(tick%2) ){
-		MAINgauge->draw(te_ms);
-	}
-	if( !(tick%4) ){
         MAINgauge->drawPolarSink(VCMode.isNetto() ? 0. : polar_sink);
     }
 
 	// Battery
-	if ( !(tick%40) ) {
+	if ( !(tick%15) ) {
 		BATgauge->draw(volt);
 	}
 
@@ -1467,7 +1465,7 @@ void IpsDisplay::drawRetroDisplay( int airspeed_kmh, float te_ms, float ate_ms, 
 
 	// Medium Climb Indicator
 	// ESP_LOGI(FNAME,"acl:%f nt:%d", acl, average_climbf, !(tick%9) );
-	if( acl != average_climbf && !(tick%9) && acl > 0 ){
+	if( acl != average_climbf && !(tick%4) && acl > 0 ){
 		drawAvg( acl, acl-average_climbf );
 		average_climbf = acl;
 	}
@@ -1541,7 +1539,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 	ucg->setColor(  COLOR_WHITE  );
 
 	// Average Vario
-	if( _ate != (int)(ate*10) && !(tick%3) ) {
+	if( _ate != (int)(ate*10) && !(tick%2) ) {
 		// draw numeric value
 		// set coarse clipbox to avoid overwriting Vario Skale and pointer
 		ucg->setClipRange(DISPLAY_LEFT+bw+22,1,120,100);
@@ -1555,23 +1553,23 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		ALTgauge->draw(altitude_m);
 	}
 	// MC Value
-	if( MCgauge && !(tick%8) ) {
+	if( MCgauge && !(tick%5) ) {
 		MCgauge->draw(MC.get());
 	}
 
 	// Temperature ValueAirliner
-	if( (int)(temp*10) != tempalt && !(tick%11)) {
+	if( (int)(temp*10) != tempalt && !(tick%12)) {
 		drawTemperature( FIELD_START+18, DISPLAY_H+3, temp );
 		tempalt=(int)(temp*10);
 	}
 
 	// Battery Symbol
-	if ( !(tick%40) ) {
+	if ( !(tick%15) ) {
 		BATgauge->draw(volt);
 	}
 
 	// Bluetooth Symbol etc
-	if( !(tick%12) ){
+	if( !(tick%9) ){
 		drawConnection(DISPLAY_W-25, FLOGO);
 	}
 
@@ -1612,7 +1610,7 @@ void IpsDisplay::drawAirlinerDisplay( int airspeed_kmh, float te_ms, float ate_m
 		s2fmodealt = s2fmode;
 	}
 
-	if ( average_climbf !=  acl && !(tick%9) && acl > 0 ){
+	if ( average_climbf !=  acl && !(tick%7) && acl > 0 ){
 		drawAvgSymbol(  (acl*_pixpmd)/10, COLOR_BLACK );
 		drawLegend( true );
 		average_climbf = acl;

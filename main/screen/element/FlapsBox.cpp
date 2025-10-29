@@ -29,16 +29,7 @@ constexpr const int     SOUND_LATENCY = 5; // frames
 int16_t FlapsBox::BOX_LENGTH = 100;
 float   FlapsBox::PIX_PER_KMH = 3.23f;
 
-
-constexpr FBoxStateHash::FBoxStateHash(float f, float minvd, float maxvd) :
-    wkidx10( (int)std::roundf(f*10.) )
-{
-    top_pix = static_cast<int16_t>(minvd * FlapsBox::PIX_PER_KMH);
-    bottom_pix = static_cast<int16_t>(maxvd * FlapsBox::PIX_PER_KMH);
-    top_exseed = (top_pix < -FlapsBox::BOX_LENGTH/2) ? 1 : 0;
-    bottom_exseed = (bottom_pix > FlapsBox::BOX_LENGTH/2) ? 1 : 0;
-}
-constexpr bool FBoxStateHash::operator!=(const FBoxStateHash &other) const noexcept
+bool FBoxStateHash::operator!=(const FBoxStateHash &other) const noexcept
 {
     if ( wkidx10 != other.wkidx10 ) return true;
     if ( ((top_pix > -FlapsBox::BOX_LENGTH/2

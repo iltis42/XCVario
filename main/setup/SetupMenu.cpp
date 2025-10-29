@@ -1303,7 +1303,7 @@ void system_menu_create_hardware_ahrs(SetupMenu *top) {
 void system_menu_create_hardware(SetupMenu *top) {
 	if ( top->getNrChilds() == 0 ) {
 		top->setDynContent();
-		SetupMenu *display = new SetupMenu("DISPLAY Setup", system_menu_create_hardware_type);
+		SetupMenu *display = new SetupMenu("Display Type", system_menu_create_hardware_type);
 		top->addEntry(display);
 
 		SetupMenu *rotary = new SetupMenu("Rotary Knob", system_menu_create_hardware_rotary);
@@ -1330,7 +1330,7 @@ void system_menu_create_hardware(SetupMenu *top) {
 			top->addEntry(ahrs);
 		}
 
-		SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", RST_ON_EXIT, nullptr, &airspeed_sensor_type );
+		SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor Type", RST_ON_EXIT, nullptr, &airspeed_sensor_type );
 		top->addEntry( pstype );
 		pstype->setHelp( "Factory default for type of pressure sensor, will not erase on factory reset (reboots)");
 		pstype->addEntry( "ABPMRR");

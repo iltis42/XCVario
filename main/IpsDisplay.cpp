@@ -120,6 +120,7 @@ static int AMIDY;
 static int AMIDX;
 static int AVGOFFX;
 static int SPEEDYPOS;
+constexpr const float OPT_Y_IN = 0.262f;
 
 static int16_t INNER_RIGHT_ALIGN = 170;
 static int16_t LOAD_MPG_POS = 0;
@@ -164,15 +165,19 @@ bool flarm_connected=false;
 static void initRefs()
 {
 	AVGOFFX = -5-38;
-	SPEEDYPOS = 102;
+	SPEEDYPOS = OPT_Y_IN * DISPLAY_H + 19;
 	INNER_RIGHT_ALIGN = DISPLAY_W - 44;
 	LOAD_MPG_POS = DISPLAY_H*0.25;
 	LOAD_MNG_POS = DISPLAY_H*0.64;
 	LOAD_MIAS_POS = DISPLAY_H*0.81;
+
+	// grab screen layout
+	AMIDX = (DISPLAY_W/2 + 30);
+	AMIDY = (DISPLAY_H)/2;
 	if ( display_orientation.get() == DISPLAY_NINETY ) {
+		INNER_RIGHT_ALIGN = DISPLAY_W - 74;
 		AMIDX = DISPLAY_W/2 - 43;
 		AVGOFFX = -2;
-		SPEEDYPOS = 80;
 		LOAD_MNG_POS = DISPLAY_H*0.53;
 	}
 }
@@ -278,13 +283,6 @@ void IpsDisplay::bootDisplay() {
 	ucg->setColor(1, COLOR_BLACK );
 	ucg->setColor(0, COLOR_WHITE );
 	ucg->setFont(ucg_font_fub11_tr);
-
-	// grab screen layout
-	AMIDX = (DISPLAY_W/2 + 30);
-	AMIDY = (DISPLAY_H)/2;
-	if ( display_orientation.get() == DISPLAY_NINETY ) {
-		AMIDX = DISPLAY_W/2 - 43;
-	}
 }
 
 void IpsDisplay::initDisplay() {
@@ -344,10 +342,10 @@ void IpsDisplay::initDisplay() {
         BATgauge = new Battery(DISPLAY_W - 10, DISPLAY_H - 12);
     }
     if (!ALTgauge) {
-        ALTgauge = new Altimeter(INNER_RIGHT_ALIGN, 0.8 * DISPLAY_H);
+        ALTgauge = new Altimeter(INNER_RIGHT_ALIGN, (1. - OPT_Y_IN) * DISPLAY_H + 19);
     }
     if ( !VCSTATgauge ) {
-        VCSTATgauge = new CruiseStatus(DISPLAY_W - (DISPLAY_W - INNER_RIGHT_ALIGN + 8) * ((display_orientation.get() == DISPLAY_NINETY) + 1), 18);
+        VCSTATgauge = new CruiseStatus(INNER_RIGHT_ALIGN - 8, 18);
     }
     if ( FLAP ) {
 		if ( !FLAPSgauge ) {
@@ -383,10 +381,11 @@ void IpsDisplay::initDisplay() {
         if ( S2FBARgauge ) {
             S2FBARgauge->setRef(ASVALX+10, DISPLAY_H/2);
             S2FBARgauge->setWidth(50);
+            S2FBARgauge->setGap(32);
         }
 		ALTgauge->setRef(FIELD_START+80, YALT);
         if ( FLAPSgauge ) {
-            FLAPSgauge->setLength(150);
+            FLAPSgauge->setLength(140);
         }
 
 		// draw TE scale
@@ -863,18 +862,31 @@ void IpsDisplay::initRetroDisplay(){
         MCgauge->setLarge(true);
     }
     if (vario_lower_gauge.get()) {
-        ALTgauge->setRef(INNER_RIGHT_ALIGN, 0.8 * DISPLAY_H);
+        ALTgauge->setRef(INNER_RIGHT_ALIGN, (1.0 - OPT_Y_IN) * DISPLAY_H + 19);
     }
     else {
         delete ALTgauge;
         ALTgauge = nullptr;
     }
     if (S2FBARgauge) {
-        S2FBARgauge->setRef(DISPLAY_W - 54, AMIDY);
-        S2FBARgauge->setWidth(28);
+        if ( display_orientation.get() == DISPLAY_NINETY ) {
+            S2FBARgauge->setRef(DISPLAY_W - 120, AMIDY);
+            S2FBARgauge->setWidth(36);
+            S2FBARgauge->setGap(2);
+        }
+        else {
+            S2FBARgauge->setRef(DISPLAY_W - 54, AMIDY);
+            S2FBARgauge->setWidth(28);
+            S2FBARgauge->setGap(32);
+        }
     }
     if (FLAPSgauge) {
-        FLAPSgauge->setLength(100);
+        if ( display_orientation.get() == DISPLAY_NINETY ) {
+            FLAPSgauge->setLength(120);
+        }
+        else {
+            FLAPSgauge->setLength(100);
+        }
     }
     redrawValues();
 
@@ -1000,7 +1012,7 @@ bool IpsDisplay::drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit)
 		}
 		else {
 			ucg->print("deg");
-		ucg->setPrintPos(x+5,y-17);
+		    ucg->setPrintPos(x+5,y-17);
 			if ( vario_upper_gauge.get() == GAUGE_SLIP ) {
 				ucg->print("SLIP");
 			}

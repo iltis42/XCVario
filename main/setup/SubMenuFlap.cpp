@@ -14,7 +14,7 @@
 #include "setup/SetupMenuSelect.h"
 #include "setup/SetupMenuValFloat.h"
 #include "sensor.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <string>
 

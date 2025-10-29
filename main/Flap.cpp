@@ -6,7 +6,7 @@
 #include "setup/SetupNG.h"
 #include "KalmanMPU6050.h"
 #include "sensor.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <array>
 

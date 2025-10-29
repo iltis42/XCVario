@@ -13,7 +13,7 @@
 #include "AdaptUGC.h"
 #include "ESPAudio.h"
 #include "setup/SetupNG.h"
-#include "logdef.h"
+#include "logdefnone.h"
 
 #include <cstdio>
 

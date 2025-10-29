@@ -536,7 +536,7 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 	MYUCG->printf( "with zero inclination." );
 	MYUCG->setPrintPos( 1, 120 );
 	MYUCG->printf( "Press button to start" );
-	while( !Rotary->readSwitch() ){ delay( 100 ); }
+	while( ! Rotary->readSwitch(100) ) ;
 	p->clear();
 	MYUCG->setPrintPos( 1, 30 );
 	MYUCG->printf( "Now put down RIGHT wing" );
@@ -544,7 +544,7 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 	MYUCG->printf( "on the ground," );
 	MYUCG->setPrintPos( 1, 90 );
 	MYUCG->printf( "then press button.." );
-	while( !Rotary->readSwitch() ){ delay( 100 ); }
+	while( ! Rotary->readSwitch(100) ) ;
 	float angle = 0.0;
 	int ret = IMU::getAccelSamplesAndCalib(IMU_RIGHT, angle);
 	if( ret<1 ){
@@ -563,7 +563,7 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 	MYUCG->printf( "on the ground," );
 	MYUCG->setPrintPos( 1, 90 );
 	MYUCG->printf( "then press button.." );
-	while( !Rotary->readSwitch() ){ delay( 100 ); }
+	while( ! Rotary->readSwitch(100) ) ;
 	ret=IMU::getAccelSamplesAndCalib(IMU_LEFT, angle);
 	if( ret<2 ){
 			p->clear();
@@ -581,7 +581,7 @@ void IMU::doImuCalibration( SetupMenuSelect *p ){
 		delay(1000);
 		MYUCG->setPrintPos( 1, 220 );
 		MYUCG->printf( "press button to return" );
-		while( !Rotary->readSwitch() ){ delay( 100 ); }
+		while( ! Rotary->readSwitch(100) ) ;
 	}
 
 }

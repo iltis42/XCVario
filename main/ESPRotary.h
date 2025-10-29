@@ -57,7 +57,7 @@ public:
 	void sendLongPress() const;
 	void sendEscape() const;
 	// gpio's
-	bool readSwitch() const; // safe to call in rotary callback
+	bool readSwitch(int delay = 0) const; // safe to call in rotary callback
 	bool readBootupStatus() const { return gpio_get_level(_sw) == 0; }
 	gpio_num_t getSw() const { return _sw; };
 	gpio_num_t getClk() const { return clk; };

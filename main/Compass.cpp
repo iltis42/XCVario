@@ -322,9 +322,8 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 		{
 			// Send a calibration report to the subscriber
 			reporter( avg_calib_sample, scale, bias, bits, false );
-			if( Rotary->readSwitch() == true  )  // more responsive to query every loop
+			if( Rotary->readSwitch(10) )  // more responsive to query every loop
 				break;
-			delay(10);
 		}
 		calibrationRunning = false;
 		delay(100);
@@ -335,8 +334,7 @@ bool Compass::calibrate( bool (*reporter)( t_magn_axes raw, t_float_axes scale, 
 		ESP_LOGI( FNAME, "Show Calibration");
 		bitfield_compass b = calibration_bits.get();
 		reporter( magRaw, scale, bias, b, true );
-		while( Rotary->readSwitch() == true  )
-			delay(100);
+		while( ! Rotary->readSwitch(100) ) ; // wait for button
 	}
 	if( !only_show ){
 		ESP_LOGI( FNAME, "Read Cal-Samples=%d, OK=%d, NOK=%d", nrsamples, nrsamples-errors, errors );

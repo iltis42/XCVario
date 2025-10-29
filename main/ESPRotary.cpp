@@ -255,18 +255,17 @@ void ESPRotary::sendEscape() const
 	}
 }
 
-// In case an event processing routine is asking itself for button status
-bool ESPRotary::readSwitch() const
+// In case an event triggered routine is asking itself for button status (events)
+bool ESPRotary::readSwitch(int delay) const
 {
-	// return true for any button event in the queue, except a release
-	int event;
-	bool ret = false;
-	if (xQueueReceive(uiEventQueue, &event, 0) == pdTRUE) {
-		if (event == ButtonEvent(ButtonEvent::SHORT_PRESS).raw
-			|| event == ButtonEvent(ButtonEvent::LONG_PRESS).raw) {
-			ret = true;
-		}
-	}
-	xQueueReset(uiEventQueue); // clear the queue
-	return ret;
+    // return true for any button event in the queue, except a release
+    int event;
+    bool ret = false;
+    if (xQueueReceive(uiEventQueue, &event, pdMS_TO_TICKS(delay)) == pdTRUE) {
+        if (event == ButtonEvent(ButtonEvent::SHORT_PRESS).raw || event == ButtonEvent(ButtonEvent::LONG_PRESS).raw) {
+            ret = true;
+        }
+        xQueueReset(uiEventQueue); // clear the queue
+    }
+    return ret;
 }

@@ -55,12 +55,12 @@ void UiEventLoop(void *arg)
     while (1)
     {
         // handle button events in this context
-		int eparam;
+        int eparam;
         if (xQueueReceive(uiEventQueue, &eparam, pdMS_TO_TICKS(20)) == pdTRUE)
         {
-			UiEvent event(eparam);
+            UiEvent event(eparam);
             uint8_t detail = event.getUDetail();
-			// ESP_LOGI(FNAME, "Event param %x", eparam);
+            // ESP_LOGI(FNAME, "Event param %x", eparam);
             if (event.isButtonEvent())
             {
                 // ESP_LOGI(FNAME, "Button event %x", detail);

@@ -1040,10 +1040,9 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 			stumo->mkEnable();
 		}
 		
-		// Units
-		SetupMenu *un = new SetupMenu("Units", options_menu_create_units);
-		opt->addEntry(un);
-		un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
+		// Vario
+		SetupMenu *va = new SetupMenu("Vario and Speed 2 Fly", vario_menu_create);
+		opt->addEntry(va);
 
 		// Audio
 		SetupMenu *ad = new SetupMenu("Audio", audio_menu_create);
@@ -1373,6 +1372,11 @@ void system_menu_create(SetupMenu *sye) {
 	po->setHelp("Polar, weight and all attributes of the glider");
 	sye->addEntry(po);
 
+	// Units
+	SetupMenu *un = new SetupMenu("Units", options_menu_create_units);
+	sye->addEntry(un);
+	un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
+
 	SetupMenu *hardware = new SetupMenu("Hardware & Sensors", system_menu_create_hardware);
 	hardware->setHelp("Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc", 240);
 	sye->addEntry(hardware);
@@ -1458,10 +1462,6 @@ void setup_create_root(SetupMenu *top) {
 				"To exit from student mode enter expert password and restart device after expert password has been set correctly");
 		top->addEntry(passw);
 	} else {
-		// Vario
-		SetupMenu *va = new SetupMenu("Vario and Speed 2 Fly", vario_menu_create);
-		top->addEntry(va);
-
 		// Options Setup
 		SetupMenu *opt = new SetupMenu("Options", options_menu_create);
 		top->addEntry(opt);

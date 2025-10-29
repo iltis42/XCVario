@@ -171,6 +171,17 @@ int do_display_test(SetupMenuSelect *p) {
 	return 0;
 }
 
+int audio_check_act(SetupMenuSelect *p) {
+	if ( audio_check.get() == 2 ) {
+		AUDIO->startSound(AUDIO_NO_SOUND);
+		AUDIO->soundCheck();
+		AUDIO->startVarioVoice();
+		audio_check.set(0);
+		p->setSelect(0);
+	}
+	return 0;
+}
+
 int select_battery_type(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME, "select_battery_type %d", p->getSelect());
 	switch ( p->getSelect() ){
@@ -1088,6 +1099,12 @@ void system_menu_create_software(SetupMenu *top) {
 		SetupMenuDisplay *dis = new ShowBootMsg("Show Boot Messages");
 		top->addEntry(dis);
 	}
+
+	SetupMenuSelect *ac = new SetupMenuSelect("Play Audio Check", RST_NONE, audio_check_act, &audio_check);
+	ac->setHelp("Play XCV sound check on boot-up to verify audio output");
+	ac->mkEnable();
+	ac->addEntry("Just Now");
+	top->addEntry(ac);
 
 	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, nullptr, &factory_reset);
 	fa->setHelp("Reset all settings to factory defaults (metric system, 5 m/s vario range, etc.)");

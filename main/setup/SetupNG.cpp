@@ -385,6 +385,7 @@ SetupNG<int> 			wk_label_6( "WKLP3", 41, false, SYNC_BIDIR, PERSISTENT, flap_upd
 SetupNG<float>       	flap_takeoff("FLAPTO", 1,  true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 6, 1));
 SetupNG<int> 			audio_mute_sink( "AUDISS", 0 );
 SetupNG<int> 			audio_mute_gen( "AUDISG", AUDIO_ON );
+SetupNG<int> 			audio_check( "AUDICHECK", 1, true, SYNC_BIDIR, PERSISTENT );
 SetupNG<int>			vario_mode("VAMOD", CRUISE_ONLY_NETTO, true, SYNC_NONE, PERSISTENT, change_cruise);  // switch to netto mode when cruising
 SetupNG<int>			airspeed_sensor_type("PTYPE", PS_NONE, false);
 SetupNG<int>			cruise_audio_mode("CAUDIO", 0 );

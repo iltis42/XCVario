@@ -1,6 +1,7 @@
 
 #include "setup/SubMenuGlider.h"
 
+#include "setup/SubMenuFlap.h"
 #include "setup/SetupMenu.h"
 #include "setup/SetupMenuSelect.h"
 #include "setup/SetupMenuValFloat.h"
@@ -50,59 +51,6 @@ static void glider_menu_create_polarpoints(SetupMenu *top) {
 	top->addEntry(pos3);
 }
 
-
-static void position_labels_menu_create(SetupMenu* top){
-	SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label 0", RST_NONE, nullptr, &wk_label_0 );
-	flab->addEntryList( flap_labels ); // Initialize Flap Label Entries
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label 1", RST_NONE, nullptr, &wk_label_1 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label 2", RST_NONE, nullptr, &wk_label_2 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label  3", RST_NONE, nullptr, &wk_label_3 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label 4", RST_NONE, nullptr, &wk_label_4 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label 5", RST_NONE, nullptr, &wk_label_5 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label 6", RST_NONE, nullptr, &wk_label_6 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
-}
-
-static void flap_speeds_menu_create(SetupMenu* top){
-	SetupMenuValFloat *flgnd = new SetupMenuValFloat("Takeoff Flap","", nullptr, false, &flap_takeoff  );
-	flgnd->setHelp("Flap position to be set on ground for takeoff, when there is no airspeed");
-	top->addEntry( flgnd );
-
-	SetupMenu *flapls = new SetupMenu("Flap Position Labels", position_labels_menu_create);
-	top->addEntry( flapls );
-
-	SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "", nullptr, false, &wk_speed_0  );
-	top->addEntry( min3 );
-
-	SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "", nullptr, false, &wk_speed_1  );
-	top->addEntry( min2 );
-
-	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed  0 to -1", "", nullptr, false, &wk_speed_2  );
-	top->addEntry( min1 );
-
-	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to  0", "", nullptr, false, &wk_speed_3  );
-	top->addEntry( plus1 );
-
-	SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "", nullptr, false, &wk_speed_4  );
-	top->addEntry( plus2 );
-
-	SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "", nullptr, false, &wk_speed_5  );
-	top->addEntry( plus3 );
-
-}
-
 void glider_menu_create(SetupMenu *top) {
 	ESP_LOGI(FNAME, "glider_menu_create");
 	if ( top->getNrChilds() == 0 ) {
@@ -138,12 +86,12 @@ void glider_menu_create(SetupMenu *top) {
 		top->addEntry(vmax);
 
 		ESP_LOGI(FNAME,"glider-index %d", Polars::getGliderEnumPos());
-		SetupMenu *flaps = new SetupMenu("Flap Speeds", flap_speeds_menu_create);
-		flaps->setHelp("Transition speed for flap settings at ref wingload. Set to 0, if not aplicable");
+		SetupMenu *flaps = new SetupMenu("Flap Levels", flap_levels_menu_create);
+		flaps->setHelp("Transition speed for flap settings at ref. wingload");
 		top->addEntry( flaps );
 	}
 
-	SetupMenu *tmp_menu = static_cast<SetupMenu*>(top->getEntry(6)); // flap speeds
+	SetupMenu *tmp_menu = static_cast<SetupMenu*>(top->getEntry(6)); // flap levels
 	if( Polars::hasFlaps(Polars::getGliderEnumPos()) ){
 		tmp_menu->unlock();
 		tmp_menu->setBuzzword();

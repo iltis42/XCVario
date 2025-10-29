@@ -12,6 +12,7 @@
 #include "UiEvents.h"
 #include "setup/SubMenuAudio.h"
 #include "setup/SubMenuDevices.h"
+#include "setup/SubMenuFlap.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
 
@@ -97,6 +98,7 @@ void SetupRoot::exit(int levels)
     }
     free_connected_devices_menu();
     free_audio_menu();
+    free_flap_menu();
 
     if (_restart) {
         reBoot();

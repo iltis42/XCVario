@@ -283,6 +283,7 @@ SetupNG<float>  		wk_speed_2( "FLAP_MINUS_1", 0, false, SYNC_BIDIR, PERSISTENT, 
 SetupNG<float>  		wk_speed_3( "FLAP_0", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<float>  		wk_speed_4( "FLAP_PLUS_1", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<float>  		wk_speed_5( "FLAP_PLUS_2", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float>  		wk_speed_6( "FLAP_PLUS_3", 0, false, SYNC_BIDIR, PERSISTENT, flap_update_act, QUANT_HSPEED, &polar_speed_limits);
 SetupNG<int>  			alt_unit( "ALT_UNIT", ALT_UNIT_METER );
 SetupNG<int>  			alt_quantization( "ALT_QUANT", Altimeter::ALT_QUANT_10 );
 SetupNG<int>  			ias_unit( "IAS_UNIT", SPEED_UNIT_KMH );

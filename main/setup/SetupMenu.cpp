@@ -10,6 +10,7 @@
 #include "setup/SubMenuDevices.h"
 #include "setup/SubMenuCompassWind.h"
 #include "setup/SubMenuGlider.h"
+#include "setup/SubMenuFlap.h"
 #include "setup/ShowBootMsg.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
@@ -157,14 +158,12 @@ int do_display_test(SetupMenuSelect *p) {
 	if (display_test.get()) {
 		MYUCG->setColor(0, 0, 0);
 		MYUCG->drawBox(0, 0, 240, 320);
-		while (!Rotary->readSwitch()) {
-			delay(100);
+		while (! Rotary->readSwitch(300)) {
 			ESP_LOGI(FNAME,"Wait for key press");
 		}
 		MYUCG->setColor(255, 255, 255);
 		MYUCG->drawBox(0, 0, 240, 320);
-		while (!Rotary->readSwitch()) {
-			delay(100);
+		while (! Rotary->readSwitch(300)) {
 			ESP_LOGI(FNAME,"Wait for key press");
 		}
 		esp_restart();

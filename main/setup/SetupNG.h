@@ -411,6 +411,7 @@ extern SetupNG<float>  		wk_speed_2;
 extern SetupNG<float>  		wk_speed_3;
 extern SetupNG<float>  		wk_speed_4;
 extern SetupNG<float>  		wk_speed_5;
+extern SetupNG<float>  		wk_speed_6;
 extern SetupNG<int>  		alt_unit;
 extern SetupNG<int>  		alt_quantization;
 extern SetupNG<int>  		ias_unit;

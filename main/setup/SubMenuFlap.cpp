@@ -144,6 +144,7 @@ static int flap_cal_act(SetupMenuSelect *p)
 void flap_menu_create_flap_sensor(SetupMenu *wkm) // dynamic!
 {
     if ( wkm->getNrChilds() == 0 ) {
+        wkm->setDynContent();
         SetupMenuSelect *wkes = new SetupMenuSelect("Flap Sensor", RST_NONE, select_flap_sens_pin, &flap_sensor);
         wkes->mkEnable();
         wkes->addEntry("From Master/Second");
@@ -260,6 +261,8 @@ static void one_flap_level(SetupMenu *top) // dynamic!
     int lid = top->getContId();
 
     if ( top->getNrChilds() == 0 ) {
+        top->setDynContent();
+        
         // the label
         SetupMenuSelect *flab = new SetupMenuSelect( "Label", RST_NONE, level_mod_action, FLAP->getLblNVS(lid) );
         flab->addEntryList( flap_labels ); // initialize flap label entries

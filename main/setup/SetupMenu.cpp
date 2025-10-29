@@ -172,9 +172,10 @@ int do_display_test(SetupMenuSelect *p) {
 }
 
 int select_battery_type(SetupMenuSelect *p) {
-	switch ( bat_type.get() ){
-		case BATTERY_USER:
-		break;
+	ESP_LOGI(FNAME, "select_battery_type %d", p->getSelect());
+	switch ( p->getSelect() ){
+		case BATTERY_CANCEL:
+			break;
 		case BATTERY_LEADACID:
 			bat_low_volt.set(11.5);  // its about 20% but LeadAcid already deep discharged -> 0%
 			bat_red_volt.set(11.75); // 30% of charge  -> 20%
@@ -188,6 +189,7 @@ int select_battery_type(SetupMenuSelect *p) {
 			bat_full_volt.set(13.6); // 100% charge
 		break;
 	}
+	p->getParent()->setDirty();
 	return 0;
 }
 
@@ -373,7 +375,7 @@ void SetupMenu::enter()
 
 void SetupMenu::display(int mode)
 {
-	if (dirty && populateMenu) {
+	if (dirty && dyn_content && populateMenu) {
 		// Cope with changes in menu item presence
 		ESP_LOGI(FNAME,"SetupMenu display() dirty %d", dirty );
 		(populateMenu)(this);
@@ -902,6 +904,13 @@ static void screens_menu_create_vario(SetupMenu *top) {
     nup->addEntry("Glider-Up");
     nup->addEntry("North-Up");
     top->addEntry(nup);
+
+    SetupMenuSelect *batv = new SetupMenuSelect("Battery Display", RST_NONE, nullptr, &battery_display);
+    batv->setHelp("Display battery charge state either in Percentage e.g. 75% or Voltage e.g. 12.5V");
+    batv->addEntry("Percentage");
+    batv->addEntry("Voltage");
+    batv->addEntry("Voltage Big");
+    top->addEntry(batv);
 }
 
 void screens_menu_create_gload(SetupMenu *top) {
@@ -1079,33 +1088,33 @@ void system_menu_create_software(SetupMenu *top) {
 		SetupMenuDisplay *dis = new ShowBootMsg("Show Boot Messages");
 		top->addEntry(dis);
 	}
+
+	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, nullptr, &factory_reset);
+	fa->setHelp("Reset all settings to factory defaults (metric system, 5 m/s vario range, etc.)");
+	fa->addEntry("Cancel");
+	fa->addEntry("ResetAll");
+	top->addEntry(fa);
 }
 
 void system_menu_create_battery(SetupMenu *top) {
-	SetupMenuSelect *btype = new SetupMenuSelect("Battery Type", RST_NONE, select_battery_type, &bat_type);
-	btype->setHelp("Factory setup for corresponding display type used");
-	btype->addEntry("UserType");
+	SetupMenuSelect *btype = new SetupMenuSelect("Battery Type", RST_NONE, select_battery_type);
+	btype->setHelp("Apply template battery threshold voltages for different battery types");
+	btype->addEntry("Cancel");
 	btype->addEntry("LeadAcid");
 	btype->addEntry("LiFePo4");
 	top->addEntry(btype);
 
-	SetupMenuValFloat *blow = new SetupMenuValFloat("Battery Low", "Volt ", nullptr, false, &bat_low_volt);
-	SetupMenuValFloat *bred = new SetupMenuValFloat("Battery Red", "Volt ", nullptr, false, &bat_red_volt);
-	SetupMenuValFloat *byellow = new SetupMenuValFloat("Battery Yellow", "Volt ", nullptr, false, &bat_yellow_volt);
-	SetupMenuValFloat *bfull = new SetupMenuValFloat("Battery Full", "Volt ", nullptr, false, &bat_full_volt);
-
-	SetupMenuSelect *batv = new SetupMenuSelect("Battery Display", RST_NONE, nullptr, &battery_display);
-	batv->setHelp(
-			"Option to display battery charge state either in Percentage e.g. 75% or Voltage e.g. 12.5V");
-	batv->addEntry("Percentage");
-	batv->addEntry("Voltage");
-	batv->addEntry("Voltage Big");
-
+	SetupMenuValFloat *blow = new SetupMenuValFloat("Empty", "Volt ", nullptr, false, &bat_low_volt);
 	top->addEntry(blow);
+	SetupMenuValFloat *bred = new SetupMenuValFloat("Critical", "Volt ", nullptr, false, &bat_red_volt);
 	top->addEntry(bred);
+	SetupMenuValFloat *byellow = new SetupMenuValFloat("Moderate", "Volt ", nullptr, false, &bat_yellow_volt);
 	top->addEntry(byellow);
+	SetupMenuValFloat *bfull = new SetupMenuValFloat("Full", "Volt ", nullptr, false, &bat_full_volt);
 	top->addEntry(bfull);
-	top->addEntry(batv);
+
+	SetupMenuValFloat *met_adj = SetupMenu::createVoltmeterAdjustMenu();
+	top->addEntry(met_adj);
 }
 
 
@@ -1158,7 +1167,7 @@ void system_menu_create_hardware_rotary(SetupMenu *top) {
 	roinc->addEntry("2 indent", 2);
 
 	// Rotary Default
-	SetupMenuSelect *rd = new SetupMenuSelect("Rotation", RST_ON_EXIT, nullptr, &rot_default);
+	SetupMenuSelect *rd = new SetupMenuSelect("Primary Use", RST_ON_EXIT, nullptr, &rot_default);
 	top->addEntry(rd);
 	rd->setHelp(
 			"Select value to be altered at rotary movement outside of setup menu (reboots)");
@@ -1281,7 +1290,7 @@ void system_menu_create_hardware(SetupMenu *top) {
 		SetupMenu *display = new SetupMenu("DISPLAY Setup", system_menu_create_hardware_type);
 		top->addEntry(display);
 
-		SetupMenu *rotary = new SetupMenu("Rotary Setup", system_menu_create_hardware_rotary);
+		SetupMenu *rotary = new SetupMenu("Rotary Knob", system_menu_create_hardware_rotary);
 		top->addEntry(rotary);
 
 		// Flap::setupMenue(top);
@@ -1301,7 +1310,7 @@ void system_menu_create_hardware(SetupMenu *top) {
 		gear->addEntry("External");  // A $g,w<n>*CS command from an external device
 
 		if (hardwareRevision.get() >= XCVARIO_21) {
-			SetupMenu *ahrs = new SetupMenu("AHRS Setup", system_menu_create_hardware_ahrs);
+			SetupMenu *ahrs = new SetupMenu("Attitude & Heading RefSys", system_menu_create_hardware_ahrs);
 			top->addEntry(ahrs);
 		}
 
@@ -1314,8 +1323,9 @@ void system_menu_create_hardware(SetupMenu *top) {
 		pstype->addEntry( "MCPH21");
 		pstype->addEntry( "Autodetect");
 
-		SetupMenuValFloat *met_adj = SetupMenu::createVoltmeterAdjustMenu();
-		top->addEntry(met_adj);
+        SetupMenu *bat = new SetupMenu("Battery Meter", system_menu_create_battery);
+        bat->setHelp("Adjust voltage thresholds for battery state indication");
+        top->addEntry(bat);
 	}
 	SetupMenu *wkm = static_cast<SetupMenu*>(top->getEntry(2)); // Flap Sensor
 	if ( FLAP ) {
@@ -1340,24 +1350,13 @@ void system_menu_create(SetupMenu *sye) {
 	SetupMenu *soft = new SetupMenu("Software", system_menu_create_software);
 	sye->addEntry(soft);
 
-	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, nullptr, &factory_reset);
-	fa->setHelp("Reset all settings to factory defaults (metric system, 5 m/s vario range, etc.)");
-	fa->addEntry("Cancel");
-	fa->addEntry("ResetAll");
-	sye->addEntry(fa);
-
 	// Glider Setup
 	SetupMenu *po = new SetupMenu("Glider Type", glider_menu_create);
 	po->setBuzzword(Polars::getGliderType(Polars::getGliderEnumPos()));
 	po->setHelp("Polar, weight and all attributes of the glider");
 	sye->addEntry(po);
 
-	SetupMenu *bat = new SetupMenu("Battery Setup", system_menu_create_battery);
-	bat->setHelp(
-			"Adjust corresponding voltage for battery symbol display low,red,yellow and full");
-	sye->addEntry(bat);
-
-	SetupMenu *hardware = new SetupMenu("Hardware Setup", system_menu_create_hardware);
+	SetupMenu *hardware = new SetupMenu("Hardware & Sensors", system_menu_create_hardware);
 	hardware->setHelp("Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc", 240);
 	sye->addEntry(hardware);
 
@@ -1473,7 +1472,7 @@ SetupMenuValFloat* SetupMenu::createQNHMenu() {
 
 SetupMenuValFloat* SetupMenu::createVoltmeterAdjustMenu() {
 	SetupMenuValFloat *met_adj = new SetupMenuValFloat("Voltmeter Adjust", "%", factv_adj, false, &factory_volt_adjust, RST_NONE, false, true);
-	met_adj->setHelp("Option to factory fine-adjust voltmeter");
+	met_adj->setHelp("Factory fine adjust voltmeter");
 	met_adj->setNeverInline();
 	return met_adj;
 }

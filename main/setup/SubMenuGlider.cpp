@@ -55,6 +55,7 @@ void glider_menu_create(SetupMenu *top) {
 	ESP_LOGI(FNAME, "glider_menu_create");
 	if ( top->getNrChilds() == 0 ) {
 		top->setDynContent();
+		
 		SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type_index);
 		top->addEntry(glt);
 		ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());

@@ -144,33 +144,11 @@ void Flarm::drawFlarmWarning(){
 		ESP_LOGI(FNAME,"init drawFlarmWarning");
 	}
 	_tick++;
-	if( _tick > 500 ) // age FLARM alarm in case there is no more input  50 per second = 10 sec
+	if( _tick > 500 ) {
+		// age FLARM alarm in case there is no more input  50 per second = 10 sec
 		AlarmLevel = 0;
-	e_audio_sound_type alarm = AUDIO_ALARM_FLARM_1;
-	if( AlarmLevel == 3 ) { // highest, impact 0-8 seconds
-		alarm = AUDIO_ALARM_FLARM_3;
 	}
-	else if( AlarmLevel == 2 ){
-		alarm = AUDIO_ALARM_FLARM_2;
-	}
-	else if( AlarmLevel == 1 ){ // lowest
-		alarm = AUDIO_ALARM_FLARM_1;
-	}else{
-		alarm = AUDIO_NO_SOUND;
-	}
-
-	if( AlarmLevel != alarmOld ) {
-		ucg->setPrintPos(200, 25 );
-		ucg->setFontPosCenter();
-		ucg->setColor( COLOR_WHITE );
-		ucg->setFont(ucg_font_fub20_hr, true);
-		ucg->printf( "%d ", AlarmLevel );
-		alarmOld = AlarmLevel;
-
-		if( alarm != AUDIO_NO_SOUND ) {
-			AUDIO->startSound(alarm);
-		}
-	}
+	bool dirty = false;
 	if( oldDist !=  RelativeDistance ) {
 		ucg->setPrintPos(130, 140 );
 		ucg->setFontPosCenter();
@@ -182,7 +160,13 @@ void Flarm::drawFlarmWarning(){
 		ucg->printf( d );
 		oldDist = RelativeDistance;
 	}
+	static int altDiff = 1;
 	if( oldVertical !=  RelativeVertical ) {
+		int currDiff = RelativeVertical / 50 + 1;
+		if ( currDiff < 0 ) { currDiff = 0; }
+		if ( currDiff > 1 ) { currDiff = 1; }
+		dirty = currDiff != altDiff;
+		altDiff = currDiff;
 		ucg->setPrintPos(130, 220 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
@@ -205,7 +189,13 @@ void Flarm::drawFlarmWarning(){
 		drawAirplane( 70, 220, true );
 		oldVertical = RelativeVertical;
 	}
+	static int side = 1;
 	if( oldBear != RelativeBearing ){
+		int currSide = RelativeBearing / 30 + 1;
+		if ( currSide < 0 ) { currSide = 0; }
+		if ( currSide > 1 ) { currSide = 1; }
+		dirty |= currSide != side;
+		side = currSide;
 		ucg->setPrintPos(130, 80 );
 		ucg->setFontPosCenter();
 		ucg->setColor( COLOR_WHITE );
@@ -224,4 +214,19 @@ void Flarm::drawFlarmWarning(){
 		drawAirplane( 70, 120 );
 		oldBear = RelativeBearing;
 	}
+
+	if( AlarmLevel != alarmOld ) {
+		ucg->setPrintPos(200, 25 );
+		ucg->setFontPosCenter();
+		ucg->setColor( COLOR_WHITE );
+		ucg->setFont(ucg_font_fub20_hr, true);
+		ucg->printf( "%d ", AlarmLevel );
+		alarmOld = AlarmLevel;
+		dirty = true;
+	}
+	if( dirty && AlarmLevel > 0 ) {
+		uint16_t alarm = Audio::encFlarmParam(AUDIO_ALARM_FLARM, AlarmLevel, side, altDiff);
+		AUDIO->startSound(alarm);
+	}
+
 }

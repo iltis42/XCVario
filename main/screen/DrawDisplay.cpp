@@ -195,7 +195,7 @@ void UiEventLoop(void *arg)
 				if( gflags.flarmWarning && (millis() > flarm_alarm_holdtime) ){
 					gflags.flarmWarning = false;
 					Display->clear();
-					// AUDIO->alarm( false );
+					AUDIO->startSound(AUDIO_VARIO_SOUND);
 				}
 			}
 			if( gflags.flarmWarning ) {

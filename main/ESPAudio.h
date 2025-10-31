@@ -46,6 +46,8 @@ public:
     void soundCheck();              // audible check of the audio
 
     void startSound(uint16_t alarmType, bool overlay = false); // outputs various alarm sounds according to alarmType
+    static uint16_t encFlarmParam(e_audio_sound_type sound_id, uint8_t alevel, uint8_t side, uint8_t alt_diff);
+
     // system wide the only point to set audio volume !!!
     void setVolume(float vol, bool sync = true); // vol: 0.0 .. 100.0 logarythmic scale
     void updateSetup();                         // incorporate setup changes

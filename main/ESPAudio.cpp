@@ -92,15 +92,19 @@ enum {
 };
 union AudioEvent {
     struct {
-        uint8_t cmd;
-        int8_t param; // can be voice id, sound id, or volume
+        unsigned cmd : 4;
+        unsigned param : 12; // can be voice id, sound id, or volume
     };
     uint16_t raw = 0; // access the packed 32-bit value
 
     constexpr AudioEvent() = default;
     constexpr AudioEvent(uint16_t d) : raw(d) {}
-    constexpr AudioEvent(uint8_t c, int8_t v)
+    constexpr AudioEvent(uint8_t c, int16_t v)
         : cmd(c), param(v) {}
+    int getSoundId() const { return param & 0xf; }
+    int getLevel() const { return (param >> 8) & 0x3; }
+    int getSide() const { return (param >> 6) & 0x3; }
+    int getAltDiff() const { return (param >> 4) & 0x3; }
 };
 struct VOICECMD
 {
@@ -196,10 +200,11 @@ constexpr int MAX_VOICES = 4;
 // it also does work with the default vario ESP_LOGI(FNAME, "tim012 %d, %sound that stays in ram
 struct SOUND {
     const DURATION* timeseq;    // time sequence for the tones in msec, terminated with a 0
-                                // nr defined here have to be found in the tone sequence
+                          // nr defined here have to be found in the tone sequence
     const TONE* toneseq[MAX_VOICES]; // nr of seq found here need to have a vconf
     const VOICECONF* vconf;
-    const int8_t repetitions; // -1 = infinite
+    int8_t repetitions; // -1 = infinite
+    SOUND& operator=(const SOUND&) = default;
 };
 struct DMACMD {
     void init();
@@ -869,6 +874,12 @@ void Audio::startSound(uint16_t style, bool overlay)
     }
 }
 
+uint16_t Audio::encFlarmParam(e_audio_sound_type sound_id, uint8_t alevel, uint8_t side, uint8_t alt_diff)
+{
+    return ((uint16_t)alevel << 8) | ((uint16_t)side << 6) | ((uint16_t)alt_diff << 4) | ((uint16_t)sound_id & 0xf);
+}
+
+
 // [%] - in a logarithmic db sense
 void Audio::setVolume(float vol, bool sync) {
     if ( _alarm_mode ) {
@@ -1052,26 +1063,30 @@ void Audio::dactask()
     const DURATION* next_time = nullptr; // current sequence time line
     uint8_t curr_idx[MAX_VOICES] = {0};
     uint8_t repetitions[MAX_VOICES] = {0};
+    SOUND flalarm;
 
     _terminate = false;
     xQueueReset(AudioQueue);
 
-	while(1)
+    while(1)
     {
-		AudioEvent event;
+        AudioEvent event;
         if (xQueueReceive(AudioQueue, &event, pdMS_TO_TICKS(2000)) == pdTRUE)
         {
-			// Process audio events
+            // Process audio events
             if ( event.cmd == START_SOUND ) {
-                if (event.param <= AUDIO_NO_SOUND ) {
-                    ESP_LOGI(FNAME, "Stop sound");
-                    dma_cmd.resetSound();
+                if (event.param != AUDIO_NO_SOUND ) {
+                    if ( event.getSoundId() < sound_list.size() ) {
+                        sound = (SOUND *)sound_list[event.getSoundId()];
+                        ESP_LOGI(FNAME, "Start sound %x", event.param );
+                        flalarm = *Flarm[event.getSide()][event.getAltDiff()];
+                        flalarm.repetitions = event.getLevel() - 1;
+                        flalarm.timeseq = FlarmLev[event.getLevel() - 1]->data();
+                        request_synch_start = true;
+                    }
                 }
-                else if ( event.param < sound_list.size() ) {
-                    sound = (SOUND *)sound_list[event.param];
-                    ESP_LOGI(FNAME, "Start sound %d", event.param );
-                    request_synch_start = true;
-                }
+                ESP_LOGI(FNAME, "Stop (vario) sound");
+                dma_cmd.resetSound();
             }
             else if ( event.cmd == REQUEST_SOUND ) {
                 dma_cmd.loadSound(sound);
@@ -1126,15 +1141,23 @@ void Audio::dactask()
                 }
             }
             else if ( event.cmd == ENDOFF_SOUND ) {
-                writeVolume(speaker_volume);
-                sound = nullptr;
-                _alarm_mode = false;
-                ESP_LOGI(FNAME, "End of sound");
-                if (audio_mute_gen.get() == AUDIO_ON) {
-                    dma_cmd.loadSound(&VarioSound);
+                if ( sound != &FlarmIntro ) {
+                    ESP_LOGI(FNAME, "Alarm sound ended, restore volume");
+                    writeVolume(speaker_volume);
+                    sound = nullptr;
+                    _alarm_mode = false;
+                    ESP_LOGI(FNAME, "End of sound");
+                    // if (audio_mute_gen.get() == AUDIO_ON) {
+                    //     dma_cmd.loadSound(&VarioSound);
+                    // }
+                    // else {
+                    //     dma_cmd.resetSound();
+                    // }
+                    dma_cmd.resetSound();
                 }
                 else {
-                    dma_cmd.resetSound();
+                    // FLARM intro ended, start the coded flarm sound
+                    dma_cmd.loadSound(&flalarm);
                 }
             }
             else if ( event.cmd == DO_VARIO && ! _alarm_mode) {
@@ -1188,5 +1211,4 @@ void Audio::dactask()
 	}
     vTaskDelete(NULL);
 }
-
 

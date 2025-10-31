@@ -236,20 +236,20 @@ const SOUND VarioSound = { vario_tim.data(), { vario_seq.data(), vario_extra.dat
 constexpr float HIGH_TONE_VAR = toneFactor(2); // major prime up
 
 
-// Flarm alarms
-const std::array<DURATION, 3> flarm1_tim = {{ {100}, {55}, {0} }};
-const std::array<TONE, 2> flarm1_seq = {{ {1100.0}, {0.} }};
-const std::array<TONE, 2> flarm1_extra = {{ {1100.0*pow(2.0, 4./12.)}, {0.} }};
-const std::array<VOICECONF, 2> flarm1_vconf = {{ {0, 128}, {1, 128} }};
-const SOUND Flarm1 = { flarm1_tim.data(), { flarm1_seq.data(), flarm1_extra.data(), nullptr, nullptr }, flarm1_vconf.data(), 2 };
-const std::array<DURATION, 3> flarm2_tim = {{ {70}, {52}, {0} }};
-const std::array<TONE, 2> flarm2_seq = {{ {1100.0}, {0.} }};
-const std::array<TONE, 2> flarm2_extra = {{ {1100.0*pow(2.0, 3./12.)}, {0.} }};
-const SOUND Flarm2 = { flarm2_tim.data(), { flarm2_seq.data(), flarm2_extra.data(), nullptr, nullptr }, flarm1_vconf.data(), 4 };
-const std::array<DURATION, 3> flarm3_tim = {{ {50}, {50}, {0} }};
-const std::array<TONE, 2> flarm3_seq = {{ {1100.0}, {0.} }};
-const std::array<TONE, 2> flarm3_extra = {{ {1100.0*pow(2.0, 2./12.)}, {0.} }};
-const SOUND Flarm3 = { flarm3_tim.data(), { flarm3_seq.data(), flarm3_extra.data(), nullptr, nullptr }, flarm1_vconf.data(), 6 };
+// old Flarm alarms
+// const std::array<DURATION, 3> flarm1_tim = {{ {100}, {55}, {0} }};
+// const std::array<TONE, 2> flarm1_seq = {{ {1100.0}, {0.} }};
+// const std::array<TONE, 2> flarm1_extra = {{ {1100.0*pow(2.0, 4./12.)}, {0.} }};
+// const std::array<VOICECONF, 2> flarm1_vconf = {{ {0, 128}, {1, 128} }};
+// const SOUND Flarm1 = { flarm1_tim.data(), { flarm1_seq.data(), flarm1_extra.data(), nullptr, nullptr }, flarm1_vconf.data(), 2 };
+// const std::array<DURATION, 3> flarm2_tim = {{ {70}, {52}, {0} }};
+// const std::array<TONE, 2> flarm2_seq = {{ {1100.0}, {0.} }};
+// const std::array<TONE, 2> flarm2_extra = {{ {1100.0*pow(2.0, 3./12.)}, {0.} }};
+// const SOUND Flarm2 = { flarm2_tim.data(), { flarm2_seq.data(), flarm2_extra.data(), nullptr, nullptr }, flarm1_vconf.data(), 4 };
+// const std::array<DURATION, 3> flarm3_tim = {{ {50}, {50}, {0} }};
+// const std::array<TONE, 2> flarm3_seq = {{ {1100.0}, {0.} }};
+// const std::array<TONE, 2> flarm3_extra = {{ {1100.0*pow(2.0, 2./12.)}, {0.} }};
+// const SOUND Flarm3 = { flarm3_tim.data(), { flarm3_seq.data(), flarm3_extra.data(), nullptr, nullptr }, flarm1_vconf.data(), 6 };
 
 // Center aid sounds
 const std::array<DURATION, 2> turn_tim = {{ {1000}, {0} }};
@@ -273,23 +273,67 @@ const std::array<VOICECONF, 3> stell_vconf = {{ {0, 200}, {0, 40}, {1, 20} }};
 const SOUND StallWarn = { stall_tim.data(), { stall_seq1.data(), stall_seq2.data(), stall_seq3.data(), nullptr }, stell_vconf.data(), 0 };
 
 constexpr float fCs4 = noteFreq(-8);   // 277.18 Hz
+constexpr float fD4 = noteFreq(-7);
 constexpr float fE4 = noteFreq(-5);    // 329.63 Hz
+constexpr float fFs4 = noteFreq(-3);
 constexpr float fG4 = noteFreq(-2);    // 392.00 Hz
 constexpr float fA4 = noteFreq(0);     // 440.00 Hz
 constexpr float fBd4 = noteFreq(1);
 constexpr float fCs5 = noteFreq(4);
+constexpr float fD5 = noteFreq(5);
 constexpr float fE5 = noteFreq(7);
+constexpr float fFs5 = noteFreq(9);
 constexpr float fG5 = noteFreq(10);
+constexpr float fA5 = noteFreq(11);
 constexpr float fBd5 = noteFreq(13);
+constexpr float fD6 = noteFreq(17);
 
-// Gear warning
-const std::array<DURATION, 12> gear_tim = {{ {40}, {40}, {40}, {40}, {40}, {40}, {40}, {40},    {140}, {70}, {800}, {0} }};
-const std::array<TONE, 12> gear_seq1 = {{ {fCs4}, {fE4}, {fG4}, {fBd4}, {fCs5}, {fE5}, {fG5}, {fBd5},    {fCs4}, {fCs4}, {0}, {0} }};
-const std::array<TONE, 12> gear_seq2 = {{ {0}, {0}, {fG4}, {fBd4}, {fCs5}, {fE5}, {fG5}, {fBd5},    {fG4}, {0}, {0}, {0} }};
-const std::array<TONE, 12> gear_seq3 = {{ {0}, {0}, {0}, {0}, {fCs5}, {fE5}, {fG5}, {fBd5},    {fE5}, {fE5}, {0}, {0} }};
-const std::array<TONE, 12> gear_seq4 = {{ {0}, {0}, {0}, {0}, {0}, {0}, {fG5}, {fBd5},    {fBd5}, {0}, {0}, {0} }};
-const std::array<VOICECONF, 4> gear_vconf = {{ {0, 128}, {0, 128}, {0, 128}, {1, 128} }};
-const SOUND GearWarn = { gear_tim.data(), { gear_seq1.data(), gear_seq2.data(), gear_seq3.data(), gear_seq4.data() }, gear_vconf.data(), 1 };
+// Coded flarm alarm: Intro
+const std::array<DURATION, 11> flin_tim = {{ {33},  {33}, {33},  {33},   {33},   {33},  {33},  {33},     {70},  {30},   {0} }};
+const std::array<TONE, 11> flin_seq1    = {{ {fCs4},{fE4},{fG4}, {fBd4}, {fCs5}, {fE5}, {fG5}, {fBd5},   {fCs4}, {fCs4},{0} }};
+const std::array<TONE, 11> flin_seq2    = {{ {0},   {0},  {fG4}, {fBd4}, {fCs5}, {fE5}, {fG5}, {fBd5},   {fG4},  {0},   {0} }};
+const std::array<TONE, 11> flin_seq3    = {{ {0},   {0},  {0},   {0},    {fCs5}, {fE5}, {fG5}, {fBd5},   {fE5},  {fE5}, {0} }};
+const std::array<TONE, 11> flin_seq4    = {{ {0},   {0},  {0},   {0},    {0},    {0},   {fG5}, {fBd5},   {fBd5}, {0},   {0} }};
+const std::array<VOICECONF, 4> flarm_vconf = {{ {0, 128}, {0, 128}, {0, 128}, {1, 150} }};
+const SOUND FlarmIntro = { flin_tim.data(), { flin_seq1.data(), flin_seq2.data(), flin_seq3.data(), flin_seq4.data() }, flarm_vconf.data(), 0 };
+
+// Deeper
+const std::array<DURATION, 4> flev1_tim = {{ {500},  {1000}, {500}, {0} }};
+const std::array<DURATION, 4> flev2_tim = {{ {250},  {500}, {250}, {0} }};
+const std::array<DURATION, 4> flev3_tim = {{ {166},  {333}, {166}, {0} }};
+const std::array<TONE, 4> fldeep_seq1    = {{ {fE4}, {fE4},  {0}, {0} }}; // left
+const std::array<TONE, 4> fldeep_seq2    = {{ {0},   {fFs4}, {0}, {0} }}; // right
+const std::array<TONE, 4> fldeep_seq3    = {{ {fD5}, {fD5},  {0}, {0} }};
+const std::array<TONE, 4> fldeep_seq4    = {{ {fD4}, {fD4},  {0}, {0} }};
+const SOUND FlarmDeeperL = { flev1_tim.data(), { fldeep_seq1.data(), fldeep_seq3.data(), nullptr, fldeep_seq4.data() }, flarm_vconf.data(), 0 };
+const SOUND FlarmDeeperM = { flev1_tim.data(), { fldeep_seq3.data(), nullptr, nullptr, fldeep_seq4.data() }, flarm_vconf.data(), 0 };
+const SOUND FlarmDeeperR = { flev1_tim.data(), { fldeep_seq3.data(), fldeep_seq2.data(), nullptr, fldeep_seq4.data() }, flarm_vconf.data(), 0 };
+//                           ^-> choose level                                                                                               ^-> level 2: 1; level 3: 2 repetitions
+
+// Same height
+const std::array<TONE, 4> flsame_seq1    = {{ {fE5}, {fE5},  {0}, {0} }}; // left
+const std::array<TONE, 4> flsame_seq2    = {{ {0},   {fFs5}, {0}, {0} }}; // right
+const std::array<TONE, 4> flsame_seq3    = {{ {fG4}, {fG4},  {0}, {0} }};
+const std::array<TONE, 4> flsame_seq4    = {{ {fD5}, {fD5},  {0}, {0} }};
+const SOUND FlarmSameL = { flev1_tim.data(), { flsame_seq1.data(), flsame_seq3.data(), nullptr, flsame_seq4.data() }, flarm_vconf.data(), 0 };
+const SOUND FlarmSameM = { flev1_tim.data(), { flsame_seq3.data(), nullptr, nullptr, flsame_seq4.data() }, flarm_vconf.data(), 0 };
+const SOUND FlarmSameR = { flev1_tim.data(), { flsame_seq2.data(), flsame_seq3.data(), nullptr, flsame_seq4.data() }, flarm_vconf.data(), 0 };
+
+// Heigher
+const std::array<TONE, 4> flhigh_seq1l   = {{ {fG5}, {fG5},  {0}, {0} }}; // left
+const std::array<TONE, 4> flhigh_seq1r   = {{ {fFs5}, {fFs5},  {0}, {0} }}; // right
+const std::array<TONE, 4> flhigh_seq2    = {{ {fA5},   {fA5}, {0}, {0} }}; // left
+const std::array<TONE, 4> flhigh_seq3    = {{ {0},   {fA5}, {0}, {0} }}; // right
+const std::array<TONE, 4> flhigh_seq4    = {{ {fD6}, {fD6},  {0}, {0} }};
+const SOUND FlarmHighL = { flev1_tim.data(), { flhigh_seq1l.data(), flhigh_seq2.data(), nullptr, flhigh_seq4.data() }, flarm_vconf.data(), 0 };
+const SOUND FlarmHighM = { flev1_tim.data(), { flhigh_seq1r.data(), nullptr, nullptr, flhigh_seq4.data() }, flarm_vconf.data(), 0 };
+const SOUND FlarmHighR = { flev1_tim.data(), { flhigh_seq1r.data(), flhigh_seq3.data(), nullptr, flhigh_seq4.data() }, flarm_vconf.data(), 0 };
+const std::array<DURATION, 4> *FlarmLev[3] = { &flev1_tim, &flev2_tim, &flev3_tim };
+const SOUND *Flarm[3][3] = {
+    { &FlarmDeeperL, &FlarmSameL, &FlarmHighL },
+    { &FlarmDeeperM, &FlarmSameM, &FlarmHighM },
+    { &FlarmDeeperR, &FlarmSameR, &FlarmHighR }
+};
 
 // Ding
 const std::array<DURATION, 11> ding_tim = {{  {10}, {10}, {10},    {160}, {160}, {160},     {40}, {40}, {40},        {600}, {0} }};
@@ -320,7 +364,7 @@ const SOUND WindGust = { wind_tim.data(), { wind_seq1.data(), nullptr, nullptr, 
 
 // list of sounds
 const std::array<const SOUND*, 13> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &Ding, &WindGust, &TurnIn, &FlapForward, &FlapBack,
-                                                    &Flarm1, &Flarm2, &Flarm3, &StallWarn, &GearWarn } };
+                                                    &StallWarn, &StallWarn, &FlarmIntro } };
 
 // To call from ISR context
 void IRAM_ATTR VOICECMD::fastLoad(uint8_t idx) {
@@ -811,7 +855,7 @@ void Audio::soundCheck()
 }
 
 // kick some sound sequence, non blocking
-void Audio::startSound(e_audio_sound_type style, bool overlay)
+void Audio::startSound(uint16_t style, bool overlay)
 {
     if ( _dac_chan ) { // audio switched on
         if (!_alarm_mode || !overlay) {

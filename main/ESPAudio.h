@@ -26,11 +26,9 @@ enum e_audio_sound_type
     AUDIO_WIND_CHANGE,
     AUDIO_FLAP_FORWARD,
     AUDIO_FLAP_BACK,
-    AUDIO_ALARM_FLARM_1,
-    AUDIO_ALARM_FLARM_2,
-    AUDIO_ALARM_FLARM_3,
     AUDIO_ALARM_STALL,
-    AUDIO_ALARM_GEAR
+    AUDIO_ALARM_GEAR,
+    AUDIO_ALARM_FLARM
 };
 
 class Audio
@@ -47,7 +45,7 @@ public:
     bool isUp() const { return _dac_chan != nullptr; }
     void soundCheck();              // audible check of the audio
 
-    void startSound(e_audio_sound_type alarmType, bool overlay = false); // outputs various alarm sounds according to alarmType
+    void startSound(uint16_t alarmType, bool overlay = false); // outputs various alarm sounds according to alarmType
     // system wide the only point to set audio volume !!!
     void setVolume(float vol, bool sync = true); // vol: 0.0 .. 100.0 logarythmic scale
     void updateSetup();                         // incorporate setup changes

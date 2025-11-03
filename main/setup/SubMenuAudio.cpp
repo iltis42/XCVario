@@ -120,24 +120,12 @@ int update_range_entry_s(SetupMenuSelect *p)
 }
 
 static int audio_setup_s(SetupMenuSelect *p) {
-	AUDIO->updateSetup();
-	if (audio_mute_gen.get() == AUDIO_OFF) {
-        if ( AUDIO->isUp() ) { AUDIO->stopAudio(); }
-    }
-    else {
-        if ( ! AUDIO->isUp() ) { AUDIO->startAudio(); }
-        if (audio_mute_gen.get() == AUDIO_ALARMS) {
-            AUDIO->startSound(AUDIO_VARIO_SOUND);
-        }
-        else {
-            AUDIO->startSound(AUDIO_NO_SOUND);
-        }
-    }
+    AUDIO->applySetup();
     p->getParent()->setDirty();
-	return 0;
+    return 0;
 }
 int audio_setup_f(SetupMenuValFloat *p) {
-    AUDIO->updateSetup();
+    AUDIO->applySetup();
     p->getParent()->setDirty();
     return 0;
 }

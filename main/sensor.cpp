@@ -1181,10 +1181,11 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
 	}
 
+    AUDIO->applySetup();
 	if ( audio_mute_gen.get() != AUDIO_OFF ) {
 		ESP_LOGI(FNAME,"Audio begin");
 		logged_tests += "Digi. Audio Poti test: ";
-		if( AUDIO->startAudio(0) ) {
+		if( AUDIO->isUp() && AUDIO->isPotiUp() ) {
 			ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 			logged_tests += passed_text;
 		}
@@ -1282,6 +1283,9 @@ void system_startup(void *args){
 		esp_restart();
 	}
 
+    // Initialize the airborne status
+    airborne.set(ias.get() > glider_min_ias);
+
 	Speed2Fly.begin();
 	Version myVersion;
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
@@ -1304,7 +1308,7 @@ void system_startup(void *args){
 	}
 
 	// Set QNH from setup Airfiled elevation, when ! Second && ! airborn
-	if( ! SetupCommon::isClient() && ias.get() < 50.0 ) {
+	if( ! SetupCommon::isClient() && ! airborne.get() ) {
 
 		// remove logo immidiately
 		sleep(1);
@@ -1403,7 +1407,7 @@ void system_startup(void *args){
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid); // increase stack by 500 byte
 
 	VCMode.updateCache(); // correct initialization
-	if (audio_mute_gen.get() == AUDIO_ON) { AUDIO->startVarioVoice(); }
+	AUDIO->initVarioVoice();
 }
 
 // #include <xtensa/core-macros.h>  // for XTHAL_GET_CCOUNT

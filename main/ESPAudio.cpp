@@ -669,217 +669,64 @@ Audio::Audio()
 Audio::~Audio()
 {
     stopAudio();
-}
 
-void Audio::dacInit()
-{
-	ESP_LOGI(FNAME, "Starting audio on core %d", xPortGetCoreID());
-
-    _dac_cfg = {
-        .chan_mask = (dac_channel_mask_t)BIT(_channel), // which channel to enable
-        .desc_num = 2,
-        .buf_size = BUF_LEN,
-        .freq_hz = SAMPLE_RATE,
-        .offset = 0,
-        .clk_src = DAC_DIGI_CLK_SRC_DEFAULT,
-        .chan_mode = DAC_MODE,
-    };
-
-    esp_err_t err = dac_continuous_new_channels(&_dac_cfg, &_dac_chan);
-    // register callback
-    dac_event_callbacks_t callbacks = {
-        .on_convert_done = dacdma_done,
-        .on_stop = nullptr
-    };
-    err |= dac_continuous_register_event_callback(_dac_chan, &callbacks, &dma_cmd);
-
-    err |= dac_continuous_enable(_dac_chan);
-    ESP_LOGI(FNAME, "DAC initialized success, DAC DMA is ready");
-}
-void pin_audio_irq( void *arg ) {
-	AUDIO->dacInit(); // core does inherit towards the dac irq resources
-	xTaskNotifyGive((TaskHandle_t)arg);
-	vTaskDelete(NULL);
-}
-bool Audio::startAudio(int16_t ch)
-{
-	ESP_LOGI(FNAME,"start Audio");
-	if ( ! S2FSWITCH ) {
-		S2FSWITCH = new S2fSwitch( GPIO_NUM_12 );
-	}
-    // switch to amplifier on GPIO19
-    gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT ); // use pullup 1 == SOUND 0 == SILENCE
-    mute();
-
-	updateSetup();
-    updateAudioMode();
-
-    if ( ! _dac_chan ) {
-        _channel = ch;
-        TaskHandle_t my_task = xTaskGetCurrentTaskHandle();
-        xTaskCreatePinnedToCore(pin_audio_irq, "pinaudio", 4096, (void*)my_task, 10, NULL, 1);
-        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-    }
-
-    if ( ! _poti ) {
-        ESP_LOGI(FNAME,"Find digital poti");
-        _poti = new MCP4018(&i2c1);
-        _poti->begin();
-        if (_poti->haveDevice()) {
-            ESP_LOGI(FNAME, "MCP4018 digital Poti found");
-        } else {
-            ESP_LOGI(FNAME, "Try CAT5171 digital Poti");
-            delete _poti;
-            _poti = new CAT5171(&i2c1);
-            _poti->begin();
-            if (_poti->haveDevice()) {
-                ESP_LOGI(FNAME, "CAT5171 digital Poti found");
-            } else {
-                ESP_LOGW(FNAME, "NO digital Poti found !");
-                delete _poti;
-                _poti = nullptr;
-            }
-        }
-        if ( _poti ) {
-            if( _poti->writeWiper( 5, true ) ) {
-                ESP_LOGI(FNAME,"writeWiper(5) returned Ok");
-            } else {
-                ESP_LOGI(FNAME,"readWiper returned error");
-            }
-        }
-    }
-
-    if (_poti && _dac_chan) {
-        unmute();
-        ESP_ERROR_CHECK(dac_continuous_start_async_writing(_dac_chan));
-
-        // set the volume from nvs
-        float setvolume = default_volume.get();
-        speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
-        writeVolume(setvolume);
-
-        if ( _terminate ) {
-            xTaskCreate(&dactask_starter, "dactask", 2400, this, 22, nullptr);
-        }
-
-        return true;
-    }
-    return false;
-}
-void Audio::stopAudio() {
-    if ( _dac_chan ) {
-        mute();
-        ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
-        ESP_ERROR_CHECK(dac_continuous_disable(_dac_chan));
-        ESP_ERROR_CHECK(dac_continuous_del_channels(_dac_chan));
-        _dac_chan = nullptr;
-    }
     if (_poti)
     {
         Poti *tmp = _poti;
         _poti = nullptr;
         delete tmp;
     }
-    _terminate = true; // kill task
 }
 
-void Audio::startVarioVoice()
+// call this to get current setting effective
+void Audio::applySetup()
 {
-    while (!_test_done)
-    {
-        vTaskDelay(100);
-    }; // wait until sound check finished
+	ESP_LOGD(FNAME,"Audio::setup");
+	if( audio_range.get() == AUDIO_RANGE_5_MS ) {
+		_range = 5.0;
+	} else if( audio_range.get() == AUDIO_RANGE_10_MS ) {
+		_range = 10.0;
+	} else {
+		_range = scale_range.get();
+	}
+    if (vario_vconf[1].gain_adjust != audio_harmonics.get()) {
+        vario_vconf[1].gain_adjust = audio_harmonics.get();
+    }
 
-    ESP_LOGI(FNAME, "load vario sound");
-    unmute();
-    writeVolume(speaker_volume);
-    // load the vario sound
-    startSound(AUDIO_VARIO_SOUND);
+    if (audio_mute_gen.get() == AUDIO_OFF) {
+        if ( isUp() ) {
+            // stop any sound
+            stopAudio();
+            dma_cmd.resetSound();
+        }
+    }
+    else {
+        if ( ! isUp() ) { startAudio(); }
+        // reload the vario sound if not active
+        if ( audio_mute_gen.get() == AUDIO_ON && dma_cmd.voicecount == 0 ) {
+            startSound(AUDIO_VARIO_SOUND);
+        }
+        if ( audio_mute_gen.get() == AUDIO_ALARMS ) {
+            startSound(AUDIO_NO_SOUND);
+        }
+    }
+    _exponent_max  = std::pow( 2, audio_factor.get());
+
+    maxf = center_freq.get() * tone_var.get();
+    minf = center_freq.get() / tone_var.get();
+    ESP_LOGI(FNAME,"min/max freq. %.1f/%.1f", minf, maxf);
+    VCMode.updateCache(); // force re- evaluation of cruise and audio mode
+    updateAudioMode();
 }
 
-// do the sound check, when the audio task is not yet running
-class TestSequence : public Clock_I
+void Audio::initVarioVoice()
 {
-public:
-    TestSequence(float freq) : Clock_I(15), f(freq)
-    {
-        dma_cmd.voice[0].setFrequencyAndGain(f);
-        dma_cmd.voice[0].start();
-        AUDIO->writeVolume(35.);
-        Clock::start(this);
-    }
-    ~TestSequence()
-    {
-        AUDIO->_test_done = true;
-    }
-    bool tick() override
-    {
-        i++;
-        float freq = f * powf(2.0, i / 12.0); // half tone up
-        ESP_LOGI(FNAME, "iter %d %f", i, freq);
-        if (i < 4) // major third
-        {
-            dma_cmd.voice[0].setFrequencyAndGain(freq);
-        }
-        else if (i < 8) // fifth
-        {
-            dma_cmd.voice[1].setFrequencyAndGain(f);
-            if ( ! dma_cmd.voice[1].active ) {
-                dma_cmd.voice[1].start();
-            }
-            dma_cmd.voice[0].setFrequencyAndGain(freq);
-            ESP_LOGI(FNAME, "s=%f", f);
-        }
-        else if (i < 12) // octave - 1
-        {
-            dma_cmd.voice[0].setFrequencyAndGain(freq);
-            freq = f * pow(2.0, (4 - (i-8)) / 12.0);
-            dma_cmd.voice[1].setFrequencyAndGain(freq);
-            ESP_LOGI(FNAME, "s=%f", freq);
-        }
-        else if (i < 17) // octave
-        {
-            if ( ! dma_cmd.voice[2].active ) {
-                dma_cmd.voice[0].setFrequencyAndGain(freq);
-                dma_cmd.voice[1].setFrequencyAndGain(f);
-                ESP_LOGI(FNAME, "s=%f", f);
-                freq = f * pow(2.0, 4./12.0);
-                dma_cmd.voice[2].setFrequency(freq);
-                dma_cmd.voice[2].start();
-                ESP_LOGI(FNAME, "t=%f", freq);
-                freq = f * pow(2.0, 7./12.0);
-                dma_cmd.voice[3].setFrequency(freq);
-                dma_cmd.voice[3].start();
-                ESP_LOGI(FNAME, "f=%f", freq);
-            }
-        }
-        else if (i < 21)
-        {
-            dma_cmd.voice[1].setFrequency(f/2.);
-            dma_cmd.voice[1].setGain(200);
-        }
-        else
-        {
-            for ( int i=0; i<MAX_VOICES; i++ ) {
-                dma_cmd.voice[i].stop();
-            }
-            AUDIO->mute();
-            delete this;
-            return true;
-        }
-        return false;
-    }
-
-private:
-    float f;
-    int i = 0;
-};
-void Audio::soundCheck()
-{
-    if ( _dac_chan ) { // audio switched on
-        ESP_LOGI(FNAME, "Audio soundCheck");
-        _test_done = false;
-        new TestSequence(633.0); // approx. D5
+    if ( _dac_chan ) {
+        ESP_LOGI(FNAME, "load vario sound");
+        unmute();
+        writeVolume(speaker_volume);
+        // load the vario sound
+        startSound(AUDIO_VARIO_SOUND);
     }
 }
 
@@ -902,7 +749,6 @@ uint16_t Audio::encFlarmParam(e_audio_sound_type sound_id, uint8_t alevel, uint8
 {
     return ((uint16_t)alevel << 8) | ((uint16_t)side << 6) | ((uint16_t)alt_diff << 4) | ((uint16_t)sound_id & 0xf);
 }
-
 
 // [%] - in a logarithmic db sense
 void Audio::setVolume(float vol, bool sync) {
@@ -931,33 +777,6 @@ void Audio::setVolume(float vol, bool sync) {
         ESP_LOGI(FNAME, "setvolume() to %f, joint mode", speaker_volume);
     }
     writeVolume(speaker_volume);
-}
-
-// call when audio setup changes
-void Audio::updateSetup()
-{
-	ESP_LOGD(FNAME,"Audio::setup");
-	if( audio_range.get() == AUDIO_RANGE_5_MS ) {
-		_range = 5.0;
-	} else if( audio_range.get() == AUDIO_RANGE_10_MS ) {
-		_range = 10.0;
-	} else {
-		_range = scale_range.get();
-	}
-    if (vario_vconf[1].gain_adjust != audio_harmonics.get()) {
-        vario_vconf[1].gain_adjust = audio_harmonics.get();
-        if (VCMode.audioIsVario() && audio_mute_gen.get() == AUDIO_ON) {
-            // reload the vario sound if active
-            dma_cmd.loadSound(&VarioSound);
-        }
-    }
-    _exponent_max  = std::pow( 2, audio_factor.get());
-
-	maxf = center_freq.get() * tone_var.get();
-	minf = center_freq.get() / tone_var.get();
-    ESP_LOGI(FNAME,"min/max freq. %.1f/%.1f", minf, maxf);
-    VCMode.updateCache(); // force re- evaluation of cruise and audio mode
-    updateAudioMode();
 }
 
 // call when cruise mode changes, setup changes
@@ -1023,14 +842,126 @@ void Audio::dump() {
     dma_cmd.dump();
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// private helpers
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void Audio::dacInit()
+{
+    ESP_LOGI(FNAME, "Starting audio on core %d", xPortGetCoreID());
+
+    _dac_cfg = {
+        .chan_mask = (dac_channel_mask_t)BIT(_channel), // which channel to enable
+        .desc_num = 2,
+        .buf_size = BUF_LEN,
+        .freq_hz = SAMPLE_RATE,
+        .offset = 0,
+        .clk_src = DAC_DIGI_CLK_SRC_DEFAULT,
+        .chan_mode = DAC_MODE,
+    };
+
+    esp_err_t err = dac_continuous_new_channels(&_dac_cfg, &_dac_chan);
+    // register callback
+    dac_event_callbacks_t callbacks = {
+        .on_convert_done = dacdma_done,
+        .on_stop = nullptr
+    };
+    err |= dac_continuous_register_event_callback(_dac_chan, &callbacks, &dma_cmd);
+
+    err |= dac_continuous_enable(_dac_chan);
+    ESP_LOGI(FNAME, "DAC initialized success, DAC DMA is ready");
+}
+
+void pin_audio_irq(void *arg) {
+    AUDIO->dacInit(); // core does inherit towards the dac irq resources
+    xTaskNotifyGive((TaskHandle_t)arg);
+    vTaskDelete(NULL);
+}
+
+bool Audio::startAudio(int16_t ch)
+{
+    ESP_LOGI(FNAME, "start Audio");
+    if (!S2FSWITCH) {
+        S2FSWITCH = new S2fSwitch(GPIO_NUM_12);
+    }
+    // switch to amplifier on GPIO19
+    gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT ); // use pullup 1 == SOUND 0 == SILENCE
+    mute();
+
+    if ( ! _dac_chan ) {
+        _channel = ch;
+        TaskHandle_t my_task = xTaskGetCurrentTaskHandle();
+        xTaskCreatePinnedToCore(pin_audio_irq, "pinaudio", 4096, (void*)my_task, 10, NULL, 1);
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+    }
+
+    if ( ! _poti ) {
+        ESP_LOGI(FNAME,"Find digital poti");
+        _poti = new MCP4018(&i2c1);
+        _poti->begin();
+        if (_poti->haveDevice()) {
+            ESP_LOGI(FNAME, "MCP4018 digital Poti found");
+        } else {
+            ESP_LOGI(FNAME, "Try CAT5171 digital Poti");
+            delete _poti;
+            _poti = new CAT5171(&i2c1);
+            _poti->begin();
+            if (_poti->haveDevice()) {
+                ESP_LOGI(FNAME, "CAT5171 digital Poti found");
+            } else {
+                ESP_LOGW(FNAME, "NO digital Poti found !");
+                delete _poti;
+                _poti = nullptr;
+            }
+        }
+        if ( _poti ) {
+            if( _poti->writeWiper( 5, true ) ) {
+                ESP_LOGI(FNAME,"writeWiper(5) returned Ok");
+            } else {
+                ESP_LOGI(FNAME,"readWiper returned error");
+            }
+        }
+    }
+
+    if (_poti && _dac_chan) {
+        unmute();
+        ESP_ERROR_CHECK(dac_continuous_start_async_writing(_dac_chan));
+
+        // set the volume from nvs
+        float setvolume = default_volume.get();
+        speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
+        writeVolume(setvolume);
+
+        if ( _terminate ) {
+            xTaskCreate(&dactask_starter, "dactask", 2400, this, 22, nullptr);
+        }
+
+        return true;
+    }
+    return false;
+}
+
+void Audio::stopAudio() {
+    if ( _dac_chan ) {
+        mute();
+        ESP_ERROR_CHECK(dac_continuous_stop_async_writing(_dac_chan));
+        ESP_ERROR_CHECK(dac_continuous_disable(_dac_chan));
+        ESP_ERROR_CHECK(dac_continuous_del_channels(_dac_chan));
+        _dac_chan = nullptr;
+    }
+
+    _terminate = true; // kill task
+    AudioEvent ev(START_SOUND, AUDIO_NO_SOUND); // wake up task
+    xQueueSend(AudioQueue, &ev, 0);
+}
+
 void  Audio::calculateFrequency(float val) {
-	float max_var = (val > 0) ? ((maxf-center_freq.get()) * 2) : (center_freq.get()-minf);
-	float range = (VCMode.audioIsVario()) ? _range : 5.0;
-    float mult = std::pow( (abs(val)/range)+1, audio_factor.get());
-	float freq = center_freq.get() + ((mult*val)/range )  * (max_var/_exponent_max);
-    if ( val > 0 ) {
+    float max_var = (val > 0) ? ((maxf - center_freq.get()) * 2) : (center_freq.get() - minf);
+    float range = (VCMode.audioIsVario()) ? _range : 5.0;
+    float mult = std::pow((abs(val) / range) + 1, audio_factor.get());
+    float freq = center_freq.get() + ((mult * val) / range) * (max_var / _exponent_max);
+    if (val > 0) {
         // durations
-        float tmp = 1000. / (1+9*(val/range));
+        float tmp = 1000. / (1 + 9 * (val / range));
         // duration of main tone 1Hz: 900 ms; 10Hz: 50 ms
         int duration = (int)(tmp * 0.9) - 40;
         vario_tim[0].setSamples(duration);
@@ -1039,8 +970,7 @@ void  Audio::calculateFrequency(float val) {
         duration = (int)(tmp * 0.1) + 40; // 1Hz: 100 ms; 10Hz: 50 ms
         vario_tim[1].setSamples(duration);
         // ESP_LOGI(FNAME, "d0 %d d1 %d", (int)vario_tim[0].duration, (int)vario_tim[1].duration );
-    }
-    else {
+    } else {
         vario_tim[0].setSamples(50);
         vario_tim[1].setSamples(50);
     }
@@ -1066,7 +996,7 @@ void  Audio::calculateFrequency(float val) {
 
 // set the digital volume poti, 0..100%
 void Audio::writeVolume(float volume) {
-	// ESP_LOGI(FNAME, "set volume: %f/%f", volume, vol);
+    // ESP_LOGI(FNAME, "set volume: %f/%f", volume, vol);
     if (_poti) {
         _poti->softSetVolume(volume);
     }
@@ -1074,13 +1004,13 @@ void Audio::writeVolume(float volume) {
 
 void Audio::dactask_starter(void *arg)
 {
-	static_cast<Audio*>(arg)->dactask();
+    static_cast<Audio*>(arg)->dactask();
 }
 
 void Audio::dactask()
 {
 #if defined(AUDIO_DEBUG)
-	int64_t t0 = esp_timer_get_time();
+    int64_t t0 = esp_timer_get_time();
 #endif
     SOUND *sound = nullptr; // preempting the vario sound
     const TONE* next_tone[MAX_VOICES]; // added to the vario sound

@@ -41,18 +41,16 @@ public:
     Audio();
     virtual ~Audio();
 
-    bool startAudio(int16_t ch = 0); // initialisations and self-test, starts task driving the sequencer
-    void stopAudio();               // terminate any sound output
-    void startVarioVoice();         // start vario sound for the very first time
+    void applySetup();                          // incorporate setup changes
+    void initVarioVoice();                      // start vario sound for the very first time
     bool isUp() const { return _dac_chan != nullptr; }
-    void soundCheck();              // audible check of the audio
+    bool isPotiUp() const { return _poti != nullptr; }
 
     void startSound(uint16_t alarmType, bool overlay = false); // outputs various alarm sounds according to alarmType
     static uint16_t encFlarmParam(e_audio_sound_type sound_id, uint8_t alevel, uint8_t side, uint8_t alt_diff);
 
     // system wide the only point to set audio volume !!!
     void setVolume(float vol, bool sync = true); // vol: 0.0 .. 100.0 logarythmic scale
-    void updateSetup();                         // incorporate setup changes
     void updateAudioMode();                     // call on cruise mode change
     void updateTone();                          // call after sensor update
     void mute();                                // mute the sound entirely
@@ -63,6 +61,8 @@ public:
 private:
     friend void pin_audio_irq(void *arg);
     void dacInit();
+    bool startAudio(int16_t ch = 0); // initialisations and self-test, starts task driving the sequencer
+    void stopAudio();                // terminate any sound output
     bool inDeadBand(float a) const { return (a > _deadband_n && a < _deadband_p); }
     void calculateFrequency(float a);       // determine frequency to be generated depending on TE value
     void writeVolume(float volume);
@@ -86,7 +86,6 @@ private:
     float minf;
     float _exponent_max = 2;
 
-    volatile bool _test_done = true;
     bool _terminate = true;
 };
 

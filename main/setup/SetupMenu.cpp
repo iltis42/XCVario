@@ -988,6 +988,12 @@ static void options_menu_create_screens(SetupMenu *top) { // dynamic!
 
 		SetupMenu *horizon = new SetupMenu("Horizon", screens_menu_create_horizon);
 		top->addEntry(horizon);
+
+        SetupMenuSelect *disva = new SetupMenuSelect("Color Variant", RST_NONE, nullptr, &display_variant);
+        top->addEntry(disva);
+        disva->setHelp("Display variant white on black (W/B) or black on white (B/W)");
+        disva->addEntry("W/B");
+        disva->addEntry("B/W");
 	}
 
 	SetupMenu *tmp_menu = static_cast<SetupMenu*>(top->getEntry(0)); // vario
@@ -1117,8 +1123,6 @@ void system_menu_create_battery(SetupMenu *top) {
 }
 
 
-
-
 void system_menu_create_hardware_type(SetupMenu *top) {
 	// UNIVERSAL, RAYSTAR_RFJ240L_40P, ST7789_2INCH_12P, ILI9341_TFT_18P
 	SetupMenuSelect *dtype = new SetupMenuSelect("HW Type", RST_NONE, nullptr, &display_type);
@@ -1128,13 +1132,6 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	dtype->addEntry("ST7789");
 	dtype->addEntry("ILI9341");
 	top->addEntry(dtype);
-
-	SetupMenuSelect *disva = new SetupMenuSelect("Color Variant", RST_NONE, nullptr, &display_variant);
-	top->addEntry(disva);
-	disva->setHelp(
-			"Display variant white on black (W/B) or black on white (B/W)");
-	disva->addEntry("W/B");
-	disva->addEntry("B/W");
 
 	// Orientation   _display_orientation
 	SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", RST_ON_EXIT, nullptr, &display_orientation );

@@ -148,14 +148,14 @@ float dynamicP; // Pitot
 float slipAngle = 0.0;
 
 // global color variables for adaptable display variant
-uint8_t g_col_background=255; // black
-uint8_t g_col_highlight=0;
-uint8_t g_col_header_r=101+g_col_background/5;
-uint8_t g_col_header_g=108+g_col_background/5;
-uint8_t g_col_header_b=g_col_highlight;
-uint8_t g_col_header_light_r=161-g_col_background/4;
-uint8_t g_col_header_light_g=168-g_col_background/3;
-uint8_t g_col_header_light_b=g_col_highlight;
+uint8_t g_col_background; // black
+uint8_t g_col_highlight;
+uint8_t g_col_header_r;
+uint8_t g_col_header_g;
+uint8_t g_col_header_b;
+uint8_t g_col_header_light_r;
+uint8_t g_col_header_light_g;
+uint8_t g_col_header_light_b;
 uint8_t gyro_flash_savings=0;
 
 // boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.

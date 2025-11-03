@@ -866,12 +866,6 @@ static void screens_menu_create_vario(SetupMenu *top) {
     // ncolor->addEntry("Orange");
     // ncolor->addEntry("Red");
     // top->addEntry(ncolor);
-    SetupMenuSelect *disty = new SetupMenuSelect("Style", RST_NONE, nullptr, &display_style);
-    top->addEntry(disty);
-    disty->setHelp("Display style in airliner style or retro mode with classic vario meter needle");
-    disty->addEntry("Airliner");
-    disty->addEntry("Retro");
-
     SetupMenuSelect *scrcaid = new SetupMenuSelect("Thermal-Assist", RST_NONE, nullptr, &vario_centeraid);
     scrcaid->setHelp("Enable/disable display of the thermal assistent");
     scrcaid->mkEnable();

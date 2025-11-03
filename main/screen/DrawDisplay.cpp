@@ -86,7 +86,7 @@ void UiEventLoop(void *arg)
                 if (detail == ScreenEvent::VARIO_UPDATE) {
 					// Vario Screen
 					if ( !(gflags.raw & VARIO_SCREEN_MASK.raw) ) {
-						Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), temp, batteryVoltage, s2f_delta, as2f, average_climb.get(), VCMode.getCMode(), gflags.standard_setting, flap_pos.get() );
+						Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), temp, batteryVoltage, s2f_delta, as2f, average_climb.get(), flap_pos.get() );
 					}
 				}
                 else if (detail == ScreenEvent::MSG_BOX) {

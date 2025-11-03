@@ -14,14 +14,7 @@
 #include "Colors.h"
 #include <string>
 
-#define TEGAP 26
-#define TEMIN TEGAP
-#define TEMAX DISPLAY_H-TEGAP
-#define DISPLAY_LEFT 25
-
-enum ips_display { ILI9341 };
-
-typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_AIRLINER=1, INIT_DISPLAY_RETRO=2, INIT_DISPLAY_FLARM=4, INIT_DISPLAY_GLOAD=8, INIT_DISPLAY_UL=16, INIT_DISPLAY_HORIZON=32 } e_screens_t;
+typedef enum e_sreens { INIT_DISPLAY_NULL, INIT_DISPLAY_RETRO=1, INIT_DISPLAY_FLARM=2, INIT_DISPLAY_GLOAD=4, INIT_DISPLAY_HORIZON=8 } e_screens_t;
 extern int screens_init;
 
 class PolarGauge;
@@ -41,20 +34,19 @@ public:
 	IpsDisplay( AdaptUGC *aucg );
 	virtual ~IpsDisplay();
 	static void begin();
-	static void setup();
 	static void bootDisplay();
+	static void setGlobalColors();
 	static void writeText( int line, const char *text );
 	static void writeText( int line, std::string &text );
-	                          // airspeed,       TE,       aTE,       polar_sink,       alt, temperature, battery, s2f_delta, as2f, aCl, s2fmode
-	static void drawDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
+	                          // airspeed,       TE,       aTE,       polar_sink,       alt, temperature, battery, s2f_delta, as2f, acl, wkf
+	static void drawDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, float wksensor );
+
 	static void drawLoadDisplay( float loadFactor );
 	static void drawHorizon( float pitch, float roll, float yaw );
 	static void drawLoadDisplayTexts();
 	static void initDisplay();
 	static void clear();   // erase whole display
-	static void drawArrowBox( int x, int y, bool are=true );
 	static void redrawValues();
-	// static bool drawCompass(int16_t x, int16_t y, bool wind_dirty, bool compass_dirty );
 	static void setBottomDirty();
 	static void setCruiseChanged();
 
@@ -62,33 +54,20 @@ public:
 	static AdaptUGC *ucg;
 
 private:
-	static float _range;
-	static int prev_winddir;
-	static int prev_heading;
-	static int prev_windspeed;
-	static int _divisons;
-	static int _pixpmd;
+	// static int prev_winddir;
+	// static int prev_heading;
+	// static int prev_windspeed;
 
-	enum ips_display _dtype;
 	static int tick;
-	static ucg_color_t colors[];
-	static ucg_color_t colorsalt[];
 
 	// local variabls for dynamic display
 	static int s2falt;
 	static int s2fdalt;
 	static bool wireless_alive;
 	static int tempalt;
-	static bool s2fmodealt;
-	static int s2fclipalt;
 	static int as_prev;
 
-	static int tyalt;
-	static int pyalt;
 	static float average_climbf;
-
-	static float old_polar_sink;
-	static float flt_altitude;
 
 	static PolarGauge* MAINgauge;
     static PolarGauge* WNDgauge;
@@ -105,23 +84,11 @@ private:
 	static void drawWifi( int x, int y );
 	static void drawConnection( int16_t x, int16_t y );
 	static void drawTemperature( int x, int y, float t );
-	static void drawThermometer( int x, int y );
 
 private:
-	static void initRetroDisplay();
 	static void initLoadDisplay();
-	static void drawRetroDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, float wksensor );
-	static void drawAirlinerDisplay( int airspeed, float te, float ate, float polar_sink, float alt, float temperature, float volt, float s2fd, float s2f, float acl, bool s2fmode, bool standard_alt, float wksensor );
-	static void setTeBuf( int y1, int y2, int r, int g, int b );
-	static void drawTeBuf();
-	static void drawGaugeTriangle( int y, int r, int g, int b, bool s2f=false );
-	static void drawAvgSymbol( int y, int r, int g, int b, int x=DISPLAY_LEFT );
 	static void drawAvg( float mps, float delta );
-	static void drawAvgVario( int16_t x, int16_t y, float val );
-	static void drawSmallSpeed(float v_kmh, int16_t x, int16_t y);
 	static bool drawTopGauge(int val, int16_t x, int16_t y, bool inc_unit=false);
-	static void drawLegend( bool onlyLines=false );
-	static void drawNetto( int16_t x, int16_t y, bool netto );
 };
 
 extern IpsDisplay *Display;

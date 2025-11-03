@@ -1187,7 +1187,6 @@ void system_startup(void *args){
 		if( AUDIO->startAudio(0) ) {
 			ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 			logged_tests += passed_text;
-			if ( audio_check.get() ) { AUDIO->soundCheck(); }
 		}
 		else {
 			ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
@@ -1291,12 +1290,12 @@ void system_startup(void *args){
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
 		MBOX->newMessage(2, "Selftest FAILED");
-		if( !Rotary->readBootupStatus() )
-			sleep(4);
+        if ( ! airborne.get() ) { AUDIO->startSound(AUDIO_FAIL_SOUND); }
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
 		boot_screen->finish(3); // signal self tests passed
+        if ( ! airborne.get()) { AUDIO->startSound(AUDIO_CHECK_SOUND); }
 	}
 
 	if( Rotary->readBootupStatus() )

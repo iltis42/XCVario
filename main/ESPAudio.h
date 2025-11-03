@@ -28,7 +28,9 @@ enum e_audio_sound_type
     AUDIO_FLAP_BACK,
     AUDIO_ALARM_STALL,
     AUDIO_ALARM_GEAR,
-    AUDIO_ALARM_FLARM
+    AUDIO_ALARM_FLARM,
+    AUDIO_CHECK_SOUND,
+    AUDIO_FAIL_SOUND
 };
 
 class Audio

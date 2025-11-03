@@ -230,6 +230,31 @@ constexpr float noteFreq(int semitoneOffset) {
     return 440.0f * toneFactor(semitoneOffset);
 }
 
+// Chromatic frequencies
+constexpr float fCs4 = noteFreq(-8);   // 277.18 Hz
+constexpr float fD4 = noteFreq(-7);
+constexpr float fDs4 = noteFreq(-6);
+constexpr float fE4 = noteFreq(-5);    // 329.63 Hz
+constexpr float fF4 = noteFreq(-4);
+constexpr float fFs4 = noteFreq(-3);
+constexpr float fG4 = noteFreq(-2);    // 392.00 Hz
+constexpr float fA4 = noteFreq(0);     // 440.00 Hz
+constexpr float fBd4 = noteFreq(1);
+constexpr float fCs5 = noteFreq(4);
+constexpr float fD5 = noteFreq(5);
+constexpr float fDs5 = noteFreq(6);
+constexpr float fE5 = noteFreq(7);
+constexpr float fF5 = noteFreq(8);
+constexpr float fFs5 = noteFreq(9);
+constexpr float fG5 = noteFreq(10);
+constexpr float fGs5 = noteFreq(11);
+constexpr float fA5 = noteFreq(12);
+constexpr float fBd5 = noteFreq(13);
+constexpr float fB5 = noteFreq(14);
+constexpr float fC6 = noteFreq(15);
+constexpr float fCs6 = noteFreq(16);
+constexpr float fD6 = noteFreq(17);
+
 // No tone
 const std::array<DURATION, 2> no_tone_tim = {{ {0}, {0} }};
 // Vario tone
@@ -240,6 +265,21 @@ static std::array<VOICECONF, 2> vario_vconf = {{ {0, 220}, {0, 21} }};
 const SOUND VarioSound = { vario_tim.data(), { vario_seq.data(), vario_extra.data(), nullptr, nullptr }, vario_vconf.data(), -1 };
 constexpr float HIGH_TONE_VAR = toneFactor(2); // major prime up
 
+// Audio check ok sound
+const std::array<DURATION, 15> check_tim = {{ {150}, {150}, {150}, {150}, {150}, {150}, {150}, {150}, {150}, {150}, {150}, {150},     {4*150}, {4*150}, {0} }};
+const std::array<TONE, 15> check_seq1 = {{ {fD5}, {fDs5}, {fE5}, {fF5}, {fFs5}, {fG5}, {fGs5}, {fA5}, {fBd5}, {fB5}, {fC6}, {fCs6},   {fD6}, {fD6}, {0} }};
+const std::array<TONE, 15> check_seq2 = {{ {fD5}, {fDs5}, {fE5}, {fF5}, {fFs5}, {fG5}, {fGs5}, {fA5}, {fFs5}, {fF5}, {fE5}, {fDs5},   {fD5}, {fD4}, {0} }};
+const std::array<TONE, 15> check_seq3 = {{ {0}, {0}, {0}, {0},          {fD5}, {fD5}, {fD5}, {fD5},   {0}, {0}, {0}, {fDs5},          {fFs5}, {fFs5},{0} }};
+const std::array<TONE, 15> check_seq4 = {{ {0}, {0}, {0}, {0},          {0}, {0}, {0}, {0},           {0}, {0}, {0}, {0},             {fA5}, {fA5},  {0} }};
+const std::array<VOICECONF, 4> check_vconf = {{ {0, 128}, {0, 128}, {0, 128}, {0, 128}  }};
+const SOUND CheckSound = { check_tim.data(), { check_seq1.data(), check_seq2.data(), check_seq3.data(), check_seq4.data() }, check_vconf.data(), 0 };
+
+// Audio check fail sound
+const std::array<DURATION, 5> fail_tim = {{ {4*150}, {4*150}, {4*150}, {4*150}, {0} }};
+const std::array<TONE, 5> fail_seq1 = {{ {fF4}, {fE4},  {fDs4}, {fD4}, {0} }};
+const std::array<TONE, 5> fail_seq2 = {{ {fG4}, {fFs4}, {fF4},  {fE4}, {0} }};
+const std::array<VOICECONF, 2> two_vconf = {{ {0, 128}, {0, 128} }};
+const SOUND FailSound = { fail_tim.data(), { fail_seq1.data(), fail_seq2.data(), nullptr, nullptr }, two_vconf.data(), 0 };
 
 // old Flarm alarms
 // const std::array<DURATION, 3> flarm1_tim = {{ {100}, {55}, {0} }};
@@ -276,22 +316,6 @@ const std::array<TONE, 30> stall_seq3 = {{ {0}, {1290}, {0}, {1227}, {1255}, {0}
     {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {1000}, {1604}, {0}, {0} }};
 const std::array<VOICECONF, 3> stell_vconf = {{ {0, 200}, {0, 40}, {1, 20} }};
 const SOUND StallWarn = { stall_tim.data(), { stall_seq1.data(), stall_seq2.data(), stall_seq3.data(), nullptr }, stell_vconf.data(), 0 };
-
-constexpr float fCs4 = noteFreq(-8);   // 277.18 Hz
-constexpr float fD4 = noteFreq(-7);
-constexpr float fE4 = noteFreq(-5);    // 329.63 Hz
-constexpr float fFs4 = noteFreq(-3);
-constexpr float fG4 = noteFreq(-2);    // 392.00 Hz
-constexpr float fA4 = noteFreq(0);     // 440.00 Hz
-constexpr float fBd4 = noteFreq(1);
-constexpr float fCs5 = noteFreq(4);
-constexpr float fD5 = noteFreq(5);
-constexpr float fE5 = noteFreq(7);
-constexpr float fFs5 = noteFreq(9);
-constexpr float fG5 = noteFreq(10);
-constexpr float fA5 = noteFreq(11);
-constexpr float fBd5 = noteFreq(13);
-constexpr float fD6 = noteFreq(17);
 
 // Coded flarm alarm: Intro
 const std::array<DURATION, 11> flin_tim = {{ {33},  {33}, {33},  {33},   {33},   {33},  {33},  {33},     {70},  {30},   {0} }};
@@ -369,7 +393,7 @@ const SOUND WindGust = { wind_tim.data(), { wind_seq1.data(), nullptr, nullptr, 
 
 // list of sounds
 const std::array<const SOUND*, 13> sound_list = { { &VarioSound, &TurnOut, &TurnIn, &Ding, &WindGust, &TurnIn, &FlapForward, &FlapBack,
-                                                    &StallWarn, &StallWarn, &FlarmIntro } };
+                                                    &StallWarn, &StallWarn, &FlarmIntro, &CheckSound, &FailSound } };
 
 // To call from ISR context
 void IRAM_ATTR VOICECMD::fastLoad(uint8_t idx) {

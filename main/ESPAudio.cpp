@@ -41,7 +41,6 @@ constexpr unsigned SLOW_AUDIO = 16; // frequency update every 160msec
 
 // Internal queue to handle audio sequences and multi voice
 static QueueHandle_t AudioQueue = nullptr;
-static bool request_synch_start = false;
 
 // DAC setup
 constexpr const int SAMPLE_RATE = 66150;    // Hz
@@ -86,7 +85,6 @@ enum {
     VLOAD_DONE = 0,
     REQUEST_SOUND,
     START_SOUND,
-    ENDOFF_SOUND,
     ADD_SOUND,
     DO_VARIO
 };
@@ -519,10 +517,6 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
     uint8_t *buf = (uint8_t *)e->buf;
     AudioEvent ev(VLOAD_DONE, 0);
 
-    if ( request_synch_start ) {
-        request_synch_start = false;
-        ev.cmd = REQUEST_SOUND;
-    }
 
 #if defined(AUDIO_DEBUG)
     int64_t t_busy0 = esp_timer_get_time(); // benchmark
@@ -604,7 +598,7 @@ static bool IRAM_ATTR dacdma_done(dac_continuous_handle_t h, const dac_event_dat
                 cmd.repcount--; // restart another cycle
                 if ( cmd.repcount < 0 ) {
                     // end of sound sequence
-                    ev.cmd = ENDOFF_SOUND;
+                    ev.cmd = REQUEST_SOUND;
                     numVoices = 0;
                 }
             }
@@ -1036,20 +1030,48 @@ void Audio::dactask()
                         flalarm = *Flarm[event.getSide()][event.getAltDiff()];
                         flalarm.repetitions = event.getLevel() - 1;
                         flalarm.timeseq = FlarmLev[event.getLevel() - 1]->data();
-                        request_synch_start = true;
+                        // request_synch_start = true;
                     }
                 }
-                ESP_LOGI(FNAME, "Stop (vario) sound");
-                dma_cmd.resetSound();
+                if ( dma_cmd.repcount  < 0 ) {
+                    // stop endless vario sound
+                    ESP_LOGI(FNAME, "Stop (vario) sound");
+                    dma_cmd.repcount = 0;
+                }
             }
             else if ( event.cmd == REQUEST_SOUND ) {
-                dma_cmd.loadSound(sound);
-                if ( sound != &VarioSound ) {
-                    _alarm_mode = true;
-                    // raise volume +20%, but assure at least 60%
-                    float alarm_vol = std::min(speaker_volume+alarm_volraise.get(), 100.f);
-                    alarm_vol = std::max(alarm_vol, 60.f);
-                    writeVolume(alarm_vol);
+                if ( sound ) {
+                    dma_cmd.loadSound(sound);
+                    if ( sound != &VarioSound ) {
+                        if ( ! _alarm_mode ) {
+                            ESP_LOGI(FNAME, "start preemptive sound");
+                            // raise volume +20%, but assure at least 60%
+                            float alarm_vol = std::min(speaker_volume+alarm_volraise.get(), 100.f);
+                            alarm_vol = std::max(alarm_vol, 60.f);
+                            writeVolume(alarm_vol);
+                        }
+                        _alarm_mode = true;
+                    
+                        if ( sound == &FlarmIntro ) {
+                            // queue the coded flarm sound
+                            sound = &flalarm;
+                        }
+                        else {
+                            sound = nullptr; // one-shot alarm
+                        }
+                    }
+                }
+                else {
+                    ESP_LOGI(FNAME, "Alarm sound ended, restore volume");
+                    writeVolume(speaker_volume);
+                    _alarm_mode = false;
+                    if (audio_mute_gen.get() == AUDIO_ON) {
+                        dma_cmd.loadSound(&VarioSound);
+                    }
+                    else {
+                        dma_cmd.resetSound();
+                    }
+                    // dma_cmd.resetSound();
                 }
             }
             else if ( event.cmd == ADD_SOUND ) {
@@ -1092,26 +1114,6 @@ void Audio::dactask()
                 }
                 else {
                     dma_cmd.voice[vid].reset();
-                }
-            }
-            else if ( event.cmd == ENDOFF_SOUND ) {
-                if ( sound != &FlarmIntro ) {
-                    ESP_LOGI(FNAME, "Alarm sound ended, restore volume");
-                    writeVolume(speaker_volume);
-                    sound = nullptr;
-                    _alarm_mode = false;
-                    ESP_LOGI(FNAME, "End of sound");
-                    // if (audio_mute_gen.get() == AUDIO_ON) {
-                    //     dma_cmd.loadSound(&VarioSound);
-                    // }
-                    // else {
-                    //     dma_cmd.resetSound();
-                    // }
-                    dma_cmd.resetSound();
-                }
-                else {
-                    // FLARM intro ended, start the coded flarm sound
-                    dma_cmd.loadSound(&flalarm);
                 }
             }
             else if ( event.cmd == DO_VARIO && ! _alarm_mode) {

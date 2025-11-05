@@ -1390,7 +1390,6 @@ void system_startup(void *args){
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid); // increase stack by 500 byte
 
 	VCMode.updateCache(); // correct initialization
-	AUDIO->initVarioVoice();
 }
 
 // #include <xtensa/core-macros.h>  // for XTHAL_GET_CCOUNT

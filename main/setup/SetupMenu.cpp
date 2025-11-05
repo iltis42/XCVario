@@ -1402,10 +1402,7 @@ void setup_create_root(SetupMenu *top) {
 		bugs_item_create(top);
 	}
 
-	SetupMenuValFloat *bal = new SetupMenuValFloat("Ballast", "litre", water_adj, true, &ballast_kg);
-	bal->setHelp("Amount of water ballast added to the over all weight");
-	bal->setPrecision(0);
-	bal->setNeverInline();
+	SetupMenuValFloat *bal = SetupMenu::createBallastMenu();
 	top->addEntry(bal);
 
 	SetupMenuValFloat *crewball = new SetupMenuValFloat("Crew Weight", "kg", start_weight_adj, false, &crew_weight);
@@ -1460,6 +1457,14 @@ SetupMenuValFloat* SetupMenu::createQNHMenu() {
 	SetupMenuValFloat *qnh = new SetupMenuValFloat("QNH", "", qnh_adj, true, &QNH);
 	qnh->setHelp("QNH pressure value from ATC. On ground you may adjust to airfield altitude above MSL", 180);
 	return qnh;
+}
+
+SetupMenuValFloat* SetupMenu::createBallastMenu() {
+    SetupMenuValFloat *bal = new SetupMenuValFloat("Ballast", "litre", water_adj, true, &ballast_kg);
+    bal->setHelp("Amount of water ballast added to the over all weight");
+    bal->setPrecision(0);
+    bal->setNeverInline();
+    return bal;
 }
 
 SetupMenuValFloat* SetupMenu::createVoltmeterAdjustMenu() {

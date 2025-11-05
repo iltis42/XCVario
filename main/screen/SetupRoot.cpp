@@ -54,7 +54,8 @@ void SetupRoot::initScreens()
     if ( screen_gmeter.get() ) {
         all_screens |= SCREEN_GMETER;
     }
-    if ( screen_horizon.get() ) {
+    // horizon only if AHRS license is valid
+    if ( screen_horizon.get() && gflags.ahrsKeyValid ) {
         all_screens |= SCREEN_HORIZON;
     }
     all_screens |= SCREEN_VARIO; // always
@@ -105,8 +106,6 @@ void SetupRoot::exit(int levels)
     }
     screens_init = INIT_DISPLAY_NULL; // set screen dirty
 
-    // apply any change on AHRS license and screen setup
-    screen_horizon.set( screen_horizon.get() && gflags.ahrsKeyValid );
     initScreens();
 
     delete _childs.front(); // hook to the entire setup tree

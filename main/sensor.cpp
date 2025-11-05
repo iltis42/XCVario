@@ -298,10 +298,10 @@ void clientLoop(void *pvParameters)
 			double tmpalt = altitude.get(); // get pressure from altitude
 			if( (fl_auto_transition.get() == 1) && ((int)( Units::meters2FL( altitude.get() )) + (int)(gflags.standard_setting) > transition_alt.get() ) ) {
 				ESP_LOGI(FNAME,"Above transition altitude");
-				baroP = baroSensor->calcPressure(1013.25, tmpalt); // above transition altitude
+				baroP = Atmosphere::calcPressureISA(tmpalt); // above transition altitude
 			}
 			else {
-				baroP = baroSensor->calcPressure( QNH.get(), tmpalt);
+				baroP = Atmosphere::calcPressure( QNH.get(), tmpalt);
 			}
 			dynamicP = Atmosphere::kmh2pascal(ias.get());
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
@@ -480,7 +480,7 @@ void readSensors(void *pvParameters){
 		if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
 			altSTD = alt_external;
 		else
-			altSTD = baroSensor->calcAltitudeSTD( baroP );
+			altSTD = Atmosphere::calcAltitudeISA( baroP );
 		float new_alt = 0;
 		if( alt_select.get() == AS_TE_SENSOR ) // TE
 			new_alt = bmpVario.readAVGalt();
@@ -498,7 +498,7 @@ void readSensors(void *pvParameters){
 				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
 					new_alt = altSTD + ( QNH.get()- 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
 				else
-					new_alt = baroSensor->calcAltitude( QNH.get(), baroP );
+					new_alt = Atmosphere::calcAltitude( QNH.get(), baroP );
 				gflags.standard_setting = false;
 				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, gflags.standard_setting  );
 			}

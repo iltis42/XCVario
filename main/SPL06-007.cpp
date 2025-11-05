@@ -1,6 +1,8 @@
+
 #include "SPL06-007.h"
-#include "logdef.h"
+#include "Atmosphere.h"
 #include "sensor.h"
+#include "logdefnone.h"
 
 SPL06_007::SPL06_007( char _addr ){
 	bus = 0;
@@ -67,9 +69,9 @@ bool SPL06_007::begin() {
 		return true;
 }
 
-double SPL06_007::readTemperature( bool& success ){
+float SPL06_007::readTemperature( bool& success ){
 
-	double t = double(c0) * 0.5f + double(c1) * double(_traw)/_scale_factor_t;
+	float t = float(c0) * 0.5f + float(c1) * float(_traw)/_scale_factor_t;
 	success = true;
 	return t;
 }
@@ -124,31 +126,25 @@ bool SPL06_007::selfTest( float& t, float& p ){
 	}
 }
 
-double SPL06_007::get_altitude(double pressure, double seaLevelhPa) {
-	double altitude = 44330.0 * (1.0 - pow(pressure / seaLevelhPa, 0.19029495718));
-	// ESP_LOGI(FNAME,"SPL06_007::get_altitude: %f, p: %f, qnh: %f",altitude, pressure, seaLevelhPa );
-	return altitude;
-}
-
-double SPL06_007::get_traw_sc( bool &ok )
+float SPL06_007::get_traw_sc( bool &ok )
 {
 	get_traw( ok );
-	return (double(_traw)/_scale_factor_t);
+	return (float(_traw)/_scale_factor_t);
 }
 
-double SPL06_007::get_temp_c( bool &ok )
+float SPL06_007::get_temp_c( bool &ok )
 {
-	double traw_sc = get_traw_sc(ok);
-	double t = double(c0) * 0.5f + double(c1) * traw_sc;
+	float traw_sc = get_traw_sc(ok);
+	float t = float(c0) * 0.5f + float(c1) * traw_sc;
 	// ESP_LOGI(FNAME,"T=%f °C", t);
 	return (t);
 }
 
-double SPL06_007::get_temp_f()
+float SPL06_007::get_temp_f()
 {
 	bool ok;
-	double traw_sc = get_traw_sc(ok);
-	return (((double(c0) * 0.5f) + (double(c1) * traw_sc)) * 9/5) + 32;
+	float traw_sc = get_traw_sc(ok);
+	return (((float(c0) * 0.5f) + (float(c1) * traw_sc)) * 9/5) + 32;
 }
 
 int32_t SPL06_007::get_traw( bool &ok )
@@ -175,14 +171,12 @@ int32_t SPL06_007::get_traw( bool &ok )
 	}
 }
 
-double SPL06_007::get_praw_sc( bool &ok )
-{
-	get_praw( ok );
-	return (double(_praw)/_scale_factor_p);
+float SPL06_007::get_praw_sc( bool &ok ) {
+    return (double(get_praw( ok ))/_scale_factor_p);
 }
 
 
-double SPL06_007::get_pcomp(bool &ok)
+float SPL06_007::get_pcomp(bool &ok)
 {
 	bool ok_t, ok_p;
 	ok = false;
@@ -204,12 +198,12 @@ double SPL06_007::get_pcomp(bool &ok)
 	// if( i>0 ){
 	// 	ESP_LOGW(FNAME,"Sensor temp and pressure ready bits took %d attempts", i );
 	// }
-	double traw_sc = get_traw_sc( ok_t );
-	double praw_sc = get_praw_sc( ok_p );
+	float traw_sc = get_traw_sc( ok_t );
+	float praw_sc = get_praw_sc( ok_p );
 	if( !ok_t || !ok_p ){
 		ESP_LOGW(FNAME,"T %d or P %d reading returned false", ok_t, ok_p );
 	}
-	double p = double(c00) + praw_sc * (double(c10) + praw_sc * (double(c20) + praw_sc * double(c30))) + traw_sc * double(c01) + traw_sc * praw_sc * ( double(c11) + praw_sc * double(c21));
+	float p = float(c00) + praw_sc * (float(c10) + praw_sc * (float(c20) + praw_sc * float(c30))) + traw_sc * float(c01) + traw_sc * praw_sc * ( float(c11) + praw_sc * float(c21));
 	// if( address == 0x76 ) {
 	// float t = (double(c0) * 0.5f) + (double(c1) * traw_sc);
 	// ESP_LOGI(FNAME,"P:%06x,%d  T:%06x PC:%f T:%f I2C E:%d",_praw, _praw, _traw, p/100, t , errors );
@@ -220,16 +214,12 @@ double SPL06_007::get_pcomp(bool &ok)
 }
 
 
-double SPL06_007::readAltitude( double qnh, bool &ok ) {
-
-	double p =  get_pressure( ok );
-	return get_altitude( p, qnh );
+float SPL06_007::readAltitude( float qnh, bool &ok ) {
+    return Atmosphere::calcAltitude( qnh, get_pressure( ok ));
 };
 
-double SPL06_007::get_pressure( bool &ok )
-{
-	double pcomp = get_pcomp( ok );
-	return pcomp / 100; // convert to mb
+float SPL06_007::get_pressure( bool &ok ) {
+    return get_pcomp( ok ) / 100.f; // convert to mb
 }
 
 double SPL06_007::get_scale_factor( int reg )

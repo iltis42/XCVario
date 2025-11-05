@@ -2,17 +2,20 @@
   BME280_ESP32_SPI.cpp Bosch BME280 for ESP32
 
  */
+#include "BME280_ESP32_SPI.h"
+
+// #include <sdkconfig.h>
+#include "Atmosphere.h"
+#include "sensor.h"
+#include <logdefnone.h>
 
 #include "freertos/FreeRTOS.h"
 #include <freertos/task.h>
-#include <string.h>
+
+#include <cstring>
 #include <cstdint>
 #include <cstdio>
-#include <sdkconfig.h>
-#include <math.h>
-#include "BME280_ESP32_SPI.h"
-#include <logdef.h>
-#include "sensor.h"
+#include <cmath>
 
 extern SemaphoreHandle_t spiMutex;
 
@@ -178,17 +181,17 @@ void BME280_ESP32_SPI::readCalibration(void) {
 }
 
 //***************BME280 ****************************
-double BME280_ESP32_SPI::readTemperature( bool& success ){
-	uint32_t adc_T = readADC(0x7A);
+float BME280_ESP32_SPI::readTemperature( bool& success ){
+	int32_t adc_T = readADC(0x7A);
 	success = (adc_T != 0);
-	double t=compensate_T((int32_t)adc_T) / 100.0;
+	float t=compensate_T(adc_T) / 100.0;
 	// ESP_LOGI(FNAME, "BMP280 read Temp=%0.1f (raw)=%d CS=%d", t, adc_T, _cs );
 	// ESP_LOGI(FNAME,"   Calibration  CS %d  T1 %d T2 %02x T3 %02x", _cs, _dig_T1, _dig_T2, _dig_T3);
 	return t;
 }
 
 //***************BME280 ****************************
-double BME280_ESP32_SPI::readPressure(bool &ok){
+float BME280_ESP32_SPI::readPressure(bool &ok){
 	if( init_err ){
 		ok=false;
 		return 0.0;
@@ -215,13 +218,13 @@ double BME280_ESP32_SPI::readPressure(bool &ok){
 }
 
 //***************BME280****************************
-double BME280_ESP32_SPI::readHumidity(){
+float BME280_ESP32_SPI::readHumidity(){
 	// ESP_LOGI(FNAME,"++BMP280 readHumidity");
 	bool success;
 	readTemperature( success );
 
-	uint32_t adc_H = read16bit(0x7D);
-	return compensate_H((int32_t)adc_H) / 1024.0;
+	int32_t adc_H = read16bit(0x7D);
+	return compensate_H(adc_H) / 1024.0f;
 }
 
 //*******************************************
@@ -285,26 +288,12 @@ uint32_t BME280_ESP32_SPI::compensate_H(int32_t adc_H) {
 }
 
 //*******************************************************************
-double BME280_ESP32_SPI::readAltitude(double SeaLevel_Pres, bool &ok ) {
+float BME280_ESP32_SPI::readAltitude(float SeaLevel_Pres, bool &ok ) {
 	if( init_err ) {
 		ok = false;
 		return 0.0;
 	}
-	// ESP_LOGI(FNAME,"++BMP280 readAltitude QNH=%0.1f CS:%d", SeaLevel_Pres, _cs);
-	double pressure = readPressure(ok);
-	// ESP_LOGI(FNAME,"press=%0.1f", pressure);
-	double altitude = calcAltitude( SeaLevel_Pres, pressure );
-	// ESP_LOGI(FNAME,"--BME280 readAltitude  qnh: %0.1f p=%0.1f alt=%0.1f", SeaLevel_Pres, pressure, altitude);
-	return altitude;
-}
-
-double BME280_ESP32_SPI::calcAltitudeSTD( double pressure ) {
-	if( init_err )
-			return 0.0;
-	// ESP_LOGI(FNAME,"++BMP280 readAVGAltitude QNH=%0.1f CS:%d", SeaLevel_Pres, _cs);
-	double alt = calcAltitude( 1013.25, pressure );
-	// ESP_LOGI(FNAME,"--BME280 readAVGAltitudeSTD qnh: %0.1f p=%0.1f avlt=%0.1f alt=%0.1f", 1013.25, pressure, _avg_alt_std, alt );
-	return alt;
+	return Atmosphere::calcAltitude( SeaLevel_Pres, readPressure(ok) );
 }
 
 bool BME280_ESP32_SPI::selfTest( float& t, float &p ) {
@@ -418,11 +407,11 @@ uint8_t BME280_ESP32_SPI::read8bit(uint8_t reg) {
 	return ta.rx_data[0];
 }
 
-double BME280_ESP32_SPI::readPressureAVG( float alpha ){
+float BME280_ESP32_SPI::readPressureAVG( float alpha ){
 	if( init_err )
 		return 0.0;
 	bool ok;
-    double newval = readPressure(ok);
+    float newval = readPressure(ok);
 	if ( exponential_average == 0 ){
 		exponential_average = newval;
 	}

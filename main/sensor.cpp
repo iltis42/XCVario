@@ -1316,11 +1316,11 @@ void system_startup(void *args){
 
 		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias.get() );
 		// QNH autosetup
-		float ae = elevation.get();
+		float ae = airfield_elevation.get();
 		float qnh_best = QNH.get();
 		bool ok;
+        if (ae > NO_ELEVATION) {
 		baroP = baroSensor->readPressure(ok);
-		if( ae > NOTSET_ELEVATION ) {
 			float step=10.0; // 80 m
 			float min=1000.0;
 			for( float qnh = 870; qnh< 1085; qnh+=step ) {

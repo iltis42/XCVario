@@ -103,7 +103,7 @@ typedef enum e_tek_compensation { TE_TEK_PROBE, TE_TEK_EPOT, TE_TEK_PRESSURE } e
 enum e_battery_type { BATTERY_CANCEL, BATTERY_LEADACID, BATTERY_LIFEPO4 };
 
 
-constexpr int NOTSET_ELEVATION = -1;
+constexpr int NO_ELEVATION = -1;
 
 struct t_tenchar_id {
 	char id[10];
@@ -394,7 +394,7 @@ extern SetupNG<float>  		core_climb_period;
 extern SetupNG<float>  		core_climb_min;
 extern SetupNG<float>  		core_climb_history;
 extern SetupNG<float>  		mean_climb_major_change;
-extern SetupNG<float>  		elevation;
+extern SetupNG<float>  		airfield_elevation;
 extern SetupNG<float>  		s2f_deadband;
 extern SetupNG<float>  		s2f_deadband_neg;
 extern SetupNG<float>  		s2f_delay;

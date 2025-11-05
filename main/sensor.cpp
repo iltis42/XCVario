@@ -1308,44 +1308,29 @@ void system_startup(void *args){
 	// Set QNH from setup Airfiled elevation, when ! Second && ! airborn
 	if( ! SetupCommon::isClient() && ! airborne.get() ) {
 
-		// remove logo immidiately
+		// remove logo
 		sleep(1);
 		BootUpScreen::terminate();
 
 		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias.get() );
 		// QNH autosetup
 		float ae = airfield_elevation.get();
-		float qnh_best = QNH.get();
 		bool ok;
         if (ae > NO_ELEVATION) {
-		baroP = baroSensor->readPressure(ok);
-			float step=10.0; // 80 m
-			float min=1000.0;
-			for( float qnh = 870; qnh< 1085; qnh+=step ) {
-				float alt = 0;
-				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-					alt = alt_external + (qnh  - 1013.25) * 8.2296;  // correct altitude according to ISA model = 27ft / hPa
-				else
-					alt = baroSensor->readAltitude( qnh, ok);
-				float diff = alt - ae;
-				// ESP_LOGI(FNAME,"Alt diff=%4.2f  abs=%4.2f", diff, abs(diff) );
-				if( abs( diff ) < 100 )
-					step=1.0;  // 8m
-				if( abs( diff ) < 10 )
-					step=0.05;  // 0.4 m
-				if( abs( diff ) < abs(min) ) {
-					min = diff;
-					qnh_best = qnh;
-					// ESP_LOGI(FNAME,"New min=%4.2f", min);
-				}
-				if( diff > 1.0 ) // we are ready, values get already positive
-					break;
-				delay(50);
-			}
-			ESP_LOGI(FNAME,"Auto QNH=%4.2f\n", qnh_best);
-			QNH.set( qnh_best );
-		}
-		Display->clear();
+            float baroP = baroSensor->readPressure(ok);
+            float alt = 0.0f;
+            if (Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL) {
+                // correct altitude according to ISA model = 27ft / hPa
+                alt = alt_external + (QNH.get() - 1013.25f) * 8.2296f;
+            } else {
+                alt = ae;
+            }
+
+            float qnh_best = Atmosphere::calcQNHPressure(baroP, ae);
+            QNH.set(qnh_best);
+            ESP_LOGI(FNAME, "Auto QNH (direkt) = %4.2f hPa", qnh_best);
+        }
+        Display->clear();
 
 		int screenEvent = ScreenEvent(ScreenEvent::QNH_ADJUST).raw;
 		if ( NEED_VOLTAGE_ADJUST ) {

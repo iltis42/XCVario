@@ -83,6 +83,7 @@ int gload_reset(SetupMenuSelect *p) {
 		gload_neg_max.set(0);
 		airspeed_max.set(0);
 		p->setSelect(0);
+		p->getParent()->setDirty();
 	}
 	return 0;
 }

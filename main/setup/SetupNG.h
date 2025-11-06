@@ -58,7 +58,7 @@ enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE };
 enum e_audio_chopping_style { AUDIO_CHOP_SOFT, AUDIO_CHOP_HARD };
 enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE };
 enum e_audio_harmonics { AUD_HARM_OFF=0, AUD_HARM_LOW=7, AUD_HARM_MED=14, AUD_HARM_HIGH=21 };
-enum e_audio_mute_gen { AUDIO_ON, AUDIO_ALARMS, AUDIO_OFF };
+enum e_audio_mute_gen { AUDIO_ON, AUDIO_ALARMS_ONLY, AUDIO_OFF };
 typedef enum e_amp_shutdown { AMP_STAY_ON, AMP_SHUTDOWN, AMP_SHUTDOWN_5S } e_amp_shutdown_t;
 enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_ENABLE, FLAP_SENSOR_CLIENT };
 typedef enum e_cruise_audio { AUDIO_S2F, AUDIO_VARIO } e_cruise_audio_2;

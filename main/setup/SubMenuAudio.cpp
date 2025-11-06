@@ -224,7 +224,7 @@ void audio_menu_create(SetupMenu *audio) {
         SetupMenuSelect *ageda = new SetupMenuSelect("General Switch", RST_NONE, audio_setup_s, &audio_mute_gen);
         ageda->setHelp("All audio on, only alarms, or audio switched entirely off");
         ageda->addEntry("All On", AUDIO_ON);
-        ageda->addEntry("Alarms Only", AUDIO_ALARMS);
+        ageda->addEntry("Alarms Only", AUDIO_ALARMS_ONLY);
         ageda->addEntry("No Sound", AUDIO_OFF);
         audio->addEntry(ageda);
 

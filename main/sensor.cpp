@@ -1390,6 +1390,7 @@ void system_startup(void *args){
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid); // increase stack by 500 byte
 
 	VCMode.updateCache(); // correct initialization
+    AUDIO->initVarioVoice();
 }
 
 // #include <xtensa/core-macros.h>  // for XTHAL_GET_CCOUNT
@@ -1421,7 +1422,6 @@ extern "C" void  app_main(void)
 	AUDIO = new Audio();
 
 	// Access to the non volatile setup
-	ESP_LOGI(FNAME,"app_main" );
 	DeviceManager::Instance(); // Create a blank DM, because on a cleard flash initSetup starts to access it.
 	ESP32NVS::CreateInstance(); // NVS is needed for the SetupCommon::initSetup() to work, and to query nvs var existance
 	// Check on the existance of some nvs variables

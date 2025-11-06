@@ -17,8 +17,10 @@ class TestSequence;
 
 enum e_audio_sound_type
 {
-    AUDIO_NO_SOUND = -1,
+    AUDIO_NO_SOUND,
     AUDIO_VARIO_SOUND,
+    AUDIO_CHECK_SOUND,
+    AUDIO_FAIL_SOUND,
     AUDIO_CMD_CIRCLE_OUT,
     AUDIO_CMD_CIRCLE_IN,
     AUDIO_DING,
@@ -27,10 +29,10 @@ enum e_audio_sound_type
     AUDIO_FLAP_FORWARD,
     AUDIO_FLAP_BACK,
     AUDIO_ALARM_STALL,
+    AUDIO_ALARMS = AUDIO_ALARM_STALL, // first alarm sound, they require a volume raise
     AUDIO_ALARM_GEAR,
     AUDIO_ALARM_FLARM,
-    AUDIO_CHECK_SOUND,
-    AUDIO_FAIL_SOUND
+    AUDIO_ALARM_FCODE
 };
 
 class Audio

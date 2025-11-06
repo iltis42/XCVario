@@ -238,6 +238,7 @@ constexpr float fFs4 = noteFreq(-3);
 constexpr float fG4 = noteFreq(-2);    // 392.00 Hz
 constexpr float fA4 = noteFreq(0);     // 440.00 Hz
 constexpr float fBd4 = noteFreq(1);
+constexpr float fC5 = noteFreq(3);
 constexpr float fCs5 = noteFreq(4);
 constexpr float fD5 = noteFreq(5);
 constexpr float fDs5 = noteFreq(6);
@@ -252,6 +253,8 @@ constexpr float fB5 = noteFreq(14);
 constexpr float fC6 = noteFreq(15);
 constexpr float fCs6 = noteFreq(16);
 constexpr float fD6 = noteFreq(17);
+constexpr float fG6 = noteFreq(22);
+constexpr float fC7 = noteFreq(27);
 
 // No tone
 const std::array<DURATION, 2> no_tone_tim = {{ {0}, {0} }};
@@ -318,14 +321,22 @@ const std::array<TONE, 30> stall_seq3 = {{ {0}, {1290}, {0}, {1227}, {1255}, {0}
 const std::array<VOICECONF, 3> stell_vconf = {{ {0, 200}, {0, 40}, {1, 20} }};
 const SOUND StallWarn = { stall_tim.data(), { stall_seq1.data(), stall_seq2.data(), stall_seq3.data(), nullptr }, stell_vconf.data(), 0 };
 
+// Gload warning
+const std::array<DURATION, 16> gload_tim = {{ {750}, {71}, {36}, {71}, {36}, {71}, {36}, {71}, {36}, {71}, {36}, {71}, {36}, {71}, {36}, {0} }};
+const std::array<TONE, 16> gload_seq1 = {{ {fG4}, {fC5}, {fC5}, {fC5}, {fC5}, {fC5}, {fC5}, {fC5}, {fC5}, {fC5}, {fC5}, {fC5}, {fC5}, {fC5}, {fC5}, {0}, }};
+const std::array<TONE, 16> gload_seq2 = {{ {fG5}, {fC6}, {fC6}, {fC6}, {fC6}, {fC6}, {fC6}, {fC6}, {fC6}, {fC6}, {fC6}, {fC6}, {fC6}, {fC6}, {fC6}, {0}, }};
+const std::array<TONE, 16> gload_seq3 = {{ {fD6}, {fG6}, {fG6+42}, {fG6}, {fG6+42}, {fG6}, {fG6+42}, {fG6}, {fG6+42}, {fG6}, {fG6+42}, {fG6}, {fG6+42}, {fG6}, {fG6+42}, {0}, }};
+const std::array<TONE, 16> gload_seq4 = {{ {fG6}, {fC7}, {fC7}, {fC7}, {fC7}, {fC7}, {fC7}, {fC7}, {fC7}, {fC7}, {fC7}, {fC7}, {fC7}, {fC7}, {fC7}, {0}, }};
+const std::array<VOICECONF, 4> all_vconf = {{ {0, 128}, {0, 128}, {0, 128}, {1, 128} }};
+const SOUND GloadWarn = { gload_tim.data(), { gload_seq1.data(), gload_seq2.data(), gload_seq3.data(), gload_seq4.data() }, all_vconf.data(), 0 };
+
 // Coded flarm alarm: Intro
 const std::array<DURATION, 11> flin_tim = {{ {33},  {33}, {33},  {33},   {33},   {33},  {33},  {33},     {70},  {30},   {0} }};
 const std::array<TONE, 11> flin_seq1    = {{ {fCs4},{fE4},{fG4}, {fBd4}, {fCs5}, {fE5}, {fG5}, {fBd5},   {fCs4}, {fCs4},{0} }};
 const std::array<TONE, 11> flin_seq2    = {{ {0},   {0},  {fG4}, {fBd4}, {fCs5}, {fE5}, {fG5}, {fBd5},   {fG4},  {0},   {0} }};
 const std::array<TONE, 11> flin_seq3    = {{ {0},   {0},  {0},   {0},    {fCs5}, {fE5}, {fG5}, {fBd5},   {fE5},  {fE5}, {0} }};
 const std::array<TONE, 11> flin_seq4    = {{ {0},   {0},  {0},   {0},    {0},    {0},   {fG5}, {fBd5},   {fBd5}, {0},   {0} }};
-const std::array<VOICECONF, 4> flarm_vconf = {{ {0, 128}, {0, 128}, {0, 128}, {1, 150} }};
-const SOUND FlarmIntro = { flin_tim.data(), { flin_seq1.data(), flin_seq2.data(), flin_seq3.data(), flin_seq4.data() }, flarm_vconf.data(), 0 };
+const SOUND FlarmIntro = { flin_tim.data(), { flin_seq1.data(), flin_seq2.data(), flin_seq3.data(), flin_seq4.data() }, all_vconf.data(), 0 };
 
 // Deeper
 const std::array<DURATION, 4> flev1_tim = {{ {500},  {1000}, {500}, {0} }};
@@ -335,9 +346,9 @@ const std::array<TONE, 4> fldeep_seq1    = {{ {fE4}, {fE4},  {0}, {0} }}; // lef
 const std::array<TONE, 4> fldeep_seq2    = {{ {0},   {fFs4}, {0}, {0} }}; // right
 const std::array<TONE, 4> fldeep_seq3    = {{ {fD5}, {fD5},  {0}, {0} }};
 const std::array<TONE, 4> fldeep_seq4    = {{ {fD4}, {fD4},  {0}, {0} }};
-const SOUND FlarmDeeperL = { nullptr, { fldeep_seq1.data(), fldeep_seq3.data(), nullptr, fldeep_seq4.data() }, flarm_vconf.data(), 0 };
-const SOUND FlarmDeeperM = { nullptr, { fldeep_seq3.data(), nullptr, nullptr, fldeep_seq4.data() }, flarm_vconf.data(), 0 };
-const SOUND FlarmDeeperR = { nullptr, { fldeep_seq3.data(), fldeep_seq2.data(), nullptr, fldeep_seq4.data() }, flarm_vconf.data(), 0 };
+const SOUND FlarmDeeperL = { nullptr, { fldeep_seq1.data(), fldeep_seq3.data(), nullptr, fldeep_seq4.data() }, all_vconf.data(), 0 };
+const SOUND FlarmDeeperM = { nullptr, { fldeep_seq3.data(), nullptr, nullptr, fldeep_seq4.data() }, all_vconf.data(), 0 };
+const SOUND FlarmDeeperR = { nullptr, { fldeep_seq3.data(), fldeep_seq2.data(), nullptr, fldeep_seq4.data() }, all_vconf.data(), 0 };
 //                           ^-> choose level                                                                                      ^-> level 2: 1; level 3: 2 repetitions
 
 // Same height
@@ -345,9 +356,9 @@ const std::array<TONE, 4> flsame_seq1    = {{ {fE5}, {fE5},  {0}, {0} }}; // lef
 const std::array<TONE, 4> flsame_seq2    = {{ {0},   {fFs5}, {0}, {0} }}; // right
 const std::array<TONE, 4> flsame_seq3    = {{ {fG4}, {fG4},  {0}, {0} }};
 const std::array<TONE, 4> flsame_seq4    = {{ {fD5}, {fD5},  {0}, {0} }};
-const SOUND FlarmSameL = { nullptr, { flsame_seq1.data(), flsame_seq3.data(), nullptr, flsame_seq4.data() }, flarm_vconf.data(), 0 };
-const SOUND FlarmSameM = { nullptr, { flsame_seq3.data(), nullptr, nullptr, flsame_seq4.data() }, flarm_vconf.data(), 0 };
-const SOUND FlarmSameR = { nullptr, { flsame_seq2.data(), flsame_seq3.data(), nullptr, flsame_seq4.data() }, flarm_vconf.data(), 0 };
+const SOUND FlarmSameL = { nullptr, { flsame_seq1.data(), flsame_seq3.data(), nullptr, flsame_seq4.data() }, all_vconf.data(), 0 };
+const SOUND FlarmSameM = { nullptr, { flsame_seq3.data(), nullptr, nullptr, flsame_seq4.data() }, all_vconf.data(), 0 };
+const SOUND FlarmSameR = { nullptr, { flsame_seq2.data(), flsame_seq3.data(), nullptr, flsame_seq4.data() }, all_vconf.data(), 0 };
 
 // Heigher
 const std::array<TONE, 4> flhigh_seq1l   = {{ {fG5}, {fG5},  {0}, {0} }}; // left
@@ -355,16 +366,16 @@ const std::array<TONE, 4> flhigh_seq1r   = {{ {fFs5}, {fFs5},  {0}, {0} }}; // r
 const std::array<TONE, 4> flhigh_seq2    = {{ {fA5},   {fA5}, {0}, {0} }}; // left
 const std::array<TONE, 4> flhigh_seq3    = {{ {0},   {fA5}, {0}, {0} }}; // right
 const std::array<TONE, 4> flhigh_seq4    = {{ {fD6}, {fD6},  {0}, {0} }};
-const SOUND FlarmHighL = { nullptr, { flhigh_seq1l.data(), flhigh_seq2.data(), nullptr, flhigh_seq4.data() }, flarm_vconf.data(), 0 };
-const SOUND FlarmHighM = { nullptr, { flhigh_seq1r.data(), nullptr, nullptr, flhigh_seq4.data() }, flarm_vconf.data(), 0 };
-const SOUND FlarmHighR = { nullptr, { flhigh_seq1r.data(), flhigh_seq3.data(), nullptr, flhigh_seq4.data() }, flarm_vconf.data(), 0 };
+const SOUND FlarmHighL = { nullptr, { flhigh_seq1l.data(), flhigh_seq2.data(), nullptr, flhigh_seq4.data() }, all_vconf.data(), 0 };
+const SOUND FlarmHighM = { nullptr, { flhigh_seq1r.data(), nullptr, nullptr, flhigh_seq4.data() }, all_vconf.data(), 0 };
+const SOUND FlarmHighR = { nullptr, { flhigh_seq1r.data(), flhigh_seq3.data(), nullptr, flhigh_seq4.data() }, all_vconf.data(), 0 };
 const std::array<DURATION, 4> *FlarmLev[3] = { &flev1_tim, &flev2_tim, &flev3_tim };
 const SOUND *Flarm[3][3] = {
     { &FlarmDeeperL, &FlarmSameL, &FlarmHighL },
     { &FlarmDeeperM, &FlarmSameM, &FlarmHighM },
     { &FlarmDeeperR, &FlarmSameR, &FlarmHighR }
 };
-static SOUND FlarmCode = {flev1_tim.data(), { flsame_seq3.data(), nullptr, nullptr, flsame_seq4.data() }, flarm_vconf.data(), 0 }; // set on the fly
+static SOUND FlarmCode = {flev1_tim.data(), { flsame_seq3.data(), nullptr, nullptr, flsame_seq4.data() }, all_vconf.data(), 0 }; // set on the fly
 
                     // Ding
 const std::array<DURATION, 11> ding_tim = {{  {10}, {10}, {10},    {160}, {160}, {160},     {40}, {40}, {40},        {600}, {0} }};
@@ -394,9 +405,9 @@ const std::array<VOICECONF, 2> wind_vconf = {{ {2, 220}}};
 const SOUND WindGust = { wind_tim.data(), { wind_seq1.data(), nullptr, nullptr, nullptr }, wind_vconf.data(), 0 };
 
 // list of sounds
-const std::array<const SOUND*, 15> sound_list = { { &NoSound, &VarioSound, &CheckSound, &FailSound, 
+const std::array<const SOUND*, 16> sound_list = { { &NoSound, &VarioSound, &CheckSound, &FailSound, 
                                                     &TurnOut, &TurnIn, &Ding, &WindGust, &TurnIn, &FlapForward, &FlapBack,
-                                                    &StallWarn, &StallWarn, &FlarmIntro, &FlarmCode } };
+                                                    &StallWarn, &GloadWarn, &StallWarn, &FlarmIntro, &FlarmCode } };
 
 // To call from ISR context
 void IRAM_ATTR VOICECMD::fastLoad(uint8_t idx) {

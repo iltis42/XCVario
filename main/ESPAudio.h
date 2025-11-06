@@ -28,8 +28,9 @@ enum e_audio_sound_type
     AUDIO_WIND_CHANGE,
     AUDIO_FLAP_FORWARD,
     AUDIO_FLAP_BACK,
-    AUDIO_ALARM_STALL,
-    AUDIO_ALARMS = AUDIO_ALARM_STALL, // first alarm sound, they require a volume raise
+    AUDIO_ALARMS,
+    AUDIO_ALARM_STALL = AUDIO_ALARMS, // first alarm sound, they require a volume raise
+    AUDIO_ALARM_GLOAD,
     AUDIO_ALARM_GEAR,
     AUDIO_ALARM_FLARM,
     AUDIO_ALARM_FCODE

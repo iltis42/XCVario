@@ -17,7 +17,7 @@ public:
     virtual ~Clock_I() = default;
 public:
     inline bool myTurn() { return (++_counter % MULTIPLIER) == 0; }
-    virtual bool tick() = 0;
+    virtual bool tick() = 0; // return true to unregister
     void setMultiplier(unsigned m) { MULTIPLIER = m; }
     unsigned MULTIPLIER;
 private:

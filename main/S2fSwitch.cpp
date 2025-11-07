@@ -90,7 +90,7 @@ void S2fSwitch::updateSwitchSetup()
     // setup the switch
     if ((s2f_switch_type.get() != S2F_SWITCH_DISABLE))
     {
-        _active_level = (s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED) ? 1 : 0;
+        _active_level = (s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED) ? 0 : 1;
         gpio_set_pull_mode(_sw, GPIO_PULLUP_ONLY);
         Clock::start(this);
     }

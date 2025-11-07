@@ -144,7 +144,6 @@ void MessageBox::removeMsg()
 bool MessageBox::draw()
 {
     ESP_LOGI(FNAME, "draw message");
-    _msg_queued = false; // a 1:1 request queuing
     if ( _msg_to <= 0 ) {
         if ( ! nextMsg() ) {
             Clock::stop(this);
@@ -191,10 +190,7 @@ bool MessageBox::draw()
 
 bool MessageBox::tick()
 {
-    if ( !_msg_queued ) {
-        int evt = ScreenEvent(ScreenEvent::MSG_BOX).raw;
-        xQueueSend(uiEventQueue, &evt, 0);
-        _msg_queued = true;
-    }
+    int evt = ScreenEvent(ScreenEvent::MSG_BOX).raw;
+    xQueueSend(uiEventQueue, &evt, 0);
     return false;
 }

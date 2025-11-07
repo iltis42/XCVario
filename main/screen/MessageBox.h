@@ -47,8 +47,8 @@ public:
     ~MessageBox();
 
     // API
-    void newMessage(int alert_level, const char* msg, int to = 0);
-    void recallAlarm();
+    void pushMessage(int alert_level, const char* msg, int to = 0);
+    void popMessage();
     bool draw();
     // bool isVisible() const { return current != nullptr; }
 

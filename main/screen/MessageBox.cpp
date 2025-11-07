@@ -46,7 +46,7 @@ MessageBox::~MessageBox()
     _msg_list.clear();
 }
 
-void MessageBox::newMessage(int alert_level, const char *str, int to)
+void MessageBox::pushMessage(int alert_level, const char *str, int to)
 {
     std::unique_ptr<ScreenMsg> msg = std::make_unique<ScreenMsg>(alert_level, str, to);
     {
@@ -67,7 +67,7 @@ void MessageBox::newMessage(int alert_level, const char *str, int to)
     }
 }
 
-void MessageBox::recallAlarm()
+void MessageBox::popMessage()
 {
     if ( current ) {
         _msg_to = 0; // trigger immediate display of next message
@@ -144,7 +144,7 @@ void MessageBox::removeMsg()
 bool MessageBox::draw()
 {
     ESP_LOGI(FNAME, "draw message");
-    _msg_queued = false; // a 1:1 request quing
+    _msg_queued = false; // a 1:1 request queuing
     if ( _msg_to <= 0 ) {
         if ( ! nextMsg() ) {
             Clock::stop(this);

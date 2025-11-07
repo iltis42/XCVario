@@ -793,7 +793,7 @@ void system_startup(void *args){
 	BootUpScreen *boot_screen = BootUpScreen::create();
 	MessageBox::createMessageBox();
 	if ( gflags.schedule_reboot ) {
-		MBOX->newMessage(3, "Detecting XCV hardware");
+		MBOX->pushMessage(3, "Detecting XCV hardware");
 	}
 	Rotary->begin();
 	if( software_update.get() || Rotary->readBootupStatus() ) {
@@ -880,7 +880,7 @@ void system_startup(void *args){
 			logged_tests += passed_text;
 		}
 		else {
-			MBOX->newMessage(1, "CAN bus: Fail");
+			MBOX->pushMessage(1, "CAN bus: Fail");
 			logged_tests += failed_text;
 			ESP_LOGE(FNAME,"Error: CAN Interface failed");
 		}
@@ -915,7 +915,7 @@ void system_startup(void *args){
 	}
 	wireless_id += SetupCommon::getID();
 	if ( wireless_id.length() > 0 ) {
-		MBOX->newMessage(2, wireless_id.c_str() );
+		MBOX->pushMessage(2, wireless_id.c_str() );
 	}
 
 	{
@@ -1036,7 +1036,7 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Aispeed sensor current speed=%f", ias.get() );
 		if( !offset_plausible && ( ias.get() < 50 ) ){
 			ESP_LOGE(FNAME,"Error: air speed presure sensor offset out of bounds, act value=%d", offset );
-			MBOX->newMessage(2, "AS Sensor: NEED ZERO");
+			MBOX->pushMessage(2, "AS Sensor: NEED ZERO");
 			logged_tests += failed_text;
 			selftestPassed = false;
 		}
@@ -1048,7 +1048,7 @@ void system_startup(void *args){
 	}
 	else{
 		ESP_LOGE(FNAME,"Error with air speed pressure sensor, no working sensor found!");
-		MBOX->newMessage(2, "AS Sensor: NOT FOUND");
+		MBOX->pushMessage(2, "AS Sensor: NOT FOUND");
 		logged_tests += "NOT FOUND\n";
 		selftestPassed = false;
 		asSensor = 0;
@@ -1075,7 +1075,7 @@ void system_startup(void *args){
 		logged_tests += "Ext. Temp. Sensor: ";
 		if( temperature == DEVICE_DISCONNECTED_C ) {
 			ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
-			MBOX->newMessage(1, "Temp Sensor: NOT FOUND");
+			MBOX->pushMessage(1, "Temp Sensor: NOT FOUND");
 			gflags.validTemperature = false;
 			logged_tests += "NOT FOUND\n";
 		}else
@@ -1124,7 +1124,7 @@ void system_startup(void *args){
 	logged_tests += "Baro Sensor: ";
 	if( !baroSensor->selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
-		MBOX->newMessage(2, "Baro Sensor: NOT FOUND");
+		MBOX->pushMessage(2, "Baro Sensor: NOT FOUND");
 		selftestPassed = false;
 		batest=false;
 		logged_tests += "NOT FOUND\n";
@@ -1136,7 +1136,7 @@ void system_startup(void *args){
 	logged_tests += "TE Sensor: ";
 	if( !teSensor->selfTest(te_t, te_p) ) {
 		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
-		MBOX->newMessage(2, "TE Sensor: NOT FOUND");
+		MBOX->pushMessage(2, "TE Sensor: NOT FOUND");
 		selftestPassed = false;
 		tetest=false;
 		logged_tests += "NOT FOUND\n";
@@ -1151,7 +1151,7 @@ void system_startup(void *args){
 		if( (abs(ba_t - te_t) >4.0)  && ( ias.get() < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
 			selftestPassed = false;
 			ESP_LOGE(FNAME,"Severe T delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
-			MBOX->newMessage(1, "TE/Baro Temp: Unequal");
+			MBOX->pushMessage(1, "TE/Baro Temp: Unequal");
 			logged_tests += failed_text;
 		}
 		else{
@@ -1166,7 +1166,7 @@ void system_startup(void *args){
 		if( (abs(ba_p - te_p) >delta)  && ( ias.get() < 50 ) ) {
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Abs p sensors deviation delta > 2.5 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
-			MBOX->newMessage(1, "TE/Baro P: Unequal");
+			MBOX->pushMessage(1, "TE/Baro P: Unequal");
 			logged_tests += failed_text;
 		}
 		else {
@@ -1189,7 +1189,7 @@ void system_startup(void *args){
 		}
 		else {
 			ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
-			MBOX->newMessage(1, "Digital Poti: Failure");
+			MBOX->pushMessage(1, "Digital Poti: Failure");
 			selftestPassed = false;
 			logged_tests += failed_text;
 		}
@@ -1235,7 +1235,7 @@ void system_startup(void *args){
 	logged_tests += "Battery Voltage Sensor: ";
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
-		MBOX->newMessage(1, "Bat Meter: Fail");
+		MBOX->pushMessage(1, "Bat Meter: Fail");
 		logged_tests += failed_text;
 		selftestPassed = false;
 	}
@@ -1250,7 +1250,7 @@ void system_startup(void *args){
 			logged_tests += passed_text;
 		}
 		else {
-			MBOX->newMessage(1, "Bluetooth: FAILED");
+			MBOX->pushMessage(1, "Bluetooth: FAILED");
 			logged_tests += failed_text;
 		}
 	}
@@ -1268,7 +1268,7 @@ void system_startup(void *args){
 		}
 		else{
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
-			MBOX->newMessage(1, "Compass: FAILED");
+			MBOX->pushMessage(1, "Compass: FAILED");
 			logged_tests += failed_text;
 			selftestPassed = false;
 		}
@@ -1291,7 +1291,7 @@ void system_startup(void *args){
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
-		MBOX->newMessage(2, "Selftest FAILED");
+		MBOX->pushMessage(2, "Selftest FAILED");
         if ( ! airborne.get() ) { AUDIO->startSound(AUDIO_FAIL_SOUND); }
 	}
 	else{
@@ -1351,7 +1351,7 @@ void system_startup(void *args){
 			}
 			if ( ! already_connected ) {
 				// just sit, wait, show a little message
-				MBOX->newMessage(1, "Waiting for XCV Master");
+				MBOX->pushMessage(1, "Waiting for XCV Master");
 				ESP_LOGI(FNAME,"Client Mode: Wait for Master XCVario %p", dev);
 			}
 		}

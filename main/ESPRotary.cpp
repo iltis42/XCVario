@@ -92,11 +92,11 @@ static bool IRAM_ATTR pcnt_event_handler(pcnt_unit_handle_t unit, const pcnt_wat
 
 // Observer registration
 void RotaryObserver::attach() {
-	// ESP_LOGI(FNAME,"Attach obs: %p", obs );
+	ESP_LOGI(FNAME,"Attach obs: %p", this );
 	observers.push(this);
 }
 void RotaryObserver::detach() {
-	// ESP_LOGI(FNAME,"Detach obs: %p", obs );
+	ESP_LOGI(FNAME,"Detach obs: %p", this );
 	if ( observers.empty() ) {
 		ESP_LOGW(FNAME,"Hoppla observer stack empty on detach");
 		return;

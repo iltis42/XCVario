@@ -116,7 +116,7 @@ PressureSensor *baroSensor = nullptr;
 PressureSensor *teSensor = nullptr;
 
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
-SetupRoot  *Menu = nullptr;
+SetupRoot  *MenuRoot = nullptr;
 WatchDog_C *uiMonitor = nullptr;
 
 // Gyro and acceleration sensor
@@ -290,7 +290,7 @@ void clientLoop(void *pvParameters)
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		ccount++;
 		aTE += (te_vario.get() - aTE)* (1/(10*vario_av_delay.get()));
-		if( gflags.haveMPU ) {
+		if( gflags.haveIMU ) {
 			grabMPU();
 		}
 		if( !(ccount%5) )
@@ -307,7 +307,7 @@ void clientLoop(void *pvParameters)
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
 			if( airspeed_mode.get() == MODE_CAS )
 				cas = Atmosphere::CAS( dynamicP );
-			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
+			if( gflags.haveIMU && HAS_MPU_TEMP_CONTROL ){
 				MPU.temp_control( ccount, xcvTemp );
 			}
 			if( IMU::getGliderAccelZ() > gload_pos_max.get() ){
@@ -374,7 +374,7 @@ void readSensors(void *pvParameters){
 			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
 		}
 		// ESP_LOGI(FNAME,"Start");
-		if( gflags.haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
+		if( gflags.haveIMU  )  // 3th Generation HW, MPU6050 avail and feature enabled
 		{
 			grabMPU();  // IMU
 		}
@@ -571,7 +571,7 @@ void readSensors(void *pvParameters){
 				ESP_LOGI(FNAME,"Client sync complete");
 			}
 		}
-		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
+		if( gflags.haveIMU && HAS_MPU_TEMP_CONTROL ){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
 			MPU.temp_control( count, xcvTemp );
 		}
@@ -774,7 +774,7 @@ void system_startup(void *args){
 	Flarm::setDisplay( MYUCG );
 	Display->begin();
 	Display->bootDisplay();
-	Menu = new SetupRoot(Display); // the root setup menu, screens still disabled
+	MenuRoot = new SetupRoot(Display); // the root setup menu, screens still disabled
 
 	Version V;
 	std::string ver( " Ver.: " );
@@ -807,12 +807,12 @@ void system_startup(void *args){
 			DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBin::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
 		}
 		delete boot_screen; // screen now belongs to OTA
-		Menu->begin(new OTA());
+		MenuRoot->begin(new OTA());
 		return;
 	}
 	if( hardwareRevision.get() >= XCVARIO_21 )
 	{
-		gflags.haveMPU = true;
+		gflags.haveIMU = true;
 		mpu_target_temp = mpu_temperature.get();
 		ESP_LOGI( FNAME,"MPU initialize");
 		MPU.initialize();  // this will initialize the chip and set default configurations
@@ -1222,7 +1222,7 @@ void system_startup(void *args){
 	}
 
 
-	if( gflags.haveMPU ){
+	if( gflags.haveIMU ){
 		if( MPU.whoAmI() == 0x12 ){
 			if( hardwareRevision.get() < XCVARIO_25){
 				hardwareRevision.set(XCVARIO_25);  // XCV-25: ICL20602
@@ -1372,7 +1372,7 @@ void system_startup(void *args){
 	}
 	if( hardwareRevision.get() != XCVARIO_20 ){
 		gpio_pullup_en( GPIO_NUM_34 );
-		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL && !gflags.mpu_pwm_initalized  )
+		if( gflags.haveIMU && HAS_MPU_TEMP_CONTROL && !gflags.mpu_pwm_initalized  )
 		{
 			// series 2023 does not have slope support on CAN bus but MPU temperature control
 			MPU.pwm_init();

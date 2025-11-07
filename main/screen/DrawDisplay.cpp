@@ -36,9 +36,6 @@ QueueHandle_t uiEventQueue = nullptr;
 
 static unsigned long int flarm_alarm_holdtime = 0;
 
-const global_flags VARIO_SCREEN_MASK = { true, false, false, false, false, true, true, true, false, false, false, false };
-
-
 
 void UiEventLoop(void *arg)
 {
@@ -84,19 +81,28 @@ void UiEventLoop(void *arg)
             }
             else if (event.isScreenEvent()) {
                 // ESP_LOGI(FNAME, "Screen event %d", detail);
-                if (detail == ScreenEvent::VARIO_UPDATE) {
-					// Vario Screen
-					if ( !(gflags.raw & VARIO_SCREEN_MASK.raw) ) {
-						Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), temp, batteryVoltage, s2f_delta, as2f, average_climb.get(), flap_pos.get() );
-					}
-				}
-                else if (detail == ScreenEvent::MSG_BOX) {
+                if (detail == ScreenEvent::MAIN_SCREEN) {
+                    if (!gflags.inSetup) {
+                        switch (MenuRoot->getActiveScreen()) {
+                            case SCREEN_VARIO:
+                                Display->drawDisplay(Units::AirspeedRounded(airspeed), te_vario.get(), aTE, 
+                                            polar_sink, altitude.get(), temp, batteryVoltage, s2f_delta, 
+                                            as2f, average_climb.get(), flap_pos.get());
+                                break;
+                            case SCREEN_GMETER:
+                                Display->drawLoadDisplay( IMU::getGliderAccelZ() );
+                                break;
+                            case SCREEN_HORIZON:
+                                Display->drawHorizon( IMU::getPitchRad(), IMU::getRollRad(), 0 );
+                                break;
+                        }
+                    }
+                } else if (detail == ScreenEvent::MSG_BOX) {
                     if (MBOX->draw()) { // time triggered mbox update
                         // mbox finish, time to refresh the bottom line of the screen
                         Display->setBottomDirty();
                     }
-                }
-                else if (detail == ScreenEvent::BOOT_SCREEN) {
+                } else if (detail == ScreenEvent::BOOT_SCREEN) {
                     BootUpScreen::draw(); // time triggered boot screen update
                 }
                 // else if ( detail == ScreenEvent::FLARM_ALARM ) {
@@ -124,7 +130,7 @@ void UiEventLoop(void *arg)
             }
         }
 
-        if (gflags.inSetup != true)
+        if ( ! gflags.inBootUp )
         {
             temp = OAT.get();
             if (gflags.validTemperature == false) {

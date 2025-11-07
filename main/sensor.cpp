@@ -158,8 +158,7 @@ uint8_t g_col_header_light_g;
 uint8_t g_col_header_light_b;
 uint8_t gyro_flash_savings=0;
 
-// boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.
-global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false };
+global_flags gflags = { false, false, false, false, false, false, false, false, false };
 
 int  ccp=60;
 float tas = 0;
@@ -345,7 +344,7 @@ void clientLoop(void *pvParameters)
 		// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
 
 		// Vario screen update for client
-		const int screenEvent = ScreenEvent(ScreenEvent::VARIO_UPDATE).raw;
+		const int screenEvent = ScreenEvent(ScreenEvent::MAIN_SCREEN).raw;
 		xQueueSend(uiEventQueue, &screenEvent, 0);
 
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
@@ -592,7 +591,7 @@ void readSensors(void *pvParameters){
 
 
 		AUDIO->updateTone();
-		const int screenEvent = ScreenEvent(ScreenEvent::VARIO_UPDATE).raw;
+		const int screenEvent = ScreenEvent(ScreenEvent::MAIN_SCREEN).raw;
 		xQueueSend(uiEventQueue, &screenEvent, 0);
 
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
@@ -1358,7 +1357,6 @@ void system_startup(void *args){
 
 		BootUpScreen::terminate();
 		Display->clear();
-		gflags.inSetup = false;
 	}
 
 	// Wind calculation

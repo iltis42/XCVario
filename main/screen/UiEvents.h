@@ -51,10 +51,11 @@ struct ScreenEvent
 {
     enum { MSG_BOX = 1,
         BOOT_SCREEN,
+        MAIN_SCREEN,
         FLARM_ALARM,
         VOLT_ADJUST,
         QNH_ADJUST,
-        VARIO_UPDATE };
+        BALLAST_CONFIRM };
 
     uint32_t raw;
     ScreenEvent() = delete;

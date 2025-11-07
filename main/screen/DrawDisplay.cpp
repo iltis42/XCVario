@@ -109,11 +109,12 @@ void UiEventLoop(void *arg)
                 // }
                 else if (detail == ScreenEvent::QNH_ADJUST) {
                     MenuRoot->begin(SetupMenu::createQNHMenu());
-                }
-                else if (detail == ScreenEvent::VOLT_ADJUST) {
+                } else if (detail == ScreenEvent::BALLAST_CONFIRM) {
+                    MenuRoot->begin(SetupMenu::createBallastMenu());
+                } else if (detail == ScreenEvent::VOLT_ADJUST) {
                     MenuRoot->begin(SetupMenu::createVoltmeterAdjustMenu());
                 }
-			}
+            }
             else if (event.isModeEvent()) {
                 if (detail == ModeEvent::MODE_TOGGLE) {
                     VCMode.setCMode(!VCMode.getCMode());
@@ -130,7 +131,7 @@ void UiEventLoop(void *arg)
             }
         }
 
-        if ( ! gflags.inBootUp )
+        if ( ! gflags.inSetup )
         {
             temp = OAT.get();
             if (gflags.validTemperature == false) {

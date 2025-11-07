@@ -158,7 +158,8 @@ uint8_t g_col_header_light_g;
 uint8_t g_col_header_light_b;
 uint8_t gyro_flash_savings=0;
 
-global_flags gflags = { false, false, false, false, false, false, false, false, false };
+// boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.
+global_flags gflags = { true, false, false, false, false, false, false, false, false};
 
 int  ccp=60;
 float tas = 0;
@@ -1331,13 +1332,22 @@ void system_startup(void *args){
         }
         Display->clear();
 
-		int screenEvent = ScreenEvent(ScreenEvent::QNH_ADJUST).raw;
-		if ( NEED_VOLTAGE_ADJUST ) {
-			ESP_LOGI(FNAME,"Do Factory Voltmeter adj");
-			screenEvent = ScreenEvent(ScreenEvent::VOLT_ADJUST).raw;
-		}
-		xQueueSend(uiEventQueue, &screenEvent, 0);
-	}
+        int screenEvent = ScreenEvent(ScreenEvent::QNH_ADJUST).raw;
+        if (NEED_VOLTAGE_ADJUST) {
+            // factory use case
+            ESP_LOGI(FNAME, "Do Factory Voltmeter adj");
+            screenEvent = ScreenEvent(ScreenEvent::VOLT_ADJUST).raw;
+            xQueueSend(uiEventQueue, &screenEvent, 0);
+        } else {
+            // airfield use case
+            xQueueSend(uiEventQueue, &screenEvent, 0);
+            if ( ballast_kg.get() > 0 ) {
+                // ballast set when boot-up, get a user confirmation
+                screenEvent = ScreenEvent(ScreenEvent::BALLAST_CONFIRM).raw;
+                xQueueSend(uiEventQueue, &screenEvent, 0);
+            }
+        }
+    }
 	else {
 		if ( SetupCommon::isClient() ) {
 			bool already_connected = false;
@@ -1357,6 +1367,7 @@ void system_startup(void *args){
 
 		BootUpScreen::terminate();
 		Display->clear();
+		gflags.inSetup = false;
 	}
 
 	// Wind calculation

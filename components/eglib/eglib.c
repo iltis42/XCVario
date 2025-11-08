@@ -2,13 +2,8 @@
 #include "eglib/display.h"
 #include "eglib/drawing.h"
 
-void eglib_Init(
-	eglib_t *eglib,
-	const hal_t *hal_driver,
-	void *hal_driver_config_ptr,
-	const display_t *display_driver,
-	void *display_config_ptr
-) {
+void eglib_Init(eglib_t *eglib, const hal_t *hal_driver, void *hal_driver_config_ptr, const display_t *display_driver, void *display_config_ptr)
+{
 	eglib->hal.driver = hal_driver;
 	eglib->hal.config_ptr = hal_driver_config_ptr;
 	eglib->hal.comm_active = false;

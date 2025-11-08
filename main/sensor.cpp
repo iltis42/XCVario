@@ -178,8 +178,6 @@ int count=0;
 
 float mpu_target_temp=45.0;
 
-AdaptUGC *egl = 0;
-
 const constexpr char passed_text[] = "PASSED\n";
 const constexpr char failed_text[] = "FAILED\n";
 
@@ -763,15 +761,8 @@ void system_startup(void *args){
 	};
 	ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
-	egl = new AdaptUGC();
-	egl->begin();
-	ESP_LOGI( FNAME, "setColor" );
-	egl->setColor( 0, 255, 0 );
-	ESP_LOGI( FNAME, "drawLine" );
-	egl->drawLine( 20,20, 20,80 );
-	ESP_LOGI( FNAME, "finish Draw" );
-
-	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
+	MYUCG = new AdaptUGC();
+	MYUCG->begin();
 	Display = new IpsDisplay( MYUCG );
 	Flarm::setDisplay( MYUCG );
 	Display->begin();

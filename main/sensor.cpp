@@ -1496,6 +1496,15 @@ extern "C" void  app_main(void)
 		Rotary = new ESPRotary( GPIO_NUM_39, GPIO_NUM_36, GPIO_NUM_0);
 	}
 
+#ifdef Math_Test // Todo need more unit test code
+    for (float v = 1.1; v>0.9; ) {
+        if ( floatEqualFast(v, 1.0f) ) {
+            ESP_LOGI(FNAME,"equal test %f == 1.0f", v);
+            break;
+        }
+        v -= 0.000001;
+    }
+#endif
 #ifdef Quaternionen_Test
 		Quaternion::quaternionen_test();
 #endif

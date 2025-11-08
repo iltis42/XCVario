@@ -780,30 +780,31 @@ void system_startup(void *args){
 	logged_tests.assign(ver);
 	logged_tests += "\n";
 
-	// Start UI task responsible to manage screens and display. Needed to habe the boot screen and message box working
-	xTaskCreate(&UiEventLoop, "UIloop", 6144, Rotary, 4, &dpid); // increase stack by 1K
+    // Start UI task responsible to manage screens and display. Needed to habe the boot screen and message box working
+    xTaskCreate(&UiEventLoop, "UIloop", 6144, Rotary, 4, &dpid); // increase stack by 1K
 
-	BootUpScreen *boot_screen = BootUpScreen::create();
-	MessageBox::createMessageBox();
-	if ( gflags.schedule_reboot ) {
-		MBOX->pushMessage(3, "Detecting XCV hardware");
-	}
-	Rotary->begin();
-	if( software_update.get() || Rotary->readBootupStatus() ) {
-		software_update.set( 0 ); // only one shot, then boot normal
+    BootUpScreen *boot_screen = BootUpScreen::create();
+    MessageBox::createMessageBox();
+    if (gflags.schedule_reboot) {
+        MBOX->pushMessage(3, "Detecting XCV hardware");
+    }
+    Rotary->begin();
+    if (software_update.get() || Rotary->readBootupStatus()) {
+        software_update.set(0); // only one shot, then boot normal
 
-		if( hardwareRevision.get() >= XCVARIO_22 ) {
-			// Give CAN MagSens a chance for an update
-			CANbus::createCAN();
-			CAN->begin();
-			DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-			DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBin::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
-		}
-		delete boot_screen; // screen now belongs to OTA
-		MenuRoot->begin(new OTA());
-		return;
-	}
-	if( hardwareRevision.get() >= XCVARIO_21 )
+        if (hardwareRevision.get() >= XCVARIO_22) {
+            // Give CAN MagSens a chance for an update
+            CANbus::createCAN();
+            CAN->begin();
+            DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+            DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBin::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
+        }
+        delete boot_screen; // screen now belongs to OTA
+        MenuRoot->begin(new OTA());
+        return;
+    }
+	
+    if( hardwareRevision.get() >= XCVARIO_21 )
 	{
 		gflags.haveIMU = true;
 		mpu_target_temp = mpu_temperature.get();
@@ -858,38 +859,46 @@ void system_startup(void *args){
 		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
 	}
 
-	// Create serial interfaces
-	S1 = new SerialLine((uart_port_t)1, GPIO_NUM_16, GPIO_NUM_17);
-	if ( hardwareRevision.get() >= XCVARIO_21 ) {
-		S2 = new SerialLine((uart_port_t)2, GPIO_NUM_18, GPIO_NUM_4);
-	}
+    // Show configured glider polar
+    bool glider_polar_configured = glider_type.get() != glider_type.getDefault() 
+            || ! S2F::isPolarEqualTo(MyGliderPolarIndex);
+    if (glider_polar_configured) {
+        ver.assign("  >> ");
+        ver += Polars::getPolarName(MyGliderPolarIndex);
+        MBOX->pushMessage(1, ver.c_str());
+    }
 
-	// Create CAN based on known HW revision (not the very first boot)
-	if ( hardwareRevision.get() >= XCVARIO_22 ) {
-		ESP_LOGI(FNAME,"NOW add/test CAN");
-		CANbus::createCAN();
-		logged_tests += "CAN Interface: ";
-		if( CAN->selfTest() ) {
-			logged_tests += passed_text;
-		}
-		else {
-			MBOX->pushMessage(1, "CAN bus: Fail");
-			logged_tests += failed_text;
-			ESP_LOGE(FNAME,"Error: CAN Interface failed");
-		}
-	}
+    // Create serial interfaces
+    S1 = new SerialLine((uart_port_t)1, GPIO_NUM_16, GPIO_NUM_17);
+    if (hardwareRevision.get() >= XCVARIO_21) {
+        S2 = new SerialLine((uart_port_t)2, GPIO_NUM_18, GPIO_NUM_4);
+    }
 
-	// DEVMAN serialization, read in all configured devices.
-	DEVMAN->reserectFromNvs();
-	if ( first_devices_run ) {
-		DEVMAN->introduceDevices(); // create a flarm etc.
-	}
-	if ( CAN ) {
-		// just allways, it respects the XCV role setting
-		DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-	}
+    // Create CAN based on known HW revision (not the very first boot)
+    if (hardwareRevision.get() >= XCVARIO_22) {
+        ESP_LOGI(FNAME, "NOW add/test CAN");
+        CANbus::createCAN();
+        logged_tests += "CAN Interface: ";
+        if (CAN->selfTest()) {
+            logged_tests += passed_text;
+        } else {
+            MBOX->pushMessage(1, "CAN bus: Fail");
+            logged_tests += failed_text;
+            ESP_LOGE(FNAME, "Error: CAN Interface failed");
+        }
+    }
 
-	ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
+    // DEVMAN serialization, read in all configured devices.
+    DEVMAN->reserectFromNvs();
+    if (first_devices_run) {
+        DEVMAN->introduceDevices(); // create a flarm etc.
+    }
+    if (CAN) {
+        // just allways, it respects the XCV role setting
+        DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+    }
+
+    ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
 	std::string wireless_id;
 	if( DEVMAN->isIntf(BT_SPP) ) {
 		ESP_LOGI(FNAME,"Use BT");
@@ -1337,8 +1346,7 @@ void system_startup(void *args){
         // airfield use case
         // Glider polar set?
         ESP_LOGI(FNAME, "Check glider polar configuration %d, unchanged %d", glider_type.get(), S2F::isPolarEqualTo(MyGliderPolarIndex));
-        if ( glider_type.get() == glider_type.getDefault() 
-            && S2F::isPolarEqualTo(MyGliderPolarIndex) ) {
+        if ( ! glider_polar_configured ) {
             screenEvent = ScreenEvent(ScreenEvent::POLAR_CONFIG).raw;
             xQueueSend(uiEventQueue, &screenEvent, 0);
         }

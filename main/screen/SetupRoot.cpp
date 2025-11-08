@@ -133,20 +133,20 @@ void SetupRoot::rot(int count)
     else {
         // Volume
         AUDIO->setVolume(audio_volume.get() + count);
-        // provide acoustic feedback on volume change fixme
-        static int last_vol = 0;
-        if ((audio_volume.get()>40 && last_vol<=40) || (audio_volume.get()<40 && last_vol>=40)) {
-            if (count > 0) {
-                AUDIO->startSound(AUDIO_CMD_CIRCLE_OUT, true);
-            }
-            else {
-                AUDIO->startSound(AUDIO_CMD_CIRCLE_IN, true);
-            }
-        }
-        else if (audio_volume.get()<37 && audio_volume.get()>30) {
-            AUDIO->startSound(AUDIO_HORIZ_GUST, true);
-        }
-        last_vol = audio_volume.get();
+        // // provide acoustic feedback on volume change fixme
+        // static int last_vol = 0;
+        // if ((audio_volume.get()>40 && last_vol<=40) || (audio_volume.get()<40 && last_vol>=40)) {
+        //     if (count > 0) {
+        //         AUDIO->startSound(AUDIO_CMD_CIRCLE_OUT, true);
+        //     }
+        //     else {
+        //         AUDIO->startSound(AUDIO_CMD_CIRCLE_IN, true);
+        //     }
+        // }
+        // else if (audio_volume.get()<37 && audio_volume.get()>30) {
+        //     AUDIO->startSound(AUDIO_HORIZ_GUST, true);
+        // }
+        // last_vol = audio_volume.get();
     }
 }
 

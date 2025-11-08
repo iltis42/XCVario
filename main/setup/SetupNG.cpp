@@ -176,17 +176,17 @@ static void ch_airborne_state(){
 // configuration variables
 SetupNG<float>          MC(  "MacCready", 0.5, true, SYNC_BIDIR, PERSISTENT, change_mc, QUANT_VSPEED, LIMITS(0.0, 9.9, 0.1) );
 SetupNG<float>  		QNH( "QNH", 1013.25, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_QNH, LIMITS(900, 1100.0, 0.250) );
-SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast, QUANT_NONE, LIMITS(10.0, 100.0, 0.1) );
+SetupNG<float> 			polar_wingload( "POLAR_WINGLOAD", 34.40, true, SYNC_BIDIR, PERSISTENT, change_ballast, QUANT_NONE, LIMITS(10.0, 100.0, 0.1) );
 const limits_t polar_speed_limits = {0.0, 450.0, 1};
-SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float> 			polar_speed1( "POLAR_SPEED1",   80, true, SYNC_BIDIR, PERSISTENT, modifyPolar, QUANT_HSPEED, &polar_speed_limits);
 const limits_t polar_sink_limits = {-6.0, 0.0, 0.01};
-SetupNG<float> 			polar_sink1( "POLAR_SINK1",    -0.66, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar, QUANT_VSPEED, &polar_sink_limits);
-SetupNG<float> 			polar_speed2( "POLAR_SPEED2",   125, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float> 			polar_sink2( "POLAR_SINK2",    -0.97, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar, QUANT_VSPEED, &polar_sink_limits);
-SetupNG<float> 			polar_speed3( "POLAR_SPEED3",   175, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar, QUANT_HSPEED, &polar_speed_limits);
-SetupNG<float> 			polar_sink3( "POLAR_SINK3",    -2.24, true, SYNC_FROM_MASTER, PERSISTENT, modifyPolar, QUANT_VSPEED, &polar_sink_limits);
-SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  80, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast, QUANT_MASS, LIMITS(0, 500, 1));
-SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_FROM_MASTER, PERSISTENT, change_ballast, QUANT_NONE, LIMITS(0, 50, 0.1));
+SetupNG<float> 			polar_sink1( "POLAR_SINK1",    -0.66, true, SYNC_BIDIR, PERSISTENT, modifyPolar, QUANT_VSPEED, &polar_sink_limits);
+SetupNG<float> 			polar_speed2( "POLAR_SPEED2",   125, true, SYNC_BIDIR, PERSISTENT, modifyPolar, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float> 			polar_sink2( "POLAR_SINK2",    -0.97, true, SYNC_BIDIR, PERSISTENT, modifyPolar, QUANT_VSPEED, &polar_sink_limits);
+SetupNG<float> 			polar_speed3( "POLAR_SPEED3",   175, true, SYNC_BIDIR, PERSISTENT, modifyPolar, QUANT_HSPEED, &polar_speed_limits);
+SetupNG<float> 			polar_sink3( "POLAR_SINK3",    -2.24, true, SYNC_BIDIR, PERSISTENT, modifyPolar, QUANT_VSPEED, &polar_sink_limits);
+SetupNG<float> 			polar_max_ballast( "POLAR_MAX_BAL",  80, true, SYNC_BIDIR, PERSISTENT, change_ballast, QUANT_MASS, LIMITS(0, 500, 1));
+SetupNG<float> 			polar_wingarea( "POLAR_WINGAREA", 10.5, true, SYNC_BIDIR, PERSISTENT, change_ballast, QUANT_NONE, LIMITS(0, 50, 0.1));
 
 SetupNG<float>  		speedcal( "SPEEDCAL", 0.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(-100, 100, 1));
 SetupNG<float>  		vario_delay( "VARIO_DELAY", 3.0, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(2.0, 10.0, 0.1));
@@ -258,14 +258,14 @@ SetupNG<int>  			glider_type( "GLIDER_TYPE_IDX", 1000, true, SYNC_BIDIR, PERSIST
 
 SetupNG<float>  		as_offset( "AS_OFFSET" , -1 );
 static const limits_t bat_limits = {0.0, 28.0, 0.1};
-SetupNG<float>  		bat_low_volt( "BAT_LOW_VOLT" , 11.5, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &bat_limits);
-SetupNG<float>  		bat_red_volt( "BAT_RED_VOLT", 11.75, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &bat_limits);
-SetupNG<float>  		bat_yellow_volt( "BAT_YELLOW_VOLT" , 12.0, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &bat_limits);
-SetupNG<float>  		bat_full_volt( "BAT_FULL_VOLT", 12.8, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, &bat_limits);
-SetupNG<float>  		core_climb_period( "CORE_CLIMB_P" , 60, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(60, 300, 1));
-SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.0, 2.0, 0.1));
-SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1, 300, 1));
-SetupNG<float>  		mean_climb_major_change( "MEAN_CLMC", 0.5, true, SYNC_FROM_MASTER, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.1, 5.0, 0.1));
+SetupNG<float>  		bat_low_volt( "BAT_LOW_VOLT" , 11.5, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, &bat_limits);
+SetupNG<float>  		bat_red_volt( "BAT_RED_VOLT", 11.75, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, &bat_limits);
+SetupNG<float>  		bat_yellow_volt( "BAT_YELLOW_VOLT" , 12.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, &bat_limits);
+SetupNG<float>  		bat_full_volt( "BAT_FULL_VOLT", 12.8, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, &bat_limits);
+SetupNG<float>  		core_climb_period( "CORE_CLIMB_P" , 60, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(60, 300, 1));
+SetupNG<float>  		core_climb_min( "CORE_CLIMB_MIN" , 0.5, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.0, 2.0, 0.1));
+SetupNG<float>  		core_climb_history( "CORE_CLIMB_HIST" , 45, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(1, 300, 1));
+SetupNG<float>  		mean_climb_major_change( "MEAN_CLMC", 0.5, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0.1, 5.0, 0.1));
 SetupNG<float>  		airfield_elevation( "ELEVATION", NO_ELEVATION, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_ALT, LIMITS(NO_ELEVATION, 3000, 1));
 SetupNG<float>  		s2f_deadband( "DEADBAND_S2F", 10.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(.0, 25.0, 1));
 SetupNG<float>  		s2f_deadband_neg( "DB_S2F_NEG", -10.0, true, SYNC_BIDIR, PERSISTENT, nullptr, QUANT_HSPEED, LIMITS(-25.0, .0, 1));

@@ -15,6 +15,7 @@ bool floatEqual(float a, float b, float eps)
     return fabsf(a - b) <= eps * fmaxf(1.0f, fmaxf(fabsf(a), fabsf(b)));
 }
 
+// equality tested 0.999996 == 1.0f .. 1.000009 == 1.0f
 bool floatEqualFast(float a, float b)
 {
     // reinterpret as integers (safe on ESP32 little endian)

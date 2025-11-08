@@ -35,6 +35,7 @@
 #include "screen/UiEvents.h"
 
 #include "math/Quaternion.h"
+#include "math/CompareFloat.h"
 #include "wmm/geomag.h"
 #include "OTA.h"
 #include "S2fSwitch.h"
@@ -104,6 +105,7 @@ AirspeedSensor *asSensor=0;
 SemaphoreHandle_t spiMutex=NULL;
 
 S2F Speed2Fly;
+int MyGliderPolarIndex; // Todo make private in S2F?
 
 AnalogInput *BatVoltage = nullptr;
 
@@ -735,7 +737,7 @@ void system_startup(void *args){
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %.1f hPa", QNH.get() );
 	// register_coredump();
-	Polars::extract(glider_type_index.get());
+	MyGliderPolarIndex = Polars::findMyGlider(glider_type.get());
 
 	AverageVario::begin();
 
@@ -1291,7 +1293,7 @@ void system_startup(void *args){
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
-		MBOX->pushMessage(2, "Selftest FAILED");
+		MBOX->pushMessage(2, "Selftest FAILED", ScreenMsg::CONFIRM);
         if ( ! airborne.get() ) { AUDIO->startSound(AUDIO_FAIL_SOUND); }
 	}
 	else{
@@ -1332,21 +1334,32 @@ void system_startup(void *args){
         }
         Display->clear();
 
-        int screenEvent = ScreenEvent(ScreenEvent::QNH_ADJUST).raw;
+        // Some more checks on vario configuration
+        int screenEvent;
         if (NEED_VOLTAGE_ADJUST) {
             // factory use case
             ESP_LOGI(FNAME, "Do Factory Voltmeter adj");
             screenEvent = ScreenEvent(ScreenEvent::VOLT_ADJUST).raw;
             xQueueSend(uiEventQueue, &screenEvent, 0);
-        } else {
-            // airfield use case
-            xQueueSend(uiEventQueue, &screenEvent, 0);
-            if ( ballast_kg.get() > 0 ) {
-                // ballast set when boot-up, get a user confirmation
-                screenEvent = ScreenEvent(ScreenEvent::BALLAST_CONFIRM).raw;
-                xQueueSend(uiEventQueue, &screenEvent, 0);
-            }
         }
+
+        // airfield use case
+        // Glider polar set?
+        ESP_LOGI(FNAME, "Check glider polar configuration %d, unchanged %d", glider_type.get(), S2F::isPolarEqualTo(MyGliderPolarIndex));
+        if ( glider_type.get() == glider_type.getDefault() 
+            && S2F::isPolarEqualTo(MyGliderPolarIndex) ) {
+            screenEvent = ScreenEvent(ScreenEvent::POLAR_CONFIG).raw;
+            xQueueSend(uiEventQueue, &screenEvent, 0);
+        }
+        // QNH adjust screen, always
+        screenEvent = ScreenEvent(ScreenEvent::QNH_ADJUST).raw;
+        xQueueSend(uiEventQueue, &screenEvent, 0);
+        if ( ballast_kg.get() > 0 ) {
+            // ballast set when boot-up, get a user confirmation
+            screenEvent = ScreenEvent(ScreenEvent::BALLAST_CONFIRM).raw;
+            xQueueSend(uiEventQueue, &screenEvent, 0);
+        }
+
     }
 	else {
 		if ( SetupCommon::isClient() ) {

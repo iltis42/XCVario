@@ -83,6 +83,7 @@ extern float wksensor;
 extern float slipAngle;
 
 extern S2F Speed2Fly;
+extern int MyGliderPolarIndex;
 extern float meanClimb;
 extern float baroP;    // Static pressure
 extern float dynamicP; // Pitot pressure

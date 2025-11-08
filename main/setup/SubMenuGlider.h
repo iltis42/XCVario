@@ -6,3 +6,4 @@ class SetupMenuValFloat;
 
 void glider_menu_create(SetupMenu *top);
 int start_weight_adj(SetupMenuValFloat *p);
+SetupMenu *createGliderSelectMenu();

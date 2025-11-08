@@ -103,7 +103,7 @@ void change_bal_water(){
 }
 
 void polar_update(){
-	Polars::extract(glider_type_index.get());
+	MyGliderPolarIndex = Polars::findMyGlider(glider_type.get());
 	Speed2Fly.setPolar();
 }
 
@@ -254,7 +254,7 @@ SetupNG<int>  			alt_select( "ALT_SELECT" , AS_BARO_SENSOR );
 SetupNG<int>  			fl_auto_transition( "FL_AUTO" , 0 );
 SetupNG<int>  			alt_display_mode( "ALT_DISP_MODE" , Altimeter::MODE_QNH );
 SetupNG<float>  		transition_alt( "TRANS_ALT", 50, true, SYNC_NONE, PERSISTENT, nullptr, QUANT_NONE, LIMITS(0, 400, 10)); // Transition Altitude
-SetupNG<int>  			glider_type_index( "GLIDER_TYPE_IDX", 1000, true, SYNC_FROM_MASTER, PERSISTENT, polar_update );
+SetupNG<int>  			glider_type( "GLIDER_TYPE_IDX", 1000, true, SYNC_BIDIR, PERSISTENT, polar_update );
 
 SetupNG<float>  		as_offset( "AS_OFFSET" , -1 );
 static const limits_t bat_limits = {0.0, 28.0, 0.1};

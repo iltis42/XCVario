@@ -1343,7 +1343,7 @@ void system_menu_create(SetupMenu *sye) {
 
 	// Glider Setup
 	SetupMenu *po = new SetupMenu("Glider Type", glider_menu_create);
-	po->setBuzzword(Polars::getGliderType(Polars::getGliderEnumPos()));
+	po->setBuzzword(Polars::getGliderType(MyGliderPolarIndex));
 	po->setHelp("Polar, weight and all attributes of the glider");
 	sye->addEntry(po);
 
@@ -1446,8 +1446,8 @@ void setup_create_root(SetupMenu *top) {
 
 SetupMenu* SetupMenu::createTopSetup() {
 	const char *top_menu_name = "Setup";
-	if (glider_type_index.get() != 1000) {
-		top_menu_name =	Polars::getPolarName(Polars::getGliderEnumPos());
+	if (glider_type.get() != 1000 || ! S2F::isPolarEqualTo(0)) {
+		top_menu_name =	Polars::getPolarName(MyGliderPolarIndex);
 	}
 	SetupMenu *setup = new  SetupMenu(top_menu_name, setup_create_root);
 	return setup;
@@ -1473,3 +1473,4 @@ SetupMenuValFloat* SetupMenu::createVoltmeterAdjustMenu() {
 	met_adj->setNeverInline();
 	return met_adj;
 }
+

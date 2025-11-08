@@ -27,12 +27,11 @@ struct t_polar {
 
 
 namespace Polars {
-	const t_polar getPolar();
+	const t_polar getPolar(int idx);
 	int numPolars();
 	const char *getPolarName(int i);
 	int getPolarIndex(int i);
-	void extract(int glider_index);
+	int findMyGlider(int glider_index);
 	const char *getGliderType(int i);
-	int getGliderEnumPos();
 	bool hasFlaps(int);
 };

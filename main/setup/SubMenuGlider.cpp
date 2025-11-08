@@ -7,13 +7,15 @@
 #include "setup/SetupMenuValFloat.h"
 #include "setup/SetupMenu.h"
 #include "setup/SetupNG.h"
+#include "screen/UiEvents.h"
+#include "screen/DrawDisplay.h"
 #include "Flap.h"
 #include "sensor.h"
 #include "logdefnone.h"
 
 static int polar_select(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"glider-index %d", p->getValue());
-	glider_type_index.set(p->getValue());
+	glider_type.set(p->getValue());
 	p->getParent()->setBuzzword(p->value());
 	p->getParent()->setDirty();
 	return 0;
@@ -51,20 +53,24 @@ static void glider_menu_create_polarpoints(SetupMenu *top) {
 	top->addEntry(pos3);
 }
 
+static void fill_glider_selection(SetupMenuSelect *glt)
+{
+    ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
+    for (int x = 0; x < Polars::numPolars(); x++) {
+        ESP_LOGI(FNAME, "P: %s - %d", Polars::getPolarName(x), Polars::getPolarIndex(x));
+        glt->addEntry(Polars::getPolarName(x), Polars::getPolarIndex(x));
+    }
+    glt->setSelect(MyGliderPolarIndex);
+    ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars());
+}
 void glider_menu_create(SetupMenu *top) {
 	ESP_LOGI(FNAME, "glider_menu_create");
 	if ( top->getNrChilds() == 0 ) {
 		top->setDynContent();
 		
-		SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type_index);
+		SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type);
+		fill_glider_selection(glt);
 		top->addEntry(glt);
-		ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
-		for (int x = 0; x < Polars::numPolars(); x++) {
-			ESP_LOGI(FNAME, "P: %s - %d", Polars::getPolarName(x), Polars::getPolarIndex(x));
-			glt->addEntry(Polars::getPolarName(x), Polars::getPolarIndex(x));
-		}
-		glt->setSelect(Polars::getGliderEnumPos()); // glider type nvs variable contains the magic index value
-		ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
 
 		SetupMenu *pa = new SetupMenu("Polar Points", glider_menu_create_polarpoints);
 		pa->setHelp("Adjust the polar at 3 points, in the commonly used metric system");
@@ -93,7 +99,7 @@ void glider_menu_create(SetupMenu *top) {
 	}
 
 	SetupMenu *tmp_menu = static_cast<SetupMenu*>(top->getEntry(6)); // flap levels
-	if( Polars::hasFlaps(Polars::getGliderEnumPos()) ){
+	if( Polars::hasFlaps(MyGliderPolarIndex) ){
 		tmp_menu->unlock();
 		tmp_menu->setBuzzword();
 	}else{
@@ -102,5 +108,22 @@ void glider_menu_create(SetupMenu *top) {
 	}
 
 
+}
+
+void glider_selection_create(SetupMenu *top) {
+    SetupMenuSelect *space = new SetupMenuSelect("", RST_NONE);
+    space->lock();
+    top->addEntry(space);
+    SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type, true, true);
+    fill_glider_selection(glt);
+    glt->setHelp("Select your type of glider from the list of pre-installed polars");
+    top->addEntry(glt);
+    top->setHighlight(1);
+    int event = ButtonEvent(ButtonEvent::SHORT_PRESS).raw;
+    xQueueSend(uiEventQueue, &event, 0); // virtually press the button to straight enter the selection
+}
+SetupMenu *createGliderSelectMenu() {
+    SetupMenu *glt_menu = new SetupMenu("Set the glider type",glider_selection_create);
+    return glt_menu;
 }
 

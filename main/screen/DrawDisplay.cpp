@@ -18,6 +18,7 @@
 #include "setup/SetupMenuValFloat.h"
 #include "setup/SetupMenuDisplay.h"
 #include "setup/SetupMenu.h"
+#include "setup/SubMenuGlider.h"
 #include "setup/SetupNG.h"
 #include "setup/CruiseMode.h"
 #include "ESPRotary.h"
@@ -113,6 +114,8 @@ void UiEventLoop(void *arg)
                     MenuRoot->begin(SetupMenu::createBallastMenu());
                 } else if (detail == ScreenEvent::VOLT_ADJUST) {
                     MenuRoot->begin(SetupMenu::createVoltmeterAdjustMenu());
+                } else if (detail == ScreenEvent::POLAR_CONFIG) {
+                    MenuRoot->begin(createGliderSelectMenu());
                 }
             }
             else if (event.isModeEvent()) {

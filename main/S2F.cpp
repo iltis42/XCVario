@@ -8,11 +8,13 @@
 #include "S2F.h"
 
 #include "glider/Polars.h"
+#include "math/CompareFloat.h"
 #include "Units.h"
 #include "KalmanMPU6050.h"
 #include "comm/DeviceMgr.h"
 #include "protocol/NMEA.h"
 #include "Flap.h"
+#include "sensor.h"
 #include "logdefnone.h"
 
 #include <cmath>
@@ -88,7 +90,7 @@ void S2F::recalculatePolar()
 void S2F::setPolar()
 {
 	ESP_LOGI(FNAME,"S2F::setPolar()");
-	t_polar p = Polars::getPolar();
+	t_polar p = Polars::getPolar(MyGliderPolarIndex);
 	polar_speed1.set( p.speed1 );
 	polar_speed2.set( p.speed2 );
 	polar_speed3.set( p.speed3 );
@@ -105,6 +107,37 @@ void S2F::setPolar()
 	}
 	ESP_LOGI(FNAME,"Reference weight:%.1f, new empty_weight: %.1f", (p.wingload * p.wingarea), empty_weight.get() );
 	modifyPolar();
+}
+
+// compare the used polar two the original one from polar store
+bool S2F::isPolarEqualTo(int idx)
+{
+    t_polar p1 = Polars::getPolar(idx);
+
+    ESP_LOGI(FNAME, "IDX %d", idx);
+    ESP_LOGI(FNAME, "(polar_speed1.get(), p1.speed1) %f %f", polar_speed1.get(), p1.speed1);
+    ESP_LOGI(FNAME, "(polar_sink1.get(), p1.sink1) %f %f", polar_sink1.get(), p1.sink1);
+    ESP_LOGI(FNAME, "(polar_speed2.get(), p1.speed2) %f %f", polar_speed2.get(), p1.speed2);
+    ESP_LOGI(FNAME, "(polar_sink2.get(), p1.sink2) %f %f", polar_sink2.get(), p1.sink2);
+    ESP_LOGI(FNAME, "(polar_speed3.get(), p1.speed3) %f %f", polar_speed3.get(), p1.speed3);
+    ESP_LOGI(FNAME, "(polar_sink3.get(), p1.sink3) %f %f", polar_sink3.get(), p1.sink3);
+    ESP_LOGI(FNAME, "(polar_wingload.get(), p1.wingload) %f %f", polar_wingload.get(), p1.wingload);
+    ESP_LOGI(FNAME, "(polar_max_ballast.get(), p1.max_ballast) %f %f", polar_max_ballast.get(), p1.max_ballast);
+    ESP_LOGI(FNAME, "(polar_wingarea.get(), p1.wingarea) %f %f", polar_wingarea.get(), p1.wingarea);
+
+    if ( floatEqualFast(polar_speed1.get(), p1.speed1) 
+        && floatEqualFast(polar_sink1.get(), p1.sink1) 
+        && floatEqualFast(polar_speed2.get(), p1.speed2) 
+        && floatEqualFast(polar_sink2.get(), p1.sink2) 
+        && floatEqualFast(polar_speed3.get(), p1.speed3) 
+        && floatEqualFast(polar_sink3.get(), p1.sink3) 
+        && floatEqualFast(polar_wingload.get(), p1.wingload) 
+        && floatEqualFast(polar_max_ballast.get(), p1.max_ballast) 
+        && floatEqualFast(polar_wingarea.get(), p1.wingarea) )
+    {
+        return true;
+    }
+    return false;
 }
 
 float S2F::bal_percent = 0;
@@ -226,7 +259,7 @@ void S2F::recalcSinkNSpeeds()
 
 void S2F::test( void )
 {
-	ESP_LOGI(FNAME, "Minimal Sink @ %f km/h", minsink());
+	ESP_LOGI(FNAME, "Minimal Sink @ %f km/h", minsink_speed());
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 0.0 ), "0");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 20.0 ), "20");
 	ESP_LOGI(FNAME, "Sink %f @ %s km/h ", sink( 40.0 ), "40");

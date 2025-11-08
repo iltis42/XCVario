@@ -8,6 +8,8 @@
 
 #include "CruiseMode.h"
 
+#include "logdefnone.h"
+
 CruiseMode VCMode; // a global variable
 
 CruiseMode::CruiseMode()
@@ -35,6 +37,7 @@ void CruiseMode::updateCache()
 {
     // set the cruise mode cache
     _cmode = cruise_mode.get();
+    ESP_LOGI(FNAME, "update cruise mode: %d", _cmode);
 
     // set the vario mode cache
     if (vario_mode.get() == VARIO_NETTO || (_cmode && (vario_mode.get() == CRUISE_ONLY_NETTO))) {

@@ -28,7 +28,7 @@ S2fSwitch *S2FSWITCH = nullptr;
 bool IRAM_ATTR S2fSwitch::tick()
 {
     // called every 10msec
-    bool buttonRead = gpio_get_level(_sw) == _active_level; // button active
+    bool buttonRead = gpio_get_level(_sw) == _active_level; // button active / not pressed (open pull-up)
 
     _debounce = (buttonRead == _lastButtonRead) ? (_debounce + 1) : 0;
     _lastButtonRead = buttonRead;
@@ -59,9 +59,9 @@ bool IRAM_ATTR S2fSwitch::tick()
         }
         xQueueSend(uiEventQueue, &gotEvent, 0);
     }
-    else if (_state)
+    else if (!_state)
     {
-        // toggle
+        // toggle straight when pressed
         gotEvent = ModeEvent(ModeEvent::MODE_TOGGLE).raw;
         xQueueSend(uiEventQueue, &gotEvent, 0);
     }
@@ -88,15 +88,15 @@ S2fSwitch::~S2fSwitch()
 void S2fSwitch::updateSwitchSetup()
 {
     // setup the switch
-    if ((s2f_switch_type.get() != S2F_SWITCH_DISABLE))
-    {
+    gpio_set_pull_mode(_sw, GPIO_PULLUP_ONLY);
+    _active_level = 1;
+    if ( s2f_switch_type.get() != S2F_HW_PUSH_BUTTON ) {
         _active_level = (s2f_switch_type.get() == S2F_HW_SWITCH_INVERTED) ? 0 : 1;
-        gpio_set_pull_mode(_sw, GPIO_PULLUP_ONLY);
+    }
+    if ((s2f_switch_type.get() != S2F_SWITCH_DISABLE)) {
         Clock::start(this);
     }
-    else
-    {
-        gpio_set_pull_mode(_sw, GPIO_FLOATING);
+    else {
         Clock::stop(this);
     }
 

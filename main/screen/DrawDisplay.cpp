@@ -18,6 +18,7 @@
 #include "setup/SetupMenuValFloat.h"
 #include "setup/SetupMenuDisplay.h"
 #include "setup/SetupMenu.h"
+#include "setup/SubMenuGlider.h"
 #include "setup/SetupNG.h"
 #include "setup/CruiseMode.h"
 #include "ESPRotary.h"
@@ -36,16 +37,14 @@ QueueHandle_t uiEventQueue = nullptr;
 
 static unsigned long int flarm_alarm_holdtime = 0;
 
-const global_flags VARIO_SCREEN_MASK = { true, false, false, false, false, true, true, true, false, false, false, false };
-
-
 
 void UiEventLoop(void *arg)
 {
     ESPRotary &knob = *static_cast<ESPRotary *>(arg);
 	float temp = DEVICE_DISCONNECTED_C;
 	float airspeed = 0;
-	bool stall_warning_active = false;
+    int16_t stall_warning_active = 0;
+    int16_t gload_warning_active = 0;
 	bool gear_warning_active = false;
 
     xQueueReset(uiEventQueue);
@@ -55,12 +54,12 @@ void UiEventLoop(void *arg)
     while (1)
     {
         // handle button events in this context
-		int eparam;
+        int eparam;
         if (xQueueReceive(uiEventQueue, &eparam, pdMS_TO_TICKS(20)) == pdTRUE)
         {
-			UiEvent event(eparam);
+            UiEvent event(eparam);
             uint8_t detail = event.getUDetail();
-			// ESP_LOGI(FNAME, "Event param %x", eparam);
+            // ESP_LOGI(FNAME, "Event param %x", eparam);
             if (event.isButtonEvent())
             {
                 // ESP_LOGI(FNAME, "Button event %x", detail);
@@ -83,30 +82,42 @@ void UiEventLoop(void *arg)
             }
             else if (event.isScreenEvent()) {
                 // ESP_LOGI(FNAME, "Screen event %d", detail);
-                if (detail == ScreenEvent::VARIO_UPDATE) {
-					// Vario Screen
-					if ( !(gflags.raw & VARIO_SCREEN_MASK.raw) ) {
-						Display->drawDisplay( Units::AirspeedRounded(airspeed), te_vario.get(), aTE, polar_sink, altitude.get(), temp, batteryVoltage, s2f_delta, as2f, average_climb.get(), VCMode.getCMode(), gflags.standard_setting, flap_pos.get() );
-					}
-				}
-                else if (detail == ScreenEvent::MSG_BOX) {
+                if (detail == ScreenEvent::MAIN_SCREEN) {
+                    if (!gflags.inSetup) {
+                        switch (MenuRoot->getActiveScreen()) {
+                            case SCREEN_VARIO:
+                                Display->drawDisplay(Units::AirspeedRounded(airspeed), te_vario.get(), aTE, 
+                                            polar_sink, altitude.get(), temp, batteryVoltage, s2f_delta, 
+                                            as2f, average_climb.get(), flap_pos.get());
+                                break;
+                            case SCREEN_GMETER:
+                                Display->drawLoadDisplay( IMU::getGliderAccelZ() );
+                                break;
+                            case SCREEN_HORIZON:
+                                Display->drawHorizon( IMU::getPitchRad(), IMU::getRollRad(), 0 );
+                                break;
+                        }
+                    }
+                } else if (detail == ScreenEvent::MSG_BOX) {
                     if (MBOX->draw()) { // time triggered mbox update
                         // mbox finish, time to refresh the bottom line of the screen
                         Display->setBottomDirty();
                     }
-                }
-                else if (detail == ScreenEvent::BOOT_SCREEN) {
+                } else if (detail == ScreenEvent::BOOT_SCREEN) {
                     BootUpScreen::draw(); // time triggered boot screen update
                 }
                 // else if ( detail == ScreenEvent::FLARM_ALARM ) {
                 // }
                 else if (detail == ScreenEvent::QNH_ADJUST) {
-                    Menu->begin(SetupMenu::createQNHMenu());
+                    MenuRoot->begin(SetupMenu::createQNHMenu());
+                } else if (detail == ScreenEvent::BALLAST_CONFIRM) {
+                    MenuRoot->begin(SetupMenu::createBallastMenu());
+                } else if (detail == ScreenEvent::VOLT_ADJUST) {
+                    MenuRoot->begin(SetupMenu::createVoltmeterAdjustMenu());
+                } else if (detail == ScreenEvent::POLAR_CONFIG) {
+                    MenuRoot->begin(createGliderSelectMenu());
                 }
-                else if (detail == ScreenEvent::VOLT_ADJUST) {
-                    Menu->begin(SetupMenu::createVoltmeterAdjustMenu());
-                }
-			}
+            }
             else if (event.isModeEvent()) {
                 if (detail == ModeEvent::MODE_TOGGLE) {
                     VCMode.setCMode(!VCMode.getCMode());
@@ -123,16 +134,15 @@ void UiEventLoop(void *arg)
             }
         }
 
-        if (gflags.inSetup != true)
+        if ( ! gflags.inSetup )
         {
             temp = OAT.get();
             if (gflags.validTemperature == false) {
                 temp = DEVICE_DISCONNECTED_C;
             }
-			if (airspeed_mode.get() == MODE_IAS) {
+            if (airspeed_mode.get() == MODE_IAS) {
                 airspeed = ias.get();
-            }
-            else if (airspeed_mode.get() == MODE_TAS) {
+            } else if (airspeed_mode.get() == MODE_TAS) {
                 airspeed = tas;
             } else if (airspeed_mode.get() == MODE_CAS) {
                 airspeed = cas;
@@ -140,48 +150,52 @@ void UiEventLoop(void *arg)
                 airspeed = ias.get();
             }
 
-            // Stall Warning Screen
-			if( stall_warning.get() && screen_gmeter.get() != SCREEN_PRIMARY ) {
-				// In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
-				float acceleration=IMU::getGliderAccelZ();
-				if( acceleration < 0.3 )
-					acceleration = 0.3;  // limit acceleration effect to minimum 30% of 1g
-				float acc_stall= polar_stall_speed.get() * sqrt( acceleration + ( ballast.get()/100));  // accelerated and ballast(ed) stall speed
-				if( ias.get() < acc_stall && ias.get() > acc_stall*0.7 ){
-					if( !stall_warning_active ){
-						AUDIO->startSound(AUDIO_ALARM_STALL);
-						MBOX->newMessage(4, "! STALL !", 20); // 20 sec
-						stall_warning_active = true;
-					}
-				}
-				else{
-					stall_warning_active = false;
-				}
-			}
-			if ( gear_warning.get() ) {
-				int gw = 0;
-				if( gear_warning.get() == GW_EXTERNAL ){
-					gw = gflags.gear_warn_external;
-				}else{
-					gw = gpio_get_level( SetupMenu::getGearWarningIO() );
-					if( gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV ){
-						gw = !gw;
-					}
-				}
-				if( gw ){
-					if( !gear_warning_active && !stall_warning_active ){
-						AUDIO->startSound(AUDIO_ALARM_GEAR);
-						MBOX->newMessage(4, "! GEAR !", 20);
-						gear_warning_active = true;
-					}
-				}
-				else{
-					gear_warning_active = false;
-				}
-			}
-			
+            // Stall Warning
+            if (stall_warning.get() && screen_gmeter.get() != SCREEN_PRIMARY) {
+                // In aerobatics stall warning is contra productive, we concentrate on G-Load Display if permanent enabled
+                float acceleration = IMU::getGliderAccelZ();
+                if (acceleration < 0.3) {
+                    acceleration = 0.3; // limit acceleration effect to minimum 30% of 1g
+                }
+                // accelerated and ballast(ed) stall speed
+                float acc_stall = polar_stall_speed.get() * sqrt(acceleration + (ballast.get() / 100));
+                if (ias.get() < acc_stall && ias.get() > acc_stall * 0.7) {
+                    if (!stall_warning_active) {
+                        MBOX->pushMessage(4, "! STALL !", 20); // 20 sec
+                    }
+                    if (stall_warning_active % 10 == 0) {
+                        AUDIO->startSound(AUDIO_ALARM_STALL);
+                    }
+                    stall_warning_active++;
+                }
+                else if ( stall_warning_active ) {
+                    stall_warning_active = 0;
+                    MBOX->popMessage();
+                }
+            }
+            // Gear Warning
+            if (gear_warning.get()) {
+                int gw = 0;
+                if (gear_warning.get() == GW_EXTERNAL) {
+                    gw = gflags.gear_warn_external;
+                } else {
+                    gw = gpio_get_level(SetupMenu::getGearWarningIO());
+                    if (gear_warning.get() == GW_FLAP_SENSOR_INV || gear_warning.get() == GW_S2_RS232_RX_INV) {
+                        gw = !gw;
+                    }
+                }
+                if (gw) {
+                    if (!gear_warning_active && !stall_warning_active) {
+                        AUDIO->startSound(AUDIO_ALARM_GEAR);
+                        MBOX->pushMessage(4, "! GEAR !", 20);
+                        gear_warning_active = true;
+                    }
+                } else {
+                    gear_warning_active = false;
+                }
+            }
 
-			// Flarm Warning Screen
+            // Flarm Warning Screen
 			if( flarm_warning.get() && !stall_warning_active && Flarm::alarmLevel() >= flarm_warning.get() ){ // 0 -> Disable
 				// ESP_LOGI(FNAME,"Flarm::alarmLevel: %d, flarm_warning.get() %d", Flarm::alarmLevel(), flarm_warning.get() );
 				if( !gflags.flarmWarning ) {
@@ -195,55 +209,40 @@ void UiEventLoop(void *arg)
 				if( gflags.flarmWarning && (millis() > flarm_alarm_holdtime) ){
 					gflags.flarmWarning = false;
 					Display->clear();
-					// AUDIO->alarm( false );
 				}
 			}
 			if( gflags.flarmWarning ) {
 				Flarm::drawFlarmWarning();
 			}
-			// G-Load Display
+			// G-Load Display fixme
 			// ESP_LOGI(FNAME,"Active Screen = %d", active_screen );
-			if( ((IMU::getGliderAccelZ() > gload_pos_thresh.get() || IMU::getGliderAccelZ() < gload_neg_thresh.get()) && screen_gmeter.get() == SCREEN_DYNAMIC ) ||
-					( screen_gmeter.get() == SCREEN_PRIMARY ) || (Menu->getActiveScreen() == SCREEN_GMETER)  )
-			{
-				if( !gflags.gLoadDisplay ){
-					gflags.gLoadDisplay = true;
-				}
-			}
-			else{
-				if( gflags.gLoadDisplay ) {
-					gflags.gLoadDisplay = false;
-				}
-			}
-			if( gflags.gLoadDisplay ) {
-				Display->drawLoadDisplay( IMU::getGliderAccelZ() );
-			}
-			if( Menu->getActiveScreen() == SCREEN_HORIZON ) {
-				float roll =  IMU::getRollRad();
-				float pitch = IMU::getPitchRad();
-				Display->drawHorizon( pitch, roll, 0 );
-				gflags.horizon = true;
-			}
-			else{
-				gflags.horizon = false;
-			}
-			// G-Load Alarm when limits reached
-			if( screen_gmeter.get() != SCREEN_OFF  ){
-				if( IMU::getGliderAccelZ() > gload_pos_limit.get() || IMU::getGliderAccelZ() < gload_neg_limit.get()  ){
-					if( !gflags.gload_alarm ) {
-						AUDIO->startSound(AUDIO_ALARM_STALL);
-						gflags.gload_alarm = true;
-					}
-				}else
-				{
-					if( gflags.gload_alarm ) {
-						// AUDIO->alarm( false );
-						gflags.gload_alarm = false;
-					}
-				}
-			}
+			// if( ((IMU::getGliderAccelZ() > gload_pos_thresh.get() || IMU::getGliderAccelZ() < gload_neg_thresh.get()) && screen_gmeter.get() == SCREEN_DYNAMIC ) ||
+			// 		( screen_gmeter.get() == SCREEN_PRIMARY ) || (MenuRoot->getActiveScreen() == SCREEN_GMETER)  )
+			// {
+			// 	if( !gflags.gLoadDisplay ){
+			// 		gflags.gLoadDisplay = true;
+			// 	}
+			// }
+			// else{
+			// 	if( gflags.gLoadDisplay ) {
+			// 		gflags.gLoadDisplay = false;
+			// 	}
+			// }
 
-			if( theCenteraid ){
+            // G-Load alarm when limits reached
+            if (screen_gmeter.get() != SCREEN_OFF) {
+                if (IMU::getGliderAccelZ() > gload_pos_limit.get() || IMU::getGliderAccelZ() < gload_neg_limit.get()) {
+                    if (gload_warning_active % 10 == 0) {
+                        AUDIO->startSound(AUDIO_ALARM_GLOAD);
+                        gload_warning_active++;
+                    }
+                }
+                else if (gload_warning_active) {
+                    gload_warning_active = 0;
+                }
+            }
+
+            if (theCenteraid) {
 				theCenteraid->tick();
 			}
 		}

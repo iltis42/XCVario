@@ -1,60 +1,23 @@
+#pragma once
+
 /*
  * Methods for Athmosphere Model used in Aviation
  *
  *
  */
-#ifndef ATMOSPHERE_H
-#define ATMOSPHERE_H
 
+namespace Atmosphere {
 
-// With density of water from: http://www.csgnetwork.com/waterinformation.html
-// @ 22.8 degree: 0.997585
-// earth gravity: 9.0807 m/s^2
-// and standard ICAO air density with 1.225 kg/m3 there is:
-// V(km/h) = sqrt(2*( <mmH2O> * 0.997585 * 9.807  )/1.225) * 3.6
+float TAS(float ias, float baro, float temp);
+float TAS2(float ias, float altitude, float temp);
+float CAS(float dp);
+float IAS(float tas, float alti, float temp);
+float pascal2kmh(float pascal);
+float kmh2pascal(float kmh);
+float calcAltitude(float seaLevelPressure, float pressure);
+inline float calcAltitudeISA(float pressure) { return calcAltitude(1013.25f, pressure); }
+float calcPressure(float seaLevelPressure, float alti);
+inline float calcPressureISA(float alti) { return calcPressure(1013.25f, alti); }
+float calcQNHPressure(float pressure, float altitude);
 
-//   Speed
-// mmH2O m/s	km/h
-// 100	 40,0	143,9
-// 105          147,4
-// 110	 41,9	150,9
-// 116	 43,0	155,0
-// 120	 43,8	157,6
-// 130	 45,6	164,0
-// 140	 47,3	170,2
-
-class Atmosphere {
-	Atmosphere() {};
-	~Atmosphere() {};
-public:
-	static inline float TAS( float ias, float baro, float temp ) {
-		return( ias * sqrt( 1.225 / ( baro*100.0 / (287.058 * (273.15+temp)))));
-	};
-
-	// TAS=IAS/sqrt( 288.15/(T+273.15) * (P/1013.25) )
-	static inline float TAS2( float ias, float altitude, float temp ) {
-			return( ias / sqrt( 288.15/(temp+273.15) * ( calcPressure( altitude )/1013.25 )) );
-	};
-	// TAS=IAS/sqrt( 288.15/(T+273.15) * (P/1013.25) )
-	static inline float CAS( float dp ) {
-			return( 1225.0 * sqrt( 5.0 * ( pow( (dp/101325.0)+1.0, (2.0/7) ) -1.0)));
-	};
-	static inline float IAS( float tas, float alti, float temp ) {
-			return( tas / sqrt( 1.225 / ( calcPressure(alti)*100.0 / (287.058 * (273.15+temp)))));
-	};
-	static inline float pascal2kmh( float pascal ){
-		return sqrt( 2*pascal / 1.225 )*3.6;
-	};
-	static float kmh2pascal( float kmh ){
-		return ((kmh/3.6)*(kmh/3.6)) * 1.225/2.;
-	};
-	static inline double calcAltitude(double SeaLevel_Pres, double pressure) {
-			return ( 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255))) );
-	};
-	static inline double calcPressure(double alti) {
-			return ( 1013.25 * pow( (1.0 - (6.5 * alti / 288150.0)), 5.255 ));
-	};
-
-};
-
-#endif
+}; // namespace Atmosphere

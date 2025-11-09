@@ -18,8 +18,6 @@
 
 // Format per glider:  { Index, GliderType, Reference Wingload (kg/m2), speed1 (km/h), sink1 (m/s), speed2, sink2, speed3, sink3 , max ballast [liters or kg], wing area [m2] },
 
-static int my_polar = 0;
-
 struct compressed_polar {
 	uint16_t index;
 	std::string_view type;	// units
@@ -57,9 +55,8 @@ t_polar::t_polar(const compressed_polar *cp)
 	flags = (int)(cp->flags);
 }
 
-
-const t_polar Polars::getPolar() {
-	return t_polar(&polars_default_arr[my_polar]);
+const t_polar Polars::getPolar(int idx) {
+    return t_polar(&polars_default_arr[idx]);
 }
 
 int Polars::numPolars() {
@@ -76,26 +73,23 @@ int Polars::getPolarIndex(int i)
     return polars_default_arr[i].index;
 }
 
-void Polars::extract(int glider_index)
+int Polars::findMyGlider(int glider_index)
 {
 	ESP_LOGI( FNAME,"Polars::begin() configured glider index: %d", glider_index);
+    int ret = 0;
 	for( int p=0; p<numPolars(); p++ ){
 		if( polars_default_arr[p].index == glider_index ){
 			ESP_LOGI( FNAME,"Found Glider index %d at position %d", glider_index, p );
-			my_polar = p;
+            ret = p;
 			break;
 		}
 	}
+    return ret;
 }
 
 const char *Polars::getGliderType(int i)
 {
     return polars_default_arr[i].type.data();
-}
-
-int Polars::getGliderEnumPos()
-{
-    return my_polar;
 }
 
 bool Polars::hasFlaps(int i){

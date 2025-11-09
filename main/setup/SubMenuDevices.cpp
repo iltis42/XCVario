@@ -535,6 +535,7 @@ static void connected_devices_menu_device(SetupMenu *top) // dynamic!
     DeviceId did = (DeviceId)top->getContId();
     Device *dev = DEVMAN->getDevice(did);
     if ( top->getNrChilds() == 0 ) {
+        top->setDynContent();
 
         // the interface
         SetupMenu *itf = new SetupMenu(DEVMAN->getItfName(dev->_itf->getId()).data(), get_itf_menu_creator(dev->_itf->getId()));

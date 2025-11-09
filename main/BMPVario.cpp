@@ -1,4 +1,6 @@
 #include "BMPVario.h"
+
+#include "Atmosphere.h"
 #include "S2F.h"
 #include "AverageVario.h"
 #include "sensor.h"
@@ -91,27 +93,27 @@ double BMPVario::readTE( float tas, float tep ) {
 		ESP_LOGD(FNAME,"Energiehöhe @%0.1f km/h: %0.1f cw: %f", tas, ealt, cw );
 	}
 	else if( te_comp_enable.get() == TE_TEK_PRESSURE ){
-		_currentAlt = _sensorTE->calcAltitude(_qnh, baroP-(dynamicP/100.0)*(1+(te_comp_adjust.get()/100.0) ));  // subtract PI pressure like TEK probe does
+		_currentAlt = Atmosphere::calcAltitude(_qnh, baroP-(dynamicP/100.0)*(1+(te_comp_adjust.get()/100.0) ));  // subtract PI pressure like TEK probe does
 	}
 	else{
-		_currentAlt = _sensorTE->calcAltitude(_qnh, tep );
+		_currentAlt = Atmosphere::calcAltitude(_qnh, tep );
 	}
 	// ESP_LOGI(FNAME,"TE alt: %4.3f m, ST: %.1f PI: %.1f", _currentAlt, baroP, (dynamicP*100) );
 	averageAlt += (_currentAlt - averageAlt) * 0.1;
-	double adiff = _currentAlt - Altitude;
+	float adiff = _currentAlt - Altitude;
 	// ESP_LOGI(FNAME,"BMPVario new alt %0.1f err %0.1f", _currentAlt, err);
-	double diff = (abs(adiff) * 1000) + 1;
+	float diff = (abs(adiff) * 1000) + 1;
 	if(diff > 1000000){  // more than 100 m altitude diff in 0.1 second not plausible ( > 400 km/h vertical ) -> handled by Kalman filter
 		 ESP_LOGW(FNAME,"TE sensor delta OOB: %f m", diff/10000 );
 	}
-	double err = (abs(_currentAlt - predictAlt) * 1000) + 1;
+	float err = (abs(_currentAlt - predictAlt) * 1000) + 1;
 	averageAlt += (_currentAlt - averageAlt) * 0.1;
-	double kg = (diff / (err*_errorval + diff)) * _alpha;
+	float kg = (diff / (err*_errorval + diff)) * _alpha;
 	Altitude += (adiff) * kg;
-	double altDiff = Altitude - lastAltitude;
+	float altDiff = Altitude - lastAltitude;
 	// ESP_LOGI(FNAME," altDiff %0.1f diff %0.1f", TE, diff);
 	lastAltitude = Altitude;
-	double TEAVG = TEavg( altDiff / time_delta );
+	float TEAVG = TEavg( altDiff / time_delta );
 	predictAlt = Altitude + (TEAVG * time_delta);
 	_TEF += ((TEAVG - _TEF)) * _damping_factor;
 	if( !(N%10) ){ // every second one sample

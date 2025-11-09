@@ -22,9 +22,10 @@ public:
 	void change_ballast();
 	void change_mc();
 	void setPolar();
+	static bool isPolarEqualTo(int idx);
 	double speed( double st, bool circling=false );
 	double sink( double v );
-	inline double minsink() { return _min_speed; };
+	inline double minsink_speed() { return _min_speed; };
 	void recalcSinkNSpeeds();
 	static float getBallastPercent();
 	inline double circlingSink(double v) {

@@ -83,7 +83,7 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 	float deviation = 0;
 	static float last_heading = 0.0;
 
-	while( !Rotary->readSwitch() )
+	while( ! Rotary->readSwitch(50) )
 	{
 		bool ok = true;
 		heading += Vector::angleDiffDeg( theCompass->rawHeading( &ok ), last_heading )*0.05;
@@ -99,13 +99,6 @@ int CompassMenu::deviationAction( SetupMenuSelect *p )
 		MYUCG->setPrintPos( 1, 200 );
 		deviation = Vector::angleDiffDeg( direction, heading );
 		MYUCG->printf( "Deviation: %.1f°  ", deviation );
-		delay( 50 );
-	}
-	while( Rotary->readSwitch() )
-	{
-		// wait so long while rotary is active to avoid unwanted actions
-		delay( 50 );
-		continue;
 	}
 
 	// Save and update deviation value
@@ -222,8 +215,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	MYUCG->setFont( ucg_font_ncenR14_hr, true );
 	if( show_raw_data ){
 		p->clear();
-		while( !Rotary->readSwitch() ){
-				delay( 100 );
+		while( ! Rotary->readSwitch(100) ) {
 				showSensorRawData(p);
 		}
 		return 0;
@@ -251,8 +243,7 @@ int CompassMenu::sensorCalibrationAction( SetupMenuSelect *p )
 	p->clear();
 	if( only_show ){
 		theCompass->calibrate( calibrationReport, true );
-		while( !Rotary->readSwitch() )
-			delay( 100 );
+		while( ! Rotary->readSwitch(100) ) ;
 	}else{
 		MYUCG->setFont( ucg_font_ncenR14_hr, true );
 		MYUCG->setPrintPos( 1, 30 );

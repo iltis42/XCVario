@@ -27,11 +27,9 @@ altitude calculation by open source community on github.
 
 #pragma once
 
-#include <esp_system.h>
-#include "driver/gpio.h"
-#include <math.h>
-#include <hal/gpio_types.h>
 #include "PressureSensor.h"
+
+#include <driver/gpio.h>
 #include <driver/spi_master.h>
 
 
@@ -44,13 +42,11 @@ public:
 	bool begin();
     bool selfTest( float& p, float& t );
 
-	double readTemperature( bool& success );
-	double readPressure(bool &ok);
-	double readPressureAVG( float alpha=0.1 );
-	double readHumidity();
-	double readAltitude(double SeaLevel_Pres, bool &ok);
-	inline double calcAltitude(double SeaLevel_Pres, double pressure) { return ( 44330.0 * (1.0 - pow(pressure / SeaLevel_Pres, (1.0/5.255))) ); }
-	double calcAltitudeSTD( double p );
+	float readTemperature( bool& success ) override;
+	float readPressure(bool &ok) override;
+	float readPressureAVG( float alpha=0.1 );
+	float readHumidity();
+	float readAltitude(float SeaLevel_Pres, bool &ok) override;
 	uint8_t readID();
 
 private:

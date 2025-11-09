@@ -1,18 +1,21 @@
 
 #include "setup/SubMenuGlider.h"
 
+#include "setup/SubMenuFlap.h"
 #include "setup/SetupMenu.h"
 #include "setup/SetupMenuSelect.h"
 #include "setup/SetupMenuValFloat.h"
 #include "setup/SetupMenu.h"
 #include "setup/SetupNG.h"
+#include "screen/UiEvents.h"
+#include "screen/DrawDisplay.h"
 #include "Flap.h"
 #include "sensor.h"
 #include "logdefnone.h"
 
 static int polar_select(SetupMenuSelect *p) {
 	ESP_LOGI(FNAME,"glider-index %d", p->getValue());
-	glider_type_index.set(p->getValue());
+	glider_type.set(p->getValue());
 	p->getParent()->setBuzzword(p->value());
 	p->getParent()->setDirty();
 	return 0;
@@ -50,72 +53,24 @@ static void glider_menu_create_polarpoints(SetupMenu *top) {
 	top->addEntry(pos3);
 }
 
-
-static void position_labels_menu_create(SetupMenu* top){
-	SetupMenuSelect *flab = new SetupMenuSelect( "Flap Label 0", RST_NONE, nullptr, &wk_label_0 );
-	flab->addEntryList( flap_labels ); // Initialize Flap Label Entries
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label 1", RST_NONE, nullptr, &wk_label_1 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label 2", RST_NONE, nullptr, &wk_label_2 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label  3", RST_NONE, nullptr, &wk_label_3 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label 4", RST_NONE, nullptr, &wk_label_4 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label 5", RST_NONE, nullptr, &wk_label_5 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
-	flab = new SetupMenuSelect( "Flap Label 6", RST_NONE, nullptr, &wk_label_6 );
-	flab->addEntryList( flap_labels );
-	top->addEntry( flab );
+static void fill_glider_selection(SetupMenuSelect *glt)
+{
+    ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
+    for (int x = 0; x < Polars::numPolars(); x++) {
+        ESP_LOGI(FNAME, "P: %s - %d", Polars::getPolarName(x), Polars::getPolarIndex(x));
+        glt->addEntry(Polars::getPolarName(x), Polars::getPolarIndex(x));
+    }
+    glt->setSelect(MyGliderPolarIndex);
+    ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars());
 }
-
-static void flap_speeds_menu_create(SetupMenu* top){
-	SetupMenuValFloat *flgnd = new SetupMenuValFloat("Takeoff Flap","", nullptr, false, &flap_takeoff  );
-	flgnd->setHelp("Flap position to be set on ground for takeoff, when there is no airspeed");
-	top->addEntry( flgnd );
-
-	SetupMenu *flapls = new SetupMenu("Flap Position Labels", position_labels_menu_create);
-	top->addEntry( flapls );
-
-	SetupMenuValFloat *min3 = new SetupMenuValFloat("Speed -2 to -3", "", nullptr, false, &wk_speed_0  );
-	top->addEntry( min3 );
-
-	SetupMenuValFloat *min2 = new SetupMenuValFloat("Speed -1 to -2", "", nullptr, false, &wk_speed_1  );
-	top->addEntry( min2 );
-
-	SetupMenuValFloat *min1 = new SetupMenuValFloat("Speed  0 to -1", "", nullptr, false, &wk_speed_2  );
-	top->addEntry( min1 );
-
-	SetupMenuValFloat *plus1 = new SetupMenuValFloat("Speed +1 to  0", "", nullptr, false, &wk_speed_3  );
-	top->addEntry( plus1 );
-
-	SetupMenuValFloat *plus2 = new SetupMenuValFloat("Speed +2 to +1", "", nullptr, false, &wk_speed_4  );
-	top->addEntry( plus2 );
-
-	SetupMenuValFloat *plus3 = new SetupMenuValFloat("Speed +3 to +2", "", nullptr, false, &wk_speed_5  );
-	top->addEntry( plus3 );
-
-}
-
 void glider_menu_create(SetupMenu *top) {
 	ESP_LOGI(FNAME, "glider_menu_create");
 	if ( top->getNrChilds() == 0 ) {
 		top->setDynContent();
-		SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type_index);
+		
+		SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type);
+		fill_glider_selection(glt);
 		top->addEntry(glt);
-		ESP_LOGI(FNAME, "#polars %d", Polars::numPolars());
-		for (int x = 0; x < Polars::numPolars(); x++) {
-			ESP_LOGI(FNAME, "P: %s - %d", Polars::getPolarName(x), Polars::getPolarIndex(x));
-			glt->addEntry(Polars::getPolarName(x), Polars::getPolarIndex(x));
-		}
-		glt->setSelect(Polars::getGliderEnumPos()); // glider type nvs variable contains the magic index value
-		ESP_LOGI(FNAME, "Number of Polars installed: %d", Polars::numPolars() );
 
 		SetupMenu *pa = new SetupMenu("Polar Points", glider_menu_create_polarpoints);
 		pa->setHelp("Adjust the polar at 3 points, in the commonly used metric system");
@@ -138,13 +93,13 @@ void glider_menu_create(SetupMenu *top) {
 		top->addEntry(vmax);
 
 		ESP_LOGI(FNAME,"glider-index %d", Polars::getGliderEnumPos());
-		SetupMenu *flaps = new SetupMenu("Flap Speeds", flap_speeds_menu_create);
-		flaps->setHelp("Transition speed for flap settings at ref wingload. Set to 0, if not aplicable");
+		SetupMenu *flaps = new SetupMenu("Flap Levels", flap_levels_menu_create);
+		flaps->setHelp("Transition speed for flap settings at ref. wingload");
 		top->addEntry( flaps );
 	}
 
-	SetupMenu *tmp_menu = static_cast<SetupMenu*>(top->getEntry(6)); // flap speeds
-	if( Polars::hasFlaps(Polars::getGliderEnumPos()) ){
+	SetupMenu *tmp_menu = static_cast<SetupMenu*>(top->getEntry(6)); // flap levels
+	if( Polars::hasFlaps(MyGliderPolarIndex) ){
 		tmp_menu->unlock();
 		tmp_menu->setBuzzword();
 	}else{
@@ -153,5 +108,22 @@ void glider_menu_create(SetupMenu *top) {
 	}
 
 
+}
+
+void glider_selection_create(SetupMenu *top) {
+    SetupMenuSelect *space = new SetupMenuSelect("", RST_NONE);
+    space->lock();
+    top->addEntry(space);
+    SetupMenuSelect *glt = new SetupMenuSelect("Type", RST_NONE, polar_select, &glider_type, true, true);
+    fill_glider_selection(glt);
+    glt->setHelp("Select your type of glider from the list of pre-installed polars");
+    top->addEntry(glt);
+    top->setHighlight(1);
+    int event = ButtonEvent(ButtonEvent::SHORT_PRESS).raw;
+    xQueueSend(uiEventQueue, &event, 0); // virtually press the button to straight enter the selection
+}
+SetupMenu *createGliderSelectMenu() {
+    SetupMenu *glt_menu = new SetupMenu("Set the glider type",glider_selection_create);
+    return glt_menu;
 }
 

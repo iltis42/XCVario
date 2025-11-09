@@ -1,13 +1,15 @@
+/***********************************************************
+ ***   THIS DOCUMENT CONTAINS PROPRIETARY INFORMATION.   ***
+ ***    IT IS THE EXCLUSIVE CONFIDENTIAL PROPERTY OF     ***
+ ***     Rohs Engineering Design AND ITS AFFILIATES.     ***
+ ***                                                     ***
+ ***       Copyright (C) Rohs Engineering Design         ***
+ ***********************************************************/
+
 #pragma once
 
 #include <cmath>
-#include <string_view>
 #include <vector>
-
-class SetupMenu;
-
-void flap_menu_create_flap_sensor(SetupMenu *wkm);
-
 
 
 // Flap level internal representation
@@ -26,18 +28,18 @@ void flap_menu_create_flap_sensor(SetupMenu *wkm);
 
 
 class AnalogInput;
-
-extern const std::string_view flap_labels[55];
-
+template <typename T>
+class SetupNG;
 
 struct FlapLevel
 {
-    float speed;
+    float nvs_speed;
+    float prep_speed;
     float speed_delta;
     const char *label;
     int sensval;
     int sens_delta;
-    FlapLevel(float s, const char *l, int sv) : speed(s), speed_delta(0.), label(l), sensval(sv), sens_delta(0) {}
+    FlapLevel(float s, const char *l, int sv) : nvs_speed(s), prep_speed(0.), speed_delta(0.), label(l), sensval(sv), sens_delta(0) {}
 };
 
 /*
@@ -48,11 +50,23 @@ struct FlapLevel
 class Flap
 {
 private:
-	Flap();
+    Flap();
 
 public:
     ~Flap();
     static Flap *theFlap();
+
+    // config access
+    static SetupNG<float> *getSpeedNVS(int idx);
+    static SetupNG<int> *getLblNVS(int idx);
+    static SetupNG<int> *getSensNVS(int idx);
+    void initFromNVS();
+    void saveToNVS();
+    void prepLevels();
+    void modLevel();
+    void addLevel(FlapLevel &lev);
+    void removeLevel(int idx);
+
     void progress();
     // recommendations
     float getOptimum(float speed) const;
@@ -65,9 +79,6 @@ public:
     // sensor access
     unsigned int getSensorRaw() const;
     void configureADC(int port);
-    void initFromNVS();
-    void saveToNVS();
-    void prepLevels();
     int getNrPositions() const { return flevel.size(); }
     static constexpr const int MAX_NR_POS = 7;
 

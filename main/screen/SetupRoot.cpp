@@ -12,6 +12,7 @@
 #include "UiEvents.h"
 #include "setup/SubMenuAudio.h"
 #include "setup/SubMenuDevices.h"
+#include "setup/SubMenuFlap.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
 
@@ -53,7 +54,8 @@ void SetupRoot::initScreens()
     if ( screen_gmeter.get() ) {
         all_screens |= SCREEN_GMETER;
     }
-    if ( screen_horizon.get() ) {
+    // horizon only if AHRS license is valid
+    if ( screen_horizon.get() && gflags.ahrsKeyValid ) {
         all_screens |= SCREEN_HORIZON;
     }
     all_screens |= SCREEN_VARIO; // always
@@ -63,10 +65,9 @@ void SetupRoot::begin(MenuEntry *setup)
 {
     ESP_LOGI(FNAME,"SetupMenu %s", _title.c_str());
     // root will always own only one child
-    if ( !_childs.empty() ) {
-        ESP_LOGW(FNAME,"Found root menu not empty.");
-        delete _childs.front();
-        _childs.clear();
+    bool very_first = _childs.empty();
+    if ( ! very_first ) {
+        ESP_LOGW(FNAME,"Found root menu not empty");
     }
 
     // Given setup might be for QNH, or voltage adjustment
@@ -81,11 +82,12 @@ void SetupRoot::begin(MenuEntry *setup)
         }
     }
 
-    gflags.inSetup = true;
-
-    _childs.front()->enter();
-
-    SetupMenu::initGearWarning();
+    // Todo setup able to recurse
+    if ( ! gflags.inSetup  || very_first ) {
+        gflags.inSetup = true;
+        _childs.front()->enter();
+    }
+    SetupMenu::initGearWarning(); // Huh fixme
 }
 
 void SetupRoot::exit(int levels)
@@ -97,21 +99,26 @@ void SetupRoot::exit(int levels)
     }
     free_connected_devices_menu();
     free_audio_menu();
+    free_flap_menu();
 
     if (_restart) {
         reBoot();
     }
-    screens_init = INIT_DISPLAY_NULL; // set screen dirty
 
-    // apply any change on AHRS license and screen setup
-    screen_horizon.set( screen_horizon.get() && gflags.ahrsKeyValid );
-    initScreens();
+    delete _childs.front(); // the exited setup tree
+    _childs.erase(_childs.begin());
 
-    delete _childs.front(); // hook to the entire setup tree
-    _childs.clear();
-    gflags.inSetup = false;
-    if ( rot_default.get() == 0) {
-        setRotDynamic(2.5f);
+    if ( !_childs.empty() ) {
+        ESP_LOGI(FNAME,"More menus to run");
+        _childs.front()->enter(); // more menues to go back to
+    }
+    else {
+        screens_init = INIT_DISPLAY_NULL; // set screen dirty
+        gflags.inSetup = false;
+        if ( rot_default.get() == 0) {
+            setRotDynamic(2.5f); // only for volume control
+        }
+        initScreens(); // re-evaluate available screens
     }
 }
 
@@ -126,29 +133,26 @@ void SetupRoot::rot(int count)
     else {
         // Volume
         AUDIO->setVolume(audio_volume.get() + count);
-        // provide acoustic feedback on volume change fixme
-        static int last_vol = 0;
-        if ((audio_volume.get()>40 && last_vol<=40) || (audio_volume.get()<40 && last_vol>=40)) {
-            if (count > 0) {
-                AUDIO->startSound(AUDIO_CMD_CIRCLE_OUT, true);
-            }
-            else {
-                AUDIO->startSound(AUDIO_CMD_CIRCLE_IN, true);
-            }
-        }
-        else if (audio_volume.get()<37 && audio_volume.get()>30) {
-            AUDIO->startSound(AUDIO_HORIZ_GUST, true);
-        }
-        last_vol = audio_volume.get();
+        // // provide acoustic feedback on volume change fixme
+        // static int last_vol = 0;
+        // if ((audio_volume.get()>40 && last_vol<=40) || (audio_volume.get()<40 && last_vol>=40)) {
+        //     if (count > 0) {
+        //         AUDIO->startSound(AUDIO_CMD_CIRCLE_OUT, true);
+        //     }
+        //     else {
+        //         AUDIO->startSound(AUDIO_CMD_CIRCLE_IN, true);
+        //     }
+        // }
+        // else if (audio_volume.get()<37 && audio_volume.get()>30) {
+        //     AUDIO->startSound(AUDIO_HORIZ_GUST, true);
+        // }
+        // last_vol = audio_volume.get();
     }
 }
 
 void SetupRoot::press()
 {
     ESP_LOGI(FNAME,"root press active_srceen %d (0x%x)", active_screen, (unsigned)all_screens);
-    if ( active_screen == NO_SCREEN ) {
-        active_screen = SCREEN_VARIO;
-    }
 
     // AUDIO->dump();
     // return;

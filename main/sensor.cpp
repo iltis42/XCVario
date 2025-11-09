@@ -35,6 +35,7 @@
 #include "screen/UiEvents.h"
 
 #include "math/Quaternion.h"
+#include "math/CompareFloat.h"
 #include "wmm/geomag.h"
 #include "OTA.h"
 #include "S2fSwitch.h"
@@ -104,6 +105,7 @@ AirspeedSensor *asSensor=0;
 SemaphoreHandle_t spiMutex=NULL;
 
 S2F Speed2Fly;
+int MyGliderPolarIndex; // Todo make private in S2F?
 
 AnalogInput *BatVoltage = nullptr;
 
@@ -116,7 +118,7 @@ PressureSensor *baroSensor = nullptr;
 PressureSensor *teSensor = nullptr;
 
 AdaptUGC *MYUCG = 0;  // ( SPI_DC, CS_Display, RESET_Display );
-SetupRoot  *Menu = nullptr;
+SetupRoot  *MenuRoot = nullptr;
 WatchDog_C *uiMonitor = nullptr;
 
 // Gyro and acceleration sensor
@@ -148,18 +150,18 @@ float dynamicP; // Pitot
 float slipAngle = 0.0;
 
 // global color variables for adaptable display variant
-uint8_t g_col_background=255; // black
-uint8_t g_col_highlight=0;
-uint8_t g_col_header_r=101+g_col_background/5;
-uint8_t g_col_header_g=108+g_col_background/5;
-uint8_t g_col_header_b=g_col_highlight;
-uint8_t g_col_header_light_r=161-g_col_background/4;
-uint8_t g_col_header_light_g=168-g_col_background/3;
-uint8_t g_col_header_light_b=g_col_highlight;
+uint8_t g_col_background; // black
+uint8_t g_col_highlight;
+uint8_t g_col_header_r;
+uint8_t g_col_header_g;
+uint8_t g_col_header_b;
+uint8_t g_col_header_light_r;
+uint8_t g_col_header_light_g;
+uint8_t g_col_header_light_b;
 uint8_t gyro_flash_savings=0;
 
 // boot with flasg "inSetup":=true and release the screen for other purpouse by setting it false.
-global_flags gflags = { true, false, false, false, false, false, false, false, false, false, false, false };
+global_flags gflags = { true, false, false, false, false, false, false, false, false};
 
 int  ccp=60;
 float tas = 0;
@@ -175,8 +177,6 @@ float polar_sink = 0;
 int count=0;
 
 float mpu_target_temp=45.0;
-
-AdaptUGC *egl = 0;
 
 const constexpr char passed_text[] = "PASSED\n";
 const constexpr char failed_text[] = "FAILED\n";
@@ -290,7 +290,7 @@ void clientLoop(void *pvParameters)
 		TickType_t xLastWakeTime = xTaskGetTickCount();
 		ccount++;
 		aTE += (te_vario.get() - aTE)* (1/(10*vario_av_delay.get()));
-		if( gflags.haveMPU ) {
+		if( gflags.haveIMU ) {
 			grabMPU();
 		}
 		if( !(ccount%5) )
@@ -298,16 +298,16 @@ void clientLoop(void *pvParameters)
 			double tmpalt = altitude.get(); // get pressure from altitude
 			if( (fl_auto_transition.get() == 1) && ((int)( Units::meters2FL( altitude.get() )) + (int)(gflags.standard_setting) > transition_alt.get() ) ) {
 				ESP_LOGI(FNAME,"Above transition altitude");
-				baroP = baroSensor->calcPressure(1013.25, tmpalt); // above transition altitude
+				baroP = Atmosphere::calcPressureISA(tmpalt); // above transition altitude
 			}
 			else {
-				baroP = baroSensor->calcPressure( QNH.get(), tmpalt);
+				baroP = Atmosphere::calcPressure( QNH.get(), tmpalt);
 			}
 			dynamicP = Atmosphere::kmh2pascal(ias.get());
 			tas = Atmosphere::TAS2( ias.get(), altitude.get(), OAT.get() );
 			if( airspeed_mode.get() == MODE_CAS )
 				cas = Atmosphere::CAS( dynamicP );
-			if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
+			if( gflags.haveIMU && HAS_MPU_TEMP_CONTROL ){
 				MPU.temp_control( ccount, xcvTemp );
 			}
 			if( IMU::getGliderAccelZ() > gload_pos_max.get() ){
@@ -345,7 +345,7 @@ void clientLoop(void *pvParameters)
 		// ESP_LOGI( FNAME, "te: %f, polar_sink: %f, netto %f, s2f: %f  delta: %f", aTES2F, polar_sink, netto, as2f, s2f_delta );
 
 		// Vario screen update for client
-		const int screenEvent = ScreenEvent(ScreenEvent::VARIO_UPDATE).raw;
+		const int screenEvent = ScreenEvent(ScreenEvent::MAIN_SCREEN).raw;
 		xQueueSend(uiEventQueue, &screenEvent, 0);
 
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
@@ -374,7 +374,7 @@ void readSensors(void *pvParameters){
 			// ESP_LOGW(FNAME,"T invalid, using 15 deg");
 		}
 		// ESP_LOGI(FNAME,"Start");
-		if( gflags.haveMPU  )  // 3th Generation HW, MPU6050 avail and feature enabled
+		if( gflags.haveIMU  )  // 3th Generation HW, MPU6050 avail and feature enabled
 		{
 			grabMPU();  // IMU
 		}
@@ -480,7 +480,7 @@ void readSensors(void *pvParameters){
 		if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
 			altSTD = alt_external;
 		else
-			altSTD = baroSensor->calcAltitudeSTD( baroP );
+			altSTD = Atmosphere::calcAltitudeISA( baroP );
 		float new_alt = 0;
 		if( alt_select.get() == AS_TE_SENSOR ) // TE
 			new_alt = bmpVario.readAVGalt();
@@ -498,7 +498,7 @@ void readSensors(void *pvParameters){
 				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
 					new_alt = altSTD + ( QNH.get()- 1013.25)*8.2296;  // correct altitude according to ISA model = 27ft / hPa
 				else
-					new_alt = baroSensor->calcAltitude( QNH.get(), baroP );
+					new_alt = Atmosphere::calcAltitude( QNH.get(), baroP );
 				gflags.standard_setting = false;
 				// ESP_LOGI(FNAME,"QNH %f baro: %f alt: %f SS:%d", QNH.get(), baroP, alt, gflags.standard_setting  );
 			}
@@ -571,7 +571,7 @@ void readSensors(void *pvParameters){
 				ESP_LOGI(FNAME,"Client sync complete");
 			}
 		}
-		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL ){
+		if( gflags.haveIMU && HAS_MPU_TEMP_CONTROL ){
 			// ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
 			MPU.temp_control( count, xcvTemp );
 		}
@@ -592,7 +592,7 @@ void readSensors(void *pvParameters){
 
 
 		AUDIO->updateTone();
-		const int screenEvent = ScreenEvent(ScreenEvent::VARIO_UPDATE).raw;
+		const int screenEvent = ScreenEvent(ScreenEvent::MAIN_SCREEN).raw;
 		xQueueSend(uiEventQueue, &screenEvent, 0);
 
 		vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(100));
@@ -735,7 +735,7 @@ void system_startup(void *args){
 			(chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
 	ESP_LOGI(FNAME, "QNH.get() %.1f hPa", QNH.get() );
 	// register_coredump();
-	Polars::extract(glider_type_index.get());
+	MyGliderPolarIndex = Polars::findMyGlider(glider_type.get());
 
 	AverageVario::begin();
 
@@ -761,20 +761,13 @@ void system_startup(void *args){
 	};
 	ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
 
-	egl = new AdaptUGC();
-	egl->begin();
-	ESP_LOGI( FNAME, "setColor" );
-	egl->setColor( 0, 255, 0 );
-	ESP_LOGI( FNAME, "drawLine" );
-	egl->drawLine( 20,20, 20,80 );
-	ESP_LOGI( FNAME, "finish Draw" );
-
-	MYUCG = egl; // new AdaptUGC( SPI_DC, CS_Display, RESET_Display );
+	MYUCG = new AdaptUGC();
+	MYUCG->begin();
 	Display = new IpsDisplay( MYUCG );
 	Flarm::setDisplay( MYUCG );
 	Display->begin();
 	Display->bootDisplay();
-	Menu = new SetupRoot(Display); // the root setup menu, screens still disabled
+	MenuRoot = new SetupRoot(Display); // the root setup menu, screens still disabled
 
 	Version V;
 	std::string ver( " Ver.: " );
@@ -787,32 +780,33 @@ void system_startup(void *args){
 	logged_tests.assign(ver);
 	logged_tests += "\n";
 
-	// Start UI task responsible to manage screens and display. Needed to habe the boot screen and message box working
-	xTaskCreate(&UiEventLoop, "UIloop", 6144, Rotary, 4, &dpid); // increase stack by 1K
+    // Start UI task responsible to manage screens and display. Needed to habe the boot screen and message box working
+    xTaskCreate(&UiEventLoop, "UIloop", 6144, Rotary, 4, &dpid); // increase stack by 1K
 
-	BootUpScreen *boot_screen = BootUpScreen::create();
-	MessageBox::createMessageBox();
-	if ( gflags.schedule_reboot ) {
-		MBOX->newMessage(3, "Detecting XCV hardware");
-	}
-	Rotary->begin();
-	if( software_update.get() || Rotary->readBootupStatus() ) {
-		software_update.set( 0 ); // only one shot, then boot normal
+    BootUpScreen *boot_screen = BootUpScreen::create();
+    MessageBox::createMessageBox();
+    if (gflags.schedule_reboot) {
+        MBOX->pushMessage(3, "Detecting XCV hardware");
+    }
+    Rotary->begin();
+    if (software_update.get() || Rotary->readBootupStatus()) {
+        software_update.set(0); // only one shot, then boot normal
 
-		if( hardwareRevision.get() >= XCVARIO_22 ) {
-			// Give CAN MagSens a chance for an update
-			CANbus::createCAN();
-			CAN->begin();
-			DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-			DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBin::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
-		}
-		delete boot_screen; // screen now belongs to OTA
-		Menu->begin(new OTA());
-		return;
-	}
-	if( hardwareRevision.get() >= XCVARIO_21 )
+        if (hardwareRevision.get() >= XCVARIO_22) {
+            // Give CAN MagSens a chance for an update
+            CANbus::createCAN();
+            CAN->begin();
+            DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+            DEVMAN->addDevice(MAGSENS_DEV, MAGSENSBIN_P, MagSensBin::LEGACY_MAGSTREAM_ID, 0, CAN_BUS); // fixme
+        }
+        delete boot_screen; // screen now belongs to OTA
+        MenuRoot->begin(new OTA());
+        return;
+    }
+	
+    if( hardwareRevision.get() >= XCVARIO_21 )
 	{
-		gflags.haveMPU = true;
+		gflags.haveIMU = true;
 		mpu_target_temp = mpu_temperature.get();
 		ESP_LOGI( FNAME,"MPU initialize");
 		MPU.initialize();  // this will initialize the chip and set default configurations
@@ -865,38 +859,46 @@ void system_startup(void *args){
 		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
 	}
 
-	// Create serial interfaces
-	S1 = new SerialLine((uart_port_t)1, GPIO_NUM_16, GPIO_NUM_17);
-	if ( hardwareRevision.get() >= XCVARIO_21 ) {
-		S2 = new SerialLine((uart_port_t)2, GPIO_NUM_18, GPIO_NUM_4);
-	}
+    // Show configured glider polar
+    bool glider_polar_configured = glider_type.get() != glider_type.getDefault() 
+            || ! S2F::isPolarEqualTo(MyGliderPolarIndex);
+    if (glider_polar_configured) {
+        ver.assign("  >> ");
+        ver += Polars::getPolarName(MyGliderPolarIndex);
+        MBOX->pushMessage(1, ver.c_str());
+    }
 
-	// Create CAN based on known HW revision (not the very first boot)
-	if ( hardwareRevision.get() >= XCVARIO_22 ) {
-		ESP_LOGI(FNAME,"NOW add/test CAN");
-		CANbus::createCAN();
-		logged_tests += "CAN Interface: ";
-		if( CAN->selfTest() ) {
-			logged_tests += passed_text;
-		}
-		else {
-			MBOX->newMessage(1, "CAN bus: Fail");
-			logged_tests += failed_text;
-			ESP_LOGE(FNAME,"Error: CAN Interface failed");
-		}
-	}
+    // Create serial interfaces
+    S1 = new SerialLine((uart_port_t)1, GPIO_NUM_16, GPIO_NUM_17);
+    if (hardwareRevision.get() >= XCVARIO_21) {
+        S2 = new SerialLine((uart_port_t)2, GPIO_NUM_18, GPIO_NUM_4);
+    }
 
-	// DEVMAN serialization, read in all configured devices.
-	DEVMAN->reserectFromNvs();
-	if ( first_devices_run ) {
-		DEVMAN->introduceDevices(); // create a flarm etc.
-	}
-	if ( CAN ) {
-		// just allways, it respects the XCV role setting
-		DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
-	}
+    // Create CAN based on known HW revision (not the very first boot)
+    if (hardwareRevision.get() >= XCVARIO_22) {
+        ESP_LOGI(FNAME, "NOW add/test CAN");
+        CANbus::createCAN();
+        logged_tests += "CAN Interface: ";
+        if (CAN->selfTest()) {
+            logged_tests += passed_text;
+        } else {
+            MBOX->pushMessage(1, "CAN bus: Fail");
+            logged_tests += failed_text;
+            ESP_LOGE(FNAME, "Error: CAN Interface failed");
+        }
+    }
 
-	ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
+    // DEVMAN serialization, read in all configured devices.
+    DEVMAN->reserectFromNvs();
+    if (first_devices_run) {
+        DEVMAN->introduceDevices(); // create a flarm etc.
+    }
+    if (CAN) {
+        // just allways, it respects the XCV role setting
+        DEVMAN->addDevice(CANREGISTRAR_DEV, REGISTRATION_P, CAN_REG_PORT, CAN_REG_PORT, CAN_BUS);
+    }
+
+    ESP_LOGI(FNAME,"Wirelss-ID: %s", SetupCommon::getID());
 	std::string wireless_id;
 	if( DEVMAN->isIntf(BT_SPP) ) {
 		ESP_LOGI(FNAME,"Use BT");
@@ -913,17 +915,15 @@ void system_startup(void *args){
 	if ( ! gflags.schedule_reboot && custom_wireless_id.get().id[0] == '\0' ) {
 		custom_wireless_id.set(SetupCommon::getDefaultID()); // Default ID created from MAC address CRC
 	}
-	wireless_id += SetupCommon::getID();
 	if ( wireless_id.length() > 0 ) {
-		MBOX->newMessage(2, wireless_id.c_str() );
+		wireless_id += SetupCommon::getID();
+		MBOX->pushMessage(1, wireless_id.c_str() );
 	}
 
 	{
 		Cipher crypt;
 		gflags.ahrsKeyValid = crypt.checkKeyAHRS();
 		ESP_LOGI( FNAME, "AHRS key valid=%d", gflags.ahrsKeyValid );
-		// make sure the AHRS screen is not set
-		screen_horizon.set( screen_horizon.get() && gflags.ahrsKeyValid );
 	}
 	boot_screen->finish(0);
 
@@ -1038,7 +1038,7 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Aispeed sensor current speed=%f", ias.get() );
 		if( !offset_plausible && ( ias.get() < 50 ) ){
 			ESP_LOGE(FNAME,"Error: air speed presure sensor offset out of bounds, act value=%d", offset );
-			MBOX->newMessage(2, "AS Sensor: NEED ZERO");
+			MBOX->pushMessage(2, "AS Sensor: NEED ZERO");
 			logged_tests += failed_text;
 			selftestPassed = false;
 		}
@@ -1050,7 +1050,7 @@ void system_startup(void *args){
 	}
 	else{
 		ESP_LOGE(FNAME,"Error with air speed pressure sensor, no working sensor found!");
-		MBOX->newMessage(2, "AS Sensor: NOT FOUND");
+		MBOX->pushMessage(2, "AS Sensor: NOT FOUND");
 		logged_tests += "NOT FOUND\n";
 		selftestPassed = false;
 		asSensor = 0;
@@ -1077,7 +1077,7 @@ void system_startup(void *args){
 		logged_tests += "Ext. Temp. Sensor: ";
 		if( temperature == DEVICE_DISCONNECTED_C ) {
 			ESP_LOGE(FNAME,"Error: Self test Temperatur Sensor failed; returned T=%2.2f", temperature );
-			MBOX->newMessage(1, "Temp Sensor: NOT FOUND");
+			MBOX->pushMessage(1, "Temp Sensor: NOT FOUND");
 			gflags.validTemperature = false;
 			logged_tests += "NOT FOUND\n";
 		}else
@@ -1126,7 +1126,7 @@ void system_startup(void *args){
 	logged_tests += "Baro Sensor: ";
 	if( !baroSensor->selfTest( ba_t, ba_p)  ) {
 		ESP_LOGE(FNAME,"HW Error: Self test Barometric Pressure Sensor failed!");
-		MBOX->newMessage(2, "Baro Sensor: NOT FOUND");
+		MBOX->pushMessage(2, "Baro Sensor: NOT FOUND");
 		selftestPassed = false;
 		batest=false;
 		logged_tests += "NOT FOUND\n";
@@ -1138,7 +1138,7 @@ void system_startup(void *args){
 	logged_tests += "TE Sensor: ";
 	if( !teSensor->selfTest(te_t, te_p) ) {
 		ESP_LOGE(FNAME,"HW Error: Self test TE Pressure Sensor failed!");
-		MBOX->newMessage(2, "TE Sensor: NOT FOUND");
+		MBOX->pushMessage(2, "TE Sensor: NOT FOUND");
 		selftestPassed = false;
 		tetest=false;
 		logged_tests += "NOT FOUND\n";
@@ -1153,7 +1153,7 @@ void system_startup(void *args){
 		if( (abs(ba_t - te_t) >4.0)  && ( ias.get() < 50 ) ) {   // each sensor has deviations, and new PCB has more heat sources
 			selftestPassed = false;
 			ESP_LOGE(FNAME,"Severe T delta > 4 °C between Baro and TE sensor: °C %f", abs(ba_t - te_t) );
-			MBOX->newMessage(1, "TE/Baro Temp: Unequal");
+			MBOX->pushMessage(1, "TE/Baro Temp: Unequal");
 			logged_tests += failed_text;
 		}
 		else{
@@ -1168,7 +1168,7 @@ void system_startup(void *args){
 		if( (abs(ba_p - te_p) >delta)  && ( ias.get() < 50 ) ) {
 			selftestPassed = false;
 			ESP_LOGI(FNAME,"Abs p sensors deviation delta > 2.5 hPa between Baro and TE sensor: %f", abs(ba_p - te_p) );
-			MBOX->newMessage(1, "TE/Baro P: Unequal");
+			MBOX->pushMessage(1, "TE/Baro P: Unequal");
 			logged_tests += failed_text;
 		}
 		else {
@@ -1181,17 +1181,17 @@ void system_startup(void *args){
 		ESP_LOGI(FNAME,"Absolute pressure sensor TESTs failed");
 	}
 
+    AUDIO->applySetup();
 	if ( audio_mute_gen.get() != AUDIO_OFF ) {
 		ESP_LOGI(FNAME,"Audio begin");
 		logged_tests += "Digi. Audio Poti test: ";
-		if( AUDIO->startAudio(0) ) {
+		if( AUDIO->isUp() && AUDIO->isPotiUp() ) {
 			ESP_LOGI(FNAME,"Digital potentiometer test PASSED");
 			logged_tests += passed_text;
-			// AUDIO->soundCheck();
 		}
 		else {
 			ESP_LOGE(FNAME,"Error: Digital potentiomenter selftest failed");
-			MBOX->newMessage(1, "Digital Poti: Failure");
+			MBOX->pushMessage(1, "Digital Poti: Failure");
 			selftestPassed = false;
 			logged_tests += failed_text;
 		}
@@ -1224,7 +1224,7 @@ void system_startup(void *args){
 	}
 
 
-	if( gflags.haveMPU ){
+	if( gflags.haveIMU ){
 		if( MPU.whoAmI() == 0x12 ){
 			if( hardwareRevision.get() < XCVARIO_25){
 				hardwareRevision.set(XCVARIO_25);  // XCV-25: ICL20602
@@ -1237,7 +1237,7 @@ void system_startup(void *args){
 	logged_tests += "Battery Voltage Sensor: ";
 	if( bat < 1 || bat > 28.0 ){
 		ESP_LOGE(FNAME,"Error: Battery voltage metering out of bounds, act value=%f", bat );
-		MBOX->newMessage(1, "Bat Meter: Fail");
+		MBOX->pushMessage(1, "Bat Meter: Fail");
 		logged_tests += failed_text;
 		selftestPassed = false;
 	}
@@ -1252,7 +1252,7 @@ void system_startup(void *args){
 			logged_tests += passed_text;
 		}
 		else {
-			MBOX->newMessage(1, "Bluetooth: FAILED");
+			MBOX->pushMessage(1, "Bluetooth: FAILED");
 			logged_tests += failed_text;
 		}
 	}
@@ -1270,7 +1270,7 @@ void system_startup(void *args){
 		}
 		else{
 			ESP_LOGI( FNAME, "Magnetic sensor selftest: FAILED");
-			MBOX->newMessage(1, "Compass: FAILED");
+			MBOX->pushMessage(1, "Compass: FAILED");
 			logged_tests += failed_text;
 			selftestPassed = false;
 		}
@@ -1283,6 +1283,9 @@ void system_startup(void *args){
 		esp_restart();
 	}
 
+    // Initialize the airborne status
+    airborne.set(ias.get() > glider_min_ias);
+
 	Speed2Fly.begin();
 	Version myVersion;
 	ESP_LOGI(FNAME,"Program Version %s", myVersion.version() );
@@ -1290,13 +1293,13 @@ void system_startup(void *args){
 	if( !selftestPassed )
 	{
 		ESP_LOGI(FNAME,"\n\n\nSelftest failed, see above LOG for Problems\n\n\n");
-		MBOX->newMessage(2, "Selftest FAILED");
-		if( !Rotary->readBootupStatus() )
-			sleep(4);
+		MBOX->pushMessage(2, "Selftest FAILED", ScreenMsg::CONFIRM);
+        if ( ! airborne.get() ) { AUDIO->startSound(AUDIO_FAIL_SOUND); }
 	}
 	else{
 		ESP_LOGI(FNAME,"\n\n\n*****  Selftest PASSED  ********\n\n\n");
 		boot_screen->finish(3); // signal self tests passed
+        if ( ! airborne.get()) { AUDIO->startSound(AUDIO_CHECK_SOUND); }
 	}
 
 	if( Rotary->readBootupStatus() )
@@ -1305,54 +1308,58 @@ void system_startup(void *args){
 	}
 
 	// Set QNH from setup Airfiled elevation, when ! Second && ! airborn
-	if( ! SetupCommon::isClient() && ias.get() < 50.0 ) {
+	if( ! SetupCommon::isClient() && ! airborne.get() ) {
 
-		// remove logo immidiately
+		// remove logo
 		sleep(1);
 		BootUpScreen::terminate();
 
 		ESP_LOGI(FNAME,"Master Mode: QNH Autosetup, IAS=%3f (<50 km/h)", ias.get() );
 		// QNH autosetup
-		float ae = elevation.get();
-		float qnh_best = QNH.get();
+		float ae = airfield_elevation.get();
 		bool ok;
-		baroP = baroSensor->readPressure(ok);
-		if( ae > NOTSET_ELEVATION ) {
-			float step=10.0; // 80 m
-			float min=1000.0;
-			for( float qnh = 870; qnh< 1085; qnh+=step ) {
-				float alt = 0;
-				if( Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL )
-					alt = alt_external + (qnh  - 1013.25) * 8.2296;  // correct altitude according to ISA model = 27ft / hPa
-				else
-					alt = baroSensor->readAltitude( qnh, ok);
-				float diff = alt - ae;
-				// ESP_LOGI(FNAME,"Alt diff=%4.2f  abs=%4.2f", diff, abs(diff) );
-				if( abs( diff ) < 100 )
-					step=1.0;  // 8m
-				if( abs( diff ) < 10 )
-					step=0.05;  // 0.4 m
-				if( abs( diff ) < abs(min) ) {
-					min = diff;
-					qnh_best = qnh;
-					// ESP_LOGI(FNAME,"New min=%4.2f", min);
-				}
-				if( diff > 1.0 ) // we are ready, values get already positive
-					break;
-				delay(50);
-			}
-			ESP_LOGI(FNAME,"Auto QNH=%4.2f\n", qnh_best);
-			QNH.set( qnh_best );
-		}
-		Display->clear();
+        if (ae > NO_ELEVATION) {
+            float baroP = baroSensor->readPressure(ok);
+            float alt = 0.0f;
+            if (Flarm::validExtAlt() && alt_select.get() == AS_EXTERNAL) {
+                // correct altitude according to ISA model = 27ft / hPa
+                alt = alt_external + (QNH.get() - 1013.25f) * 8.2296f;
+            } else {
+                alt = ae;
+            }
 
-		int screenEvent = ScreenEvent(ScreenEvent::QNH_ADJUST).raw;
-		if ( NEED_VOLTAGE_ADJUST ) {
-			ESP_LOGI(FNAME,"Do Factory Voltmeter adj");
-			screenEvent = ScreenEvent(ScreenEvent::VOLT_ADJUST).raw;
-		}
-		xQueueSend(uiEventQueue, &screenEvent, 0);
-	}
+            float qnh_best = Atmosphere::calcQNHPressure(baroP, ae);
+            QNH.set(qnh_best);
+            ESP_LOGI(FNAME, "Auto QNH (direkt) = %4.2f hPa", qnh_best);
+        }
+        Display->clear();
+
+        // Some more checks on vario configuration
+        int screenEvent;
+        if (NEED_VOLTAGE_ADJUST) {
+            // factory use case
+            ESP_LOGI(FNAME, "Do Factory Voltmeter adj");
+            screenEvent = ScreenEvent(ScreenEvent::VOLT_ADJUST).raw;
+            xQueueSend(uiEventQueue, &screenEvent, 0);
+        }
+
+        // airfield use case
+        // Glider polar set?
+        ESP_LOGI(FNAME, "Check glider polar configuration %d, unchanged %d", glider_type.get(), S2F::isPolarEqualTo(MyGliderPolarIndex));
+        if ( ! glider_polar_configured ) {
+            screenEvent = ScreenEvent(ScreenEvent::POLAR_CONFIG).raw;
+            xQueueSend(uiEventQueue, &screenEvent, 0);
+        }
+        // QNH adjust screen, always
+        screenEvent = ScreenEvent(ScreenEvent::QNH_ADJUST).raw;
+        xQueueSend(uiEventQueue, &screenEvent, 0);
+        if ( ballast_kg.get() > 0 ) {
+            // ballast set when boot-up, get a user confirmation
+            screenEvent = ScreenEvent(ScreenEvent::BALLAST_CONFIRM).raw;
+            xQueueSend(uiEventQueue, &screenEvent, 0);
+        }
+
+    }
 	else {
 		if ( SetupCommon::isClient() ) {
 			bool already_connected = false;
@@ -1365,7 +1372,7 @@ void system_startup(void *args){
 			}
 			if ( ! already_connected ) {
 				// just sit, wait, show a little message
-				MBOX->newMessage(1, "Waiting for XCV Master");
+				MBOX->pushMessage(1, "Waiting for XCV Master");
 				ESP_LOGI(FNAME,"Client Mode: Wait for Master XCVario %p", dev);
 			}
 		}
@@ -1386,7 +1393,7 @@ void system_startup(void *args){
 	}
 	if( hardwareRevision.get() != XCVARIO_20 ){
 		gpio_pullup_en( GPIO_NUM_34 );
-		if( gflags.haveMPU && HAS_MPU_TEMP_CONTROL && !gflags.mpu_pwm_initalized  )
+		if( gflags.haveIMU && HAS_MPU_TEMP_CONTROL && !gflags.mpu_pwm_initalized  )
 		{
 			// series 2023 does not have slope support on CAN bus but MPU temperature control
 			MPU.pwm_init();
@@ -1404,7 +1411,7 @@ void system_startup(void *args){
 	xTaskCreate(&readTemp, "readTemp", 3000, NULL, 5, &tpid); // increase stack by 500 byte
 
 	VCMode.updateCache(); // correct initialization
-	if (audio_mute_gen.get() == AUDIO_ON) { AUDIO->startVarioVoice(); }
+    AUDIO->initVarioVoice();
 }
 
 // #include <xtensa/core-macros.h>  // for XTHAL_GET_CCOUNT
@@ -1436,7 +1443,6 @@ extern "C" void  app_main(void)
 	AUDIO = new Audio();
 
 	// Access to the non volatile setup
-	ESP_LOGI(FNAME,"app_main" );
 	DeviceManager::Instance(); // Create a blank DM, because on a cleard flash initSetup starts to access it.
 	ESP32NVS::CreateInstance(); // NVS is needed for the SetupCommon::initSetup() to work, and to query nvs var existance
 	// Check on the existance of some nvs variables
@@ -1489,6 +1495,15 @@ extern "C" void  app_main(void)
 		Rotary = new ESPRotary( GPIO_NUM_39, GPIO_NUM_36, GPIO_NUM_0);
 	}
 
+#ifdef Math_Test // Todo need more unit test code
+    for (float v = 1.1; v>0.9; ) {
+        if ( floatEqualFast(v, 1.0f) ) {
+            ESP_LOGI(FNAME,"equal test %f == 1.0f", v);
+            break;
+        }
+        v -= 0.000001;
+    }
+#endif
 #ifdef Quaternionen_Test
 		Quaternion::quaternionen_test();
 #endif

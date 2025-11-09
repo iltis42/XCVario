@@ -29,13 +29,10 @@
 union global_flags {
 	struct {
 		bool inSetup :1;
-		bool haveMPU :1;
+		bool haveIMU :1;
 		bool ahrsKeyValid  :1;
-		bool gload_alarm :1;
 		bool standard_setting :1;
 		bool flarmWarning :1 ;
-		bool gLoadDisplay :1;
-		bool horizon :1;
 		bool validTemperature :1 ;
 		bool mpu_pwm_initalized: 1;
 		bool gear_warn_external :1;
@@ -61,7 +58,7 @@ extern Clock *MY_CLOCK;
 extern SemaphoreHandle_t xMutex;
 extern AirspeedSensor *asSensor;
 extern PressureSensor *baroSensor;
-extern SetupRoot *Menu;
+extern SetupRoot *MenuRoot;
 extern WatchDog_C *uiMonitor;
 extern AnalogInput *BatVoltage;
 
@@ -86,6 +83,7 @@ extern float wksensor;
 extern float slipAngle;
 
 extern S2F Speed2Fly;
+extern int MyGliderPolarIndex;
 extern float meanClimb;
 extern float baroP;    // Static pressure
 extern float dynamicP; // Pitot pressure

@@ -2,27 +2,29 @@
 #include "ESPRotary.h"
 
 #include "setup/SetupNG.h"
-#include "sensor.h"
 #include "screen/DrawDisplay.h"
 #include "screen/UiEvents.h"
 #include "protocol/Clock.h"
+#include "comm/Mutex.h"
+#include "sensor.h"
 #include "logdefnone.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
-#include <freertos/portmacro.h>
 #include <driver/gpio.h>
 
 #include <cstdio>
 #include <cstring>
-#include <stack>
+#include <vector>
 #include <algorithm>
+#include <mutex>
 
 // the global access to the rotary knob
 ESPRotary *Rotary = nullptr;
 
-static std::stack<RotaryObserver *> observers;
+static std::vector<RotaryObserver *> observerstack;
+static SemaphoreMutex stack_mutex;
 
 // clock tick timer (task context)
 bool IRAM_ATTR ESPRotary::tick()
@@ -92,17 +94,25 @@ static bool IRAM_ATTR pcnt_event_handler(pcnt_unit_handle_t unit, const pcnt_wat
 
 // Observer registration
 void RotaryObserver::attach() {
-	// ESP_LOGI(FNAME,"Attach obs: %p", obs );
-	observers.push(this);
+    ESP_LOGI(FNAME, "Attach obs: %p", this);
+    std::lock_guard<SemaphoreMutex> lock(stack_mutex);
+    observerstack.push_back(this);
 }
 void RotaryObserver::detach() {
-	// ESP_LOGI(FNAME,"Detach obs: %p", obs );
-	if ( observers.empty() ) {
-		ESP_LOGW(FNAME,"Hoppla observer stack empty on detach");
-		return;
-	}
-	observers.pop();
-	_rot_dynamic = 1.4;
+    ESP_LOGI(FNAME, "Detach obs: %p", this);
+    std::lock_guard<SemaphoreMutex> lock(stack_mutex);
+    if (observerstack.back() != this) {
+        ESP_LOGW(FNAME, "Hoppla observer stack changed");
+        for (int i = observerstack.size() - 1; i >= 0; --i) {
+            if (observerstack[i] == this) {
+                observerstack.erase(observerstack.begin() + i);
+                ESP_LOGI(FNAME, "Obs removed from pos %d", i);
+                break;
+            }
+        }
+        return;
+    }
+    observerstack.pop_back();
 }
 
 // The rotary knob
@@ -215,8 +225,8 @@ void ESPRotary::updateIncrement(int inc)
 void ESPRotary::sendRot( int diff ) const
 {
 	// ESP_LOGI(FNAME,"Rotary action");
-	if (!observers.empty()) {
-		auto obs = observers.top();
+	if (!observerstack.empty()) {
+		auto obs = observerstack.back();
 		float step = pow(obs->getRotDynamic(), abs(diff)-1) * sign(diff);
 		ESP_LOGI(FNAME, "Rotation step %.2f, time %d us", step, pulse_time);
 		obs->rot( int(step) );
@@ -226,47 +236,46 @@ void ESPRotary::sendRot( int diff ) const
 void ESPRotary::sendPress() const
 {
 	// ESP_LOGI(FNAME,"Pressed action");
-	if (!observers.empty()) {
-		observers.top()->press();
+	if (!observerstack.empty()) {
+		observerstack.back()->press();
 	}
 }
 
 void ESPRotary::sendRelease() const
 {
 	// ESP_LOGI(FNAME,"Release action");
-	if (!observers.empty()) {
-		observers.top()->release();
+	if (!observerstack.empty()) {
+		observerstack.back()->release();
 	}
 }
 
 void ESPRotary::sendLongPress() const
 {
 	// ESP_LOGI(FNAME,"Long pressed action");
-	if (!observers.empty()) {
-		observers.top()->longPress();
+	if (!observerstack.empty()) {
+		observerstack.back()->longPress();
 	}
 }
 
 void ESPRotary::sendEscape() const
 {
 	// ESP_LOGI(FNAME,"Escape action");
-	if (!observers.empty()) {
-		observers.top()->escape();
+	if (!observerstack.empty()) {
+		observerstack.back()->escape();
 	}
 }
 
-// In case an event processing routine is asking itself for button status
-bool ESPRotary::readSwitch() const
+// In case an event triggered routine is asking itself for button status (events)
+bool ESPRotary::readSwitch(int delay) const
 {
-	// return true for any button event in the queue, except a release
-	int event;
-	bool ret = false;
-	if (xQueueReceive(uiEventQueue, &event, 0) == pdTRUE) {
-		if (event == ButtonEvent(ButtonEvent::SHORT_PRESS).raw
-			|| event == ButtonEvent(ButtonEvent::LONG_PRESS).raw) {
-			ret = true;
-		}
-	}
-	xQueueReset(uiEventQueue); // clear the queue
-	return ret;
+    // return true for any button event in the queue, except a release
+    int event;
+    bool ret = false;
+    if (xQueueReceive(uiEventQueue, &event, pdMS_TO_TICKS(delay)) == pdTRUE) {
+        if (event == ButtonEvent(ButtonEvent::SHORT_PRESS).raw || event == ButtonEvent(ButtonEvent::LONG_PRESS).raw) {
+            ret = true;
+        }
+        xQueueReset(uiEventQueue); // clear the queue
+    }
+    return ret;
 }

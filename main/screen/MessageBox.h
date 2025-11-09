@@ -9,6 +9,7 @@
 #pragma once
 
 #include "protocol/ClockIntf.h"
+#include "ESPRotary.h"
 #include "comm/Mutex.h"
 
 #include <queue>
@@ -31,14 +32,16 @@
 // - screens it interfers with
 
 struct ScreenMsg {
+    static constexpr const int CONFIRM = 180; // seconds
     int alert_level;
     std::string text;
     int _to;
     ScreenMsg(int a, const char *str, int to = 0) : alert_level(a), text(str), _to(to) {}
+    bool wantsConfirmation() const { return _to >= CONFIRM; }
 };
 
 
-class MessageBox final : public Clock_I
+class MessageBox final : public Clock_I, public RotaryObserver
 {
     using MessagePtr = std::unique_ptr<ScreenMsg>;
 
@@ -47,14 +50,21 @@ public:
     ~MessageBox();
 
     // API
-    void newMessage(int alert_level, const char* msg, int to = 0);
-    void recallAlarm();
+    void pushMessage(int alert_level, const char* msg, int to = 0, bool confirm = false);
+    void popMessage();
     bool draw();
     // bool isVisible() const { return current != nullptr; }
 
     // Clock tick callback
     bool tick() override;
 
+    // Rotary API to confirm messages
+    void rot(int count) override {}
+    void press() override;
+    void longPress() override { press(); }
+    void release() override {} 
+    void escape() override {}
+    
 private:
     // helper
     MessageBox();
@@ -71,7 +81,6 @@ private:
     int _start_scroll = 0;
     int _nr_scroll = 0;
     int _msg_to = 0;
-    bool _msg_queued = false;
 };
 
 // exposed pointer to the message box

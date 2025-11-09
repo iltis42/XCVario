@@ -23,7 +23,8 @@ const int CLOCK_DIVIDER = 8;
 
 // A message is represented throught
 // - alert level (1,2,3,4)
-// - and a text message
+// - a text message
+// - a time-out in seconds (0 means default per alert level, a time-out >180 sec enforces a confirmation option)
 
 void MessageBox::createMessageBox()
 {
@@ -34,10 +35,10 @@ void MessageBox::createMessageBox()
 
 MessageBox::MessageBox() :
     Clock_I(CLOCK_DIVIDER),
+    RotaryObserver(),
     width(MYUCG->getDisplayWidth()),
     height(MYUCG->getDisplayHeight())
 {
-    // _list_mutex = SemaphoreMutex();
 }
 
 MessageBox::~MessageBox()
@@ -46,7 +47,7 @@ MessageBox::~MessageBox()
     _msg_list.clear();
 }
 
-void MessageBox::newMessage(int alert_level, const char *str, int to)
+void MessageBox::pushMessage(int alert_level, const char *str, int to, bool confirm)
 {
     std::unique_ptr<ScreenMsg> msg = std::make_unique<ScreenMsg>(alert_level, str, to);
     {
@@ -67,7 +68,7 @@ void MessageBox::newMessage(int alert_level, const char *str, int to)
     }
 }
 
-void MessageBox::recallAlarm()
+void MessageBox::popMessage()
 {
     if ( current ) {
         _msg_to = 0; // trigger immediate display of next message
@@ -82,6 +83,7 @@ bool MessageBox::nextMsg()
     removeMsg();
 
     {
+        // make this block atomic
         std::lock_guard<SemaphoreMutex> lock(_list_mutex);
         if (!_msg_list.empty()) {
             current = std::move(_msg_list.front());
@@ -91,6 +93,10 @@ bool MessageBox::nextMsg()
             // All done
             current = nullptr;
             return false;
+        }
+        if ( current->wantsConfirmation() ) {
+            attach(); // observe rotary for confirmation
+            current->text += "  ... pls confirm";
         }
     }
 
@@ -144,11 +150,10 @@ void MessageBox::removeMsg()
 bool MessageBox::draw()
 {
     ESP_LOGI(FNAME, "draw message");
-    _msg_queued = false; // a 1:1 request quing
     if ( _msg_to <= 0 ) {
         if ( ! nextMsg() ) {
             Clock::stop(this);
-            ESP_LOGI(FNAME, "message stop");
+            ESP_LOGI(FNAME, "message tick stopped");
             return true;
         }
     }
@@ -191,10 +196,13 @@ bool MessageBox::draw()
 
 bool MessageBox::tick()
 {
-    if ( !_msg_queued ) {
-        int evt = ScreenEvent(ScreenEvent::MSG_BOX).raw;
-        xQueueSend(uiEventQueue, &evt, 0);
-        _msg_queued = true;
-    }
+    int evt = ScreenEvent(ScreenEvent::MSG_BOX).raw;
+    xQueueSend(uiEventQueue, &evt, 0);
     return false;
+}
+
+void MessageBox::press()
+{
+    popMessage();
+    detach();
 }

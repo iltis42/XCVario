@@ -58,7 +58,7 @@ enum e_audio_tone_mode { ATM_SINGLE_TONE, ATM_DUAL_TONE };
 enum e_audio_chopping_style { AUDIO_CHOP_SOFT, AUDIO_CHOP_HARD };
 enum e_audio_range { AUDIO_RANGE_5_MS, AUDIO_RANGE_10_MS, AUDIO_RANGE_VARIABLE };
 enum e_audio_harmonics { AUD_HARM_OFF=0, AUD_HARM_LOW=7, AUD_HARM_MED=14, AUD_HARM_HIGH=21 };
-enum e_audio_mute_gen { AUDIO_ON, AUDIO_ALARMS, AUDIO_OFF };
+enum e_audio_mute_gen { AUDIO_ON, AUDIO_ALARMS_ONLY, AUDIO_OFF };
 typedef enum e_amp_shutdown { AMP_STAY_ON, AMP_SHUTDOWN, AMP_SHUTDOWN_5S } e_amp_shutdown_t;
 enum e_flap_sensor { FLAP_SENSOR_DISABLE, FLAP_SENSOR_ENABLE, FLAP_SENSOR_CLIENT };
 typedef enum e_cruise_audio { AUDIO_S2F, AUDIO_VARIO } e_cruise_audio_2;
@@ -100,10 +100,10 @@ typedef enum e_hardware_rev {
 } e_hardware_rev_t;        // XCVario-Num = hardware revision + 18
 typedef enum e_equalizer_type {  AUDIO_EQ_DISABLE, AUDIO_EQ_LS4, AUDIO_EQ_LS8, AUDIO_EQ_LSEXT } e_equalizer_type_t;
 typedef enum e_tek_compensation { TE_TEK_PROBE, TE_TEK_EPOT, TE_TEK_PRESSURE } e_tek_compensation_t;
-typedef enum e_battery_type { BATTERY_USER, BATTERY_LEADACID, BATTERY_LIFEPO4 } e_battery_type_t;
+enum e_battery_type { BATTERY_CANCEL, BATTERY_LEADACID, BATTERY_LIFEPO4 };
 
 
-constexpr int NOTSET_ELEVATION = -1;
+constexpr int NO_ELEVATION = -1;
 
 struct t_tenchar_id {
 	char id[10];
@@ -382,11 +382,10 @@ extern SetupNG<int>  		alt_select;
 extern SetupNG<int>  		fl_auto_transition;
 extern SetupNG<int>  		alt_display_mode;
 extern SetupNG<float>  		transition_alt;
-extern SetupNG<int>  		glider_type_index;
+extern SetupNG<int>  		glider_type;
 
 extern SetupNG<float>  		as_offset;
 
-extern SetupNG<int>  		bat_type;
 extern SetupNG<float>  		bat_low_volt;
 extern SetupNG<float>  		bat_red_volt;
 extern SetupNG<float>  		bat_yellow_volt;
@@ -395,7 +394,7 @@ extern SetupNG<float>  		core_climb_period;
 extern SetupNG<float>  		core_climb_min;
 extern SetupNG<float>  		core_climb_history;
 extern SetupNG<float>  		mean_climb_major_change;
-extern SetupNG<float>  		elevation;
+extern SetupNG<float>  		airfield_elevation;
 extern SetupNG<float>  		s2f_deadband;
 extern SetupNG<float>  		s2f_deadband_neg;
 extern SetupNG<float>  		s2f_delay;
@@ -411,6 +410,7 @@ extern SetupNG<float>  		wk_speed_2;
 extern SetupNG<float>  		wk_speed_3;
 extern SetupNG<float>  		wk_speed_4;
 extern SetupNG<float>  		wk_speed_5;
+extern SetupNG<float>  		wk_speed_6;
 extern SetupNG<int>  		alt_unit;
 extern SetupNG<int>  		alt_quantization;
 extern SetupNG<int>  		ias_unit;
@@ -446,7 +446,6 @@ extern SetupNG<float>		ahrs_min_gyro_factor;
 extern SetupNG<float>		ahrs_dynamic_factor;
 extern SetupNG<int>		    ahrs_roll_check;
 extern SetupNG<float>       gyro_gating;
-extern SetupNG<int>		    display_style;
 extern SetupNG<int>		    s2f_switch_type;
 extern SetupNG<int>		    hardwareRevision;
 extern SetupNG<int>		    ahrs_licence_dig1;

@@ -10,6 +10,7 @@
 #include "setup/SubMenuDevices.h"
 #include "setup/SubMenuCompassWind.h"
 #include "setup/SubMenuGlider.h"
+#include "setup/SubMenuFlap.h"
 #include "setup/ShowBootMsg.h"
 #include "IpsDisplay.h"
 #include "ESPAudio.h"
@@ -82,6 +83,7 @@ int gload_reset(SetupMenuSelect *p) {
 		gload_neg_max.set(0);
 		airspeed_max.set(0);
 		p->setSelect(0);
+		p->getParent()->setDirty();
 	}
 	return 0;
 }
@@ -157,14 +159,12 @@ int do_display_test(SetupMenuSelect *p) {
 	if (display_test.get()) {
 		MYUCG->setColor(0, 0, 0);
 		MYUCG->drawBox(0, 0, 240, 320);
-		while (!Rotary->readSwitch()) {
-			delay(100);
+		while (! Rotary->readSwitch(300)) {
 			ESP_LOGI(FNAME,"Wait for key press");
 		}
 		MYUCG->setColor(255, 255, 255);
 		MYUCG->drawBox(0, 0, 240, 320);
-		while (!Rotary->readSwitch()) {
-			delay(100);
+		while (! Rotary->readSwitch(300)) {
 			ESP_LOGI(FNAME,"Wait for key press");
 		}
 		esp_restart();
@@ -173,9 +173,10 @@ int do_display_test(SetupMenuSelect *p) {
 }
 
 int select_battery_type(SetupMenuSelect *p) {
-	switch ( bat_type.get() ){
-		case BATTERY_USER:
-		break;
+	ESP_LOGI(FNAME, "select_battery_type %d", p->getSelect());
+	switch ( p->getSelect() ){
+		case BATTERY_CANCEL:
+			break;
 		case BATTERY_LEADACID:
 			bat_low_volt.set(11.5);  // its about 20% but LeadAcid already deep discharged -> 0%
 			bat_red_volt.set(11.75); // 30% of charge  -> 20%
@@ -189,6 +190,7 @@ int select_battery_type(SetupMenuSelect *p) {
 			bat_full_volt.set(13.6); // 100% charge
 		break;
 	}
+	p->getParent()->setDirty();
 	return 0;
 }
 
@@ -374,7 +376,7 @@ void SetupMenu::enter()
 
 void SetupMenu::display(int mode)
 {
-	if (dirty && populateMenu) {
+	if (dirty && dyn_content && populateMenu) {
 		// Cope with changes in menu item presence
 		ESP_LOGI(FNAME,"SetupMenu display() dirty %d", dirty );
 		(populateMenu)(this);
@@ -865,12 +867,6 @@ static void screens_menu_create_vario(SetupMenu *top) {
     // ncolor->addEntry("Orange");
     // ncolor->addEntry("Red");
     // top->addEntry(ncolor);
-    SetupMenuSelect *disty = new SetupMenuSelect("Style", RST_NONE, nullptr, &display_style);
-    top->addEntry(disty);
-    disty->setHelp("Display style in airliner style or retro mode with classic vario meter needle");
-    disty->addEntry("Airliner");
-    disty->addEntry("Retro");
-
     SetupMenuSelect *scrcaid = new SetupMenuSelect("Thermal-Assist", RST_NONE, nullptr, &vario_centeraid);
     scrcaid->setHelp("Enable/disable display of the thermal assistent");
     scrcaid->mkEnable();
@@ -903,6 +899,13 @@ static void screens_menu_create_vario(SetupMenu *top) {
     nup->addEntry("Glider-Up");
     nup->addEntry("North-Up");
     top->addEntry(nup);
+
+    SetupMenuSelect *batv = new SetupMenuSelect("Battery Display", RST_NONE, nullptr, &battery_display);
+    batv->setHelp("Display battery charge state either in Percentage e.g. 75% or Voltage e.g. 12.5V");
+    batv->addEntry("Percentage");
+    batv->addEntry("Voltage");
+    batv->addEntry("Voltage Big");
+    top->addEntry(batv);
 }
 
 void screens_menu_create_gload(SetupMenu *top) {
@@ -980,6 +983,12 @@ static void options_menu_create_screens(SetupMenu *top) { // dynamic!
 
 		SetupMenu *horizon = new SetupMenu("Horizon", screens_menu_create_horizon);
 		top->addEntry(horizon);
+
+        SetupMenuSelect *disva = new SetupMenuSelect("Color Variant", RST_NONE, nullptr, &display_variant);
+        top->addEntry(disva);
+        disva->setHelp("Display variant white on black (W/B) or black on white (B/W)");
+        disva->addEntry("W/B");
+        disva->addEntry("B/W");
 	}
 
 	SetupMenu *tmp_menu = static_cast<SetupMenu*>(top->getEntry(0)); // vario
@@ -1021,10 +1030,9 @@ void options_menu_create(SetupMenu *opt) { // dynamic!
 			stumo->mkEnable();
 		}
 		
-		// Units
-		SetupMenu *un = new SetupMenu("Units", options_menu_create_units);
-		opt->addEntry(un);
-		un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
+		// Vario
+		SetupMenu *va = new SetupMenu("Vario and Speed 2 Fly", vario_menu_create);
+		opt->addEntry(va);
 
 		// Audio
 		SetupMenu *ad = new SetupMenu("Audio", audio_menu_create);
@@ -1080,36 +1088,34 @@ void system_menu_create_software(SetupMenu *top) {
 		SetupMenuDisplay *dis = new ShowBootMsg("Show Boot Messages");
 		top->addEntry(dis);
 	}
+
+	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, nullptr, &factory_reset);
+	fa->setHelp("Reset all settings to factory defaults (metric system, 5 m/s vario range, etc.)");
+	fa->addEntry("Cancel");
+	fa->addEntry("ResetAll");
+	top->addEntry(fa);
 }
 
 void system_menu_create_battery(SetupMenu *top) {
-	SetupMenuSelect *btype = new SetupMenuSelect("Battery Type", RST_NONE, select_battery_type, &bat_type);
-	btype->setHelp("Factory setup for corresponding display type used");
-	btype->addEntry("UserType");
+	SetupMenuSelect *btype = new SetupMenuSelect("Battery Type", RST_NONE, select_battery_type);
+	btype->setHelp("Apply template battery threshold voltages for different battery types");
+	btype->addEntry("Cancel");
 	btype->addEntry("LeadAcid");
 	btype->addEntry("LiFePo4");
 	top->addEntry(btype);
 
-	SetupMenuValFloat *blow = new SetupMenuValFloat("Battery Low", "Volt ", nullptr, false, &bat_low_volt);
-	SetupMenuValFloat *bred = new SetupMenuValFloat("Battery Red", "Volt ", nullptr, false, &bat_red_volt);
-	SetupMenuValFloat *byellow = new SetupMenuValFloat("Battery Yellow", "Volt ", nullptr, false, &bat_yellow_volt);
-	SetupMenuValFloat *bfull = new SetupMenuValFloat("Battery Full", "Volt ", nullptr, false, &bat_full_volt);
-
-	SetupMenuSelect *batv = new SetupMenuSelect("Battery Display", RST_NONE, nullptr, &battery_display);
-	batv->setHelp(
-			"Option to display battery charge state either in Percentage e.g. 75% or Voltage e.g. 12.5V");
-	batv->addEntry("Percentage");
-	batv->addEntry("Voltage");
-	batv->addEntry("Voltage Big");
-
+	SetupMenuValFloat *blow = new SetupMenuValFloat("Empty", "Volt ", nullptr, false, &bat_low_volt);
 	top->addEntry(blow);
+	SetupMenuValFloat *bred = new SetupMenuValFloat("Critical", "Volt ", nullptr, false, &bat_red_volt);
 	top->addEntry(bred);
+	SetupMenuValFloat *byellow = new SetupMenuValFloat("Moderate", "Volt ", nullptr, false, &bat_yellow_volt);
 	top->addEntry(byellow);
+	SetupMenuValFloat *bfull = new SetupMenuValFloat("Full", "Volt ", nullptr, false, &bat_full_volt);
 	top->addEntry(bfull);
-	top->addEntry(batv);
+
+	SetupMenuValFloat *met_adj = SetupMenu::createVoltmeterAdjustMenu();
+	top->addEntry(met_adj);
 }
-
-
 
 
 void system_menu_create_hardware_type(SetupMenu *top) {
@@ -1121,13 +1127,6 @@ void system_menu_create_hardware_type(SetupMenu *top) {
 	dtype->addEntry("ST7789");
 	dtype->addEntry("ILI9341");
 	top->addEntry(dtype);
-
-	SetupMenuSelect *disva = new SetupMenuSelect("Color Variant", RST_NONE, nullptr, &display_variant);
-	top->addEntry(disva);
-	disva->setHelp(
-			"Display variant white on black (W/B) or black on white (B/W)");
-	disva->addEntry("W/B");
-	disva->addEntry("B/W");
 
 	// Orientation   _display_orientation
 	SetupMenuSelect * diso = new SetupMenuSelect( "Orientation", RST_ON_EXIT, nullptr, &display_orientation );
@@ -1159,7 +1158,7 @@ void system_menu_create_hardware_rotary(SetupMenu *top) {
 	roinc->addEntry("2 indent", 2);
 
 	// Rotary Default
-	SetupMenuSelect *rd = new SetupMenuSelect("Rotation", RST_ON_EXIT, nullptr, &rot_default);
+	SetupMenuSelect *rd = new SetupMenuSelect("Primary Use", RST_ON_EXIT, nullptr, &rot_default);
 	top->addEntry(rd);
 	rd->setHelp(
 			"Select value to be altered at rotary movement outside of setup menu (reboots)");
@@ -1279,10 +1278,10 @@ void system_menu_create_hardware_ahrs(SetupMenu *top) {
 void system_menu_create_hardware(SetupMenu *top) {
 	if ( top->getNrChilds() == 0 ) {
 		top->setDynContent();
-		SetupMenu *display = new SetupMenu("DISPLAY Setup", system_menu_create_hardware_type);
+		SetupMenu *display = new SetupMenu("Display Type", system_menu_create_hardware_type);
 		top->addEntry(display);
 
-		SetupMenu *rotary = new SetupMenu("Rotary Setup", system_menu_create_hardware_rotary);
+		SetupMenu *rotary = new SetupMenu("Rotary Knob", system_menu_create_hardware_rotary);
 		top->addEntry(rotary);
 
 		// Flap::setupMenue(top);
@@ -1302,11 +1301,11 @@ void system_menu_create_hardware(SetupMenu *top) {
 		gear->addEntry("External");  // A $g,w<n>*CS command from an external device
 
 		if (hardwareRevision.get() >= XCVARIO_21) {
-			SetupMenu *ahrs = new SetupMenu("AHRS Setup", system_menu_create_hardware_ahrs);
+			SetupMenu *ahrs = new SetupMenu("Attitude & Heading RefSys", system_menu_create_hardware_ahrs);
 			top->addEntry(ahrs);
 		}
 
-		SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor type", RST_ON_EXIT, nullptr, &airspeed_sensor_type );
+		SetupMenuSelect * pstype = new SetupMenuSelect( "AS Sensor Type", RST_ON_EXIT, nullptr, &airspeed_sensor_type );
 		top->addEntry( pstype );
 		pstype->setHelp( "Factory default for type of pressure sensor, will not erase on factory reset (reboots)");
 		pstype->addEntry( "ABPMRR");
@@ -1315,8 +1314,9 @@ void system_menu_create_hardware(SetupMenu *top) {
 		pstype->addEntry( "MCPH21");
 		pstype->addEntry( "Autodetect");
 
-		SetupMenuValFloat *met_adj = SetupMenu::createVoltmeterAdjustMenu();
-		top->addEntry(met_adj);
+        SetupMenu *bat = new SetupMenu("Battery Meter", system_menu_create_battery);
+        bat->setHelp("Adjust voltage thresholds for battery state indication");
+        top->addEntry(bat);
 	}
 	SetupMenu *wkm = static_cast<SetupMenu*>(top->getEntry(2)); // Flap Sensor
 	if ( FLAP ) {
@@ -1341,24 +1341,18 @@ void system_menu_create(SetupMenu *sye) {
 	SetupMenu *soft = new SetupMenu("Software", system_menu_create_software);
 	sye->addEntry(soft);
 
-	SetupMenuSelect *fa = new SetupMenuSelect("Factory Reset", RST_IMMEDIATE, nullptr, &factory_reset);
-	fa->setHelp("Reset all settings to factory defaults (metric system, 5 m/s vario range, etc.)");
-	fa->addEntry("Cancel");
-	fa->addEntry("ResetAll");
-	sye->addEntry(fa);
-
 	// Glider Setup
 	SetupMenu *po = new SetupMenu("Glider Type", glider_menu_create);
-	po->setBuzzword(Polars::getGliderType(Polars::getGliderEnumPos()));
+	po->setBuzzword(Polars::getGliderType(MyGliderPolarIndex));
 	po->setHelp("Polar, weight and all attributes of the glider");
 	sye->addEntry(po);
 
-	SetupMenu *bat = new SetupMenu("Battery Setup", system_menu_create_battery);
-	bat->setHelp(
-			"Adjust corresponding voltage for battery symbol display low,red,yellow and full");
-	sye->addEntry(bat);
+	// Units
+	SetupMenu *un = new SetupMenu("Units", options_menu_create_units);
+	sye->addEntry(un);
+	un->setHelp("Setup altimeter, airspeed indicator and variometer with European Metric, American, British or Australian units", 205);
 
-	SetupMenu *hardware = new SetupMenu("Hardware Setup", system_menu_create_hardware);
+	SetupMenu *hardware = new SetupMenu("Hardware & Sensors", system_menu_create_hardware);
 	hardware->setHelp("Setup variometer hardware e.g. display, rotary, AS and AHRS sensor, voltmeter, etc", 240);
 	sye->addEntry(hardware);
 
@@ -1408,10 +1402,7 @@ void setup_create_root(SetupMenu *top) {
 		bugs_item_create(top);
 	}
 
-	SetupMenuValFloat *bal = new SetupMenuValFloat("Ballast", "litre", water_adj, true, &ballast_kg);
-	bal->setHelp("Amount of water ballast added to the over all weight");
-	bal->setPrecision(0);
-	bal->setNeverInline();
+	SetupMenuValFloat *bal = SetupMenu::createBallastMenu();
 	top->addEntry(bal);
 
 	SetupMenuValFloat *crewball = new SetupMenuValFloat("Crew Weight", "kg", start_weight_adj, false, &crew_weight);
@@ -1424,7 +1415,7 @@ void setup_create_root(SetupMenu *top) {
 	SetupMenuValFloat *qnh_menu = SetupMenu::createQNHMenu();
 	top->addEntry(qnh_menu);
 
-	SetupMenuValFloat *afe = new SetupMenuValFloat("Airfield Elevation", "", nullptr, true, &elevation);
+	SetupMenuValFloat *afe = new SetupMenuValFloat("Airfield Elevation", "", nullptr, true, &airfield_elevation);
 	afe->setHelp(
 			"Airfield elevation in meters for QNH auto adjust on ground according to this elevation");
 	afe->setRotDynamic(3.0);
@@ -1443,10 +1434,6 @@ void setup_create_root(SetupMenu *top) {
 				"To exit from student mode enter expert password and restart device after expert password has been set correctly");
 		top->addEntry(passw);
 	} else {
-		// Vario
-		SetupMenu *va = new SetupMenu("Vario and Speed 2 Fly", vario_menu_create);
-		top->addEntry(va);
-
 		// Options Setup
 		SetupMenu *opt = new SetupMenu("Options", options_menu_create);
 		top->addEntry(opt);
@@ -1459,8 +1446,8 @@ void setup_create_root(SetupMenu *top) {
 
 SetupMenu* SetupMenu::createTopSetup() {
 	const char *top_menu_name = "Setup";
-	if (glider_type_index.get() != 1000) {
-		top_menu_name =	Polars::getPolarName(Polars::getGliderEnumPos());
+	if (glider_type.get() != 1000 || ! S2F::isPolarEqualTo(0)) {
+		top_menu_name =	Polars::getPolarName(MyGliderPolarIndex);
 	}
 	SetupMenu *setup = new  SetupMenu(top_menu_name, setup_create_root);
 	return setup;
@@ -1472,9 +1459,18 @@ SetupMenuValFloat* SetupMenu::createQNHMenu() {
 	return qnh;
 }
 
+SetupMenuValFloat* SetupMenu::createBallastMenu() {
+    SetupMenuValFloat *bal = new SetupMenuValFloat("Ballast", "litre", water_adj, true, &ballast_kg);
+    bal->setHelp("Amount of water ballast added to the over all weight");
+    bal->setPrecision(0);
+    bal->setNeverInline();
+    return bal;
+}
+
 SetupMenuValFloat* SetupMenu::createVoltmeterAdjustMenu() {
 	SetupMenuValFloat *met_adj = new SetupMenuValFloat("Voltmeter Adjust", "%", factv_adj, false, &factory_volt_adjust, RST_NONE, false, true);
-	met_adj->setHelp("Option to factory fine-adjust voltmeter");
+	met_adj->setHelp("Factory fine adjust voltmeter");
 	met_adj->setNeverInline();
 	return met_adj;
 }
+

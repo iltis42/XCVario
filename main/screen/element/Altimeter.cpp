@@ -103,7 +103,7 @@ void Altimeter::draw(float alt_m)
     ESP_LOGI(FNAME,"A2 %f", altitude);
     if (alt_display_mode.get() == MODE_QFE)
     {
-        altitude -= elevation.get(); // fixme, what is elevation is not set?
+        altitude -= airfield_elevation.get(); // fixme, what is elevation is not set?
     }
 
     // moment to take over a changed unit, or quant

@@ -11,9 +11,8 @@
 #include "setup/SetupMenu.h"
 #include "protocol/WatchDog.h"
 
-enum ScreenTypes
+enum ScreenTypes // bit field
 {
-    NO_SCREEN = 0,
     SCREEN_VARIO = 1,
     SCREEN_GMETER = 2,
     SCREEN_HORIZON = 4,
@@ -44,6 +43,6 @@ public:
 
 private:
     IpsDisplay* _display;
-    int active_screen = NO_SCREEN;
+    int active_screen = SCREEN_VARIO;
     WatchDog_C  _ui_mon_wd;
 };

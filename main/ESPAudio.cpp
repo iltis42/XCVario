@@ -798,8 +798,8 @@ void Audio::restart()
 	ESP_LOGD(FNAME,"Audio::restart");
 	dacDisable();
 	dac_cosine_enable(_ch);
-	dac_offset_set(_ch, -75 );
-	dac_scale_set(_ch, 2 );
+	// dac_offset_set(_ch, -75 );
+	dac_scale_set(_ch, 1 );
 	enableAmplifier( true );
 	dacEnable();
 }

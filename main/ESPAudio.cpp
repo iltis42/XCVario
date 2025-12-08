@@ -820,7 +820,7 @@ void Audio::enableAmplifier( bool enable )
 {
 	// ESP_LOGI(FNAME,"Audio::enableAmplifier( %d )", (int)enable );
 	// enable Audio
-	if( enable )
+	if( enable && (speaker_volume != 0) )
 	{
 		if( !amplifier_enable ){
 			dacEnable();

@@ -245,6 +245,7 @@ bool Audio::selfTest(){
 
 	setvolume = default_volume.get();
 	speaker_volume = vario_mode_volume = s2f_mode_volume = setvolume;
+	enableAmplifier(true);
 	ESP_LOGI(FNAME,"default volume: %f", speaker_volume );
 	writeVolume( setvolume );
 	//	while(1){    // uncomment for continuous self test
@@ -597,7 +598,7 @@ void Audio::dactask(void* arg )
 			int shutdownamp = amplifier_shutdown.get();
 			bool disable_amp = false;
 
-			if( inDeadBand(_te) && !volume_change ){
+			if( (inDeadBand(_te) && !volume_change) || (speaker_volume == 0) ){
 				deadband_active = true;
 				sound = false;
 				disable_amp = true;
@@ -637,9 +638,7 @@ void Audio::dactask(void* arg )
 			}
 			//ESP_LOGI(FNAME, "sound %d, ht %d, te %2.1f vc:%d cw:%f ", sound, hightone, _te, volume_change, current_volume );
 			if( sound ){
-				if( shutdownamp ){
-					enableAmplifier( true );
-				}
+				enableAmplifier( true );
 				disable_amp = false;
 				// Blend over gracefully volume changes
 				if( (current_volume != speaker_volume) && volume_change ){
@@ -820,9 +819,9 @@ void Audio::enableAmplifier( bool enable )
 {
 	// ESP_LOGI(FNAME,"Audio::enableAmplifier( %d )", (int)enable );
 	// enable Audio
-	if( enable && (speaker_volume != 0) )
+	if( enable )
 	{
-		if( !amplifier_enable ){
+		if( !amplifier_enable && (speaker_volume != 0) ){
 			dacEnable();
 			ESP_LOGI(FNAME,"Audio::enableAmplifier");
 			gpio_set_direction(GPIO_NUM_19, GPIO_MODE_OUTPUT );   // use pullup 1 == SOUND 0 == SILENCE

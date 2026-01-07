@@ -1893,6 +1893,12 @@ void SetupMenu::system_menu_create_hardware_ahrs( MenuEntry *top ){
 	rpyl->setHelp( "Send LEVIL AHRS like $RPYL sentence for artifical horizon");
 	rpyl->addEntry( "Disable");
 	rpyl->addEntry( "Enable");
+
+	SetupMenuSelect * araw = new SetupMenuSelect( "AHRS RAW", RST_NONE , 0, true, &ahrs_raw_data );
+	top->addEntry( araw );
+	araw->setHelp( "Send RAW AHRS gyro and accelerator data in XCV,G..,A.. format");
+	araw->addEntry( "Disable");
+	araw->addEntry( "Enable");
 }
 
 

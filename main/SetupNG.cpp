@@ -404,6 +404,7 @@ SetupNG<int> 			gear_warning("GEARWA", 0 );
 SetupNG<t_wireless_id>  custom_wireless_id("WLID", t_wireless_id("") );
 SetupNG<int> 			drawing_prio("DRAWP", DP_NEEDLE );
 SetupNG<int> 			logging("LOGGING", LOG_DISABLE );
+SetupNG<int> 			ahrs_raw_data("AHRSRAW", 0 );
 SetupNG<float>      	display_clock_adj("DSCLADHJ", 0 );
 
 static mpud::raw_axes_t zero_bias;

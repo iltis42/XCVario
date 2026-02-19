@@ -7,8 +7,6 @@ cmake_minimum_required(VERSION 3.5)
 #set(EXTRA_COMPONENT_DIRS $ENV{IDF_PATH}/examples/sensor/components)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-include(cmake/project_version.cmake OPTIONAL)
-project(xcvario_pro VERSION ${PROJECT_VER})
 
 project(sensor)
 

@@ -145,10 +145,11 @@ void canTxTask(void *arg){
 void canRxTask(void *arg){
 	int tick = 0;
 	while (true) {
-		// TickType_t xLastWakeTime = xTaskGetTickCount();
-		ESP_LOGI(FNAME,"Tick: %d", tick );
+		// ESP_LOGI(FNAME,"Tick: %d", tick );
 		if( !Flarm::bincom ){
 			static_cast<CANbus*>(arg)->rxtick(tick);
+		}else{
+		   vTaskDelay(pdMS_TO_TICKS(5));
 		}
 		if( (tick++ % 100) == 0) {
 			ESP_LOGI(FNAME,"Free Heap: %d bytes", heap_caps_get_free_size(MALLOC_CAP_8BIT) );
@@ -257,7 +258,7 @@ void CANbus::txtick(int tick){
 	}
 	// Router::routeCAN();
 	if( !(tick%100) ){
-		if( ((can_mode.get() == CAN_MODE_CLIENT)  && _connected_xcv) || can_mode.get() == CAN_MODE_MASTER ){ // sent from client only if keep alive is there
+		if( (can_mode.get() == CAN_MODE_CLIENT)  || (can_mode.get() == CAN_MODE_MASTER) ){ // sent from client only if keep alive is there
 			msg.set( "K" );
 			if( !sendData( _can_id_keepalive_tx, msg.c_str(), 1 ) )
 			{
@@ -269,6 +270,7 @@ void CANbus::txtick(int tick){
 				if( _connected_timeout_xcv > 1000 )
 					recover();
 			}else{
+			        // ESP_LOGI(FNAME,"Send CAN TX Keep: OK, to_xcv: %d conn_xcv: %d", _connected_timeout_xcv, _connected_xcv );
 				if( _keep_alive_fails ){
 					ESP_LOGI(FNAME,"Okay again CAN TX Keep Alive");
 					_keep_alive_fails = false;
@@ -332,15 +334,15 @@ void CANbus::rxtick(int tick){
 			}
 		}
 		if( !xcv_came ){
-			_connected_timeout_xcv++;
-			if( _connected_timeout_xcv > 200 ){
+			_connected_timeout_xcv+=100;
+			if( _connected_timeout_xcv > 1000 ){
 				if(  _connected_xcv ){
 					ESP_LOGI(FNAME,"CAN XCV connection timeout");
 					_connected_xcv = false;
 				}
-				if( (can_mode.get() != CAN_MODE_STANDALONE) && !(_connected_timeout_xcv % 10000) ){
-					ESP_LOGI(FNAME,"CAN restart timeout");
-					restart();
+				if( can_mode.get() != CAN_MODE_STANDALONE  ){
+				   ESP_LOGI(FNAME,"CAN restart timeout");
+				   restart();
 				}
 			}
 		}

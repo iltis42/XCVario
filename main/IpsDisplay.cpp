@@ -1038,6 +1038,7 @@ void IpsDisplay::drawConnection( int16_t x, int16_t y )
 		drawCable(DISPLAY_W-20, y);
 }
 
+
 void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 	if( _menu )
 		return;
@@ -1067,14 +1068,18 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 			ucg->setColor( COLOR_HEADER );
 			ucg->drawBox( x-40,y-2, 36, 12  );  // Bat body square
 			ucg->drawBox( x-4, y+1, 3, 6  );      // Bat pluspole pimple
-			if ( charge > yellow )  // >25% grün
-				ucg->setColor( COLOR_GREEN ); // green
-			else if ( charge < yellow && charge > red )
-				ucg->setColor( COLOR_YELLOW ); //  yellow
-			else if ( charge < red )
-				ucg->setColor( COLOR_RED ); // red
+
+			float v_red    = bat_red_volt.get();
+			float v_yellow = bat_yellow_volt.get();
+			if (v_yellow < v_red)
+				v_yellow = v_red;
+			if (volt >= v_yellow)
+				ucg->setColor( COLOR_GREEN );
+			else if (volt >= v_red)
+				ucg->setColor( COLOR_YELLOW );
 			else
 				ucg->setColor( COLOR_RED ); // red
+
 			int chgpos=(charge*32)/100;
 			if(chgpos <= 4)
 				chgpos = 4;
@@ -1106,6 +1111,7 @@ void IpsDisplay::drawBat( float volt, int x, int y, bool blank ) {
 
 	}
 }
+
 
 // accept temperature in deg C and display in configured unit
 // right-aligned value to x, incl. unit right of x

@@ -309,6 +309,15 @@ constexpr uint8_t MOTCTRL_FF_COUNT_BIT          = (3);  // [3:2]
 constexpr uint8_t MOTCTRL_FF_COUNT_LENGTH       = (2);
 constexpr uint8_t MOTCTRL_MOT_COUNT_BIT         = (1);  // [1:0]
 constexpr uint8_t MOTCTRL_MOT_COUNT_LENGTH      = (2);
+
+//------------------------------------------------------------------------------
+constexpr uint8_t ACCEL_CONFIG2                = (0x1D);
+constexpr uint8_t ACONFIG2_FIFO_SIZE_BIT       = (7);  // [7:6]
+constexpr uint8_t ACONFIG2_FIFO_SIZE_LENGTH    = (2);
+constexpr uint8_t ACONFIG2_ACCEL_FCHOICE_B_BIT = (3);
+constexpr uint8_t ACONFIG2_A_DLPF_CFG_BIT      = (2);  // [2:0]
+constexpr uint8_t ACONFIG2_A_DLPF_CFG_LENGTH   = (3);
+
 //------------------------------------------------------------------------------
 #endif
 

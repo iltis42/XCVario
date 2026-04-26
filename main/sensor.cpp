@@ -1366,6 +1366,7 @@ void system_startup(void *args){
 	}
 
 	if( gflags.haveMPU ){
+		ESP_LOGI(FNAME, "IMU WHO_AM_I = 0x%02X", MPU.whoAmI());
 		if( MPU.whoAmI() == 0x12 ){
 			if( hardwareRevision.get() < XCVARIO_25){
 				hardwareRevision.set(XCVARIO_25);  // XCV-25: ICL20602

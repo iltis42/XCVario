@@ -89,5 +89,6 @@
         "timer": "cpp"
     },
     "idf.espIdfPath": "/home/hjr/opt/esp-idf_43",
-    "idf.toolsPath": "/home/hjr/.espressif"
+    "idf.toolsPath": "/home/hjr/.espressif",
+    "idf.currentSetup": "/home/hjr/opt/esp-idf_43/"
 }

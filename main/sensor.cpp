@@ -981,70 +981,6 @@ void system_startup(void *args){
 		ota->begin();
 		ota->doSoftwareUpdate( display );
 	}
-	esp_err_t err=ESP_ERR_NOT_FOUND;
-	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
-	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
-	err = MPU.reset();
-	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
-	if( err == ESP_OK ){
-		if( hardwareRevision.get() < XCVARIO_21 ){
-			ESP_LOGI( FNAME,"MPU avail, increase hardware revision to 3 (XCV-21)");
-			hardwareRevision.set(XCVARIO_21);  // there is MPU6050 gyro and acceleration sensor, at least we got an XCV-21
-		}
-		gflags.haveMPU = true;
-		mpu_target_temp = mpu_temperature.get();
-		ESP_LOGI( FNAME,"MPU initialize");
-		MPU.initialize();  // this will initialize the chip and set default configurations
-		MPU.setSampleRate(50);  // in (Hz)
-		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
-		MPU.setGyroFullScale( GYRO_FS );
-		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
-		mpud::raw_axes_t gb = gyro_bias.get();
-		mpud::raw_axes_t ab = accl_bias.get();
-		if( gb.isZero() && ab.isZero() ) {
-			ESP_LOGI( FNAME,"MPU computeOffsets");
-			MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
-			accl_bias.set( ab );
-			gyro_bias.set( gb );
-			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-		}
-		MPU.setAccelOffset(ab);
-		MPU.setGyroOffset(gb);
-		mpud::raw_axes_t accelRaw;
-		mpud::float_axes_t accelG;
-		float samples = 0;
-		delay(200);
-		for( auto i=0; i<10; i++ ){
-			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
-			if( err != ESP_OK ) {
-				ESP_LOGE(FNAME, "AHRS acceleration I2C read error");
-				continue;
-			}
-			samples++;
-			accelG += mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
-			ESP_LOGI( FNAME,"MPU %.2f", accelG[0] );
-			delay( 10 );
-		}
-		char ahrs[30];
-		accelG /= samples;
-		float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
-		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accel );
-		display->writeText( line++, ahrs );
-		logged_tests += "MPU6050 AHRS test: PASSED\n";
-		IMU::init();
-		if ( IMU::MPU6050Read() == ESP_OK) {
-			IMU::Process();
-		}
-		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
-	}
-	else{
-		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );
-		if( hardwareRevision.get() >= XCVARIO_21 ) {
-			ESP_LOGI( FNAME,"hardwareRevision detected = 3, XCVario-21+");
-			display->writeText( line++, "AHRS Sensor: NOT FOUND");
-			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
-		}
-	}
 	char id[16] = { 0 };
 	strcpy( id, custom_wireless_id.get().id );
 	ESP_LOGI(FNAME,"Custom Wirelss-ID from Flash: %s len: %d", id, strlen(id) );
@@ -1362,6 +1298,85 @@ void system_startup(void *args){
 			resultCAN = "FAIL";
 			logged_tests += "CAN Bus selftest: FAILED\n";
 			ESP_LOGE(FNAME,"Error: CAN Interface failed");
+		}
+	}
+	esp_err_t err=ESP_ERR_NOT_FOUND;
+	MPU.setBus(i2c);  // set communication bus, for SPI -> pass 'hspi'
+	MPU.setAddr(mpud::MPU_I2CADDRESS_AD0_LOW);  // set address or handle, for SPI -> pass 'mpu_spi_handle'
+	err = MPU.reset();
+	ESP_LOGI( FNAME,"MPU Probing returned %d MPU enable: %d ", err, attitude_indicator.get() );
+	if( err == ESP_OK ){
+		if( hardwareRevision.get() < XCVARIO_21 ){
+			ESP_LOGI( FNAME,"MPU avail, increase hardware revision to 3 (XCV-21)");
+			hardwareRevision.set(XCVARIO_21);  // there is MPU6050 gyro and acceleration sensor, at least we got an XCV-21
+		}
+		gflags.haveMPU = true;
+		mpu_target_temp = mpu_temperature.get();
+		ESP_LOGI( FNAME,"MPU initialize");
+		MPU.initialize();  // this will initialize the chip and set default configurations
+		MPU.setSampleRate(50);  // in (Hz)
+		MPU.setAccelFullScale(mpud::ACCEL_FS_8G);
+		MPU.setGyroFullScale( GYRO_FS );
+		MPU.setDigitalLowPassFilter(mpud::DLPF_5HZ);  // smoother data
+		mpud::raw_axes_t gb = gyro_bias.get();
+		mpud::raw_axes_t ab = accl_bias.get();
+		if( gb.isZero() && ab.isZero() ) {
+			ESP_LOGI( FNAME,"MPU computeOffsets");
+			if( gflags.haveMPU ){
+                           // ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
+			   MPU.pwm_init();
+                           gflags.mpu_pwm_initalized = true;
+			   for( int i=0; i<150; i++){
+                              MPU.temp_control( i, xcvTemp );
+                              ESP_LOGI(FNAME,"MPU temp control; T=%.2f", MPU.getTemperature() );
+			      if(MPU.getSiliconTempStatus() == MPU_T_LOCKED){
+                                 ESP_LOGI(FNAME,"MPU temp locked");
+			         break;
+			      }
+			      delay(100);
+			   }
+                           MPU.temp_control( 0, xcvTemp );
+                        }
+			MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
+			accl_bias.set( ab );
+			gyro_bias.set( gb );
+			ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+		}
+		MPU.setAccelOffset(ab);
+		MPU.setGyroOffset(gb);
+		mpud::raw_axes_t accelRaw;
+		mpud::float_axes_t accelG;
+		float samples = 0;
+		delay(200);
+		for( auto i=0; i<10; i++ ){
+			esp_err_t err = MPU.acceleration(&accelRaw);  // fetch raw data from the registers
+			if( err != ESP_OK ) {
+				ESP_LOGE(FNAME, "AHRS acceleration I2C read error");
+				continue;
+			}
+			samples++;
+			accelG += mpud::accelGravity(accelRaw, mpud::ACCEL_FS_8G);  // raw data to gravity
+			//  ESP_LOGI( FNAME,"MPU %.2f", accelG[0] );
+			delay( 10 );
+		}
+		char ahrs[30];
+		accelG /= samples;
+		float accel = sqrt(accelG[0]*accelG[0]+accelG[1]*accelG[1]+accelG[2]*accelG[2]);
+		sprintf( ahrs,"AHRS Sensor: OK (%.2f g)", accel );
+		display->writeText( line++, ahrs );
+		logged_tests += "MPU6050 AHRS test: PASSED\n";
+		IMU::init();
+		if ( IMU::MPU6050Read() == ESP_OK) {
+			IMU::Process();
+		}
+		ESP_LOGI( FNAME,"MPU current offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+	}
+	else{
+		ESP_LOGI( FNAME,"MPU reset failed, check HW revision: %d",hardwareRevision.get() );
+		if( hardwareRevision.get() >= XCVARIO_21 ) {
+			ESP_LOGI( FNAME,"hardwareRevision detected = 3, XCVario-21+");
+			display->writeText( line++, "AHRS Sensor: NOT FOUND");
+			logged_tests += "MPU6050 AHRS test: NOT FOUND\n";
 		}
 	}
 

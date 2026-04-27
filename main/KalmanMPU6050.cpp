@@ -517,11 +517,22 @@ void IMU::defaultImuReference()
 	ucg->setPrintPos( 1, 120 );
 	ucg->printf( "Press button to start" );
 	while( !Rotary.readSwitch() ){ delay( 100 ); }
-	ucg->setColor( COLOR_BLACK );
-	ucg->clearScreen();
-	ucg->setPrintPos( 1, 30 );
+	ucg->setPrintPos( 1, 150 );
+	ucg->printf( "Calibrating...." );
+	delay(2000);
+	mpud::raw_axes_t gb;
+	mpud::raw_axes_t ab;
+	MPU.computeOffsets( &ab, &gb );  // returns Offsets in 16G scale
+	accl_bias.set( ab );
+	gyro_bias.set( gb );
+	accl_bias.commit();
+	gyro_bias.commit();
+	ESP_LOGI( FNAME,"MPU new offsets accl:%d/%d/%d gyro:%d/%d/%d ZERO:%d", ab.x, ab.y, ab.z, gb.x,gb.y,gb.z, gb.isZero() );
+	// ucg->setColor( COLOR_BLACK );
+	// ucg->clearScreen();
+	ucg->setPrintPos( 1, 180 );
 	ucg->setColor( COLOR_WHITE );
-	ucg->printf( "rebooting..." );
+	ucg->printf( "done, rebooting..." );
 	Quaternion accelDefaultRef = Quaternion(deg2rad(90.0f), vector_ijk(0,1,0)).get_conjugate();
 
 	if ( display_orientation.get() == DISPLAY_TOPDOWN ) {
@@ -531,7 +542,7 @@ void IMU::defaultImuReference()
 	imu_reference.set(ref_rot, false); // nvs
 	imu_reference.commit();
 	progress = 0; // reset the calibration procedure
-	delay( 1000);
+	delay(2000);
 	esp_restart();
 }
 // Concatenation of ground angle of attack and the basic reference calibration rotation

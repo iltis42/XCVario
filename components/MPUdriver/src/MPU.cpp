@@ -918,9 +918,9 @@ esp_err_t MPU::setAccelOffset(raw_axes_t bias)
 	// note: preserve bit 0 of factory value (for temperature compensation) 
 	// Register <*>_OFFSET_H doesnt have any effect in ICM 20602
 	//    as of that: do not set bias in register, instead add on readout
-	facBias.x += accel_factory_trim.x;  // factory trim is a bit unclear, should only be relevant when ST bit is set, what is not the case
-        facBias.y += accel_factory_trim.y;
-        facBias.z += accel_factory_trim.z;
+	facBias.x = accel_factory_trim.x;  // factory trim is a bit unclear, should only be relevant when ST bit is set, what is not the case
+	facBias.y = accel_factory_trim.y;
+	facBias.z = accel_factory_trim.z;
 
 	my_accel_bias.x = bias.x * 2;  // we save that already in the format for 8G we need (double from 16G register norm)
 	my_accel_bias.y = bias.y * 2;
@@ -1038,10 +1038,7 @@ esp_err_t MPU::acceleration(raw_axes_t* accel)
 	accel->x  += my_accel_bias.x;
 	accel->y  += my_accel_bias.y;
 	accel->z  += my_accel_bias.z;
-        /* uint8_t cfg;
-        readByte(regs::ACCEL_CONFIG, &cfg);
-	MPU_LOGI("accel:\t%d\t%d\t%d bias: \t%d\t%d\t%d  ST = 0x%02X", accel->x, accel->y, accel->z, my_accel_bias.x, my_accel_bias.y, my_accel_bias.z, cfg);
-	*/
+	// MPU_LOGI("accel:\t%d\t%d\t%d bias: \t%d\t%d\t%d ", accel->x, accel->y, accel->z, my_accel_bias.x, my_accel_bias.y, my_accel_bias.z);
 	return err;
 }
 

@@ -327,7 +327,7 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 	int cs = calcNMEACheckSum(&str[1]);
 	int i = strlen(str);
 	sprintf( &str[i], "*%02X\r\n", cs );
-	ESP_LOGI(FNAME,"%s", str );
+	//ESP_LOGI(FNAME,"%s", str );
 	Router::sendXCV(str);
 }
 

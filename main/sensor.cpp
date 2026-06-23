@@ -286,7 +286,7 @@ void drawDisplay(void *pvParameters){
 							SetupMenu::catchFocus( false );
 						}
 						else if( !gflags.gear_warning_active && !gflags.stall_warning_active ){
-							Audio::alarm( true, max_volume.get() );
+							Audio::alarm( true, max_volume.get() * 0.8 );
 							display->drawWarning( "! GEAR !", false );
 							gflags.gear_warning_active = true;
 							SetupMenu::catchFocus( true );

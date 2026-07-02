@@ -34,5 +34,5 @@ set( inc_dirs
 
 idf_component_register( SRC_DIRS "${src_dirs}"
          	        INCLUDE_DIRS "${inc_dirs}"
-         		REQUIRES spi_flash mbedtls mdns soc app_update bt fatfs spiffs bt )
+         		REQUIRES spi_flash mbedtls soc app_update bt fatfs spiffs bt )
 

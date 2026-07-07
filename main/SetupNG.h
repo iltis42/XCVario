@@ -684,6 +684,7 @@ extern uint8_t g_col_background;
 extern uint8_t g_col_highlight;
 extern SetupNG<int> 		logging;
 extern SetupNG<float>      	display_clock_adj;
+extern SetupNG<int> 		ahrs_raw_data;
 
 
 extern float last_volume;   // is this used?

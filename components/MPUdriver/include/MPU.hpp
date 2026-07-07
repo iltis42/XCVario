@@ -76,6 +76,7 @@ class MPU
     //! \name Constructors / Destructor
     //! \{
     MPU();
+    bool isICM20602();
     explicit MPU(mpu_bus_t& bus);
     MPU(mpu_bus_t& bus, mpu_addr_handle_t addr);
     ~MPU();

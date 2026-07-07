@@ -6,7 +6,10 @@ Software for ESP32 based lean Variometer system with open data interface featuri
 
 The project is dedicated to my open source and open hardware flight computer development using ESP32 WROOM development board supporting modern digital sensors such as BMP280, SPL06-007, DS1820b, TE4525, ABPMRR, MP5004DP, CAN, AHRS MPU6050, and QMC5883L magnet sensor.
 
-* Evolution
+## Project Status
+To follow the more recent development please have a look at the **XCVario Pro** branch of the project that is maintained at [XCVarioPro](https://github.com/hjr/XCVarioPro)
+
+## Evolution
 The history of the project is is available within branches and is listed below. 
 
 1. [DM-R1](https://github.com/iltis42/XCVario/tree/DM-R1) branch
@@ -44,7 +47,7 @@ At the begin i want to show a short Demo of the variometer, including sensitivit
 
 
 
-The design supports the follwing sensors:
+## The design supports the follwing sensors:
 * TE Variometer (TE)
 * Airspeed (PI)
 * Barometric Altitude (BA)
@@ -60,7 +63,7 @@ The ESP32 module contains a bluetooth and WLAN sender module plus serial interfa
 
 The Vario Prototype with 550 nits 2.4 inch IPS Technology LCD Display features a low power consumation of less that 1.2W, that equals to 100mA at 12.5V operating voltage. The Size is 68(H)x64(B)x35(T) mm, for a standard 57mm Instrument Panel. Weight is only about 170 gramm.
 
-The Soft- and Hardware features:
+## The Soft- and Hardware features:
 
 - QNH Ballast, Bugs and McCready adjustment and many other options configurable
 - Audio-Generator with adjustable Volume and Deadband plus setup option for frequency, tone style and range

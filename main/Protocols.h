@@ -13,7 +13,7 @@
 #include "SetupNG.h"
 
 // Supported Protocols
-typedef enum protocol_t  { P_OPENVARIO, P_BORGELT, P_CAMBRIDGE, P_EYE_PEYA, P_EYE_PEYI, P_AHRS_RPYL, P_AHRS_APENV1, P_GENERIC, P_XCVARIO, P_XCVARIO_DEVEL } proto_t;
+typedef enum protocol_t  { P_OPENVARIO, P_BORGELT, P_CAMBRIDGE, P_EYE_PEYA, P_EYE_PEYI, P_AHRS_RPYL, P_AHRS_APENV1, P_GENERIC, P_XCVARIO, P_XCVARIO_DEVEL, P_AHRS_RAW } proto_t;
 
 
 class Protocols {
@@ -22,6 +22,7 @@ public:
 	virtual ~Protocols( );
 	void sendNmeaHDM( float heading );
 	void sendNmeaHDT( float heading );
+	void sendNmeaMWV( float angle, float speed );
 	void sendItem( const char *key, char type, void *value, int len, bool ack=false );
 	void sendNMEA( proto_t proto, char* str, float baro, float dp, float te, float temp, float ias, float tas,
 			float mc, int bugs, float ballast, bool cruise, float alt,

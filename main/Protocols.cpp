@@ -86,6 +86,33 @@ void Protocols::sendNmeaHDT( float heading ) {
 	Router::sendXCV(str);
 }
 
+
+/*
+    WIND angle and speed - True
+
+     $--MWV,x.x,a,x.x,a,a,a,*hh
+
+     Field Number:
+      1) wind angle
+      2) (R)elative or (T)rue
+      3) wind speed
+      4) K/M/N
+      5) Status A=valid
+      8) Checksum
+
+ */
+
+void Protocols::sendNmeaMWV( float angle, float speed ) {
+	char str[32];
+	sprintf( str,"$WIMWV,%3.1f,T,%3.1f,K,A", angle, speed  );
+	ESP_LOGI(FNAME,"WIND: %3.1f°/%3.1f km/h", angle, speed );
+
+	int cs = calcNMEACheckSum(&str[1]);
+	int i = strlen(str);
+	sprintf( &str[i], "*%02X\r\n", cs );
+	Router::sendXCV(str);
+}
+
 void Protocols::sendItem( const char *key, char type, void *value, int len, bool ack ){
 	if( Flarm::bincom )  // do not sent to client in case
 		return;
@@ -285,12 +312,22 @@ void Protocols::sendNMEA( proto_t proto, char* str, float baro, float dp, float 
 		 */
 		sprintf(str, "$PTAS1,%d,%d,%d,%d", int((Units::ms2knots(te)*10)+200), 0, int(Units::meters2feet(alt)+2000), int(Units::kmh2knots(tas)+0.5) );
 	}
+	else if( proto == P_AHRS_RAW ){
+			/*
+			 * !XCV,G,gx,gy,gz,A,ax,ay,az*CHK
+			 * G: rotation rate in body frame in deg/s
+			 * A: acceleration in m/s²
+			 */
+			sprintf(str, "!XCV,G,%.3f,%.3f,%.3f,A,%.3f,%.3f,%.3f", gx,-gy,-gz, -acc_x*9.81,acc_y*9.81,acc_z*9.81 );
+			// ESP_LOGI(FNAME,"%s", str );
+	}
 	else {
 		ESP_LOGW(FNAME,"Not supported protocol %d", proto );
 	}
 	int cs = calcNMEACheckSum(&str[1]);
 	int i = strlen(str);
 	sprintf( &str[i], "*%02X\r\n", cs );
+	ESP_LOGI(FNAME,"%s", str );
 	Router::sendXCV(str);
 }
 

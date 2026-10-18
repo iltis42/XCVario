@@ -44,9 +44,11 @@ static ili9341_config_t ili9341_config = {
 		.horizontal_refresh = ILI9341_HORIZONTAL_REFRESH_LEFT_TO_RIGHT,
 };
 
+#define FREQ_UGC_SPI 12000000  // *3 for SPI display clock, /2 for BMP pressure sensor clock
+
 static esp32_hal_config_t esp32_ili9341_config = {
 		.spi_num = 	VSPI,
-		.freq = 	13111111*3,  // max 40 MHz
+		.freq = FREQ_UGC_SPI*3,  // max 40 MHz
 		.dataMode = SPI_MODE0,
 		.bitOrder = MSBFIRST,
 		.gpio_scl = SPI_SCLK,
@@ -134,10 +136,13 @@ void  AdaptUGC::begin() {
 		ili9341_config.page_address =  ILI9341_PAGE_ADDRESS_BOTTOM_TO_TOP;
 		ili9341_config.colum_address = ILI9341_COLUMN_ADDRESS_RIGHT_TO_LEFT;
 	}
-	esp32_ili9341_config.freq = rint( FREQ_BMP_SPI * 3 * ((100.0 + display_clock_adj.get())/100.0));
+	esp32_ili9341_config.freq = rint( FREQ_UGC_SPI * 3 * ((100.0 + display_clock_adj.get())/100.0));
 	ESP_LOGI(FNAME, "eglib_Send() &eglib:%x  hal-driv:%x config:%x  clk:%.3f MHz\n", (unsigned int)eglib, (unsigned int)&esp32_ili9341, (unsigned int)&esp32_ili9341_config, (double)(esp32_ili9341_config.freq/1000000.0) );
 	eglib_Init( &myeglib, &esp32_ili9341, &esp32_ili9341_config, &ili9341, &ili9341_config );
 	setClipRange( 0,0, 240, 320 );
+	gpio_set_drive_capability( (gpio_num_t)SPI_SCLK, GPIO_DRIVE_CAP_0);
+        gpio_set_drive_capability( (gpio_num_t)SPI_MOSI, GPIO_DRIVE_CAP_0);
+
 };
 
 void AdaptUGC::advanceCursor( size_t delta ){

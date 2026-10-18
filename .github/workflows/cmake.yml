@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: set-env
       run:  VER=`date +"%y.%m%d-%H%M"`;
             BRANCH=`git branch --show-current`;
@@ -40,7 +40,7 @@ jobs:
             ls artifacts/*;
 
     - name: Upload binary & ELF
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: XCVario-${{ env.FILE_VERSION }}
         path: artifacts/*
